@@ -1,0 +1,19 @@
+# frontend/Dockerfile.frontend
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package.json first to allow npm install to run and generate package-lock.json
+COPY package.json ./
+
+# Install node modules. This will also generate package-lock.json if it doesn't exist.
+RUN npm install
+
+# Copy the rest of the application files, including the newly generated package-lock.json
+COPY . .
+
+# Expose port (React dev server default)
+EXPOSE 3000
+
+# Default command (will be overridden by docker-compose for dev)
+CMD ["npm", "start"]
