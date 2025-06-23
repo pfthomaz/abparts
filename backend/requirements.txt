@@ -4,9 +4,13 @@ sqlalchemy
 psycopg2-binary
 python-dotenv # For loading .env files in your app
 alembic
-pydantic
+pydantic[email]
 httpx
 redis
 celery
 pandas
 scikit-learn
+python-jose # For actual JWT handling if you move beyond the stub
+passlib[bcrypt] # For actual password hashing (bcrypt)
+python-multipart # For handling file uploads
+email-validator # For validating email addresses    

@@ -1,16 +1,21 @@
 # backend/app/main.py
 
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware # Import CORSMiddleware
-from sqlalchemy import create_engine, Column, String, DateTime, Boolean, Integer
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.dialects.postgresql import UUID
-import uuid
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 import os
-import redis
-from datetime import datetime
 import logging
+from sqlalchemy.orm import Session # Import Session for health check dependency
+
+# Import database configuration
+from .database import engine, Base, get_db
+
+# Import models for type hinting in auth endpoints if needed directly in main.py
+from . import models, schemas # Import schemas for UserResponse
+
+# Import routers
+from .routers import organizations, users # We'll add more routers later
+from .auth import login_for_access_token, read_users_me, TokenData # Import TokenData if used in main.py directly
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -24,8 +29,6 @@ app = FastAPI(
 )
 
 # --- CORS Configuration ---
-# Define allowed origins for your frontend. In development, this is often your React dev server.
-# For production, replace '*' with your actual frontend domain(s).
 origins = [
     "http://localhost",
     "http://localhost:3000", # Your React frontend development server
@@ -35,81 +38,57 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Allow all methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"], # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# --- Database Configuration ---
-# Get database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    logger.error("DATABASE_URL environment variable is not set.")
-    raise ValueError("DATABASE_URL environment variable is not set.")
+# --- Include Routers ---
+app.include_router(organizations.router, prefix="/organizations", tags=["Organizations"])
+app.include_router(users.router, prefix="/users", tags=["Users"])
+# Add other routers here as you create them:
+# app.include_router(parts.router, prefix="/parts", tags=["Parts"])
+# app.include_router(inventory.router, prefix="/inventory", tags=["Inventory"])
+# app.include_router(supplier_orders.router, prefix="/supplier_orders", tags=["Supplier Orders"])
+# app.include_router(customer_orders.router, prefix="/customer_orders", tags=["Customer Orders"])
+# app.include_router(part_usage.router, prefix="/part_usage", tags=["Part Usage"])
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# --- Authentication Endpoints (kept in main for simplicity of login flow) ---
+app.post("/token", tags=["Authentication"])(login_for_access_token)
+app.get("/users/me/", response_model=schemas.UserResponse, tags=["Authentication"])(read_users_me)
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-# --- Redis Configuration ---
-# Get Redis URL from environment variable
-REDIS_URL = os.getenv("REDIS_URL")
-if not REDIS_URL:
-    logger.error("REDIS_URL environment variable is not set.")
-    raise ValueError("REDIS_URL environment variable is not set.")
-
-redis_client = redis.StrictRedis.from_url(REDIS_URL, decode_responses=True)
-
-# --- SQLAlchemy Models (Basic Example for 'organizations' table) ---
-# This is a simplified example. You would create models for all your tables.
-class Organization(Base):
-    __tablename__ = "organizations"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(255), unique=True, nullable=False)
-    type = Column(String(50), nullable=False)
-    address = Column(String)
-    contact_info = Column(String)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now, onupdate=datetime.now)
-
-# --- API Endpoints ---
-
+# --- Root and Health Check Endpoints ---
 @app.get("/")
 async def read_root():
-    """
-    Root endpoint for the ABParts API.
-    """
     return {"message": "Welcome to ABParts API!"}
 
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
-    """
-    Health check endpoint to verify database and Redis connectivity.
-    """
     db_status = "unreachable"
-    redis_status = "unreachable"
+    # Redis client is in database.py but we need it here, so let's move redis_client
+    # to database.py and access it from there if needed for health check.
+    # For now, let's keep redis_client in main.py, as it's directly used here.
+    # Alternatively, create a get_redis_client dependency in database.py
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        logger.error("REDIS_URL environment variable is not set.")
+        raise ValueError("REDIS_URL environment variable is not set.")
+    
+    # Re-initialize redis_client if it's not available or if this is the first call
+    # This is a bit redundant if it's already initialized globally, but safe for health check
+    try:
+        current_redis_client = redis.StrictRedis.from_url(redis_url, decode_responses=True)
+        current_redis_client.ping()
+        redis_status = "connected"
+    except Exception as e:
+        logger.error(f"Redis connection failed: {e}")
+        redis_status = "unreachable"
 
     try:
-        # Test DB connection
         db.execute("SELECT 1")
         db_status = "connected"
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
-
-    try:
-        # Test Redis connection
-        redis_client.ping()
-        redis_status = "connected"
-    except Exception as e:
-        logger.error(f"Redis connection failed: {e}")
 
     return {
         "status": "healthy" if db_status == "connected" and redis_status == "connected" else "unhealthy",
@@ -117,75 +96,15 @@ async def health_check(db: Session = Depends(get_db)):
         "redis": redis_status,
     }
 
-@app.get("/organizations")
-async def get_organizations(db: Session = Depends(get_db)):
-    """
-    Retrieve all organizations from the database.
-    """
-    try:
-        organizations = db.query(Organization).all()
-        return organizations
-    except Exception as e:
-        logger.error(f"Error fetching organizations: {e}")
-        raise HTTPException(status_code=500, detail="Could not fetch organizations")
-
-@app.post("/organizations")
-async def create_organization(
-    name: str,
-    org_type: str, # Renamed to avoid conflict with Python's built-in type()
-    address: str = None,
-    contact_info: str = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Create a new organization.
-    """
-    new_org = Organization(
-        name=name,
-        type=org_type,
-        address=address,
-        contact_info=contact_info
-    )
-    try:
-        db.add(new_org)
-        db.commit()
-        db.refresh(new_org)
-        return new_org
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating organization: {e}")
-        raise HTTPException(status_code=400, detail="Error creating organization")
-
-@app.get("/cache-test/{key}")
-async def get_cache_value(key: str):
-    """
-    Get a value from Redis cache.
-    """
-    value = redis_client.get(key)
-    if value:
-        return {"key": key, "value": value, "source": "cache"}
-    return {"key": key, "value": None, "source": "miss"}
-
-@app.post("/cache-test/{key}")
-async def set_cache_value(key: str, value: str):
-    """
-    Set a value in Redis cache.
-    """
-    redis_client.set(key, value, ex=60) # Set with 60 second expiration
-    return {"key": key, "value": value, "status": "set", "expires_in_seconds": 60}
-
 
 # --- Database Table Creation on Startup ---
 @app.on_event("startup")
 def startup_event():
     logger.info("Application startup event triggered.")
-    # Ensure tables are created
     logger.info("Attempting to create database tables if they don't exist...")
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables checked/created successfully.")
     except Exception as e:
         logger.error(f"Error creating database tables on startup: {e}")
-        # Depending on your setup, you might want to stop the app here
-        # or handle more gracefully. For local dev, a log might suffice.
 
