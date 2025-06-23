@@ -192,7 +192,8 @@ INSERT INTO users (organization_id, username, password_hash, email, name, role)
 SELECT
     o.id AS organization_id,
     LOWER(REPLACE(o.name, ' ', '')) || '_user' AS username,
-    'hashed_password_123' AS password_hash, -- Placeholder: In real app, generate real hashes
+    -- CORRECTED: password_hash to match the stub logic (plain_password + "_hashed")
+    'password_123_hashed' AS password_hash,
     LOWER(REPLACE(o.name, ' ', '')) || '@example.com' AS email,
     CASE
         WHEN o.type = 'Warehouse' THEN 'Oraseas Admin'

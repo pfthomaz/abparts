@@ -5,16 +5,25 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 from sqlalchemy.orm import Session # Import Session for health check dependency
+import redis # Import redis here for health check
 
 # Import database configuration
 from .database import engine, Base, get_db
 
-# Import models for type hinting in auth endpoints if needed directly in main.py
-from . import models, schemas # Import schemas for UserResponse
+# Import models and schemas for type hinting in auth endpoints if needed directly in main.py
+from . import models, schemas
 
-# Import routers
-from .routers import organizations, users # We'll add more routers later
-from .auth import login_for_access_token, read_users_me, TokenData # Import TokenData if used in main.py directly
+# Import routers directly from their files, aliasing them to avoid naming conflicts
+from .routers.organizations import router as organizations_router
+from .routers.users import router as users_router
+from .routers.parts import router as parts_router
+from .routers.inventory import router as inventory_router
+from .routers.supplier_orders import router as supplier_orders_router
+from .routers.supplier_order_items import router as supplier_order_items_router
+from .routers.customer_orders import router as customer_orders_router
+from .routers.customer_order_items import router as customer_order_items_router
+from .routers.part_usage import router as part_usage_router # New: Import part_usage router
+from .auth import login_for_access_token, read_users_me, TokenData
 
 
 # Set up logging
@@ -43,14 +52,15 @@ app.add_middleware(
 )
 
 # --- Include Routers ---
-app.include_router(organizations.router, prefix="/organizations", tags=["Organizations"])
-app.include_router(users.router, prefix="/users", tags=["Users"])
-# Add other routers here as you create them:
-# app.include_router(parts.router, prefix="/parts", tags=["Parts"])
-# app.include_router(inventory.router, prefix="/inventory", tags=["Inventory"])
-# app.include_router(supplier_orders.router, prefix="/supplier_orders", tags=["Supplier Orders"])
-# app.include_router(customer_orders.router, prefix="/customer_orders", tags=["Customer Orders"])
-# app.include_router(part_usage.router, prefix="/part_usage", tags=["Part Usage"])
+app.include_router(organizations_router, prefix="/organizations", tags=["Organizations"])
+app.include_router(users_router, prefix="/users", tags=["Users"])
+app.include_router(parts_router, prefix="/parts", tags=["Parts"])
+app.include_router(inventory_router, prefix="/inventory", tags=["Inventory"])
+app.include_router(supplier_orders_router, prefix="/supplier_orders", tags=["Supplier Orders"])
+app.include_router(supplier_order_items_router, prefix="/supplier_order_items", tags=["Supplier Order Items"])
+app.include_router(customer_orders_router, prefix="/customer_orders", tags=["Customer Orders"])
+app.include_router(customer_order_items_router, prefix="/customer_order_items", tags=["Customer Order Items"])
+app.include_router(part_usage_router, prefix="/part_usage", tags=["Part Usage"]) # New: Include part_usage router
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)
@@ -65,17 +75,13 @@ async def read_root():
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
     db_status = "unreachable"
-    # Redis client is in database.py but we need it here, so let's move redis_client
-    # to database.py and access it from there if needed for health check.
-    # For now, let's keep redis_client in main.py, as it's directly used here.
-    # Alternatively, create a get_redis_client dependency in database.py
+    redis_status = "unreachable"
+
     redis_url = os.getenv("REDIS_URL")
     if not redis_url:
         logger.error("REDIS_URL environment variable is not set.")
         raise ValueError("REDIS_URL environment variable is not set.")
     
-    # Re-initialize redis_client if it's not available or if this is the first call
-    # This is a bit redundant if it's already initialized globally, but safe for health check
     try:
         current_redis_client = redis.StrictRedis.from_url(redis_url, decode_responses=True)
         current_redis_client.ping()
