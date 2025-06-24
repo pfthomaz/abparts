@@ -1,5 +1,5 @@
 -- init.sql
--- This script will be executed by PostgreSQL when the container starts for the first time
+-- This script will be executed by PostgreSQL when the container starts for the first first time
 -- (due to the volume mount ./init_db:/docker-entrypoint-initdb.d in docker-compose.yml)
 
 -- Drop tables if they exist to ensure a clean slate during development
@@ -54,6 +54,7 @@ CREATE TABLE parts (
     is_consumable BOOLEAN NOT NULL DEFAULT FALSE,
     manufacturer_delivery_time_days INTEGER,
     local_supplier_delivery_time_days INTEGER,
+    image_urls TEXT[] DEFAULT '{}' NOT NULL, -- New: Array of text for image URLs, default to empty array
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

@@ -21,6 +21,7 @@ def get_parts(db: Session, skip: int = 0, limit: int = 100):
 
 def create_part(db: Session, part: schemas.PartCreate):
     """Create a new part."""
+    # The image_urls field is already a list from the schema, pass it directly
     db_part = models.Part(**part.dict())
     try:
         db.add(db_part)
@@ -68,4 +69,3 @@ def delete_part(db: Session, part_id: uuid.UUID):
         db.rollback()
         logger.error(f"Error deleting part: {e}")
         raise HTTPException(status_code=400, detail="Error deleting part. Check for dependent records.")
-

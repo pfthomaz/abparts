@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     email: EmailStr # Use EmailStr for email validation
     name: Optional[str] = None
     role: str
+    organization_id: uuid.UUID # Added: User must belong to an organization
 
 class PartBase(BaseModel):
     part_number: str
@@ -26,6 +27,7 @@ class PartBase(BaseModel):
     is_consumable: bool = False
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
+    image_urls: List[str] = Field(default_factory=list, description="URLs of images associated with the part") # New: List of image URLs
 
 class InventoryBase(BaseModel):
     organization_id: uuid.UUID
@@ -115,9 +117,10 @@ class OrganizationUpdate(OrganizationBase):
 class UserUpdate(UserBase):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
-    password: Optional[str] = None
+    password: Optional[str] = None # Password can be optional for update
     name: Optional[str] = None
     role: Optional[str] = None
+    organization_id: Optional[uuid.UUID] = None # Make organization_id optional for update
 
 class PartUpdate(PartBase):
     part_number: Optional[str] = None
@@ -127,6 +130,7 @@ class PartUpdate(PartBase):
     is_consumable: Optional[bool] = None
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
+    image_urls: Optional[List[str]] = None # New: Optional for updates
 
 class InventoryUpdate(InventoryBase):
     organization_id: Optional[uuid.UUID] = None
@@ -141,7 +145,7 @@ class SupplierOrderUpdate(SupplierOrderBase):
     supplier_name: Optional[str] = None
     order_date: Optional[datetime] = None
     expected_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
 
@@ -156,7 +160,7 @@ class CustomerOrderUpdate(CustomerOrderBase):
     oraseas_organization_id: Optional[uuid.UUID] = None
     order_date: Optional[datetime] = None
     expected_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[str] = None
     status: Optional[str] = None
     ordered_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
@@ -187,7 +191,7 @@ class OrganizationResponse(OrganizationBase):
 
 class UserResponse(UserBase):
     id: uuid.UUID
-    organization_id: uuid.UUID
+    # organization_id: uuid.UUID # Removed from UserResponse as it's already in UserBase
     created_at: datetime
     updated_at: datetime
     class Config:
@@ -242,7 +246,11 @@ class PartUsageResponse(PartUsageBase):
     class Config:
         orm_mode = True
 
-# Pydantic model for the token response (moved from auth.py)
+# Pydantic model for image upload response
+class ImageUploadResponse(BaseModel): # New: Schema for image upload response
+    url: str
+
+# Pydantic model for the token response
 class Token(BaseModel):
     access_token: str
     token_type: str
