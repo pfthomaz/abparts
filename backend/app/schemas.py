@@ -3,151 +3,177 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-# Base models for common attributes
+# --- Base Schemas with common fields ---
+class BaseSchema(BaseModel):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+    class Config:
+        from_attributes = True # Allow ORM models to be converted to Pydantic models
+
+
+# --- Organization Schemas ---
 class OrganizationBase(BaseModel):
-    name: str
-    type: str
+    name: str = Field(..., max_length=255)
+    type: str = Field(..., max_length=50)
     address: Optional[str] = None
     contact_info: Optional[str] = None
 
-class UserBase(BaseModel):
-    username: str
-    email: EmailStr # Use EmailStr for email validation
-    name: Optional[str] = None
-    role: str
-    organization_id: uuid.UUID # Added: User must belong to an organization
+class OrganizationCreate(OrganizationBase):
+    pass
 
+class OrganizationUpdate(OrganizationBase):
+    name: Optional[str] = Field(None, max_length=255)
+    type: Optional[str] = Field(None, max_length=50)
+
+class OrganizationResponse(OrganizationBase, BaseSchema):
+    pass
+
+
+# --- User Schemas ---
+class UserBase(BaseModel):
+    organization_id: uuid.UUID
+    username: str = Field(..., max_length=255)
+    email: EmailStr = Field(..., max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+    role: str = Field(..., max_length=50) # e.g., 'Oraseas Admin', 'Customer User'
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8) # Password should be hashed in backend
+
+class UserUpdate(UserBase):
+    organization_id: Optional[uuid.UUID] = None
+    username: Optional[str] = Field(None, max_length=255)
+    email: Optional[EmailStr] = Field(None, max_length=255)
+    password: Optional[str] = Field(None, min_length=8) # For password change
+    role: Optional[str] = Field(None, max_length=50)
+
+class UserResponse(UserBase, BaseSchema):
+    class Config(BaseSchema.Config):
+        exclude = {'password_hash'} # Do not expose password hash
+
+
+# --- Token Schemas (for authentication) ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    user_id: uuid.UUID
+    username: Optional[str] = None
+    organization_id: uuid.UUID
+    role: str
+
+
+# --- Machine Schemas (New!) ---
+class MachineBase(BaseModel):
+    organization_id: uuid.UUID
+    model_type: str = Field(..., max_length=100) # e.g., 'V3.1B', 'V4.0'
+    name: str = Field(..., max_length=255)
+    serial_number: str = Field(..., max_length=255)
+
+class MachineCreate(MachineBase):
+    pass
+
+class MachineUpdate(MachineBase):
+    organization_id: Optional[uuid.UUID] = None
+    model_type: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, max_length=255)
+    serial_number: Optional[str] = Field(None, max_length=255)
+
+class MachineResponse(MachineBase, BaseSchema):
+    pass
+
+
+# --- Part Schemas ---
 class PartBase(BaseModel):
-    part_number: str
-    name: str
+    part_number: str = Field(..., max_length=255)
+    name: str = Field(..., max_length=255)
     description: Optional[str] = None
     is_proprietary: bool = False
     is_consumable: bool = False
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: List[str] = Field(default_factory=list, description="URLs of images associated with the part") # New: List of image URLs
+    image_urls: Optional[List[str]] = None
 
+class PartCreate(PartBase):
+    pass
+
+class PartUpdate(PartBase):
+    part_number: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+
+class PartResponse(PartBase, BaseSchema):
+    pass
+
+# --- New: Image Upload Response Schema ---
+class ImageUploadResponse(BaseModel):
+    url: str
+    message: str = "Image uploaded successfully"
+
+
+# --- Inventory Schemas ---
 class InventoryBase(BaseModel):
     organization_id: uuid.UUID
     part_id: uuid.UUID
     current_stock: int = 0
     minimum_stock_recommendation: int = 0
-    reorder_threshold_set_by: Optional[str] = None
+    reorder_threshold_set_by: Optional[str] = Field(None, max_length=50)
     last_recommendation_update: Optional[datetime] = None
-
-class SupplierOrderBase(BaseModel):
-    ordering_organization_id: uuid.UUID
-    supplier_name: str
-    order_date: datetime
-    expected_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[datetime] = None
-    status: str
-    notes: Optional[str] = None
-
-class SupplierOrderItemBase(BaseModel):
-    supplier_order_id: uuid.UUID
-    part_id: uuid.UUID
-    quantity: int = 1
-    unit_price: Optional[float] = None # Using float for price, consider Decimal for precision
-
-class CustomerOrderBase(BaseModel):
-    customer_organization_id: uuid.UUID
-    oraseas_organization_id: uuid.UUID
-    order_date: datetime
-    expected_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[datetime] = None
-    status: str
-    ordered_by_user_id: Optional[uuid.UUID] = None
-    notes: Optional[str] = None
-
-class CustomerOrderItemBase(BaseModel):
-    customer_order_id: uuid.UUID
-    part_id: uuid.UUID
-    quantity: int = 1
-    unit_price: Optional[float] = None
-
-class PartUsageBase(BaseModel):
-    customer_organization_id: uuid.UUID
-    part_id: uuid.UUID
-    usage_date: datetime
-    quantity_used: int = 1
-    machine_id: Optional[str] = None
-    recorded_by_user_id: Optional[uuid.UUID] = None
-    notes: Optional[str] = None
-
-
-# Create models (for POST requests)
-class OrganizationCreate(OrganizationBase):
-    pass
-
-class UserCreate(UserBase):
-    password: str # Password for creation, will be hashed
-
-class PartCreate(PartBase):
-    pass
 
 class InventoryCreate(InventoryBase):
     pass
-
-class SupplierOrderCreate(SupplierOrderBase):
-    pass
-
-class SupplierOrderItemCreate(SupplierOrderItemBase):
-    pass
-
-class CustomerOrderCreate(CustomerOrderBase):
-    pass
-
-class CustomerOrderItemCreate(CustomerOrderItemBase):
-    pass
-
-class PartUsageCreate(PartUsageBase):
-    pass
-
-
-# Update models (for PUT requests, fields are optional)
-class OrganizationUpdate(OrganizationBase):
-    name: Optional[str] = None
-    type: Optional[str] = None
-    address: Optional[str] = None
-    contact_info: Optional[str] = None
-
-class UserUpdate(UserBase):
-    username: Optional[str] = None
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None # Password can be optional for update
-    name: Optional[str] = None
-    role: Optional[str] = None
-    organization_id: Optional[uuid.UUID] = None # Make organization_id optional for update
-
-class PartUpdate(PartBase):
-    part_number: Optional[str] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
-    is_proprietary: Optional[bool] = None
-    is_consumable: Optional[bool] = None
-    manufacturer_delivery_time_days: Optional[int] = None
-    local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = None # New: Optional for updates
 
 class InventoryUpdate(InventoryBase):
     organization_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
     current_stock: Optional[int] = None
     minimum_stock_recommendation: Optional[int] = None
-    reorder_threshold_set_by: Optional[str] = None
+    reorder_threshold_set_by: Optional[str] = Field(None, max_length=50)
     last_recommendation_update: Optional[datetime] = None
+
+class InventoryResponse(InventoryBase, BaseSchema):
+    pass
+
+
+# --- Supplier Order Schemas ---
+class SupplierOrderBase(BaseModel):
+    ordering_organization_id: uuid.UUID
+    supplier_name: str = Field(..., max_length=255)
+    order_date: datetime
+    expected_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[datetime] = None
+    status: str = Field(..., max_length=50)
+    notes: Optional[str] = None
+
+class SupplierOrderCreate(SupplierOrderBase):
+    pass
 
 class SupplierOrderUpdate(SupplierOrderBase):
     ordering_organization_id: Optional[uuid.UUID] = None
-    supplier_name: Optional[str] = None
+    supplier_name: Optional[str] = Field(None, max_length=255)
     order_date: Optional[datetime] = None
     expected_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[str] = None
-    status: Optional[str] = None
+    actual_delivery_date: Optional[datetime] = None
+    status: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = None
+
+class SupplierOrderResponse(SupplierOrderBase, BaseSchema):
+    pass
+
+
+# --- Supplier Order Item Schemas ---
+class SupplierOrderItemBase(BaseModel):
+    supplier_order_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity: int = 1
+    unit_price: Optional[float] = None
+
+class SupplierOrderItemCreate(SupplierOrderItemBase):
+    pass
 
 class SupplierOrderItemUpdate(SupplierOrderItemBase):
     supplier_order_id: Optional[uuid.UUID] = None
@@ -155,15 +181,47 @@ class SupplierOrderItemUpdate(SupplierOrderItemBase):
     quantity: Optional[int] = None
     unit_price: Optional[float] = None
 
+class SupplierOrderItemResponse(SupplierOrderItemBase, BaseSchema):
+    pass
+
+
+# --- Customer Order Schemas ---
+class CustomerOrderBase(BaseModel):
+    customer_organization_id: uuid.UUID
+    oraseas_organization_id: uuid.UUID
+    order_date: datetime
+    expected_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[datetime] = None
+    status: str = Field(..., max_length=50)
+    ordered_by_user_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+class CustomerOrderCreate(CustomerOrderBase):
+    pass
+
 class CustomerOrderUpdate(CustomerOrderBase):
     customer_organization_id: Optional[uuid.UUID] = None
     oraseas_organization_id: Optional[uuid.UUID] = None
     order_date: Optional[datetime] = None
     expected_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[str] = None
-    status: Optional[str] = None
+    actual_delivery_date: Optional[datetime] = None
+    status: Optional[str] = Field(None, max_length=50)
     ordered_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
+
+class CustomerOrderResponse(CustomerOrderBase, BaseSchema):
+    pass
+
+
+# --- Customer Order Item Schemas ---
+class CustomerOrderItemBase(BaseModel):
+    customer_order_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity: int = 1
+    unit_price: Optional[float] = None
+
+class CustomerOrderItemCreate(CustomerOrderItemBase):
+    pass
 
 class CustomerOrderItemUpdate(CustomerOrderItemBase):
     customer_order_id: Optional[uuid.UUID] = None
@@ -171,86 +229,32 @@ class CustomerOrderItemUpdate(CustomerOrderItemBase):
     quantity: Optional[int] = None
     unit_price: Optional[float] = None
 
+class CustomerOrderItemResponse(CustomerOrderItemBase, BaseSchema):
+    pass
+
+
+# --- Part Usage Schemas ---
+class PartUsageBase(BaseModel):
+    customer_organization_id: uuid.UUID
+    part_id: uuid.UUID
+    usage_date: datetime
+    quantity_used: int = 1
+    machine_id: Optional[uuid.UUID] = None # Updated: now expects UUID
+    recorded_by_user_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+class PartUsageCreate(PartUsageBase):
+    pass
+
 class PartUsageUpdate(PartUsageBase):
     customer_organization_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
     usage_date: Optional[datetime] = None
     quantity_used: Optional[int] = None
-    machine_id: Optional[str] = None
+    machine_id: Optional[uuid.UUID] = None # Updated: now expects UUID
     recorded_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
 
+class PartUsageResponse(PartUsageBase, BaseSchema):
+    pass
 
-# Response models (for GET responses, include the ID and any relationships you want to expose)
-class OrganizationResponse(OrganizationBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True # Enables ORM mode for automatic mapping from SQLAlchemy to Pydantic
-
-class UserResponse(UserBase):
-    id: uuid.UUID
-    # organization_id: uuid.UUID # Removed from UserResponse as it's already in UserBase
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class PartResponse(PartBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class InventoryResponse(InventoryBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class SupplierOrderResponse(SupplierOrderBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class SupplierOrderItemResponse(SupplierOrderItemBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class CustomerOrderResponse(CustomerOrderBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class CustomerOrderItemResponse(CustomerOrderItemBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-class PartUsageResponse(PartUsageBase):
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    class Config:
-        orm_mode = True
-
-# Pydantic model for image upload response
-class ImageUploadResponse(BaseModel): # New: Schema for image upload response
-    url: str
-
-# Pydantic model for the token response
-class Token(BaseModel):
-    access_token: str
-    token_type: str

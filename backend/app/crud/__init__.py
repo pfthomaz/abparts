@@ -10,4 +10,5 @@ from . import supplier_order_items
 from . import customer_orders
 from . import customer_order_items
 from . import part_usage
+from . import machines
 # Add other CRUD modules here as you create them:

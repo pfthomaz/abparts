@@ -8,6 +8,12 @@ import Modal from './components/Modal'; // Import Modal component
 import OrganizationForm from './components/OrganizationForm'; // Import OrganizationForm component
 import UserForm from './components/UserForm'; // Import UserForm component
 import PartForm from './components/PartForm'; // Import PartForm component
+import InventoryForm from './components/InventoryForm'; // Import InventoryForm component
+import SupplierOrderForm from './components/SupplierOrderForm'; // Import SupplierOrderForm component
+import SupplierOrderItemForm from './components/SupplierOrderItemForm'; // Import SupplierOrderItemForm component
+import CustomerOrderForm from './components/CustomerOrderForm'; // Import CustomerOrderForm component
+import CustomerOrderItemForm from './components/CustomerOrderItemForm'; // Import CustomerOrderItemForm component
+import PartUsageForm from './components/PartUsageForm'; // New: Import PartUsageForm component
 
 function App() {
     const { token, user, logout, loadingUser } = useAuth();
@@ -32,12 +38,24 @@ function App() {
     const [editingUser, setEditingUser] = useState(null);
     const [showPartModal, setShowPartModal] = useState(false);
     const [editingPart, setEditingPart] = useState(null);
+    const [showInventoryModal, setShowInventoryModal] = useState(false);
+    const [editingInventory, setEditingInventory] = useState(null);
+    const [showSupplierOrderModal, setShowSupplierOrderModal] = useState(false);
+    const [editingSupplierOrder, setEditingSupplierOrder] = useState(null);
+    const [showSupplierOrderItemModal, setShowSupplierOrderItemModal] = useState(false);
+    const [editingSupplierOrderItem, setEditingSupplierOrderItem] = useState(null);
+    const [showCustomerOrderModal, setShowCustomerOrderModal] = useState(false);
+    const [editingCustomerOrder, setEditingCustomerOrder] = useState(null);
+    const [showCustomerOrderItemModal, setShowCustomerOrderItemModal] = useState(false);
+    const [editingCustomerOrderItem, setEditingCustomerOrderItem] = useState(null);
+    const [showPartUsageModal, setShowPartUsageModal] = useState(false); // New: for Part Usage Form
+    const [editingPartUsage, setEditingPartUsage] = useState(null); // New: for Part Usage editing
 
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
     // Effect to fetch data when token or user changes
-    const fetchData = useCallback(async () => { // Wrapped with useCallback
+    const fetchData = useCallback(async () => {
         if (!token) {
         setOrganizations([]);
         setUsers([]);
@@ -167,10 +185,10 @@ function App() {
         } finally {
         setLoadingData(false);
         }
-    }, [token, API_BASE_URL]); // Dependencies for useCallback
+    }, [token, API_BASE_URL]);
 
     useEffect(() => {
-        if (!loadingUser) { // Only fetch data once user loading is complete
+        if (!loadingUser) {
             fetchData();
         }
     }, [token, API_BASE_URL, loadingUser, fetchData]);
@@ -192,11 +210,11 @@ function App() {
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
-            await fetchData(); // Re-fetch all data to update the list
-            setShowOrganizationModal(false); // Close the modal
+            await fetchData();
+            setShowOrganizationModal(false);
         } catch (err) {
             console.error("Error creating organization:", err);
-            throw err; // Re-throw to be caught by the form
+            throw err;
         }
     };
 
@@ -217,11 +235,11 @@ function App() {
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
-            await fetchData(); // Re-fetch all data to update the list
-            setShowUserModal(false); // Close the modal
+            await fetchData();
+            setShowUserModal(false);
         } catch (err) {
             console.error("Error creating user:", err);
-            throw err; // Re-throw to be caught by the form
+            throw err;
         }
     };
 
@@ -242,11 +260,161 @@ function App() {
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
-            await fetchData(); // Re-fetch all data to update the list
-            setShowPartModal(false); // Close the modal
+            await fetchData();
+            setShowPartModal(false);
         } catch (err) {
             console.error("Error creating part:", err);
-            throw err; // Re-throw to be caught by the form
+            throw err;
+        }
+    };
+
+    // Handler for creating a new inventory item
+    const handleCreateInventory = async (inventoryData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/inventory`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(inventoryData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData();
+            setShowInventoryModal(false);
+        } catch (err) {
+            console.error("Error creating inventory item:", err);
+            throw err;
+        }
+    };
+
+    // Handler for creating a new supplier order
+    const handleCreateSupplierOrder = async (orderData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/supplier_orders`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(orderData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData();
+            setShowSupplierOrderModal(false);
+        } catch (err) {
+            console.error("Error creating supplier order:", err);
+            throw err;
+        }
+    };
+
+    // Handler for creating a new supplier order item
+    const handleCreateSupplierOrderItem = async (itemData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/supplier_order_items`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(itemData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData();
+            setShowSupplierOrderItemModal(false);
+        } catch (err) {
+            console.error("Error creating supplier order item:", err);
+            throw err;
+        }
+    };
+
+    // Handler for creating a new customer order
+    const handleCreateCustomerOrder = async (orderData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/customer_orders`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(orderData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData();
+            setShowCustomerOrderModal(false);
+        } catch (err) {
+            console.error("Error creating customer order:", err);
+            throw err;
+        }
+    };
+
+    // Handler for creating a new customer order item
+    const handleCreateCustomerOrderItem = async (itemData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/customer_order_items`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(itemData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData();
+            setShowCustomerOrderItemModal(false);
+        } catch (err) {
+            console.error("Error creating customer order item:", err);
+            throw err;
+        }
+    };
+
+    // New: Handler for creating a new part usage record
+    const handleCreatePartUsage = async (usageData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/part_usage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(usageData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData();
+            setShowPartUsageModal(false);
+        } catch (err) {
+            console.error("Error creating part usage:", err);
+            throw err;
         }
     };
 
@@ -282,6 +450,32 @@ function App() {
         return userFound ? (userFound.name || userFound.username) : 'Unknown User';
     };
 
+    // Helper to find supplier order by ID
+    const getSupplierOrderDetails = (orderId) => {
+        const order = supplierOrders.find(o => o.id === orderId);
+        if (order) {
+            return `Order ${order.id.substring(0, 8)} - ${order.supplier_name} (${new Date(order.order_date).toLocaleDateString()})`;
+        }
+        return 'Unknown Order';
+    };
+
+    // Helper to find customer order by ID
+    const getCustomerOrderDetails = (orderId) => {
+        const order = customerOrders.find(o => o.id === orderId);
+        if (order) {
+            const customerOrgName = getOrganizationName(order.customer_organization_id);
+            return `Order ${order.id.substring(0, 8)} - for ${customerOrgName} (${new Date(order.order_date).toLocaleDateString()})`;
+        }
+        return 'Unknown Order';
+    };
+
+    // Helper to find customer organization by ID for Part Usage display
+    const getCustomerOrganizationDetails = (orgId) => {
+        const org = organizations.find(o => o.id === orgId);
+        return org ? org.name : 'Unknown Customer Organization';
+    };
+
+
     // --- Authenticated User View ---
     return (
     <div className="min-h-screen bg-gray-100 py-10">
@@ -314,7 +508,7 @@ function App() {
                 {user.role === "Oraseas Admin" && (
                     <button
                         onClick={() => {
-                            setEditingOrganization(null); // Ensure we're creating, not editing
+                            setEditingOrganization(null);
                             setShowOrganizationModal(true);
                         }}
                         className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
@@ -347,7 +541,7 @@ function App() {
             >
                 <OrganizationForm
                     initialData={editingOrganization || {}}
-                    onSubmit={handleCreateOrganization} // Will be handleUpdateOrganization when editing
+                    onSubmit={handleCreateOrganization}
                     onClose={() => setShowOrganizationModal(false)}
                 />
             </Modal>
@@ -359,7 +553,7 @@ function App() {
                 {(user.role === "Oraseas Admin" || user.role === "Customer Admin") && (
                     <button
                         onClick={() => {
-                            setEditingUser(null); // Ensure we're creating, not editing
+                            setEditingUser(null);
                             setShowUserModal(true);
                         }}
                         className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
@@ -372,7 +566,7 @@ function App() {
                 <p className="text-center text-gray-600 text-lg">No users found or unauthorized to view.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {users.map((userItem) => ( // Renamed to userItem to avoid conflict with 'user' from useAuth
+                {users.map((userItem) => (
                     <div key={userItem.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
                     <h3 className="text-2xl font-semibold text-green-700 mb-2">{userItem.name || userItem.username}</h3>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Role:</span> {userItem.role}</p>
@@ -392,8 +586,8 @@ function App() {
             >
                 <UserForm
                     initialData={editingUser || {}}
-                    organizations={organizations} // Pass organizations for dropdown
-                    onSubmit={handleCreateUser} // Will be handleUpdateUser when editing
+                    organizations={organizations}
+                    onSubmit={handleCreateUser}
                     onClose={() => setShowUserModal(false)}
                 />
             </Modal>
@@ -401,10 +595,10 @@ function App() {
             {/* Parts Section */}
             <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
                 <h2 className="text-3xl font-bold text-gray-700">Parts</h2>
-                {user.role === "Oraseas Admin" && ( // Only Oraseas Admin can create parts
+                {user.role === "Oraseas Admin" && (
                     <button
                         onClick={() => {
-                            setEditingPart(null); // Ensure we're creating, not editing
+                            setEditingPart(null);
                             setShowPartModal(true);
                         }}
                         className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
@@ -428,7 +622,6 @@ function App() {
                     <p className="text-gray-600 mb-1">
                         <span className="font-medium">Consumable:</span> {part.is_consumable ? 'Yes' : 'No'}
                     </p>
-                    {/* New: Display Images for Parts */}
                     {part.image_urls && part.image_urls.length > 0 && (
                         <div className="mt-3">
                             <span className="font-medium text-gray-600">Images:</span>
@@ -436,12 +629,12 @@ function App() {
                                 {part.image_urls.map((imageUrl, imgIndex) => (
                                     <img
                                         key={imgIndex}
-                                        src={`${API_BASE_URL}${imageUrl}`} // Prepend base URL for correct path
+                                        src={`${API_BASE_URL}${imageUrl}`}
                                         alt={`Part Image ${imgIndex + 1}`}
                                         className="w-full h-24 object-cover rounded-md shadow-sm"
                                         onError={(e) => {
-                                            e.target.onerror = null; // Prevent infinite loop
-                                            e.target.src = "https://placehold.co/100x100?text=Image+Error"; // Placeholder for broken images
+                                            e.target.onerror = null;
+                                            e.target.src = "https://placehold.co/100x100?text=Image+Error";
                                         }}
                                     />
                                 ))}
@@ -462,13 +655,26 @@ function App() {
             >
                 <PartForm
                     initialData={editingPart || {}}
-                    onSubmit={handleCreatePart} // Will be handleUpdatePart when editing
+                    onSubmit={handleCreatePart}
                     onClose={() => setShowPartModal(false)}
                 />
             </Modal>
 
             {/* Inventory Section */}
-            <h2 className="text-3xl font-bold text-gray-700 mb-6 border-b-2 pb-2">Inventory</h2>
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Inventory</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") && (
+                    <button
+                        onClick={() => {
+                            setEditingInventory(null);
+                            setShowInventoryModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Add Inventory Item
+                    </button>
+                )}
+            </div>
             {inventoryItems.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No inventory items found or unauthorized to view.</p>
             ) : (
@@ -487,8 +693,36 @@ function App() {
                 </div>
             )}
 
+            {/* Modal for Inventory Form */}
+            <Modal
+                show={showInventoryModal}
+                onClose={() => setShowInventoryModal(false)}
+                title={editingInventory ? "Edit Inventory Item" : "Add New Inventory Item"}
+            >
+                <InventoryForm
+                    initialData={editingInventory || {}}
+                    organizations={organizations}
+                    parts={parts}
+                    onSubmit={handleCreateInventory}
+                    onClose={() => setShowInventoryModal(false)}
+                />
+            </Modal>
+
             {/* Supplier Orders Section */}
-            <h2 className="text-3xl font-bold text-gray-700 mb-6 border-b-2 pb-2">Supplier Orders</h2>
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Supplier Orders</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") && (
+                    <button
+                        onClick={() => {
+                            setEditingSupplierOrder(null);
+                            setShowSupplierOrderModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Add Supplier Order
+                    </button>
+                )}
+            </div>
             {supplierOrders.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No supplier orders found or unauthorized to view.</p>
             ) : (
@@ -506,8 +740,35 @@ function App() {
                 </div>
             )}
 
+            {/* Modal for Supplier Order Form */}
+            <Modal
+                show={showSupplierOrderModal}
+                onClose={() => setShowSupplierOrderModal(false)}
+                title={editingSupplierOrder ? "Edit Supplier Order" : "Add New Supplier Order"}
+            >
+                <SupplierOrderForm
+                    initialData={editingSupplierOrder || {}}
+                    organizations={organizations}
+                    onSubmit={handleCreateSupplierOrder}
+                    onClose={() => setShowSupplierOrderModal(false)}
+                />
+            </Modal>
+
             {/* Supplier Order Items Section */}
-            <h2 className="text-3xl font-bold text-gray-700 mb-6 border-b-2 pb-2">Supplier Order Items</h2>
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Supplier Order Items</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") && (
+                    <button
+                        onClick={() => {
+                            setEditingSupplierOrderItem(null);
+                            setShowSupplierOrderItemModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Add Item to Order
+                    </button>
+                )}
+            </div>
             {supplierOrderItems.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No supplier order items found or unauthorized to view.</p>
             ) : (
@@ -517,15 +778,44 @@ function App() {
                     <h3 className="text-2xl font-semibold text-pink-700 mb-2">{getPartName(item.part_id)}</h3>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Quantity:</span> {item.quantity}</p>
                     {item.unit_price && <p className="text-gray-600 mb-1"><span className="font-medium">Unit Price:</span> ${item.unit_price}</p>}
-                    <p className="text-gray-600 mb-1"><span className="font-medium">Order ID:</span> {item.supplier_order_id}</p>
+                    <p className="text-gray-600 mb-1"><span className="font-medium">Order:</span> {getSupplierOrderDetails(item.supplier_order_id)}</p>
                     <p className="text-sm text-gray-400 mt-3">ID: {item.id}</p>
                     </div>
                 ))}
                 </div>
             )}
 
+            {/* Modal for Supplier Order Item Form */}
+            <Modal
+                show={showSupplierOrderItemModal}
+                onClose={() => setShowSupplierOrderItemModal(false)}
+                title={editingSupplierOrderItem ? "Edit Supplier Order Item" : "Add New Supplier Order Item"}
+            >
+                <SupplierOrderItemForm
+                    initialData={editingSupplierOrderItem || {}}
+                    supplierOrders={supplierOrders}
+                    parts={parts}
+                    onSubmit={handleCreateSupplierOrderItem}
+                    onClose={() => setShowSupplierOrderItemModal(false)}
+                />
+            </Modal>
+
+
             {/* Customer Orders Section */}
-            <h2 className="text-3xl font-bold text-gray-700 mb-6 border-b-2 pb-2">Customer Orders</h2>
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Customer Orders</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager" || user.role === "Customer Admin" || user.role === "Customer User") && (
+                    <button
+                        onClick={() => {
+                            setEditingCustomerOrder(null);
+                            setShowCustomerOrderModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Add Customer Order
+                    </button>
+                )}
+            </div>
             {customerOrders.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No customer orders found or unauthorized to view.</p>
             ) : (
@@ -544,8 +834,36 @@ function App() {
                 </div>
             )}
 
+            {/* Modal for Customer Order Form */}
+            <Modal
+                show={showCustomerOrderModal}
+                onClose={() => setShowCustomerOrderModal(false)}
+                title={editingCustomerOrder ? "Edit Customer Order" : "Add New Customer Order"}
+            >
+                <CustomerOrderForm
+                    initialData={editingCustomerOrder || {}}
+                    organizations={organizations}
+                    users={users}
+                    onSubmit={handleCreateCustomerOrder}
+                    onClose={() => setShowCustomerOrderModal(false)}
+                />
+            </Modal>
+
             {/* Customer Order Items Section */}
-            <h2 className="text-3xl font-bold text-gray-700 mb-6 border-b-2 pb-2">Customer Order Items</h2>
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Customer Order Items</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager" || user.role === "Customer Admin" || user.role === "Customer User") && (
+                    <button
+                        onClick={() => {
+                            setEditingCustomerOrderItem(null);
+                            setShowCustomerOrderItemModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Add Item to Customer Order
+                    </button>
+                )}
+            </div>
             {customerOrderItems.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No customer order items found or unauthorized to view.</p>
             ) : (
@@ -555,22 +873,50 @@ function App() {
                     <h3 className="text-2xl font-semibold text-teal-700 mb-2">{getPartName(item.part_id)}</h3>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Quantity:</span> {item.quantity}</p>
                     {item.unit_price && <p className="text-gray-600 mb-1"><span className="font-medium">Unit Price:</span> ${item.unit_price}</p>}
-                    <p className="text-gray-600 mb-1"><span className="font-medium">Order ID:</span> {item.customer_order_id}</p>
+                    <p className="text-gray-600 mb-1"><span className="font-medium">Order:</span> {getCustomerOrderDetails(item.customer_order_id)}</p>
                     <p className="text-sm text-gray-400 mt-3">ID: {item.id}</p>
                     </div>
                 ))}
                 </div>
             )}
 
+            {/* Modal for Customer Order Item Form */}
+            <Modal
+                show={showCustomerOrderItemModal}
+                onClose={() => setShowCustomerOrderItemModal(false)}
+                title={editingCustomerOrderItem ? "Edit Customer Order Item" : "Add New Customer Order Item"}
+            >
+                <CustomerOrderItemForm
+                    initialData={editingCustomerOrderItem || {}}
+                    customerOrders={customerOrders}
+                    parts={parts}
+                    onSubmit={handleCreateCustomerOrderItem}
+                    onClose={() => setShowCustomerOrderItemModal(false)}
+                />
+            </Modal>
+
             {/* Part Usage Section */}
-            <h2 className="text-3xl font-bold text-gray-700 mb-6 border-b-2 pb-2">Part Usage</h2>
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Part Usage</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Customer Admin" || user.role === "Customer User") && (
+                    <button
+                        onClick={() => {
+                            setEditingPartUsage(null);
+                            setShowPartUsageModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Record Part Usage
+                    </button>
+                )}
+            </div>
             {partUsages.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No part usage records found or unauthorized to view.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {partUsages.map((usage) => (
                     <div key={usage.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-                    <h3 className="text-2xl font-semibold text-fuchsia-700 mb-2">{getPartName(usage.part_id)} used by {getOrganizationName(usage.customer_organization_id)}</h3>
+                    <h3 className="text-2xl font-semibold text-fuchsia-700 mb-2">{getPartName(usage.part_id)} used by {getCustomerOrganizationDetails(usage.customer_organization_id)}</h3>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Quantity Used:</span> {usage.quantity_used}</p>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Usage Date:</span> {new Date(usage.usage_date).toLocaleDateString()}</p>
                     {usage.machine_id && <p className="text-gray-600 mb-1"><span className="font-medium">Machine ID:</span> {usage.machine_id}</p>}
@@ -580,6 +926,22 @@ function App() {
                 ))}
                 </div>
             )}
+
+            {/* Modal for Part Usage Form */}
+            <Modal
+                show={showPartUsageModal}
+                onClose={() => setShowPartUsageModal(false)}
+                title={editingPartUsage ? "Edit Part Usage" : "Record New Part Usage"}
+            >
+                <PartUsageForm
+                    initialData={editingPartUsage || {}}
+                    organizations={organizations} // Pass organizations for dropdowns
+                    parts={parts} // Pass parts for dropdown
+                    users={users} // Pass users for dropdown
+                    onSubmit={handleCreatePartUsage}
+                    onClose={() => setShowPartUsageModal(false)}
+                />
+            </Modal>
             </>
         )}
         </div>
