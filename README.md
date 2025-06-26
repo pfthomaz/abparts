@@ -1,6 +1,6 @@
-# ABParts Codebase Analysis
+# ABParts App Analysis
 
-This document provides an extensive analysis of the ABParts codebase from the perspectives of a Software Architect, Software Developer, and Product Manager.
+This document provides an extensive analysis of the ABParts application from the perspectives of a Software Architect, Software Developer, and Product Manager.
 
 ## Table of Contents
 
@@ -44,7 +44,7 @@ graph TD
     B -->|API Calls| C{FastAPI Backend API};
     C -->|SQLAlchemy ORM| D[(PostgreSQL Database)];
     C -->|Redis Client| E[(Redis Cache/Broker)];
-    C -->|Celery (Async Tasks)| E;
+    C -- "Celery (Async Tasks)" --> E;
 
     subgraph "User's Machine"
         A
