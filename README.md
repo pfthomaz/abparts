@@ -310,16 +310,16 @@ The application is designed to be deployed using Docker and Docker Compose.
 ```mermaid
 graph TD
     subgraph "Docker Host"
-        U[User/Browser] -->|Port 3000| WEB(React Dev Server);
-        U -->|Port 8000| API(FastAPI Backend);
-        U -->|Port 8080| PGADMIN(PgAdmin);
+        U[User/Browser] -- "Port 3000" --> WEB(React Dev Server);
+        U -- "Port 8000" --> API(FastAPI Backend);
+        U -- "Port 8080" --> PGADMIN(PgAdmin);
 
-        WEB -->|HTTP| API;
-        API -->|TCP| DB(PostgreSQL);
-        API -->|TCP| REDIS(Redis);
-        CELERY(Celery Worker) -->|TCP| DB;
-        CELERY -->|TCP| REDIS;
-        PGADMIN -->|TCP| DB;
+        WEB -- "HTTP" --> API;
+        API -- "TCP" --> DB(PostgreSQL);
+        API -- "TCP" --> REDIS(Redis);
+        CELERY(Celery Worker) -- "TCP" --> DB;
+        CELERY -- "TCP" --> REDIS;
+        PGADMIN -- "TCP" --> DB;
 
         subgraph "Docker Network"
             WEB;
