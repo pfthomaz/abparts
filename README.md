@@ -133,7 +133,7 @@ graph TD
         G --> H{Backend API};
         C --> E;
         C --> G;
-        I[State Management (useState, useEffect)] --> E;
+        I[State Management - React Hooks] --> E;
         I --> F;
         J[Tailwind CSS] --> E;
         J --> F;
@@ -232,7 +232,6 @@ erDiagram
         UUID part_id FK
         integer current_stock
         integer minimum_stock_recommendation
-        Unique(organization_id, part_id)
     }
     PART_USAGE {
         UUID id PK
