@@ -14,6 +14,7 @@ import SupplierOrderItemForm from './components/SupplierOrderItemForm'; // Impor
 import CustomerOrderForm from './components/CustomerOrderForm'; // Import CustomerOrderForm component
 import CustomerOrderItemForm from './components/CustomerOrderItemForm'; // Import CustomerOrderItemForm component
 import PartUsageForm from './components/PartUsageForm'; // New: Import PartUsageForm component
+import MachineForm from './components/MachineForm'; // Import MachineForm component
 
 function App() {
     const { token, user, logout, loadingUser } = useAuth();
@@ -27,6 +28,7 @@ function App() {
     const [customerOrders, setCustomerOrders] = useState([]);
     const [customerOrderItems, setCustomerOrderItems] = useState([]);
     const [partUsages, setPartUsages] = useState([]);
+    const [machines, setMachines] = useState([]); // State for machines
     
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState(null);
@@ -50,6 +52,8 @@ function App() {
     const [editingCustomerOrderItem, setEditingCustomerOrderItem] = useState(null);
     const [showPartUsageModal, setShowPartUsageModal] = useState(false); // New: for Part Usage Form
     const [editingPartUsage, setEditingPartUsage] = useState(null); // New: for Part Usage editing
+    const [showMachineModal, setShowMachineModal] = useState(false); // For Machine Form
+    const [editingMachine, setEditingMachine] = useState(null); // For Machine editing
 
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
@@ -66,6 +70,7 @@ function App() {
         setCustomerOrders([]);
         setCustomerOrderItems([]);
         setPartUsages([]);
+        setMachines([]); // Reset machines
         setLoadingData(false);
         return;
         }
@@ -177,6 +182,18 @@ function App() {
         }
         const partUsagesData = await partUsagesResponse.json();
         setPartUsages(partUsagesData);
+
+        // --- Fetch Machines ---
+        const machinesResponse = await fetch(`${API_BASE_URL}/machines`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        if (!machinesResponse.ok) {
+            throw new Error(`Failed to fetch machines: ${machinesResponse.status}`);
+        }
+        const machinesData = await machinesResponse.json();
+        setMachines(machinesData);
 
 
         } catch (err) {
@@ -415,6 +432,31 @@ function App() {
         } catch (err) {
             console.error("Error creating part usage:", err);
             throw err;
+        }
+    };
+
+    // Handler for creating a new machine
+    const handleCreateMachine = async (machineData) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/machines`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(machineData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh all data, including machines
+            setShowMachineModal(false); // Close the machine modal
+        } catch (err) {
+            console.error("Error creating machine:", err);
+            throw err; // Re-throw to be caught by the form's error handling
         }
     };
 
@@ -940,6 +982,51 @@ function App() {
                     users={users} // Pass users for dropdown
                     onSubmit={handleCreatePartUsage}
                     onClose={() => setShowPartUsageModal(false)}
+                />
+            </Modal>
+
+            {/* Machines Section */}
+            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+                <h2 className="text-3xl font-bold text-gray-700">Machines</h2>
+                {(user.role === "Oraseas Admin" || user.role === "Customer Admin") && ( // Oraseas Admin or Customer Admin can add machines
+                    <button
+                        onClick={() => {
+                            setEditingMachine(null);
+                            setShowMachineModal(true);
+                        }}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Add Machine
+                    </button>
+                )}
+            </div>
+            {machines.length === 0 ? (
+                <p className="text-center text-gray-600 text-lg">No machines found or unauthorized to view.</p>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {machines.map((machine) => (
+                    <div key={machine.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 className="text-2xl font-semibold text-cyan-700 mb-2">{machine.name}</h3>
+                    <p className="text-gray-600 mb-1"><span className="font-medium">Model:</span> {machine.model_type}</p>
+                    <p className="text-gray-600 mb-1"><span className="font-medium">Serial #:</span> {machine.serial_number}</p>
+                    <p className="text-gray-600 mb-1"><span className="font-medium">Organization:</span> {getOrganizationName(machine.organization_id)}</p>
+                    <p className="text-sm text-gray-400 mt-3">ID: {machine.id}</p>
+                    </div>
+                ))}
+                </div>
+            )}
+
+            {/* Modal for Machine Form */}
+            <Modal
+                show={showMachineModal}
+                onClose={() => setShowMachineModal(false)}
+                title={editingMachine ? "Edit Machine" : "Add New Machine"}
+            >
+                <MachineForm
+                    initialData={editingMachine || {}}
+                    organizations={organizations}
+                    onSubmit={handleCreateMachine}
+                    onClose={() => setShowMachineModal(false)}
                 />
             </Modal>
             </>
