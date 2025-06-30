@@ -1,5 +1,5 @@
 // frontend/src/components/StockAdjustmentForm.js
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect is imported
 import { useAuth } from '../AuthContext';
 
 const StockAdjustmentReason = {
@@ -14,12 +14,23 @@ const StockAdjustmentReason = {
 };
 
 const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL, parts, organizations }) => {
-    const { token } = useContext(useAuth);
+    const { token } = useAuth();
     const [quantityAdjusted, setQuantityAdjusted] = useState('');
     const [reasonCode, setReasonCode] = useState(StockAdjustmentReason.STOCKTAKE_DISCREPANCY);
     const [notes, setNotes] = useState('');
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    // useEffect to reset form fields when the inventoryItem prop changes,
+    // ensuring the form is ready for a new adjustment on the selected item.
+    useEffect(() => {
+        if (inventoryItem) {
+            setQuantityAdjusted(''); // Reset quantity
+            setReasonCode(StockAdjustmentReason.STOCKTAKE_DISCREPANCY); // Reset to default reason
+            setNotes(''); // Reset notes
+            setError(''); // Clear any previous form errors
+        }
+    }, [inventoryItem]); // Dependency array: re-run if inventoryItem changes
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -38,7 +49,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             setSubmitting(false);
             return;
         }
-
+        
         if (!reasonCode) {
             setError("Reason code is required.");
             setSubmitting(false);
@@ -69,7 +80,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             const result = await response.json();
             console.log('Stock adjustment successful:', result);
             if (onSuccess) {
-                onSuccess(result);
+                onSuccess(result); 
             }
         } catch (err) {
             console.error("Stock adjustment error:", err);
