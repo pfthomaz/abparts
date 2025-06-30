@@ -1,6 +1,6 @@
 // frontend/src/components/StockAdjustmentForm.js
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../AuthContext';
 
 const StockAdjustmentReason = {
     STOCKTAKE_DISCREPANCY: "Stocktake Discrepancy",
@@ -14,20 +14,12 @@ const StockAdjustmentReason = {
 };
 
 const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL, parts, organizations }) => {
-    const { token } = useContext(AuthContext);
+    const { token } = useAuth();
     const [quantityAdjusted, setQuantityAdjusted] = useState('');
     const [reasonCode, setReasonCode] = useState(StockAdjustmentReason.STOCKTAKE_DISCREPANCY);
     const [notes, setNotes] = useState('');
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
-
-    // Pre-fill if editing or for context, though this form is for new adjustments.
-    // useEffect(() => {
-    //     if (inventoryItem) {
-    //         // This form is primarily for creating new adjustments,
-    //         // so pre-filling might not be standard unless it's an "edit adjustment" form
-    //     }
-    // }, [inventoryItem]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -77,7 +69,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             const result = await response.json();
             console.log('Stock adjustment successful:', result);
             if (onSuccess) {
-                onSuccess(result); // Pass back the new adjustment data
+                onSuccess(result);
             }
         } catch (err) {
             console.error("Stock adjustment error:", err);

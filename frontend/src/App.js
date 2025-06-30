@@ -16,6 +16,7 @@ import CustomerOrderItemForm from './components/CustomerOrderItemForm'; // Impor
 import PartUsageForm from './components/PartUsageForm'; // New: Import PartUsageForm component
 import MachineForm from './components/MachineForm'; // Import MachineForm component
 import StockAdjustmentForm from './components/StockAdjustmentForm'; // New: Import StockAdjustmentForm
+import StocktakeWorksheetGenerator from './components/StocktakeWorksheetGenerator'; // New: Import StocktakeWorksheetGenerator
 
 function App() {
     const { token, user, logout, loadingUser } = useAuth();
@@ -58,6 +59,9 @@ function App() {
     const [showStockAdjustmentModal, setShowStockAdjustmentModal] = useState(false); // New: for Stock Adjustment Form
     const [selectedInventoryItemForAdjustment, setSelectedInventoryItemForAdjustment] = useState(null); // New: for Stock Adjustment
     const [selectedInventoryOrgFilter, setSelectedInventoryOrgFilter] = useState(''); // New: for inventory org filter
+    const [showStocktakeSheetGenerator, setShowStocktakeSheetGenerator] = useState(false); // New: for stocktake worksheet
+    const [stocktakeWorksheetData, setStocktakeWorksheetData] = useState([]); // New: to hold worksheet data
+    const [loadingStocktakeWorksheet, setLoadingStocktakeWorksheet] = useState(false); // New: loading state for worksheet
 
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
@@ -720,6 +724,17 @@ function App() {
                         Add Inventory Item
                     </button>
                 )}
+                {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") && (
+                    <button
+                        onClick={() => {
+                            setStocktakeWorksheetData([]); // Clear previous data
+                            setShowStocktakeSheetGenerator(true);
+                        }}
+                        className="ml-4 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                    >
+                        Generate Stocktake Worksheet
+                    </button>
+                )}
             </div>
             {/* Filter for Inventory by Organization */}
             <div className="mb-6">
@@ -1057,6 +1072,93 @@ function App() {
                     onClose={() => setShowPartUsageModal(false)}
                 />
             </Modal>
+
+            {/* Modal for Stocktake Worksheet Generator */}
+            <Modal
+                show={showStocktakeSheetGenerator}
+                onClose={() => setShowStocktakeSheetGenerator(false)}
+                title="Generate Stocktake Worksheet"
+                isLarge={stocktakeWorksheetData && stocktakeWorksheetData.length > 0} // Make modal larger if data is shown
+            >
+                <div className="p-4">
+                    <StocktakeWorksheetGenerator
+                        organizations={organizations}
+                        API_BASE_URL={API_BASE_URL}
+                        onWorksheetGenerated={setStocktakeWorksheetData}
+                        onLoadingChange={setLoadingStocktakeWorksheet}
+                    />
+
+                    {loadingStocktakeWorksheet && <p className="mt-4 text-center">Loading worksheet...</p>}
+
+                    {!loadingStocktakeWorksheet && stocktakeWorksheetData && stocktakeWorksheetData.length > 0 && (
+                        <div className="mt-6">
+                            <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-xl font-semibold">Generated Worksheet</h4>
+                                <button
+                                    onClick={() => {
+                                        // Simpler filename for now, will use selectedInventoryOrgFilter if available and matches current data context
+                                        // This assumes stocktakeWorksheetData is generated for the currently selected filter,
+                                        // or we need a more robust way to track which org the data is for.
+                                        // For US-INV003, the worksheet is generated for a specific org chosen in its own UI.
+                                        // We need to retrieve that specific org ID.
+                                        // For now, let's use a generic name or find it if possible.
+                                        // The StocktakeWorksheetGenerator component holds selectedOrgId. We'd need to lift state or pass it back.
+
+                                        // To make this work without major refactor NOW, we'll use a generic name.
+                                        // A better solution would be to have selectedOrgId for the worksheet available in App.js state.
+                                        const orgName = "Stocktake"; // Generic name
+                                        const date = new Date().toISOString().split('T')[0];
+
+                                        let csvContent = "data:text/csv;charset=utf-8,";
+                                        csvContent += "Part Number,Part Name,System Quantity,Counted Quantity\r\n"; // Headers
+
+                                        stocktakeWorksheetData.forEach(item => {
+                                            csvContent += `${item.part_number},"${item.part_name.replace(/"/g, '""')}",${item.system_quantity},\r\n`; // Last column empty for "Counted Quantity"
+                                        });
+
+                                        const encodedUri = encodeURI(csvContent);
+                                        const link = document.createElement("a");
+                                        link.setAttribute("href", encodedUri);
+                                        link.setAttribute("download", `stocktake_worksheet_${orgName}_${date}.csv`);
+                                        document.body.appendChild(link); // Required for FF
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition duration-150 ease-in-out"
+                                >
+                                    Export to CSV
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Part #</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Part Name</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">System Qty</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-l-2 border-gray-300 bg-gray-200">Counted Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {stocktakeWorksheetData.map((item) => (
+                                            <tr key={item.part_id}>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.part_number}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.part_name}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{item.system_quantity}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap border-l-2 border-gray-300 bg-gray-50"> {/* Empty cell for manual entry */} </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                    {!loadingStocktakeWorksheet && stocktakeWorksheetData && stocktakeWorksheetData.length === 0 && (
+                        <p className="mt-4 text-center text-gray-600">No inventory items found for the selected organization, or worksheet not yet generated.</p>
+                    )}
+                </div>
+            </Modal>
+
 
             {/* Machines Section */}
             <div className="flex justify-between items-center mb-6 border-b-2 pb-2">

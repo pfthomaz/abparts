@@ -109,3 +109,37 @@ async def delete_inventory_item(
     if not result:
         raise HTTPException(status_code=400, detail="Failed to delete inventory item")
     return result
+
+
+@router.get("/worksheet/stocktake", response_model=List[schemas.StocktakeWorksheetItemResponse])
+async def get_stocktake_worksheet(
+    organization_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
+):
+    """
+    Generate a stocktake worksheet for a specific organization.
+    Lists parts with their current system stock levels.
+    """
+    # Validate organization_id
+    organization = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Authorization: Oraseas Inventory Manager should only be able to generate for Oraseas EE.
+    # Oraseas Admin can generate for any.
+    if current_user.role == "Oraseas Inventory Manager":
+        user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+        # Check if the inventory manager is part of Oraseas EE AND the request is for Oraseas EE.
+        if not (user_org and user_org.name == "Oraseas EE" and organization.name == "Oraseas EE"):
+            raise HTTPException(status_code=403, detail="Oraseas Inventory Manager can only generate worksheets for Oraseas EE.")
+
+    # For Oraseas Admin, no additional check needed as they can access any org.
+
+    worksheet_items = crud.inventory.get_stocktake_worksheet_items(db, organization_id=organization_id)
+    if not worksheet_items:
+        # It's not an error if there are no items, just return an empty list.
+        # Client can decide how to present this (e.g., "No inventory items found for this organization").
+        pass # Fall through to return empty list
+
+    return worksheet_items
