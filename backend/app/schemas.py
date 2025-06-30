@@ -279,3 +279,14 @@ class StockAdjustmentResponse(StockAdjustmentBase, BaseSchema):
     # user: Optional[UserResponse] = None # Example: if you want to nest user details
     # inventory_item: Optional[InventoryResponse] = None # Example
     pass
+
+
+# --- Stocktake Worksheet Schemas (New!) ---
+class StocktakeWorksheetItemResponse(BaseModel):
+    part_id: uuid.UUID # Keep part_id for potential future use on frontend
+    part_number: str
+    part_name: str
+    system_quantity: int
+
+    class Config:
+        from_attributes = True # Allow ORM models to be converted (though this is a custom construction)

@@ -21,14 +21,6 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // Pre-fill if editing or for context, though this form is for new adjustments.
-    // useEffect(() => {
-    //     if (inventoryItem) {
-    //         // This form is primarily for creating new adjustments,
-    //         // so pre-filling might not be standard unless it's an "edit adjustment" form
-    //     }
-    // }, [inventoryItem]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -77,7 +69,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             const result = await response.json();
             console.log('Stock adjustment successful:', result);
             if (onSuccess) {
-                onSuccess(result); // Pass back the new adjustment data
+                onSuccess(result);
             }
         } catch (err) {
             console.error("Stock adjustment error:", err);
