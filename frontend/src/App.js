@@ -15,6 +15,7 @@ import CustomerOrderForm from './components/CustomerOrderForm'; // Import Custom
 import CustomerOrderItemForm from './components/CustomerOrderItemForm'; // Import CustomerOrderItemForm component
 import PartUsageForm from './components/PartUsageForm'; // New: Import PartUsageForm component
 import MachineForm from './components/MachineForm'; // Import MachineForm component
+import StockAdjustmentForm from './components/StockAdjustmentForm'; // New: Import StockAdjustmentForm
 
 function App() {
     const { token, user, logout, loadingUser } = useAuth();
@@ -54,6 +55,9 @@ function App() {
     const [editingPartUsage, setEditingPartUsage] = useState(null); // New: for Part Usage editing
     const [showMachineModal, setShowMachineModal] = useState(false); // For Machine Form
     const [editingMachine, setEditingMachine] = useState(null); // For Machine editing
+    const [showStockAdjustmentModal, setShowStockAdjustmentModal] = useState(false); // New: for Stock Adjustment Form
+    const [selectedInventoryItemForAdjustment, setSelectedInventoryItemForAdjustment] = useState(null); // New: for Stock Adjustment
+    const [selectedInventoryOrgFilter, setSelectedInventoryOrgFilter] = useState(''); // New: for inventory org filter
 
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
@@ -703,7 +707,7 @@ function App() {
             </Modal>
 
             {/* Inventory Section */}
-            <div className="flex justify-between items-center mb-6 border-b-2 pb-2">
+            <div className="flex justify-between items-center mb-2 border-b-2 pb-2"> {/* Reduced mb for filter */}
                 <h2 className="text-3xl font-bold text-gray-700">Inventory</h2>
                 {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") && (
                     <button
@@ -717,19 +721,60 @@ function App() {
                     </button>
                 )}
             </div>
+            {/* Filter for Inventory by Organization */}
+            <div className="mb-6">
+                <label htmlFor="inventoryOrgFilter" className="block text-sm font-medium text-gray-700">
+                    Filter by Organization/Location:
+                </label>
+                <select
+                    id="inventoryOrgFilter"
+                    name="inventoryOrgFilter"
+                    value={selectedInventoryOrgFilter}
+                    onChange={(e) => setSelectedInventoryOrgFilter(e.target.value)}
+                    className="mt-1 block w-full md:w-1/3 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                >
+                    <option value="">All Organizations</option>
+                    {organizations.map((org) => (
+                        <option key={org.id} value={org.id}>
+                            {org.name} ({org.type})
+                        </option>
+                    ))}
+                </select>
+            </div>
+
             {inventoryItems.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No inventory items found or unauthorized to view.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {inventoryItems.map((item) => (
+                {inventoryItems
+                    .filter(item => !selectedInventoryOrgFilter || item.organization_id === selectedInventoryOrgFilter)
+                    .map((item) => (
                     <div key={item.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
                     <h3 className="text-2xl font-semibold text-orange-700 mb-2">
-                        {getPartName(item.part_id)} (in {getOrganizationName(item.organization_id)})
+                        {getPartName(item.part_id)}
                     </h3>
+                    <p className="text-gray-600 mb-1"><span className="font-medium">Location:</span> {getOrganizationName(item.organization_id)}</p>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Current Stock:</span> {item.current_stock}</p>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Min Stock Rec:</span> {item.minimum_stock_recommendation}</p>
                     {item.reorder_threshold_set_by && <p className="text-gray-600 mb-1"><span className="font-medium">Set By:</span> {item.reorder_threshold_set_by}</p>}
                     <p className="text-sm text-gray-400 mt-3">ID: {item.id}</p>
+                    {/* Adjust Stock Button Logic:
+                        - Oraseas Admin: Can adjust any stock.
+                        - Oraseas Inventory Manager: Can adjust stock for "Oraseas EE" organization.
+                    */}
+                    { (user.role === "Oraseas Admin" ||
+                       (user.role === "Oraseas Inventory Manager" && organizations.find(o => o.id === item.organization_id)?.name === "Oraseas EE")
+                      ) && (
+                        <button
+                            onClick={() => {
+                                setSelectedInventoryItemForAdjustment(item);
+                                setShowStockAdjustmentModal(true);
+                            }}
+                            className="mt-3 bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+                        >
+                            Adjust Stock
+                        </button>
+                    )}
                     </div>
                 ))}
                 </div>
@@ -749,6 +794,34 @@ function App() {
                     onClose={() => setShowInventoryModal(false)}
                 />
             </Modal>
+
+            {/* Modal for Stock Adjustment Form */}
+            {selectedInventoryItemForAdjustment && (
+                <Modal
+                    show={showStockAdjustmentModal}
+                    onClose={() => {
+                        setShowStockAdjustmentModal(false);
+                        setSelectedInventoryItemForAdjustment(null);
+                    }}
+                    title={`Adjust Stock for ${selectedInventoryItemForAdjustment.part?.name || getPartName(selectedInventoryItemForAdjustment.part_id)}`}
+                >
+                    <StockAdjustmentForm
+                        inventoryItem={selectedInventoryItemForAdjustment}
+                        onSuccess={() => {
+                            setShowStockAdjustmentModal(false);
+                            setSelectedInventoryItemForAdjustment(null);
+                            fetchData(); // Refresh inventory data
+                        }}
+                        onCancel={() => {
+                            setShowStockAdjustmentModal(false);
+                            setSelectedInventoryItemForAdjustment(null);
+                        }}
+                        API_BASE_URL={API_BASE_URL}
+                        parts={parts} // Pass parts list
+                        organizations={organizations} // Pass organizations list
+                    />
+                </Modal>
+            )}
 
             {/* Supplier Orders Section */}
             <div className="flex justify-between items-center mb-6 border-b-2 pb-2">

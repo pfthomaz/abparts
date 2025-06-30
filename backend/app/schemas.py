@@ -258,3 +258,24 @@ class PartUsageUpdate(PartUsageBase):
 class PartUsageResponse(PartUsageBase, BaseSchema):
     pass
 
+
+# --- Stock Adjustment Schemas (New!) ---
+class StockAdjustmentBase(BaseModel):
+    inventory_id: uuid.UUID
+    user_id: uuid.UUID # Will be set from current_user in the router
+    adjustment_date: datetime = Field(default_factory=datetime.now)
+    quantity_adjusted: int
+    reason_code: str # Should match StockAdjustmentReason enum values
+    notes: Optional[str] = None
+
+class StockAdjustmentCreate(BaseModel): # Separate from Base to not include user_id from request body
+    # inventory_id will come from path parameter
+    quantity_adjusted: int
+    reason_code: str # Should match StockAdjustmentReason enum values
+    notes: Optional[str] = None
+
+class StockAdjustmentResponse(StockAdjustmentBase, BaseSchema):
+    # Optionally, include nested user and inventory item details
+    # user: Optional[UserResponse] = None # Example: if you want to nest user details
+    # inventory_item: Optional[InventoryResponse] = None # Example
+    pass
