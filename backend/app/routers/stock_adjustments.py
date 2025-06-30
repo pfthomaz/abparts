@@ -18,15 +18,15 @@ router = APIRouter(
 # Endpoint to create a stock adjustment for a specific inventory item
 @router.post("/inventory/{inventory_id}", response_model=schemas.StockAdjustmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_stock_adjustment(
-    inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item to adjust"),
     adjustment_in: schemas.StockAdjustmentCreate,
+    inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item to adjust"),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
 ):
     """
     Create a new stock adjustment for a given inventory item.
-    - **inventory_id**: UUID of the inventory item.
     - **adjustment_in**: Data for the stock adjustment.
+    - **inventory_id**: UUID of the inventory item.
     \f
     :param inventory_id: The ID of the inventory item.
     :param adjustment_in: The stock adjustment creation schema.
@@ -38,7 +38,7 @@ async def create_new_stock_adjustment(
     # For simplicity, we assume Oraseas personnel can manage any inventory.
     # A more detailed check might involve ensuring the inventory's organization_id is Oraseas EE
     # or if they have specific permissions for other organizations.
-
+    
     inventory_item = crud.inventory.get_inventory_item(db, inventory_id=inventory_id)
     if not inventory_item:
         raise HTTPException(status_code=404, detail=f"Inventory item with ID {inventory_id} not found.")
@@ -92,7 +92,7 @@ async def list_adjustments_for_inventory_item(
         can_view = True
     elif inventory_item.organization_id == current_user.organization_id:
         can_view = True
-
+    
     if not can_view:
         raise HTTPException(status_code=403, detail="Not authorized to view adjustments for this inventory item.")
 
@@ -130,10 +130,10 @@ async def get_specific_stock_adjustment(
         can_view = True
     elif inventory_item.organization_id == current_user.organization_id:
         can_view = True
-
+        
     if not can_view:
         raise HTTPException(status_code=403, detail="Not authorized to view this stock adjustment.")
-
+        
     return adjustment
 
 # Endpoint for Oraseas Admin to see ALL stock adjustments (for audit purposes)

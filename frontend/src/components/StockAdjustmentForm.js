@@ -1,6 +1,6 @@
 // frontend/src/components/StockAdjustmentForm.js
 import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../AuthContext';
+import { useAuth } from '../AuthContext';
 
 const StockAdjustmentReason = {
     STOCKTAKE_DISCREPANCY: "Stocktake Discrepancy",
@@ -14,7 +14,7 @@ const StockAdjustmentReason = {
 };
 
 const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL, parts, organizations }) => {
-    const { token } = useContext(AuthContext);
+    const { token } = useContext(useAuth);
     const [quantityAdjusted, setQuantityAdjusted] = useState('');
     const [reasonCode, setReasonCode] = useState(StockAdjustmentReason.STOCKTAKE_DISCREPANCY);
     const [notes, setNotes] = useState('');
