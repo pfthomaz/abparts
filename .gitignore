@@ -23,7 +23,6 @@ backend/app/instance/ # Flask specific, if used for persistence
 
 # Docker
 .env
-ngrok/
 # IMPORTANT: Do NOT commit your .env file which contains secrets
 !/.env.example 
 # If you want to keep an example .env file without actual secrets
