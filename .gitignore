@@ -10,17 +10,20 @@ yarn-debug.log*
 yarn-error.log*
 
 # Python
-backend/app/__pycache__/
+**/__pycache__/ # Ignore all __pycache__ directories
+**/*.pyc # Ignore all .pyc files
+
 backend/app/.venv/
 backend/app/env/
-backend/app/*.pyc
+# backend/app/*.pyc # Covered by **/*.pyc
 backend/app/*.log
 backend/app/.Python
 backend/app/.ipynb_checkpoints/ # If you use Jupyter notebooks
 backend/app/instance/ # Flask specific, if used for persistence
 
 # Docker
-.env 
+.env
+ngrok/
 # IMPORTANT: Do NOT commit your .env file which contains secrets
 !/.env.example 
 # If you want to keep an example .env file without actual secrets
