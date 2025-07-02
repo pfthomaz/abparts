@@ -63,8 +63,13 @@ function App() {
     const [stocktakeWorksheetData, setStocktakeWorksheetData] = useState([]); // New: to hold worksheet data
     const [loadingStocktakeWorksheet, setLoadingStocktakeWorksheet] = useState(false); // New: loading state for worksheet
 
-
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
+    // --- Modal Openers ---
+    const openEditPartModal = (partToEdit) => {
+        setEditingPart(partToEdit);
+        setShowPartModal(true);
+    };
 
     // Effect to fetch data when token or user changes
     const fetchData = useCallback(async () => {
@@ -243,6 +248,31 @@ function App() {
         }
     };
 
+    // Handler for deleting a part
+    const handleDeletePart = async (partId) => {
+        if (!window.confirm("Are you sure you want to delete this part? This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/parts/${partId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok && response.status !== 204) { // 204 is also a success for DELETE
+                const errorData = await response.json().catch(() => ({ detail: "Failed to delete part and parse error response." }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error deleting part:", err);
+            setError(err.message || "Failed to delete part. Please try again."); // Set error for display
+        }
+    };
+
     // Handler for creating a new user
     const handleCreateUser = async (userData) => {
         try {
@@ -285,11 +315,43 @@ function App() {
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
-            await fetchData();
-            setShowPartModal(false);
+            await fetchData(); // Refresh data
+            setShowPartModal(false); // Close modal
         } catch (err) {
             console.error("Error creating part:", err);
-            throw err;
+            throw err; // Re-throw to be caught by PartForm
+        }
+    };
+
+    // Handler for updating an existing part
+    const handleUpdatePart = async (partDataFromForm) => {
+        if (!editingPart || !editingPart.id) {
+            console.error("No part selected for editing or missing ID.");
+            throw new Error("No part selected for editing or missing ID.");
+        }
+        try {
+            // The partDataFromForm contains all form fields, including image_urls
+            // which PartForm prepares (existing + new uploads).
+            const response = await fetch(`${API_BASE_URL}/parts/${editingPart.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(partDataFromForm), // Send data from the form
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            setShowPartModal(false);
+            setEditingPart(null);
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error updating part:", err);
+            throw err; // Re-throw to be caught by PartForm
         }
     };
 
@@ -692,6 +754,22 @@ function App() {
                         </div>
                     )}
                     <p className="text-sm text-gray-400 mt-3">ID: {part.id}</p>
+                    {user.role === "Oraseas Admin" && (
+                        <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditPartModal(part)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDeletePart(part.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                     </div>
                 ))}
                 </div>
@@ -705,8 +783,11 @@ function App() {
             >
                 <PartForm
                     initialData={editingPart || {}}
-                    onSubmit={handleCreatePart}
-                    onClose={() => setShowPartModal(false)}
+                    onSubmit={editingPart ? handleUpdatePart : handleCreatePart}
+                    onClose={() => {
+                        setShowPartModal(false);
+                        setEditingPart(null); // Clear editing state on close
+                    }}
                 />
             </Modal>
 
