@@ -62,6 +62,9 @@ function App() {
     const [showStocktakeSheetGenerator, setShowStocktakeSheetGenerator] = useState(false); // New: for stocktake worksheet
     const [stocktakeWorksheetData, setStocktakeWorksheetData] = useState([]); // New: to hold worksheet data
     const [loadingStocktakeWorksheet, setLoadingStocktakeWorksheet] = useState(false); // New: loading state for worksheet
+    const [countedQuantities, setCountedQuantities] = useState({}); // New: for counted quantities { inventory_id: count }
+    const [showStocktakeConfirmation, setShowStocktakeConfirmation] = useState(false); // New: for confirmation step
+    const [itemsToAdjust, setItemsToAdjust] = useState([]); // New: items with variance for confirmation
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -1165,43 +1168,40 @@ function App() {
                     <StocktakeWorksheetGenerator
                         organizations={organizations}
                         API_BASE_URL={API_BASE_URL}
-                        onWorksheetGenerated={setStocktakeWorksheetData}
+                        onWorksheetGenerated={(data) => {
+                            setStocktakeWorksheetData(data);
+                            setCountedQuantities({}); // Reset counted quantities when new worksheet is generated
+                            setShowStocktakeConfirmation(false); // Hide confirmation if new worksheet generated
+                            setItemsToAdjust([]);
+                        }}
                         onLoadingChange={setLoadingStocktakeWorksheet}
                     />
 
                     {loadingStocktakeWorksheet && <p className="mt-4 text-center">Loading worksheet...</p>}
 
-                    {!loadingStocktakeWorksheet && stocktakeWorksheetData && stocktakeWorksheetData.length > 0 && (
+                    {/* View for entering counted quantities */}
+                    {!loadingStocktakeWorksheet && !showStocktakeConfirmation && stocktakeWorksheetData && stocktakeWorksheetData.length > 0 && (
                         <div className="mt-6">
                             <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-xl font-semibold">Generated Worksheet</h4>
+                                <h4 className="text-xl font-semibold">Enter Counted Quantities</h4>
                                 <button
                                     onClick={() => {
-                                        // Simpler filename for now, will use selectedInventoryOrgFilter if available and matches current data context
-                                        // This assumes stocktakeWorksheetData is generated for the currently selected filter,
-                                        // or we need a more robust way to track which org the data is for.
-                                        // For US-INV003, the worksheet is generated for a specific org chosen in its own UI.
-                                        // We need to retrieve that specific org ID.
-                                        // For now, let's use a generic name or find it if possible.
-                                        // The StocktakeWorksheetGenerator component holds selectedOrgId. We'd need to lift state or pass it back.
-
-                                        // To make this work without major refactor NOW, we'll use a generic name.
-                                        // A better solution would be to have selectedOrgId for the worksheet available in App.js state.
-                                        const orgName = "Stocktake"; // Generic name
+                                        const orgName = "Stocktake";
                                         const date = new Date().toISOString().split('T')[0];
-
                                         let csvContent = "data:text/csv;charset=utf-8,";
-                                        csvContent += "Part Number,Part Name,System Quantity,Counted Quantity\r\n"; // Headers
+                                        csvContent += "Part Number,Part Name,System Quantity,Counted Quantity,Variance\r\n"; // Headers
 
                                         stocktakeWorksheetData.forEach(item => {
-                                            csvContent += `${item.part_number},"${item.part_name.replace(/"/g, '""')}",${item.system_quantity},\r\n`; // Last column empty for "Counted Quantity"
+                                            const countedQty = countedQuantities[item.inventory_id] || '';
+                                            const variance = (countedQty === '' || isNaN(parseInt(countedQty))) ? '' : item.system_quantity - parseInt(countedQty);
+                                            csvContent += `${item.part_number},"${item.part_name.replace(/"/g, '""')}",${item.system_quantity},${countedQty},${variance}\r\n`;
                                         });
 
                                         const encodedUri = encodeURI(csvContent);
                                         const link = document.createElement("a");
                                         link.setAttribute("href", encodedUri);
                                         link.setAttribute("download", `stocktake_worksheet_${orgName}_${date}.csv`);
-                                        document.body.appendChild(link); // Required for FF
+                                        document.body.appendChild(link);
                                         link.click();
                                         document.body.removeChild(link);
                                     }}
@@ -1217,24 +1217,206 @@ function App() {
                                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Part #</th>
                                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Part Name</th>
                                             <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">System Qty</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-l-2 border-gray-300 bg-gray-200">Counted Qty</th>
+                                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase tracking-wider border-l-2 border-gray-300 bg-gray-200">Counted Qty</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider border-l border-gray-300">Variance</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {stocktakeWorksheetData.map((item) => (
-                                            <tr key={item.part_id}>
+                                        {stocktakeWorksheetData.map((item) => {
+                                            const countedQty = countedQuantities[item.inventory_id] || '';
+                                            const variance = (countedQty === '' || isNaN(parseInt(countedQty))) ? '' : item.system_quantity - parseInt(countedQty);
+                                            return (
+                                                <tr key={item.inventory_id}>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.part_number}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.part_name}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{item.system_quantity}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap border-l-2 border-gray-300 bg-gray-50">
+                                                        <input
+                                                            type="number"
+                                                            value={countedQty}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setCountedQuantities(prev => ({
+                                                                    ...prev,
+                                                                    [item.inventory_id]: val === '' ? '' : parseInt(val, 10)
+                                                                }));
+                                                            }}
+                                                            className="w-20 text-sm p-1 border border-gray-300 rounded-md text-right focus:ring-indigo-500 focus:border-indigo-500"
+                                                            placeholder="Enter count"
+                                                        />
+                                                    </td>
+                                                    <td className={`px-4 py-2 whitespace-nowrap text-sm text-right ${variance !== 0 && variance !== '' ? 'font-bold' : ''} ${variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                                                        {variance}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="mt-6 text-right">
+                                <button
+                                    onClick={() => {
+                                        const adjustmentsToMake = stocktakeWorksheetData.map(item => {
+                                            const countedQty = countedQuantities[item.inventory_id];
+                                            // Ensure countedQty is a number for calculation, default to system_quantity if not entered (no change)
+                                            const finalCountedQty = (countedQty === undefined || countedQty === '' || isNaN(parseInt(countedQty)))
+                                                                    ? item.system_quantity
+                                                                    : parseInt(countedQty, 10);
+                                            const variance = item.system_quantity - finalCountedQty;
+                                            const adjustmentQty = finalCountedQty - item.system_quantity; // Positive if counted > system
+                                            return {
+                                                ...item, // includes inventory_id, part_number, part_name, system_quantity
+                                                counted_quantity: finalCountedQty,
+                                                variance: variance,
+                                                adjustment_quantity: adjustmentQty
+                                            };
+                                        }).filter(item => item.adjustment_quantity !== 0); // Only items that need adjustment
+
+                                        if (adjustmentsToMake.length === 0) {
+                                            alert("No adjustments needed. All counted quantities match system quantities or were not entered.");
+                                            return;
+                                        }
+                                        setItemsToAdjust(adjustmentsToMake);
+                                        setShowStocktakeConfirmation(true);
+                                    }}
+                                    disabled={stocktakeWorksheetData.length === 0} // Enable if worksheet is loaded, detailed check inside onClick
+                                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition duration-150 ease-in-out disabled:opacity-50"
+                                >
+                                    Review & Process Adjustments
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* View for Stocktake Confirmation */}
+                    {!loadingStocktakeWorksheet && showStocktakeConfirmation && itemsToAdjust.length > 0 && (
+                        <div className="mt-6">
+                            <h4 className="text-xl font-semibold mb-3">Confirm Stock Adjustments</h4>
+                            <p className="text-sm text-gray-700 mb-4">The following adjustments will be made based on the counted quantities:</p>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Part #</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Part Name</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">System Qty</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Counted Qty</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Variance</th>
+                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Adjustment Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {itemsToAdjust.map((item) => (
+                                            <tr key={item.inventory_id}>
                                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.part_number}</td>
                                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.part_name}</td>
                                                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{item.system_quantity}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap border-l-2 border-gray-300 bg-gray-50"> {/* Empty cell for manual entry */} </td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 text-right">{item.counted_quantity}</td>
+                                                <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-bold ${item.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                    {item.variance}
+                                                </td>
+                                                <td className={`px-4 py-2 whitespace-nowrap text-sm text-right font-bold ${item.adjustment_quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {item.adjustment_quantity > 0 ? `+${item.adjustment_quantity}` : item.adjustment_quantity}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    onClick={() => setShowStocktakeConfirmation(false)}
+                                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition duration-150 ease-in-out"
+                                >
+                                    Back to Edit Counts
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        console.log("Confirm & Submit All Adjustments clicked. Items:", itemsToAdjust);
+                                        setLoadingData(true); // Use a general loading indicator or a new specific one
+                                        let allSuccessful = true;
+                                        const results = [];
+
+                                        for (const item of itemsToAdjust) {
+                                            if (item.adjustment_quantity === 0) continue; // Should have been filtered, but double check
+
+                                            const adjustmentPayload = {
+                                                quantity_adjusted: item.adjustment_quantity,
+                                                reason_code: "Stocktake Discrepancy", // Direct string or use imported enum/const
+                                                notes: `Stocktake adjustment on ${new Date().toLocaleDateString()}. System: ${item.system_quantity}, Counted: ${item.counted_quantity}.`
+                                            };
+
+                                            try {
+                                                const response = await fetch(`${API_BASE_URL}/stock_adjustments/inventory/${item.inventory_id}`, {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify(adjustmentPayload),
+                                                });
+
+                                                const responseData = await response.json();
+                                                if (!response.ok) {
+                                                    allSuccessful = false;
+                                                    results.push({ part_number: item.part_number, success: false, error: responseData.detail || `HTTP ${response.status}` });
+                                                    console.error(`Failed to adjust stock for ${item.part_number}:`, responseData.detail);
+                                                } else {
+                                                    results.push({ part_number: item.part_number, success: true });
+                                                }
+                                            } catch (err) {
+                                                allSuccessful = false;
+                                                results.push({ part_number: item.part_number, success: false, error: err.message });
+                                                console.error(`Error adjusting stock for ${item.part_number}:`, err.message);
+                                            }
+                                        }
+                                        setLoadingData(false);
+
+                                        if (allSuccessful) {
+                                            alert("All stocktake adjustments submitted successfully!");
+                                            fetchData(); // Refresh all data
+                                            setShowStocktakeSheetGenerator(false); // Close the main modal
+                                            // Reset states
+                                            setStocktakeWorksheetData([]);
+                                            setCountedQuantities({});
+                                            setShowStocktakeConfirmation(false);
+                                            setItemsToAdjust([]);
+                                        } else {
+                                            // Construct a summary message of successes and failures
+                                            let summaryMessage = "Stocktake adjustment processing completed with some issues:\n";
+                                            results.forEach(r => {
+                                                summaryMessage += `${r.part_number}: ${r.success ? 'Success' : `Failed (${r.error})`}\n`;
+                                            });
+                                            alert(summaryMessage);
+                                            fetchData(); // Still refresh data to see partial successes
+                                            // Optionally keep the modal open or navigate user to fix issues
+                                            // For simplicity, we'll close for now, but might keep confirmation open
+                                            // setShowStocktakeConfirmation(false); // Or keep it open to show errors?
+                                        }
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out"
+                                >
+                                    Confirm & Submit All Adjustments
+                                </button>
+                            </div>
                         </div>
                     )}
-                    {!loadingStocktakeWorksheet && stocktakeWorksheetData && stocktakeWorksheetData.length === 0 && (
+
+                    {/* Fallback message if no items to adjust after processing */}
+                    {!loadingStocktakeWorksheet && showStocktakeConfirmation && itemsToAdjust.length === 0 && (
+                         <div className="mt-6">
+                            <p className="text-center text-gray-600">No items require adjustment based on the counts provided.</p>
+                            <button
+                                onClick={() => setShowStocktakeConfirmation(false)}
+                                className="mt-4 mx-auto block bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition duration-150 ease-in-out"
+                            >
+                                Back to Edit Counts
+                            </button>
+                        </div>
+                    )}
+
+                    {!loadingStocktakeWorksheet && !showStocktakeConfirmation && stocktakeWorksheetData && stocktakeWorksheetData.length === 0 && (
                         <p className="mt-4 text-center text-gray-600">No inventory items found for the selected organization, or worksheet not yet generated.</p>
                     )}
                 </div>

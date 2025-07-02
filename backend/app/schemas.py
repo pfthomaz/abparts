@@ -283,7 +283,8 @@ class StockAdjustmentResponse(StockAdjustmentBase, BaseSchema):
 
 # --- Stocktake Worksheet Schemas (New!) ---
 class StocktakeWorksheetItemResponse(BaseModel):
-    part_id: uuid.UUID # Keep part_id for potential future use on frontend
+    inventory_id: uuid.UUID # Crucial for making adjustments later
+    part_id: uuid.UUID
     part_number: str
     part_name: str
     system_quantity: int

@@ -94,9 +94,10 @@ def get_stocktake_worksheet_items(db: Session, organization_id: uuid.UUID) -> Li
     """
     # Fetch inventory items for the organization, joining with Part to get part details
     results = db.query(
-        models.Part.id, # part_id
+        models.Inventory.id, # inventory_id
+        models.Part.id,      # part_id
         models.Part.part_number,
-        models.Part.name, # part_name
+        models.Part.name,    # part_name
         models.Inventory.current_stock # system_quantity
     ).join(models.Part, models.Inventory.part_id == models.Part.id)\
      .filter(models.Inventory.organization_id == organization_id)\
@@ -109,10 +110,11 @@ def get_stocktake_worksheet_items(db: Session, organization_id: uuid.UUID) -> Li
     # Map results to the Pydantic schema
     worksheet_items = [
         schemas.StocktakeWorksheetItemResponse(
-            part_id=row[0],
-            part_number=row[1],
-            part_name=row[2],
-            system_quantity=row[3]
+            inventory_id=row[0],
+            part_id=row[1],
+            part_number=row[2],
+            part_name=row[3],
+            system_quantity=row[4]
         ) for row in results
     ]
     return worksheet_items

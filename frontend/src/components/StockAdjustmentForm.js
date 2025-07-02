@@ -1,5 +1,5 @@
 // frontend/src/components/StockAdjustmentForm.js
-import React, { useState, useEffect } from 'react'; // useEffect is imported
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 
 const StockAdjustmentReason = {
@@ -49,7 +49,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             setSubmitting(false);
             return;
         }
-        
+
         if (!reasonCode) {
             setError("Reason code is required.");
             setSubmitting(false);
@@ -80,7 +80,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             const result = await response.json();
             console.log('Stock adjustment successful:', result);
             if (onSuccess) {
-                onSuccess(result); 
+                onSuccess(result);
             }
         } catch (err) {
             console.error("Stock adjustment error:", err);
