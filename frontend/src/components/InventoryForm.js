@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 
-function InventoryForm({ organizations = [], parts = [], initialData = {}, onSubmit, onClose }) {
+function InventoryForm({ organizations = [], parts = [], initialData = {}, onSubmit, onClose, isEditMode = false }) {
   const { token, user } = useAuth();
   const [formData, setFormData] = useState({
     organization_id: '',
@@ -11,14 +11,13 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
     current_stock: 0,
     minimum_stock_recommendation: 0,
     reorder_threshold_set_by: 'user', // Default value
-    ...initialData,
+    // No spread of initialData here, handled by useEffect
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Reset form data when initialData changes (e.g., opening for new vs. edit)
-    const resetData = {
+    const defaultData = {
       organization_id: '',
       part_id: '',
       current_stock: 0,
@@ -26,16 +25,27 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
       reorder_threshold_set_by: 'user',
     };
 
-    setFormData({ ...resetData, ...initialData });
+    let effectiveInitialData = { ...defaultData, ...initialData };
 
-    // For Customer Admin/User roles, pre-fill their organization_id
+    // For Customer Admin/User roles, pre-fill their organization_id if not in edit mode
+    // or if in edit mode and the org_id matches their own (should always be true for them)
     if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
-      setFormData(prevData => ({
-        ...prevData,
-        organization_id: user.organization_id || '',
-      }));
+        if (!isEditMode || (isEditMode && initialData.organization_id === user.organization_id)) {
+            effectiveInitialData.organization_id = user.organization_id || '';
+        }
     }
-  }, [initialData, user]);
+    // If not in edit mode and user is Oraseas Inventory Manager, default to Oraseas EE if available
+    else if (user && user.role === "Oraseas Inventory Manager" && !isEditMode) {
+        const oraseasOrg = organizations.find(org => org.name === "Oraseas EE");
+        if (oraseasOrg) {
+            effectiveInitialData.organization_id = oraseasOrg.id;
+        }
+    }
+
+
+    setFormData(effectiveInitialData);
+
+  }, [initialData, user, organizations, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -70,12 +80,18 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
   // Filter organizations based on user role
   const getFilteredOrganizations = () => {
     if (!user) return [];
+    // In edit mode, the organization is fixed, so we just need to show the current one if it's available.
+    // Or, if user is Customer Admin/User, their org is fixed.
+    if (isEditMode || (user.role === "Customer Admin" || user.role === "Customer User")) {
+        const currentOrgId = formData.organization_id || user.organization_id;
+        const org = organizations.find(o => o.id === currentOrgId);
+        return org ? [org] : []; // Return as array or empty if not found (shouldn't happen if data is consistent)
+    }
+    // For Oraseas Admin/Inventory Manager in create mode:
     if (user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") {
-      // Oraseas roles can select any organization for inventory, but mainly Oraseas EE
-      return organizations.filter(org => org.type === 'Warehouse'); // Only Oraseas Warehouse can create inventory records
-    } else if (user.role === "Customer Admin" || user.role === "Customer User") {
-      // Customers can only see and manage inventory for their own organization
-      return organizations.filter(org => org.id === user.organization_id);
+      // Oraseas roles can ONLY create inventory for "Oraseas EE" via this form, as per backend restrictions.
+      const oraseasOrg = organizations.find(org => org.name === "Oraseas EE" && org.type === 'Warehouse');
+      return oraseasOrg ? [oraseasOrg] : []; // If Oraseas EE (Warehouse) isn't found, they can't create.
     }
     return [];
   };
@@ -98,11 +114,11 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
         <select
           id="organization_id"
           name="organization_id"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
           value={formData.organization_id}
           onChange={handleChange}
           required
-          disabled={loading || (user && (user.role === 'Customer Admin' || user.role === 'Customer User'))} // Disable for customers
+          disabled={loading || isEditMode || (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) || (user && user.role === 'Oraseas Inventory Manager')}
         >
           <option value="">Select an Organization</option>
           {filteredOrganizations.map((org) => (
@@ -117,11 +133,11 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
         <select
           id="part_id"
           name="part_id"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
           value={formData.part_id}
           onChange={handleChange}
           required
-          disabled={loading}
+          disabled={loading || isEditMode}
         >
           <option value="">Select a Part</option>
           {parts.map((part) => (

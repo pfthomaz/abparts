@@ -43,7 +43,8 @@ function App() {
     const [showPartModal, setShowPartModal] = useState(false);
     const [editingPart, setEditingPart] = useState(null);
     const [showInventoryModal, setShowInventoryModal] = useState(false);
-    const [editingInventory, setEditingInventory] = useState(null);
+    const [editingInventory, setEditingInventory] = useState(null); // Used for both create (null) and edit (object)
+    const [isInventoryEditMode, setIsInventoryEditMode] = useState(false);
     const [showSupplierOrderModal, setShowSupplierOrderModal] = useState(false);
     const [editingSupplierOrder, setEditingSupplierOrder] = useState(null);
     const [showSupplierOrderItemModal, setShowSupplierOrderItemModal] = useState(false);
@@ -84,6 +85,12 @@ function App() {
         const { password_hash, ...userWithoutPassword } = userToEdit; // Assuming password_hash is not sent to frontend or is handled
         setEditingUser(userWithoutPassword);
         setShowUserModal(true);
+    };
+
+    const openEditInventoryModal = (inventoryToEdit) => {
+        setEditingInventory(inventoryToEdit);
+        setIsInventoryEditMode(true);
+        setShowInventoryModal(true);
     };
 
     // Effect to fetch data when token or user changes
@@ -523,11 +530,80 @@ function App() {
 
             await fetchData();
             setShowInventoryModal(false);
+            setEditingInventory(null);
+            setIsInventoryEditMode(false);
         } catch (err) {
             console.error("Error creating inventory item:", err);
             throw err;
         }
     };
+
+    // Handler for updating an existing inventory item
+    const handleUpdateInventory = async (inventoryDataFromForm) => {
+        if (!editingInventory || !editingInventory.id) {
+            console.error("No inventory item selected for editing or missing ID.");
+            throw new Error("No inventory item selected for editing or missing ID.");
+        }
+        try {
+            // For inventory, organization_id and part_id are not updatable after creation.
+            // The InventoryUpdate schema allows them, but backend logic for Customer Admin restricts it.
+            // Oraseas Admin could change them, but our form disables them.
+            // We only send fields that are typically updatable.
+            const { organization_id, part_id, ...updatePayload } = inventoryDataFromForm;
+
+            const response = await fetch(`${API_BASE_URL}/inventory/${editingInventory.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(updatePayload), // Send only updatable fields
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            setShowInventoryModal(false);
+            setEditingInventory(null);
+            setIsInventoryEditMode(false);
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error updating inventory item:", err);
+            throw err; // Re-throw to be caught by InventoryForm
+        }
+    };
+
+    // Handler for deleting an inventory item
+    const handleDeleteInventory = async (inventoryId) => {
+        // Based on backend, only Oraseas Admin/Inventory Manager can delete, and only Oraseas EE items.
+        // This check should ideally be done before even showing the button, but an extra client-side guard doesn't hurt.
+        // For now, we assume the button's visibility logic is sufficient.
+        if (!window.confirm("Are you sure you want to delete this inventory item? This action cannot be undone and may affect historical data if not handled carefully by the backend.")) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/inventory/${inventoryId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok && response.status !== 204) { // 204 is also a success for DELETE
+                const errorData = await response.json().catch(() => ({ detail: "Failed to delete inventory item and parse error response." }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh data
+            setError(null); // Clear any previous general errors
+        } catch (err) {
+            console.error("Error deleting inventory item:", err);
+            setError(err.message || "Failed to delete inventory item. Please try again."); // Set error for display
+        }
+    };
+
 
     // Handler for creating a new supplier order
     const handleCreateSupplierOrder = async (orderData) => {
@@ -1070,23 +1146,48 @@ function App() {
                     <p className="text-gray-600 mb-1"><span className="font-medium">Min Stock Rec:</span> {item.minimum_stock_recommendation}</p>
                     {item.reorder_threshold_set_by && <p className="text-gray-600 mb-1"><span className="font-medium">Set By:</span> {item.reorder_threshold_set_by}</p>}
                     <p className="text-sm text-gray-400 mt-3">ID: {item.id}</p>
-                    {/* Adjust Stock Button Logic:
-                        - Oraseas Admin: Can adjust any stock.
-                        - Oraseas Inventory Manager: Can adjust stock for "Oraseas EE" organization.
-                    */}
-                    { (user.role === "Oraseas Admin" ||
-                       (user.role === "Oraseas Inventory Manager" && organizations.find(o => o.id === item.organization_id)?.name === "Oraseas EE")
-                      ) && (
-                        <button
-                            onClick={() => {
-                                setSelectedInventoryItemForAdjustment(item);
-                                setShowStockAdjustmentModal(true);
-                            }}
-                            className="mt-3 bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
-                        >
-                            Adjust Stock
-                        </button>
-                    )}
+                    <div className="mt-4 flex space-x-2">
+                        {/* Edit Button:
+                            - Oraseas Admin/Inventory Manager: Can edit any.
+                            - Customer Admin: Can edit their own org's inventory.
+                        */}
+                        {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager" ||
+                          (user.role === "Customer Admin" && item.organization_id === user.organization_id)
+                        ) && (
+                            <button
+                                onClick={() => openEditInventoryModal(item)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                        )}
+                        {/* Delete Button:
+                            - Oraseas Admin/Inventory Manager: Can delete Oraseas EE inventory.
+                        */}
+                        {(user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") &&
+                         organizations.find(o => o.id === item.organization_id)?.name === "Oraseas EE" && (
+                            <button
+                                onClick={() => handleDeleteInventory(item.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        )}
+                         {/* Adjust Stock Button Logic (existing) */}
+                        { (user.role === "Oraseas Admin" ||
+                           (user.role === "Oraseas Inventory Manager" && organizations.find(o => o.id === item.organization_id)?.name === "Oraseas EE")
+                          ) && (
+                            <button
+                                onClick={() => {
+                                    setSelectedInventoryItemForAdjustment(item);
+                                    setShowStockAdjustmentModal(true);
+                                }}
+                                className="bg-indigo-500 text-white py-1 px-3 rounded-md hover:bg-indigo-600 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold" // Changed color to differentiate
+                            >
+                                Adjust Stock
+                            </button>
+                        )}
+                    </div>
                     </div>
                 ))}
                 </div>
@@ -1102,8 +1203,13 @@ function App() {
                     initialData={editingInventory || {}}
                     organizations={organizations}
                     parts={parts}
-                    onSubmit={handleCreateInventory}
-                    onClose={() => setShowInventoryModal(false)}
+                    onSubmit={isInventoryEditMode ? handleUpdateInventory : handleCreateInventory}
+                    onClose={() => {
+                        setShowInventoryModal(false);
+                        setEditingInventory(null);
+                        setIsInventoryEditMode(false);
+                    }}
+                    isEditMode={isInventoryEditMode}
                 />
             </Modal>
 
