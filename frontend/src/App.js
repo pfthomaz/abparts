@@ -66,7 +66,6 @@ function App() {
     const [showStocktakeConfirmation, setShowStocktakeConfirmation] = useState(false); // New: for confirmation step
     const [itemsToAdjust, setItemsToAdjust] = useState([]); // New: items with variance for confirmation
 
-
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
     // --- Modal Openers ---
@@ -423,7 +422,6 @@ function App() {
         } catch (err) {
             console.error("Error deleting organization:", err);
             setError(err.message || "Failed to delete organization. Please ensure it has no dependent records if the issue persists.");
-
         }
     };
 
