@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from .. import models, schemas # Import models and schemas
+from ..auth import get_password_hash # Import password hashing utility
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 def create_user(db: Session, user: schemas.UserCreate):
     """Create a new user."""
-    # In a real app, hash the password using bcrypt or similar
-    hashed_password = user.password + "_hashed" # Placeholder for actual hashing
+    hashed_password = get_password_hash(user.password) # Use actual hashing
     db_user = models.User(**user.dict(exclude={"password"}), password_hash=hashed_password)
     try:
         # Check if organization_id exists
@@ -48,9 +48,13 @@ def update_user(db: Session, user_id: uuid.UUID, user_update: schemas.UserUpdate
         return None
 
     update_data = user_update.dict(exclude_unset=True)
-    if "password" in update_data:
-        update_data["password_hash"] = update_data["password"] + "_hashed" # Placeholder
+    if "password" in update_data and update_data["password"] is not None:
+        update_data["password_hash"] = get_password_hash(update_data["password"]) # Use actual hashing
         del update_data["password"]
+    elif "password" in update_data and update_data["password"] is None:
+        # If password is explicitly set to None (or empty string handled by schema), remove it so it's not processed
+        del update_data["password"]
+
 
     for key, value in update_data.items():
         setattr(db_user, key, value)

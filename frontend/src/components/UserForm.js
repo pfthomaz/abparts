@@ -3,45 +3,64 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 
-function UserForm({ organizations = [], initialData = {}, onSubmit, onClose }) {
-  const { token, user } = useAuth(); // Get user for authorization logic
+// Added editingSelf prop, though currentUserRole is available via useAuth
+function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, editingSelf }) {
+  const { user } = useAuth(); // Get current logged-in user for authorization logic
+
+  // Initialize form state
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    password: '',
+    password: '', // Always start blank
     name: '',
-    role: 'Customer User', // Default role
-    organization_id: '', // UUID string
-    ...initialData, // Pre-fill if initialData is provided (for editing)
+    role: 'Customer User',
+    organization_id: '',
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Set default organization for Customer Admins
   useEffect(() => {
-    if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
-      setFormData(prevData => ({
-        ...prevData,
-        organization_id: user.organization_id || '', // Automatically set to their org ID
-      }));
-    } else {
-      // For Oraseas Admin, ensure organization_id is selectable or defaults to empty
-      if (!initialData.organization_id && organizations.length > 0) {
-         setFormData(prevData => ({
-            ...prevData,
-            organization_id: '' // Clear if not editing and not customer admin
-        }));
+    const defaultState = {
+      username: '',
+      email: '',
+      password: '', // Crucially, password is not pre-filled
+      name: '',
+      role: 'Customer User',
+      organization_id: (user?.role === 'Customer Admin' && !initialData.id) ? user.organization_id : (organizations.length > 0 && user?.role === 'Oraseas Admin' ? '' : ''),
+    };
+
+    if (initialData.id) { // Editing existing user
+      setFormData({
+        ...defaultState, // Apply defaults first
+        ...initialData,   // Then apply initialData
+        password: '',     // Ensure password is blank
+        organization_id: initialData.organization_id || defaultState.organization_id, // Ensure org_id is from initialData if present
+        role: initialData.role || defaultState.role, // Ensure role is from initialData
+      });
+    } else { // Creating new user
+      setFormData(defaultState);
+      if (user?.role === 'Customer Admin') { // If Customer Admin is creating, lock to their org
+        setFormData(prevState => ({...prevState, organization_id: user.organization_id}));
       }
     }
-    // Update form data if initialData changes (e.g., when editing a different user)
-    setFormData(prevData => ({
-      ...prevData,
-      ...initialData,
-      // If initialData.organization_id exists, use it. Otherwise, keep existing.
-      organization_id: initialData.organization_id || prevData.organization_id || '',
-    }));
   }, [initialData, user, organizations]);
 
+  const isFieldDisabled = (fieldName) => {
+    if (!initialData.id) { // Creating new user
+        if (fieldName === 'organization_id' && user?.role === 'Customer Admin') return true;
+        return false;
+    }
+    // Editing existing user
+    if (editingSelf) { // User editing their own profile
+        return fieldName === 'role' || fieldName === 'organization_id';
+    }
+    if (user?.role === 'Customer Admin') { // Customer Admin editing another user in their org
+        return fieldName === 'role' || fieldName === 'organization_id';
+    }
+    // Oraseas Admin can edit anything for others
+    return false;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -164,7 +183,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose }) {
           value={formData.role}
           onChange={handleChange}
           required
-          disabled={loading || (user && user.role === 'Customer Admin' && !initialData.id)} // Customer Admin cannot change role on existing users
+          disabled={loading || isFieldDisabled('role')}
         >
           {availableRoles.map((role) => (
             <option key={role} value={role}>{role}</option>
@@ -182,7 +201,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose }) {
           value={formData.organization_id}
           onChange={handleChange}
           required
-          disabled={loading || (user && user.role === 'Customer Admin')} // Customer Admin cannot change org_id
+          disabled={loading || isFieldDisabled('organization_id')}
         >
           <option value="">Select an Organization</option>
           {organizations.map((org) => (
