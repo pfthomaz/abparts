@@ -18,8 +18,8 @@ router = APIRouter(
 # Endpoint to create a stock adjustment for a specific inventory item
 @router.post("/inventory/{inventory_id}", response_model=schemas.StockAdjustmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_stock_adjustment(
-    inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item to adjust"),
     adjustment_in: schemas.StockAdjustmentCreate,
+    inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item to adjust"),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
 ):

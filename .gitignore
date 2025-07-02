@@ -21,6 +21,10 @@ backend/app/.Python
 backend/app/.ipynb_checkpoints/ # If you use Jupyter notebooks
 backend/app/instance/ # Flask specific, if used for persistence
 
+# ngrok
+# Ignore ngrok configuration file
+ngrok/ngrok.yml 
+
 # Docker
 .env
 # IMPORTANT: Do NOT commit your .env file which contains secrets
