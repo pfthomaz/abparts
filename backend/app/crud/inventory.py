@@ -86,3 +86,35 @@ def delete_inventory_item(db: Session, inventory_id: uuid.UUID):
         logger.error(f"Error deleting inventory item: {e}")
         raise HTTPException(status_code=400, detail="Error deleting inventory item.")
 
+
+def get_stocktake_worksheet_items(db: Session, organization_id: uuid.UUID) -> List[schemas.StocktakeWorksheetItemResponse]:
+    """
+    Retrieve inventory items for a stocktake worksheet for a given organization.
+    Includes part details (number, name) and current stock.
+    """
+    # Fetch inventory items for the organization, joining with Part to get part details
+    results = db.query(
+        models.Inventory.id, # inventory_id
+        models.Part.id,      # part_id
+        models.Part.part_number,
+        models.Part.name,    # part_name
+        models.Inventory.current_stock # system_quantity
+    ).join(models.Part, models.Inventory.part_id == models.Part.id)\
+     .filter(models.Inventory.organization_id == organization_id)\
+     .order_by(models.Part.part_number)\
+     .all()
+
+    if not results:
+        return []
+
+    # Map results to the Pydantic schema
+    worksheet_items = [
+        schemas.StocktakeWorksheetItemResponse(
+            inventory_id=row[0],
+            part_id=row[1],
+            part_number=row[2],
+            part_name=row[3],
+            system_quantity=row[4]
+        ) for row in results
+    ]
+    return worksheet_items
