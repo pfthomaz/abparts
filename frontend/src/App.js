@@ -59,6 +59,11 @@ function App() {
         setShowPartModal(true);
     };
 
+    const openEditOrganizationModal = (orgToEdit) => {
+        setEditingOrganization(orgToEdit);
+        setShowOrganizationModal(true);
+    };
+
     // Effect to fetch data when token or user changes
     const fetchData = useCallback(async () => {
         if (!token) {
@@ -330,6 +335,61 @@ function App() {
         }
     };
 
+    // Handler for updating an existing organization
+    const handleUpdateOrganization = async (orgDataFromForm) => {
+        if (!editingOrganization || !editingOrganization.id) {
+            console.error("No organization selected for editing or missing ID.");
+            throw new Error("No organization selected for editing or missing ID.");
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/organizations/${editingOrganization.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(orgDataFromForm),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            setShowOrganizationModal(false);
+            setEditingOrganization(null);
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error updating organization:", err);
+            throw err; // Re-throw to be caught by OrganizationForm
+        }
+    };
+
+    // Handler for deleting an organization
+    const handleDeleteOrganization = async (orgId) => {
+        if (!window.confirm("Are you sure you want to delete this organization? This may also delete associated users, inventory, orders, and other records. This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/organizations/${orgId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok && response.status !== 204) {
+                const errorData = await response.json().catch(() => ({ detail: "Failed to delete organization and parse error response." }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error deleting organization:", err);
+            setError(err.message || "Failed to delete organization. Please ensure it has no dependent records if the issue persists.");
+        }
+    };
+
     // Handler for creating a new inventory item
     const handleCreateInventory = async (inventoryData) => {
         try {
@@ -590,6 +650,22 @@ function App() {
                     {org.address && <p className="text-gray-600 mb-1"><span className="font-medium">Address:</span> {org.address}</p>}
                     {org.contact_info && <p className="text-gray-600 mb-1"><span className="font-medium">Contact:</span> {org.contact_info}</p>}
                     <p className="text-sm text-gray-400 mt-3">ID: {org.id}</p>
+                    {user.role === "Oraseas Admin" && (
+                        <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditOrganizationModal(org)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDeleteOrganization(org.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                     </div>
                 ))}
                 </div>
@@ -603,8 +679,11 @@ function App() {
             >
                 <OrganizationForm
                     initialData={editingOrganization || {}}
-                    onSubmit={handleCreateOrganization}
-                    onClose={() => setShowOrganizationModal(false)}
+                    onSubmit={editingOrganization ? handleUpdateOrganization : handleCreateOrganization}
+                    onClose={() => {
+                        setShowOrganizationModal(false);
+                        setEditingOrganization(null); // Clear editing state on close
+                    }}
                 />
             </Modal>
 
