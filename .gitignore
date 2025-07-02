@@ -13,6 +13,9 @@ yarn-error.log*
 **/__pycache__/ # Ignore all __pycache__ directories
 **/*.pyc # Ignore all .pyc files
 
+__pycache__/
+*.pyc
+
 backend/app/.venv/
 backend/app/env/
 # backend/app/*.pyc # Covered by **/*.pyc
