@@ -288,3 +288,44 @@ class PartUsage(Base):
     def __repr__(self):
         return f"<PartUsage(id={self.id}, customer_org_id={self.customer_organization_id}, part_id={self.part_id}, qty={self.quantity_used})>"
 
+
+# Enum for Stock Adjustment Reasons
+import enum
+class StockAdjustmentReason(enum.Enum):
+    STOCKTAKE_DISCREPANCY = "Stocktake Discrepancy"
+    DAMAGED_GOODS = "Damaged Goods"
+    FOUND_STOCK = "Found Stock"
+    INITIAL_STOCK_ENTRY = "Initial Stock Entry"
+    RETURN_TO_VENDOR = "Return to Vendor"
+    CUSTOMER_RETURN_RESALABLE = "Customer Return - Resalable"
+    CUSTOMER_RETURN_DAMAGED = "Customer Return - Damaged"
+    OTHER = "Other"
+
+
+class StockAdjustment(Base):
+    """
+    SQLAlchemy model for the 'stock_adjustments' table.
+    Logs changes to inventory levels.
+    """
+    __tablename__ = "stock_adjustments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    inventory_id = Column(UUID(as_uuid=True), ForeignKey("inventory.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False) # User who performed the adjustment
+    adjustment_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    quantity_adjusted = Column(Integer, nullable=False) # Positive for increase, negative for decrease
+    reason_code = Column(String(100), nullable=False) # From StockAdjustmentReason enum
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    inventory_item = relationship("Inventory", back_populates="adjustments")
+    user = relationship("User") # Add back_populates if needed on User model
+
+    def __repr__(self):
+        return f"<StockAdjustment(id={self.id}, inventory_id={self.inventory_id}, qty_adj={self.quantity_adjusted}, reason='{self.reason_code}')>"
+
+
+# Add back-population to Inventory model
+Inventory.adjustments = relationship("StockAdjustment", order_by=StockAdjustment.adjustment_date, back_populates="inventory_item", cascade="all, delete-orphan")
