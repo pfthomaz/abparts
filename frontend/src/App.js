@@ -51,8 +51,25 @@ function App() {
     const [showPartUsageModal, setShowPartUsageModal] = useState(false); // New: for Part Usage Form
     const [editingPartUsage, setEditingPartUsage] = useState(null); // New: for Part Usage editing
 
-
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
+    // --- Modal Openers ---
+    const openEditPartModal = (partToEdit) => {
+        setEditingPart(partToEdit);
+        setShowPartModal(true);
+    };
+
+    const openEditOrganizationModal = (orgToEdit) => {
+        setEditingOrganization(orgToEdit);
+        setShowOrganizationModal(true);
+    };
+
+    const openEditUserModal = (userToEdit) => {
+        // Clear password from initialData, it should not be pre-filled
+        const { password_hash, ...userWithoutPassword } = userToEdit; // Assuming password_hash is not sent to frontend or is handled
+        setEditingUser(userWithoutPassword);
+        setShowUserModal(true);
+    };
 
     // Effect to fetch data when token or user changes
     const fetchData = useCallback(async () => {
@@ -218,6 +235,31 @@ function App() {
         }
     };
 
+    // Handler for deleting a part
+    const handleDeletePart = async (partId) => {
+        if (!window.confirm("Are you sure you want to delete this part? This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/parts/${partId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok && response.status !== 204) { // 204 is also a success for DELETE
+                const errorData = await response.json().catch(() => ({ detail: "Failed to delete part and parse error response." }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error deleting part:", err);
+            setError(err.message || "Failed to delete part. Please try again."); // Set error for display
+        }
+    };
+
     // Handler for creating a new user
     const handleCreateUser = async (userData) => {
         try {
@@ -260,11 +302,177 @@ function App() {
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
-            await fetchData();
-            setShowPartModal(false);
+            await fetchData(); // Refresh data
+            setShowPartModal(false); // Close modal
         } catch (err) {
             console.error("Error creating part:", err);
-            throw err;
+            throw err; // Re-throw to be caught by PartForm
+        }
+    };
+
+    // Handler for updating an existing part
+    const handleUpdatePart = async (partDataFromForm) => {
+        if (!editingPart || !editingPart.id) {
+            console.error("No part selected for editing or missing ID.");
+            throw new Error("No part selected for editing or missing ID.");
+        }
+        try {
+            // The partDataFromForm contains all form fields, including image_urls
+            // which PartForm prepares (existing + new uploads).
+            const response = await fetch(`${API_BASE_URL}/parts/${editingPart.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(partDataFromForm), // Send data from the form
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            setShowPartModal(false);
+            setEditingPart(null);
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error updating part:", err);
+            throw err; // Re-throw to be caught by PartForm
+        }
+    };
+
+    // Handler for updating an existing organization
+    const handleUpdateOrganization = async (orgDataFromForm) => {
+        if (!editingOrganization || !editingOrganization.id) {
+            console.error("No organization selected for editing or missing ID.");
+            throw new Error("No organization selected for editing or missing ID.");
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/organizations/${editingOrganization.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(orgDataFromForm),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            setShowOrganizationModal(false);
+            setEditingOrganization(null);
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error updating organization:", err);
+            throw err; // Re-throw to be caught by OrganizationForm
+        }
+    };
+
+    // Handler for deleting an organization
+    const handleDeleteOrganization = async (orgId) => {
+        if (!window.confirm("Are you sure you want to delete this organization? This may also delete associated users, inventory, orders, and other records. This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/organizations/${orgId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok && response.status !== 204) {
+                const errorData = await response.json().catch(() => ({ detail: "Failed to delete organization and parse error response." }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error deleting organization:", err);
+            setError(err.message || "Failed to delete organization. Please ensure it has no dependent records if the issue persists.");
+        }
+    };
+
+    // Handler for updating an existing user
+    const handleUpdateUser = async (userDataFromForm) => {
+        if (!editingUser || !editingUser.id) {
+            console.error("No user selected for editing or missing ID.");
+            throw new Error("No user selected for editing or missing ID.");
+        }
+
+        const payload = { ...userDataFromForm };
+        // If password field is empty or null, remove it from payload so backend doesn't try to update it
+        if (!payload.password) {
+            delete payload.password;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/${editingUser.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            setShowUserModal(false);
+            setEditingUser(null);
+            await fetchData(); // Refresh data, including the current user details if they edited themselves
+
+            // If the logged-in user updated their own details, refresh the user context from useAuth
+            if (editingUser.id === user.user_id) {
+                // Re-fetch user details to update AuthContext. This assumes useAuth provides a refresh mechanism
+                // or that re-fetching /users/me/ or similar would update it.
+                // For now, we rely on fetchData() to get all users, and App.js already shows user.name or user.username
+                // A more direct refresh of the 'user' object in AuthContext might be needed if it holds more detailed state.
+                // The current setup in AuthContext refetches user on token change, not on manual profile update.
+                // This might be an area for future improvement in AuthContext.
+                // For now, the displayed name in the header should update if `user.name` was changed.
+                console.log("User updated their own profile. Consider AuthContext refresh if more than name/username is displayed from it.");
+            }
+
+        } catch (err) {
+            console.error("Error updating user:", err);
+            throw err; // Re-throw to be caught by UserForm
+        }
+    };
+
+    // Handler for deleting a user
+    const handleDeleteUser = async (userId) => {
+        if (userId === user.user_id) {
+            setError("You cannot delete your own user account.");
+            return;
+        }
+        if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok && response.status !== 204) { // 204 is also a success for DELETE
+                const errorData = await response.json().catch(() => ({ detail: "Failed to delete user and parse error response." }));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            await fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error deleting user:", err);
+            setError(err.message || "Failed to delete user. Please try again.");
         }
     };
 
@@ -528,6 +736,22 @@ function App() {
                     {org.address && <p className="text-gray-600 mb-1"><span className="font-medium">Address:</span> {org.address}</p>}
                     {org.contact_info && <p className="text-gray-600 mb-1"><span className="font-medium">Contact:</span> {org.contact_info}</p>}
                     <p className="text-sm text-gray-400 mt-3">ID: {org.id}</p>
+                    {user.role === "Oraseas Admin" && (
+                        <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditOrganizationModal(org)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDeleteOrganization(org.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                     </div>
                 ))}
                 </div>
@@ -541,8 +765,11 @@ function App() {
             >
                 <OrganizationForm
                     initialData={editingOrganization || {}}
-                    onSubmit={handleCreateOrganization}
-                    onClose={() => setShowOrganizationModal(false)}
+                    onSubmit={editingOrganization ? handleUpdateOrganization : handleCreateOrganization}
+                    onClose={() => {
+                        setShowOrganizationModal(false);
+                        setEditingOrganization(null); // Clear editing state on close
+                    }}
                 />
             </Modal>
 
@@ -571,8 +798,51 @@ function App() {
                     <h3 className="text-2xl font-semibold text-green-700 mb-2">{userItem.name || userItem.username}</h3>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Role:</span> {userItem.role}</p>
                     <p className="text-gray-600 mb-1"><span className="font-medium">Email:</span> {userItem.email}</p>
-                    <p className="text-sm text-gray-400 mt-3">Org ID: {userItem.organization_id}</p>
-                    <p className="text-sm text-gray-400">User ID: {userItem.id}</p>
+                    <p className="text-sm text-gray-400 mt-3">Org: {getOrganizationName(userItem.organization_id)} ({userItem.organization_id.substring(0,8)})</p>
+                    <p className="text-sm text-gray-400">User ID: {userItem.id.substring(0,8)}</p>
+                    {/* Basic Edit/Delete for Oraseas Admin. More complex logic for Customer Admin could be added later. */}
+                    {(user.role === "Oraseas Admin" && userItem.id !== user.user_id) && ( // Oraseas Admin can edit/delete anyone except themselves
+                        <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditUserModal(userItem)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDeleteUser(userItem.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
+                     {(user.role === "Customer Admin" && userItem.organization_id === user.organization_id && userItem.id !== user.user_id) && ( // Customer Admin can edit/delete users in their org, except themselves
+                        <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditUserModal(userItem)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDeleteUser(userItem.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
+                    {(userItem.id === user.user_id) && ( // Any user can edit themselves
+                         <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditUserModal(userItem)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit Profile
+                            </button>
+                        </div>
+                    )}
                     </div>
                 ))}
                 </div>
@@ -582,13 +852,18 @@ function App() {
             <Modal
                 show={showUserModal}
                 onClose={() => setShowUserModal(false)}
-                title={editingUser ? "Edit User" : "Add New User"}
+                title={editingUser ? (editingUser.id === user.user_id ? "Edit My Profile" : "Edit User") : "Add New User"}
             >
                 <UserForm
-                    initialData={editingUser || {}}
+                    initialData={editingUser || {}} // UserForm will handle not pre-filling password
                     organizations={organizations}
-                    onSubmit={handleCreateUser}
-                    onClose={() => setShowUserModal(false)}
+                    currentUserRole={user.role} // Pass current user's role
+                    editingSelf={editingUser?.id === user.user_id} // Flag if user is editing themselves
+                    onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+                    onClose={() => {
+                        setShowUserModal(false);
+                        setEditingUser(null); // Clear editing state on close
+                    }}
                 />
             </Modal>
 
@@ -642,6 +917,22 @@ function App() {
                         </div>
                     )}
                     <p className="text-sm text-gray-400 mt-3">ID: {part.id}</p>
+                    {user.role === "Oraseas Admin" && (
+                        <div className="mt-4 flex space-x-2">
+                            <button
+                                onClick={() => openEditPartModal(part)}
+                                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDeletePart(part.id)}
+                                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                     </div>
                 ))}
                 </div>
@@ -655,8 +946,11 @@ function App() {
             >
                 <PartForm
                     initialData={editingPart || {}}
-                    onSubmit={handleCreatePart}
-                    onClose={() => setShowPartModal(false)}
+                    onSubmit={editingPart ? handleUpdatePart : handleCreatePart}
+                    onClose={() => {
+                        setShowPartModal(false);
+                        setEditingPart(null); // Clear editing state on close
+                    }}
                 />
             </Modal>
 
