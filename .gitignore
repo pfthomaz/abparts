@@ -10,12 +10,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Python
-# Ignore Python cache files and folders
-__pycache__/
-*.py[cod]
-
-# Ignore ngrok config
-ngrok/ngrok.yml
+**/__pycache__/ # Ignore all __pycache__ directories
+**/*.pyc # Ignore all .pyc files
 
 backend/app/.venv/
 backend/app/env/
