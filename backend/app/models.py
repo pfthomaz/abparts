@@ -132,6 +132,7 @@ class Inventory(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    location = Column(String(255), nullable=True, index=True) # New: Location of the stock
     current_stock = Column(Integer, nullable=False, default=0)
     minimum_stock_recommendation = Column(Integer, nullable=False, default=0)
     reorder_threshold_set_by = Column(String(50)) # e.g., 'system', 'user'

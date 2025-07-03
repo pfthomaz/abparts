@@ -26,6 +26,7 @@ from .routers.customer_order_items import router as customer_order_items_router
 from .routers.part_usage import router as part_usage_router
 from .routers.machines import router as machines_router
 from .routers.stock_adjustments import router as stock_adjustments_router # New: Import stock_adjustments_router
+from .routers.stocktake import router as stocktake_router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -78,6 +79,7 @@ app.include_router(customer_order_items_router, prefix="/customer_order_items", 
 app.include_router(part_usage_router, prefix="/part_usage", tags=["Part Usage"])
 app.include_router(machines_router, prefix="/machines", tags=["Machines"]) # New: Include machines router
 app.include_router(stock_adjustments_router, prefix="/stock_adjustments", tags=["Stock Adjustments"]) # New: Include stock_adjustments_router
+app.include_router(stocktake_router, prefix="/stocktake", tags=["Stocktake"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)

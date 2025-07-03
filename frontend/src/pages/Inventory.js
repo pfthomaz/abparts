@@ -8,6 +8,8 @@ import InventoryForm from '../components/InventoryForm';
 const Inventory = () => {
   const { token } = useAuth();
   const [inventoryItems, setInventoryItems] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -16,20 +18,27 @@ const Inventory = () => {
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
-  const fetchInventory = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/inventory`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch inventory: ${response.status}`);
-      }
-      const data = await response.json();
-      setInventoryItems(data);
+      const [inventoryRes, orgsRes, partsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/inventory`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/organizations`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/parts`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      ]);
+
+      if (!inventoryRes.ok) throw new Error(`Failed to fetch inventory: ${inventoryRes.status}`);
+      if (!orgsRes.ok) throw new Error(`Failed to fetch organizations: ${orgsRes.status}`);
+      if (!partsRes.ok) throw new Error(`Failed to fetch parts: ${partsRes.status}`);
+
+      const inventoryData = await inventoryRes.json();
+      const orgsData = await orgsRes.json();
+      const partsData = await partsRes.json();
+
+      setInventoryItems(inventoryData);
+      setOrganizations(orgsData);
+      setParts(partsData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,8 +47,8 @@ const Inventory = () => {
   }, [token, API_BASE_URL]);
 
   useEffect(() => {
-    fetchInventory();
-  }, [fetchInventory]);
+    fetchData();
+  }, [fetchData]);
 
   const handleCreateOrUpdate = async (inventoryData) => {
     const url = editingInventory
@@ -62,7 +71,7 @@ const Inventory = () => {
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
-      await fetchInventory();
+      await fetchData();
       setShowModal(false);
       setEditingInventory(null);
       setIsEditMode(false);
@@ -89,7 +98,7 @@ const Inventory = () => {
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
-      await fetchInventory();
+      await fetchData();
     } catch (err) {
       setError(err.message);
     }
@@ -126,9 +135,9 @@ const Inventory = () => {
         {inventoryItems.map((item) => (
           <div key={item.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
             <h3 className="text-2xl font-semibold text-orange-700 mb-2">
-              {item.part?.name || 'Unknown Part'}
+              {parts.find(p => p.id === item.part_id)?.name || 'Unknown Part'}
             </h3>
-            <p className="text-gray-600 mb-1"><span className="font-medium">Location:</span> {item.organization?.name || 'Unknown Organization'}</p>
+            <p className="text-gray-600 mb-1"><span className="font-medium">Location:</span> {organizations.find(o => o.id === item.organization_id)?.name || 'Unknown Organization'}</p>
             <p className="text-gray-600 mb-1"><span className="font-medium">Current Stock:</span> {item.current_stock}</p>
             <p className="text-gray-600 mb-1"><span className="font-medium">Min Stock Rec:</span> {item.minimum_stock_recommendation}</p>
             {item.reorder_threshold_set_by && <p className="text-gray-600 mb-1"><span className="font-medium">Set By:</span> {item.reorder_threshold_set_by}</p>}
@@ -158,6 +167,8 @@ const Inventory = () => {
       >
         <InventoryForm
           initialData={editingInventory || {}}
+          organizations={organizations}
+          parts={parts}
           onSubmit={handleCreateOrUpdate}
           onClose={closeModal}
           isEditMode={isEditMode}

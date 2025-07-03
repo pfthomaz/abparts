@@ -291,3 +291,8 @@ class StocktakeWorksheetItemResponse(BaseModel):
 
     class Config:
         from_attributes = True # Allow ORM models to be converted (though this is a custom construction)
+
+
+# --- Stocktake Location Schema (New!) ---
+class StocktakeLocation(BaseModel):
+    name: str
