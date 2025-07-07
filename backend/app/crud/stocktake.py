@@ -12,7 +12,7 @@ def get_stocktake_locations(db: Session) -> list[schemas.StocktakeLocation]:
     # We need to extract the first element from each tuple.
     return [schemas.StocktakeLocation(name=location[0]) for location in locations if location[0]]
 
-def generate_worksheet_data(db: Session, location: str) -> list[schemas.Inventory]:
+def generate_worksheet_data(db: Session, location: str) -> list[schemas.InventoryResponse]:
     """
     Retrieves all inventory items for a given location to generate a worksheet.
     """

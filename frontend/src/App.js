@@ -17,6 +17,7 @@ import Parts from './pages/Parts';
 import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
 import Stocktake from './pages/Stocktake';
+import Machines from './pages/Machines'; // New: Import Machines page
 
 function App() {
   const { token, loadingUser } = useAuth();
@@ -46,6 +47,7 @@ function App() {
           <Route path="inventory" element={<Inventory />} />
           <Route path="orders" element={<Orders />} />
           <Route path="stocktake" element={<Stocktake />} />
+          <Route path="machines" element={<Machines />} /> {/* New: Add Machines route */}
         </Route>
       </Routes>
     </Router>

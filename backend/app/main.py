@@ -27,6 +27,7 @@ from .routers.part_usage import router as part_usage_router
 from .routers.machines import router as machines_router
 from .routers.stock_adjustments import router as stock_adjustments_router # New: Import stock_adjustments_router
 from .routers.stocktake import router as stocktake_router
+from .routers.dashboard import router as dashboard_router # New: Import dashboard router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -70,16 +71,17 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 # --- Include Routers ---
 app.include_router(organizations_router, prefix="/organizations", tags=["Organizations"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
-app.include_router(parts_router, prefix="/parts", tags=["Parts"]) # The /parts router now contains /upload-image as well
+app.include_router(parts_router, prefix="/parts", tags=["Parts"])
 app.include_router(inventory_router, prefix="/inventory", tags=["Inventory"])
 app.include_router(supplier_orders_router, prefix="/supplier_orders", tags=["Supplier Orders"])
 app.include_router(supplier_order_items_router, prefix="/supplier_order_items", tags=["Supplier Order Items"])
 app.include_router(customer_orders_router, prefix="/customer_orders", tags=["Customer Orders"])
 app.include_router(customer_order_items_router, prefix="/customer_order_items", tags=["Customer Order Items"])
 app.include_router(part_usage_router, prefix="/part_usage", tags=["Part Usage"])
-app.include_router(machines_router, prefix="/machines", tags=["Machines"]) # New: Include machines router
-app.include_router(stock_adjustments_router, prefix="/stock_adjustments", tags=["Stock Adjustments"]) # New: Include stock_adjustments_router
+app.include_router(machines_router, prefix="/machines", tags=["Machines"])
+app.include_router(stock_adjustments_router, prefix="/stock_adjustments", tags=["Stock Adjustments"])
 app.include_router(stocktake_router, prefix="/stocktake", tags=["Stocktake"])
+app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)
@@ -132,4 +134,3 @@ def startup_event():
         logger.info("Database tables checked/created successfully.")
     except Exception as e:
         logger.error(f"Error creating database tables on startup: {e}")
-

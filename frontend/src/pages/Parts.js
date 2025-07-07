@@ -1,17 +1,19 @@
 // frontend/src/pages/Parts.js
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../AuthContext';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { partsService } from '../services/partsService';
 import Modal from '../components/Modal';
 import PartForm from '../components/PartForm';
 
 const Parts = () => {
-  const { token } = useAuth();
   const [parts, setParts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingPart, setEditingPart] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterProprietary, setFilterProprietary] = useState('all');
+  const [filterConsumable, setFilterConsumable] = useState('all');
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -19,46 +21,45 @@ const Parts = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/parts`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch parts: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await partsService.getParts();
       setParts(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to fetch parts.');
     } finally {
       setLoading(false);
     }
-  }, [token, API_BASE_URL]);
+  }, []);
 
   useEffect(() => {
     fetchParts();
   }, [fetchParts]);
 
-  const handleCreateOrUpdate = async (partData) => {
-    const url = editingPart
-      ? `${API_BASE_URL}/parts/${editingPart.id}`
-      : `${API_BASE_URL}/parts`;
-    const method = editingPart ? 'PUT' : 'POST';
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(partData),
+  const filteredParts = useMemo(() => {
+    return parts
+      .filter(part => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+          part.name.toLowerCase().includes(term) ||
+          part.part_number.toLowerCase().includes(term)
+        );
+      })
+      .filter(part => {
+        if (filterProprietary === 'all') return true;
+        return part.is_proprietary === (filterProprietary === 'yes');
+      })
+      .filter(part => {
+        if (filterConsumable === 'all') return true;
+        return part.is_consumable === (filterConsumable === 'yes');
       });
+  }, [parts, searchTerm, filterProprietary, filterConsumable]);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+  const handleCreateOrUpdate = async (partData) => {
+    try {
+      if (editingPart) {
+        await partsService.updatePart(editingPart.id, partData);
+      } else {
+        await partsService.createPart(partData);
       }
 
       await fetchParts();
@@ -66,6 +67,7 @@ const Parts = () => {
       setEditingPart(null);
     } catch (err) {
       console.error("Error creating/updating part:", err);
+      // Re-throw to be caught by the form's error handling
       throw err;
     }
   };
@@ -74,22 +76,12 @@ const Parts = () => {
     if (!window.confirm("Are you sure you want to delete this part?")) {
       return;
     }
+    setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/parts/${partId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok && response.status !== 204) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
-
+      await partsService.deletePart(partId);
       await fetchParts();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to delete part.');
     }
   };
 
@@ -115,11 +107,60 @@ const Parts = () => {
         </button>
       </div>
 
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
+      {loading && <p className="text-gray-500">Loading parts...</p>}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        {parts.map((part) => (
+      {/* Search and Filter Bar */}
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Search</label>
+            <input
+              type="text"
+              id="search"
+              placeholder="By name or number..."
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="filterProprietary" className="block text-sm font-medium text-gray-700">Proprietary</label>
+            <select
+              id="filterProprietary"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={filterProprietary}
+              onChange={(e) => setFilterProprietary(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="filterConsumable" className="block text-sm font-medium text-gray-700">Consumable</label>
+            <select
+              id="filterConsumable"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={filterConsumable}
+              onChange={(e) => setFilterConsumable(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {!loading && filteredParts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {filteredParts.map((part) => (
           <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
             <h3 className="text-2xl font-semibold text-purple-700 mb-2">{part.name}</h3>
             <p className="text-gray-600 mb-1"><span className="font-medium">Part #:</span> {part.part_number}</p>
@@ -165,8 +206,18 @@ const Parts = () => {
               </button>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && filteredParts.length === 0 && (
+        <div className="text-center py-10 bg-white rounded-lg shadow-md">
+          <h3 className="text-xl font-semibold text-gray-700">No Parts Found</h3>
+          <p className="text-gray-500 mt-2">
+            {parts.length > 0 ? 'Try adjusting your search or filter criteria.' : 'There are no parts in the system yet.'}
+          </p>
+        </div>
+      )}
 
       <Modal
         show={showModal}

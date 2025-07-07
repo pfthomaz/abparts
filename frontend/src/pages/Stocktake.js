@@ -1,107 +1,124 @@
-import React, { useState, useEffect } from '''react''';
-import { useAuth } from '''../AuthContext''';
+import React, { useState, useEffect, useCallback } from 'react';
+import { stocktakeService } from '../services/stocktakeService';
 
 const Stocktake = () => {
     const [locations, setLocations] = useState([]);
-    const [selectedLocation, setSelectedLocation] = useState('''''');
+    const [selectedLocation, setSelectedLocation] = useState('');
     const [worksheet, setWorksheet] = useState(null);
-    const { token } = useAuth();
+    const [error, setError] = useState('');
+    const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         const fetchLocations = async () => {
+            setError('');
+            setIsLoadingLocations(true);
             try {
-                const response = await fetch('''http://localhost:8000/stocktake/locations''', {
-                    headers: {
-                        '''Authorization''': `Bearer ${token}`,
-                    },
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setLocations(data);
-                } else {
-                    console.error('''Failed to fetch locations''');
-                }
-            } catch (error) {
-                console.error('''Error fetching locations:''', error);
+                const data = await stocktakeService.getLocations();
+                setLocations(data);
+            } catch (err) {
+                setError(err.message || 'Failed to fetch stocktake locations.');
+            } finally {
+                setIsLoadingLocations(false);
             }
         };
 
         fetchLocations();
-    }, [token]);
+    }, []);
 
-    const handleGenerateWorksheet = async () => {
-        if (!selectedLocation) return;
+    const handleGenerateWorksheet = useCallback(async (e) => {
+        e.preventDefault();
+        if (!selectedLocation) {
+            setError('Please select a location.');
+            return;
+        }
+        setIsGenerating(true);
+        setError('');
+        setWorksheet(null);
 
         try {
-            const response = await fetch('''http://localhost:8000/stocktake/worksheet''', {
-                method: '''POST''',
-                headers: {
-                    '''Content-Type''': '''application/json''',
-                    '''Authorization''': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ name: selectedLocation }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setWorksheet(data.data);
-            } else {
-                console.error('''Failed to generate worksheet''');
-            }
-        } catch (error) {
-            console.error('''Error generating worksheet:''', error);
+            const result = await stocktakeService.generateWorksheet(selectedLocation);
+            setWorksheet(result.data);
+        } catch (err) {
+            setError(err.message || 'Failed to generate worksheet.');
+        } finally {
+            setIsGenerating(false);
         }
-    };
+    }, [selectedLocation]);
 
     return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Stocktake</h1>
-            <div className="mb-4">
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700">Select Location</label>
-                <select
-                    id="location"
-                    name="location"
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                >
-                    <option value="">--Please choose a location--</option>
-                    {locations.map((loc) => (
-                        <option key={loc.name} value={loc.name}>
-                            {loc.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
-            <button
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                disabled={!selectedLocation}
-                onClick={handleGenerateWorksheet}
-            >
-                Generate Stocktake Worksheet
-            </button>
+        <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-6">Stocktake</h1>
+
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong className="font-bold">Error: </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
+
+            <form onSubmit={handleGenerateWorksheet} className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <div className="mb-4">
+                    <label htmlFor="location-select" className="block text-gray-700 text-sm font-bold mb-2">
+                        Select Location
+                    </label>
+                    <div className="flex">
+                        {isLoadingLocations ? (
+                            <p className="text-gray-500">Loading locations...</p>
+                        ) : (
+                            <>
+                                <select
+                                    id="location-select"
+                                    value={selectedLocation}
+                                    onChange={(e) => setSelectedLocation(e.target.value)}
+                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    disabled={isGenerating || locations.length === 0}
+                                >
+                                    <option value="">-- Choose a location --</option>
+                                    {locations.map((loc) => (
+                                        <option key={loc.name} value={loc.name}>{loc.name}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="submit"
+                                    className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-blue-300"
+                                    disabled={isGenerating || !selectedLocation}
+                                >
+                                    {isGenerating ? 'Generating...' : 'Generate Worksheet'}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </form>
 
             {worksheet && (
-                <div className="mt-8">
-                    <h2 className="text-xl font-bold mb-4">Stocktake Worksheet for {selectedLocation}</h2>
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part ID</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {worksheet.map((item) => (
-                                <tr key={item.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.part_id}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.current_stock}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.location}</td>
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Worksheet for: {selectedLocation}</h2>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white">
+                            <thead className="bg-gray-200">
+                                <tr>
+                                    <th className="text-left py-3 px-4 uppercase font-semibold text-sm w-1/4">Part Number</th>
+                                    <th className="text-left py-3 px-4 uppercase font-semibold text-sm w-2/4">Name</th>
+                                    <th className="text-center py-3 px-4 uppercase font-semibold text-sm w-1/4">Current Stock</th>
+                                    <th className="text-left py-3 px-4 uppercase font-semibold text-sm w-1/4">Counted Stock</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="text-gray-700">
+                                {worksheet.map((item) => (
+                                    <tr key={item.id} className="border-b">
+                                        <td className="text-left py-3 px-4">{item.part.part_number}</td>
+                                        <td className="text-left py-3 px-4">{item.part.name}</td>
+                                        <td className="text-center py-3 px-4">{item.current_stock}</td>
+                                        <td className="py-3 px-4">
+                                            <input type="number" className="shadow-inner appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>
@@ -109,3 +126,4 @@ const Stocktake = () => {
 };
 
 export default Stocktake;
+

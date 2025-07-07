@@ -11,4 +11,7 @@ from . import customer_orders
 from . import customer_order_items
 from . import part_usage
 from . import machines
+from . import dashboard
+from . import stock_adjustments
+from . import stocktake
 # Add other CRUD modules here as you create them:

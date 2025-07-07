@@ -42,6 +42,7 @@ class Organization(Base):
     )
     part_usage_records = relationship("PartUsage", back_populates="customer_organization", cascade="all, delete-orphan")
 
+
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', type='{self.type}')>"
 
@@ -66,6 +67,7 @@ class User(Base):
     organization = relationship("Organization", back_populates="users")
     part_usage_records = relationship("PartUsage", back_populates="recorded_by_user")
     customer_orders_placed = relationship("CustomerOrder", back_populates="ordered_by_user") # This side is correct
+    stock_adjustments = relationship("StockAdjustment", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', organization_id={self.organization_id})>"
@@ -148,6 +150,7 @@ class Inventory(Base):
     # Relationships
     organization = relationship("Organization", back_populates="inventory_items")
     part = relationship("Part", back_populates="inventory_items")
+    adjustments = relationship("StockAdjustment", order_by="StockAdjustment.adjustment_date", back_populates="inventory_item", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Inventory(id={self.id}, org_id={self.organization_id}, part_id={self.part_id}, stock={self.current_stock})>"
@@ -322,11 +325,7 @@ class StockAdjustment(Base):
 
     # Relationships
     inventory_item = relationship("Inventory", back_populates="adjustments")
-    user = relationship("User") # Add back_populates if needed on User model
+    user = relationship("User", back_populates="stock_adjustments")
 
     def __repr__(self):
         return f"<StockAdjustment(id={self.id}, inventory_id={self.inventory_id}, qty_adj={self.quantity_adjusted}, reason='{self.reason_code}')>"
-
-
-# Add back-population to Inventory model
-Inventory.adjustments = relationship("StockAdjustment", order_by=StockAdjustment.adjustment_date, back_populates="inventory_item", cascade="all, delete-orphan")

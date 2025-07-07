@@ -30,6 +30,9 @@ const Layout = () => {
             <Link to="/stocktake" className="text-gray-600 hover:text-gray-800">
               Stocktake
             </Link>
+            <Link to="/machines" className="text-gray-600 hover:text-gray-800">
+              Machines
+            </Link>
             <span className="text-gray-700">
               Welcome, <span className="font-semibold">{user.name || user.username}</span> ({user.role})
             </span>
