@@ -1,10 +1,10 @@
 // frontend/src/components/PartForm.js
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
+import { partsService } from '../services/partsService';
+import { API_BASE_URL } from '../services/api';
 
 function PartForm({ initialData = {}, onSubmit, onClose }) {
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     part_number: '',
     name: '',
@@ -19,10 +19,9 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
 
   const [selectedFiles, setSelectedFiles] = useState([]); // State to hold File objects
   const [imagePreviews, setImagePreviews] = useState([]); // State to hold image data URLs for preview
+  const [removedImageUrls, setRemovedImageUrls] = useState([]); // State to track removed existing images
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     // Reset form data when initialData changes (e.g., opening for new vs. edit)
@@ -46,6 +45,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       setImagePreviews([]); // Clear previews if no initial images
     }
     setSelectedFiles([]); // Clear selected files on data change
+    setRemovedImageUrls([]); // Clear removed images on data change
   }, [initialData]);
 
   const handleChange = (e) => {
@@ -77,20 +77,18 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
   };
 
   const handleRemoveImage = (indexToRemove) => {
-    // If it's a file preview (starts with blob:), remove from selectedFiles
-    if (imagePreviews[indexToRemove].startsWith('blob:')) {
+    const imageUrl = imagePreviews[indexToRemove];
+    if (imageUrl.startsWith('blob:')) {
+      // If it's a file preview (starts with blob:), remove from selectedFiles
       setSelectedFiles(prevFiles => {
         const newFiles = prevFiles.filter((_, index) => index !== (indexToRemove - (imagePreviews.filter(url => !url.startsWith('blob:')).length)));
         // Revoke URL objects to prevent memory leaks
-        URL.revokeObjectURL(imagePreviews[indexToRemove]);
+        URL.revokeObjectURL(imageUrl);
         return newFiles;
       });
     } else {
-        // If it's an existing image URL, keep it in formData.image_urls to be removed on backend
-        // For simplicity in this initial implementation, we'll assume removing from preview
-        // means we want to remove it from the final list sent to the backend.
-        // A more robust solution would track which existing images are marked for deletion.
-        // For now, removing an existing image from preview means it will not be sent back to backend.
+      // If it's an existing image URL, add it to the list of URLs to be removed on submit.
+      setRemovedImageUrls(prev => [...prev, imageUrl]);
     }
     setImagePreviews(prevPreviews => prevPreviews.filter((_, index) => index !== indexToRemove));
   };
@@ -105,19 +103,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       formData.append('file', file);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/parts/upload-image`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || `HTTP error! status: ${response.status} for ${file.name}`);
-        }
-        const data = await response.json();
+        const data = await partsService.uploadImage(formData);
         uploadedUrls.push(data.url);
       } catch (uploadError) {
         console.error("Image upload failed:", uploadError);
@@ -136,9 +122,12 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
     try {
       // First, upload new images
       const newImageUrls = await uploadImages();
-      
-      // Combine existing image URLs (if editing) with newly uploaded ones
-      const finalImageUrls = [...(initialData.image_urls || []), ...newImageUrls];
+
+      // Filter out any URLs that the user has marked for removal
+      const existingUrls = (initialData.image_urls || []).filter(url => !removedImageUrls.includes(url));
+
+      // Combine the remaining existing URLs with the newly uploaded ones
+      const finalImageUrls = [...existingUrls, ...newImageUrls];
 
       // Prepare data, converting empty strings to null for optional int fields
       const dataToSend = {

@@ -1,55 +1,54 @@
-# .gitignore
-
 # Node.js
 frontend/node_modules/
 frontend/build/
 frontend/dist/
-.env.local
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Python
-**/__pycache__/ # Ignore all __pycache__ directories
-**/*.pyc # Ignore all .pyc files
+# Environment files
+.env
+.env.local
+!.env.example
 
+# Python
 __pycache__/
 *.pyc
-
+*.pyo
+*.pyd
+.venv/
+env/
 backend/app/.venv/
 backend/app/env/
-# backend/app/*.pyc # Covered by **/*.pyc
+backend/app/.ipynb_checkpoints/
+backend/app/instance/
 backend/app/*.log
 backend/app/.Python
-backend/app/.ipynb_checkpoints/ # If you use Jupyter notebooks
-backend/app/instance/ # Flask specific, if used for persistence
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
 
 # ngrok
-# Ignore ngrok configuration file
-ngrok/ngrok.yml 
+ngrok/ngrok.yml
 
 # Docker
-.env
-# IMPORTANT: Do NOT commit your .env file which contains secrets
-!/.env.example 
-# If you want to keep an example .env file without actual secrets
 .dockerignore
-# Exclude the actual Docker volumes (the directories Docker creates on host)
 db_data/
 redis_data/
 pgadmin_data/
-# Or if you don't want to list them explicitly but rely on .dockerignore for image builds
-# However, for the root .gitignore, explicitly ignoring volume paths is good practice.
 
-# pgAdmin config (if you have specific files you edit frequently that pgadmin generates)
-# For the mounted config_local.py, you might want to version control it,
-# but if you add other generated files inside pgadmin_config that you don't want to track, add them here.
+# pgAdmin config
 pgadmin_config/logs/
 pgadmin_config/sessions/
 pgadmin_config/pgadmin4.db
 
-# IDE specific files
+# IDE/editor
 .vscode/
 .idea/
 *.swp
 *~
+
+# Misc
+.DS_Store
+Thumbs.db
+backend.zip

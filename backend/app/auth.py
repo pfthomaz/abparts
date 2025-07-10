@@ -10,7 +10,9 @@ from typing import List, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from jose import jwt
 
 from . import models
 from .database import get_db
@@ -18,7 +20,13 @@ from .schemas import Token
 
 logger = logging.getLogger(__name__)
 
+# --- Password Hashing Setup ---
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
 
 class TokenData(BaseModel):
     username: Optional[str] = None
@@ -26,12 +34,15 @@ class TokenData(BaseModel):
     organization_id: Optional[uuid.UUID] = None
     role: Optional[str] = None
 
-def verify_password_stub(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    STUB: In a real application, use bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')).
-    This just checks if the plain_password matches the hashed_password (which includes "_hashed").
+    Verifies a plain password against a hashed password using passlib.
     """
-    return (plain_password + "_hashed") == hashed_password
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    """Hashes a password using passlib's bcrypt context."""
+    return pwd_context.hash(password)
 
 async def authenticate_user(db: Session, username: str, password: str):
     """
@@ -40,31 +51,23 @@ async def authenticate_user(db: Session, username: str, password: str):
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
         return None
-    if not verify_password_stub(password, user.password_hash):
+    if not verify_password(password, user.password_hash):
         return None
     return user
 
 def create_access_token(user: models.User, expires_delta: Optional[timedelta] = None):
-    """
-    STUB: Generates a "fake" access token by Base64 encoding a JSON payload.
-    In a real application, this would generate a cryptographically signed JWT.
-    """
-    # Payload for the fake token
-    payload = {
+    to_encode = {
         "sub": user.username,
         "user_id": str(user.id),
         "organization_id": str(user.organization_id),
         "role": user.role,
-        # 'exp': (datetime.utcnow() + expires_delta).timestamp() if expires_delta else None # Optional: add expiry
     }
-    # Encode payload to JSON string, then to bytes, then Base64 encode
-    encoded_payload = base64.urlsafe_b64encode(json.dumps(payload).encode('utf-8')).decode('utf-8').rstrip("=")
-    
-    # Prefix with "fake." to resemble JWT structure (header.payload.signature)
-    # Since we're not doing signature, it's just header.payload
-    fake_header = base64.urlsafe_b64encode(json.dumps({"alg": "none", "typ": "JWT"}).encode('utf-8')).decode('utf-8').rstrip("=")
-    
-    return f"{fake_header}.{encoded_payload}." # Trailing dot for "no signature"
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(hours=12)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
@@ -160,4 +163,3 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user), db:
     if not user_db:
         raise HTTPException(status_code=404, detail="User not found in DB")
     return user_db
-

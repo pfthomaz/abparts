@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, VERSION
 
 # --- Base Schemas with common fields ---
 class BaseSchema(BaseModel):
@@ -68,6 +68,19 @@ class TokenData(BaseModel):
     role: str
 
 
+# --- Dashboard Schemas (New!) ---
+class DashboardMetricsResponse(BaseModel):
+    total_parts: int
+    total_inventory_items: int
+    low_stock_items: int
+    pending_customer_orders: int
+    pending_supplier_orders: int
+
+class LowStockByOrgResponse(BaseModel):
+    organization_name: str
+    low_stock_count: int
+
+
 # --- Machine Schemas (New!) ---
 class MachineBase(BaseModel):
     organization_id: uuid.UUID
@@ -119,6 +132,7 @@ class ImageUploadResponse(BaseModel):
 class InventoryBase(BaseModel):
     organization_id: uuid.UUID
     part_id: uuid.UUID
+    location: Optional[str] = Field(None, max_length=255)
     current_stock: int = 0
     minimum_stock_recommendation: int = 0
     reorder_threshold_set_by: Optional[str] = Field(None, max_length=50)
@@ -130,6 +144,7 @@ class InventoryCreate(InventoryBase):
 class InventoryUpdate(InventoryBase):
     organization_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
+    location: Optional[str] = Field(None, max_length=255)
     current_stock: Optional[int] = None
     minimum_stock_recommendation: Optional[int] = None
     reorder_threshold_set_by: Optional[str] = Field(None, max_length=50)
@@ -162,7 +177,7 @@ class SupplierOrderUpdate(SupplierOrderBase):
     notes: Optional[str] = None
 
 class SupplierOrderResponse(SupplierOrderBase, BaseSchema):
-    pass
+    items: List['SupplierOrderItemResponse'] = []
 
 
 # --- Supplier Order Item Schemas ---
@@ -182,7 +197,7 @@ class SupplierOrderItemUpdate(SupplierOrderItemBase):
     unit_price: Optional[float] = None
 
 class SupplierOrderItemResponse(SupplierOrderItemBase, BaseSchema):
-    pass
+    part: PartResponse
 
 
 # --- Customer Order Schemas ---
@@ -210,8 +225,8 @@ class CustomerOrderUpdate(CustomerOrderBase):
     notes: Optional[str] = None
 
 class CustomerOrderResponse(CustomerOrderBase, BaseSchema):
-    pass
-
+    items: List['CustomerOrderItemResponse'] = []
+    customer_organization: Optional[OrganizationResponse] = None
 
 # --- Customer Order Item Schemas ---
 class CustomerOrderItemBase(BaseModel):
@@ -230,8 +245,16 @@ class CustomerOrderItemUpdate(CustomerOrderItemBase):
     unit_price: Optional[float] = None
 
 class CustomerOrderItemResponse(CustomerOrderItemBase, BaseSchema):
-    pass
+    part: PartResponse
 
+# Forward-referencing resolution
+# This handles compatibility between Pydantic v1 and v2.
+if VERSION.startswith('1.'):
+    SupplierOrderResponse.update_forward_refs()
+    CustomerOrderResponse.update_forward_refs()
+else:
+    SupplierOrderResponse.model_rebuild()
+    CustomerOrderResponse.model_rebuild()
 
 # --- Part Usage Schemas ---
 class PartUsageBase(BaseModel):
@@ -291,3 +314,8 @@ class StocktakeWorksheetItemResponse(BaseModel):
 
     class Config:
         from_attributes = True # Allow ORM models to be converted (though this is a custom construction)
+
+
+# --- Stocktake Location Schema (New!) ---
+class StocktakeLocation(BaseModel):
+    name: str

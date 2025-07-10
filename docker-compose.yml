@@ -16,8 +16,9 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data # Persist database data
       - ./init_db:/docker-entrypoint-initdb.d # For initial DB scripts (e.g., creating users, initial data)
-    healthcheck: # Healthcheck to ensure DB is ready before dependent services start
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+    healthcheck:
+      # Healthcheck to ensure DB is ready before dependent services start
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -31,8 +32,9 @@ services:
     volumes:
       - redis_data:/data # Persist Redis data (optional, can be ephemeral for dev)
     command: redis-server --appendonly yes # Enable AOF persistence for Redis
-    healthcheck: # Healthcheck to ensure Redis is ready
-      test: ["CMD", "redis-cli", "ping"]
+    healthcheck:
+      # Healthcheck to ensure Redis is ready
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -58,8 +60,8 @@ services:
       redis:
         condition: service_healthy # Ensure Redis is healthy before starting API
     # Command to run FastAPI with Uvicorn in development mode (with auto-reload)
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude /app/static/images
   # Celery Worker Service for ML Engine and Async Tasks
   celery_worker:
     build:
