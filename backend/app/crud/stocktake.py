@@ -16,4 +16,5 @@ def generate_worksheet_data(db: Session, location: str) -> list[schemas.Inventor
     """
     Retrieves all inventory items for a given location to generate a worksheet.
     """
-    return db.query(models.Inventory).filter(models.Inventory.location == location).all()
+    inventory_items = db.query(models.Inventory).filter(models.Inventory.location == location).all()
+    return [schemas.InventoryResponse.model_validate(item) for item in inventory_items]

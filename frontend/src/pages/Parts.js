@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { partsService } from '../services/partsService';
+import { API_BASE_URL } from '../services/api';
 import Modal from '../components/Modal';
 import PartForm from '../components/PartForm';
 
@@ -14,8 +15,6 @@ const Parts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProprietary, setFilterProprietary] = useState('all');
   const [filterConsumable, setFilterConsumable] = useState('all');
-
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   const fetchParts = useCallback(async () => {
     setLoading(true);

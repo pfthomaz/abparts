@@ -1,10 +1,10 @@
 // frontend/src/components/PartForm.js
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
+import { partsService } from '../services/partsService';
+import { API_BASE_URL } from '../services/api';
 
 function PartForm({ initialData = {}, onSubmit, onClose }) {
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     part_number: '',
     name: '',
@@ -22,8 +22,6 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
   const [removedImageUrls, setRemovedImageUrls] = useState([]); // State to track removed existing images
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     // Reset form data when initialData changes (e.g., opening for new vs. edit)
@@ -105,19 +103,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       formData.append('file', file);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/parts/upload-image`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || `HTTP error! status: ${response.status} for ${file.name}`);
-        }
-        const data = await response.json();
+        const data = await partsService.uploadImage(formData);
         uploadedUrls.push(data.url);
       } catch (uploadError) {
         console.error("Image upload failed:", uploadError);

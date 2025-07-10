@@ -185,6 +185,7 @@ DECLARE
     USER_AUTOPARTS_LTD_USER_ID UUID := 'b0ccc999-9c0c-0d12-3456-789012345678';
     USER_CUSTOMER_B_USER_ID UUID := 'c1ddd000-0d1d-1e23-4567-890123456789';
     USER_CUSTOMER_C_USER_ID UUID := 'd2eee111-1e2e-2f34-5678-901234567890';
+    USER_SUPER_ADMIN_ID UUID := 'f6abc555-5b6c-6f7a-8b9c-0d123456789a';
 
 
     MACHINE_V31B_ID UUID := '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6';
@@ -212,11 +213,12 @@ BEGIN
 
     -- Users (1 per organization)
     INSERT INTO users (id, organization_id, username, password_hash, email, name, role) VALUES
-    (USER_ORASEAS_ADMIN_ID, ORG_ORASEAS_EE_ID, 'oraseasee_admin', '$2b$12$DbmIZiW28.sKjKogbE48A.d2u5dOqO9LLp9Qx.i0d5a3Qy/3sajfK', 'admin@oraseas.com', 'Oraseas Admin', 'Oraseas Admin'),
-    (USER_AUTOBOSS_ADMIN_ID, ORG_AUTOBOSS_INC_ID, 'autoboss_admin', '$2b$12$DbmIZiW28.sKjKogbE48A.d2u5dOqO9LLp9Qx.i0d5a3Qy/3sajfK', 'admin@autoboss.com', 'Autoboss Admin', 'Customer Admin'),
-    (USER_AUTOPARTS_LTD_USER_ID, ORG_AUTOPARTS_LTD_ID, 'autoparts_user', '$2b$12$sQJvVzS.iW.eXlJ4K.eXl.sQJvVzS.iW.eXlJ4K.eXl.s', 'user@autoparts.com', 'AutoParts User', 'Supplier User'),
-    (USER_CUSTOMER_B_USER_ID, ORG_CUSTOMER_B_ID, 'robomech_user', '$2b$12$sQJvVzS.iW.eXlJ4K.eXl.sQJvVzS.iW.eXlJ4K.eXl.s', 'user@robomech.com', 'RoboMech User', 'Customer User'),
-    (USER_CUSTOMER_C_USER_ID, ORG_CUSTOMER_C_ID, 'industrial_user', '$2b$12$sQJvVzS.iW.eXlJ4K.eXl.sQJvVzS.iW.eXlJ4K.eXl.s', 'user@industrial.com', 'Industrial User', 'Customer User');
+    (USER_ORASEAS_ADMIN_ID, ORG_ORASEAS_EE_ID, 'oraseasee_admin', '$2b$12$iPjCrXM5KgyxmQ99HA.k2ux95xNuxxHTZFrsE4QXRCe1AZS68H8Uy', 'admin@oraseas.com', 'Oraseas Admin', 'Oraseas Admin'),
+    (USER_AUTOBOSS_ADMIN_ID, ORG_AUTOBOSS_INC_ID, 'autoboss_admin', '$2b$12$iPjCrXM5KgyxmQ99HA.k2ux95xNuxxHTZFrsE4QXRCe1AZS68H8Uy', 'admin@autoboss.com', 'Autoboss Admin', 'Customer Admin'),
+    (USER_AUTOPARTS_LTD_USER_ID, ORG_AUTOPARTS_LTD_ID, 'autoparts_user', '$2b$12$ArVJaYD7kXidYWguYO2Gt.2lI3rV3Pm8dmfTJ8DjSAI2KdpFh1xv2', 'user@autoparts.com', 'AutoParts User', 'Supplier User'),
+    (USER_CUSTOMER_B_USER_ID, ORG_CUSTOMER_B_ID, 'robomech_user', '$2b$12$ArVJaYD7kXidYWguYO2Gt.2lI3rV3Pm8dmfTJ8DjSAI2KdpFh1xv2', 'user@robomech.com', 'RoboMech User', 'Customer User'),
+    (USER_CUSTOMER_C_USER_ID, ORG_CUSTOMER_C_ID, 'industrial_user', '$2b$12$ArVJaYD7kXidYWguYO2Gt.2lI3rV3Pm8dmfTJ8DjSAI2KdpFh1xv2', 'user@industrial.com', 'Industrial User', 'Customer User'),
+    (USER_SUPER_ADMIN_ID, ORG_ORASEAS_EE_ID, 'superadmin', '$2b$12$SloIsiIq.hHt97P4aiYYfeocRRYfoDRdmTm7pcUFvGV77cBqQDoAK', 'superadmin@oraseas.com', 'Super Admin', 'Oraseas Admin');
 
     -- Machines (2)
     INSERT INTO machines (id, organization_id, model_type, name, serial_number) VALUES

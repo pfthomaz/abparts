@@ -11,6 +11,7 @@ celery
 pandas
 scikit-learn
 python-jose # For actual JWT handling if you move beyond the stub
-passlib[bcrypt] # For actual password hashing (bcrypt)
+passlib==1.7.4
+bcrypt==3.2.0
 python-multipart # For handling file uploads
 email-validator # For validating email addresses    

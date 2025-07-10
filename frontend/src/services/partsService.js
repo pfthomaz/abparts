@@ -34,9 +34,19 @@ const deletePart = (partId) => {
   return api.delete(`/parts/${partId}`);
 };
 
+/**
+ * Uploads an image file for a part.
+ * @param {FormData} formData The form data containing the file.
+ */
+const uploadImage = (formData) => {
+  // The generic api client will handle the content type for FormData.
+  return api.post('/parts/upload-image', formData);
+};
+
 export const partsService = {
   getParts,
   createPart,
   updatePart,
   deletePart,
+  uploadImage,
 };

@@ -1,6 +1,6 @@
 // c:/abparts/frontend/src/services/api.js
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
 /**
  * A generic request handler that abstracts the fetch API.
@@ -13,9 +13,11 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
  */
 const request = async (endpoint, method = 'GET', body = null) => {
   const token = localStorage.getItem('authToken');
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-  });
+  const headers = new Headers();
+
+  if (!(body instanceof FormData)) {
+    headers.append('Content-Type', 'application/json');
+  }
 
   if (token) {
     headers.append('Authorization', `Bearer ${token}`);
@@ -27,7 +29,7 @@ const request = async (endpoint, method = 'GET', body = null) => {
   };
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = body instanceof FormData ? body : JSON.stringify(body);
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
