@@ -41,22 +41,22 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
     } else { // Creating new user
       setFormData(defaultState);
       if (user?.role === 'Customer Admin') { // If Customer Admin is creating, lock to their org
-        setFormData(prevState => ({...prevState, organization_id: user.organization_id}));
+        setFormData(prevState => ({ ...prevState, organization_id: user.organization_id }));
       }
     }
   }, [initialData, user, organizations]);
 
   const isFieldDisabled = (fieldName) => {
     if (!initialData.id) { // Creating new user
-        if (fieldName === 'organization_id' && user?.role === 'Customer Admin') return true;
-        return false;
+      if (fieldName === 'organization_id' && user?.role === 'Customer Admin') return true;
+      return false;
     }
     // Editing existing user
     if (editingSelf) { // User editing their own profile
-        return fieldName === 'role' || fieldName === 'organization_id';
+      return fieldName === 'role' || fieldName === 'organization_id';
     }
     if (user?.role === 'Customer Admin') { // Customer Admin editing another user in their org
-        return fieldName === 'role' || fieldName === 'organization_id';
+      return fieldName === 'role' || fieldName === 'organization_id';
     }
     // Oraseas Admin can edit anything for others
     return false;
@@ -197,15 +197,15 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
         <select
           id="organization_id"
           name="organization_id"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          value={formData.organization_id}
-          onChange={handleChange}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md"
+          value={formData.organization_id || ''}
+          onChange={e => setFormData({ ...formData, organization_id: e.target.value })}
           required
           disabled={loading || isFieldDisabled('organization_id')}
         >
-          <option value="">Select an Organization</option>
-          {organizations.map((org) => (
-            <option key={org.id} value={org.id}>{org.name} ({org.type})</option>
+          <option value="">Select organization</option>
+          {organizations.map(org => (
+            <option key={org.id} value={org.id}>{org.name}</option>
           ))}
         </select>
       </div>

@@ -18,6 +18,7 @@ import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
 import Stocktake from './pages/Stocktake';
 import Machines from './pages/Machines'; // New: Import Machines page
+import UsersPage from './pages/UsersPage'; // New: Import UsersPage
 
 function App() {
   const { token, loadingUser } = useAuth();
@@ -48,6 +49,7 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="stocktake" element={<Stocktake />} />
           <Route path="machines" element={<Machines />} /> {/* New: Add Machines route */}
+          <Route path="users" element={<UsersPage />} /> {/* New: Add UsersPage route */}
         </Route>
       </Routes>
     </Router>
