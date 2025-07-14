@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
 import UserForm from '../components/UserForm';
 import { userService } from '../services/userService';
+import { organizationsService } from '../services/organizationsService';
 
 function UsersPage() {
   const { user } = useAuth();
@@ -37,8 +38,7 @@ function UsersPage() {
   async function fetchOrganizations() {
     // Implement this API call if not present
     try {
-      const res = await fetch('/api/organizations');
-      const data = await res.json();
+      const data = await organizationsService.getOrganizations();
       setOrganizations(data);
     } catch {
       setOrganizations([]);
