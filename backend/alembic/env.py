@@ -16,13 +16,20 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.database import Base
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
 import os
 import sys
+from dotenv import load_dotenv
 
-# Add the app directory to the Python path
-# This is a common pattern for Alembic to find your models
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the project root directory to the path
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+# Load environment variables from .env file in the project root
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+
+from backend.app.database import Base
+from backend.app import models  # Import your models module
 
 target_metadata = Base.metadata
 
