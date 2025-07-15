@@ -57,3 +57,13 @@ def delete_user(db: Session, user_id: uuid.UUID) -> bool:
     db.delete(db_user)
     db.commit()
     return True
+
+def set_user_active_status(db: Session, user_id: uuid.UUID, is_active: bool) -> models.User | None:
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    db_user.is_active = is_active
+    db.commit()
+    db.refresh(db_user)
+    return db_user

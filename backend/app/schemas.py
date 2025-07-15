@@ -40,6 +40,7 @@ class UserBase(BaseModel):
     email: EmailStr = Field(..., max_length=255)
     name: Optional[str] = Field(None, max_length=255)
     role: str = Field(..., max_length=50) # e.g., 'Oraseas Admin', 'Customer User'
+    is_active: bool = True
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8) # Password should be hashed in backend
@@ -319,3 +320,4 @@ class StocktakeWorksheetItemResponse(BaseModel):
 # --- Stocktake Location Schema (New!) ---
 class StocktakeLocation(BaseModel):
     name: str
+

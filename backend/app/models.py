@@ -60,6 +60,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
     role = Column(String(50), nullable=False) # e.g., 'Oraseas Admin', 'Customer User'
+    is_active = Column(Boolean, server_default='True', nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -329,3 +330,4 @@ class StockAdjustment(Base):
 
     def __repr__(self):
         return f"<StockAdjustment(id={self.id}, inventory_id={self.inventory_id}, qty_adj={self.quantity_adjusted}, reason='{self.reason_code}')>"
+

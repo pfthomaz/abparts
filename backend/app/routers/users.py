@@ -103,6 +103,36 @@ async def update_user(
         raise HTTPException(status_code=400, detail="Failed to update user")
     return updated_user
 
+@router.patch("/{user_id}/deactivate", response_model=schemas.UserResponse)
+async def deactivate_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"]))
+):
+    user_to_deactivate = crud.users.get_user(db, user_id)
+    if not user_to_deactivate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if current_user.role == "Customer Admin" and user_to_deactivate.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to deactivate this user")
+
+    return crud.users.set_user_active_status(db, user_id, False)
+
+@router.patch("/{user_id}/reactivate", response_model=schemas.UserResponse)
+async def reactivate_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"]))
+):
+    user_to_reactivate = crud.users.get_user(db, user_id)
+    if not user_to_reactivate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if current_user.role == "Customer Admin" and user_to_reactivate.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to reactivate this user")
+
+    return crud.users.set_user_active_status(db, user_id, True)
+
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: uuid.UUID,

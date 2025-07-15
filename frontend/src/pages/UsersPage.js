@@ -104,7 +104,7 @@ function UsersPage() {
     .filter(u =>
       (!search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()))
       && (!filterRole || u.role === filterRole)
-      && (!filterStatus || (filterStatus === 'active' ? u.active : !u.active))
+      && (!filterStatus || (filterStatus === 'active' ? u.is_active : !u.is_active))
     );
 
   return (
@@ -173,7 +173,7 @@ function UsersPage() {
                 <td className="px-4 py-2">{u.role}</td>
                 <td className="px-4 py-2">{organizations.find(org => org.id === u.organization_id)?.name || '-'}</td>
                 <td className="px-4 py-2">
-                  {u.active ? (
+                  {u.is_active ? (
                     <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Active</span>
                   ) : (
                     <span className="inline-block px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">Inactive</span>
@@ -187,7 +187,7 @@ function UsersPage() {
                   >
                     Edit
                   </button>
-                  {u.active ? (
+                  {u.is_active ? (
                     <button
                       className="text-red-600 hover:underline"
                       onClick={() => handleDeactivate(u.id)}
