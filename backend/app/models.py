@@ -147,6 +147,7 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     invitation_token = Column(String(255), nullable=True)
     invitation_expires_at = Column(DateTime(timezone=True), nullable=True)
+    invited_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     password_reset_token = Column(String(255), nullable=True)
     password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, server_default='true', nullable=False)
@@ -159,6 +160,8 @@ class User(Base):
     customer_orders_placed = relationship("CustomerOrder", back_populates="ordered_by_user")
     stock_adjustments = relationship("StockAdjustment", back_populates="user")
     transactions_performed = relationship("Transaction", back_populates="performed_by_user")
+    invitation_audit_logs = relationship("InvitationAuditLog", foreign_keys="[InvitationAuditLog.user_id]", back_populates="user")
+    invited_by_user = relationship("User", remote_side=[id])
 
     @hybrid_property
     def is_super_admin(self):
@@ -492,4 +495,26 @@ class StockAdjustment(Base):
 
     def __repr__(self):
         return f"<StockAdjustment(id={self.id}, inventory_id={self.inventory_id}, qty_adj={self.quantity_adjusted}, reason='{self.reason_code}')>"
+
+
+class InvitationAuditLog(Base):
+    """
+    SQLAlchemy model for the 'invitation_audit_logs' table.
+    Tracks invitation-related actions for audit trail.
+    """
+    __tablename__ = "invitation_audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    action = Column(String(50), nullable=False)  # 'invited', 'resent', 'accepted', 'expired'
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    details = Column(Text, nullable=True)
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], back_populates="invitation_audit_logs")
+    performed_by_user = relationship("User", foreign_keys=[performed_by_user_id])
+
+    def __repr__(self):
+        return f"<InvitationAuditLog(id={self.id}, user_id={self.user_id}, action='{self.action}')>"
 

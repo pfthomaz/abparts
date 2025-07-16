@@ -23,13 +23,17 @@ celery = Celery(
     include=['app.tasks'] # Specify where your tasks will be located
 )
 
+# Import beat schedule configuration
+from .celery_beat_config import beat_schedule, timezone as beat_timezone
+
 # Optional: Configure Celery if needed (e.g., timezone)
 celery.conf.update(
     task_track_started=True,
     task_time_limit=300, # Max time a task can run
     broker_connection_retry_on_startup=True,
-    timezone='Europe/Lisbon', # Based on your current location
+    timezone=beat_timezone,
     enable_utc=True,
+    beat_schedule=beat_schedule,
 )
 
 # Example task (you'll define more complex tasks in app/tasks.py)

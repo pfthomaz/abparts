@@ -117,6 +117,49 @@ class TokenData(BaseModel):
     role: str
 
 
+# --- User Invitation Schemas ---
+class UserInvitationCreate(BaseModel):
+    email: EmailStr = Field(..., max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
+    role: UserRoleEnum
+    organization_id: uuid.UUID
+
+class UserInvitationResponse(BaseModel):
+    id: uuid.UUID
+    email: str
+    name: Optional[str]
+    role: UserRoleEnum
+    organization_id: uuid.UUID
+    invitation_token: str
+    invitation_expires_at: datetime
+    user_status: UserStatusEnum
+    invited_by_user_id: uuid.UUID
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class UserInvitationAcceptance(BaseModel):
+    invitation_token: str = Field(..., min_length=32)
+    username: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=8)
+    name: Optional[str] = Field(None, max_length=255)
+
+class UserInvitationResend(BaseModel):
+    user_id: uuid.UUID
+
+class InvitationAuditLogResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    action: str  # 'invited', 'resent', 'accepted', 'expired'
+    performed_by_user_id: Optional[uuid.UUID]
+    timestamp: datetime
+    details: Optional[str]
+    
+    class Config:
+        from_attributes = True
+
+
 # --- Dashboard Schemas (New!) ---
 class DashboardMetricsResponse(BaseModel):
     total_parts: int
