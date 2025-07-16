@@ -1,32 +1,84 @@
 # backend/app/models.py
 
 import uuid
-from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint # Added UniqueConstraint
+import enum
+from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func # Import func for default timestamps
+from sqlalchemy.sql import func
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from .database import Base
+
+
+# Enums for the new business model
+class OrganizationType(enum.Enum):
+    ORASEAS_EE = "oraseas_ee"
+    BOSSAQUA = "bossaqua"
+    CUSTOMER = "customer"
+    SUPPLIER = "supplier"
+
+
+class PartType(enum.Enum):
+    CONSUMABLE = "consumable"
+    BULK_MATERIAL = "bulk_material"
+
+
+class UserRole(enum.Enum):
+    USER = "user"
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
+
+
+class UserStatus(enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING_INVITATION = "pending_invitation"
+    LOCKED = "locked"
+
+
+class TransactionType(enum.Enum):
+    CREATION = "creation"
+    TRANSFER = "transfer"
+    CONSUMPTION = "consumption"
+    ADJUSTMENT = "adjustment"
+
+
+class StockAdjustmentReason(enum.Enum):
+    STOCKTAKE_DISCREPANCY = "Stocktake Discrepancy"
+    DAMAGED_GOODS = "Damaged Goods"
+    FOUND_STOCK = "Found Stock"
+    INITIAL_STOCK_ENTRY = "Initial Stock Entry"
+    RETURN_TO_VENDOR = "Return to Vendor"
+    CUSTOMER_RETURN_RESALABLE = "Customer Return - Resalable"
+    CUSTOMER_RETURN_DAMAGED = "Customer Return - Damaged"
+    OTHER = "Other"
 
 class Organization(Base):
     """
     SQLAlchemy model for the 'organizations' table.
-    Represents Oraseas EE and its customer organizations.
+    Represents Oraseas EE and its customer organizations with proper business model hierarchy.
     """
     __tablename__ = "organizations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), unique=True, nullable=False, index=True)
-    type = Column(String(50), nullable=False) # e.g., 'Warehouse', 'Customer', 'Supplier'
+    organization_type = Column(Enum(OrganizationType), nullable=False)
+    parent_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
     address = Column(Text)
     contact_info = Column(Text)
+    is_active = Column(Boolean, nullable=False, server_default='true')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
+    # Self-referential relationship for organization hierarchy
+    parent_organization = relationship("Organization", remote_side=[id], back_populates="child_organizations")
+    child_organizations = relationship("Organization", back_populates="parent_organization", cascade="all, delete-orphan")
+
     # Relationships
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
-    machines = relationship("Machine", back_populates="organization", cascade="all, delete-orphan") # New: Machines relationship
-    inventory_items = relationship("Inventory", back_populates="organization", cascade="all, delete-orphan")
+    warehouses = relationship("Warehouse", back_populates="organization", cascade="all, delete-orphan")
+    machines = relationship("Machine", foreign_keys="[Machine.customer_organization_id]", back_populates="customer_organization", cascade="all, delete-orphan")
     supplier_orders = relationship("SupplierOrder", back_populates="ordering_organization", cascade="all, delete-orphan")
     customer_orders_placed = relationship(
         "CustomerOrder",
@@ -43,13 +95,42 @@ class Organization(Base):
     part_usage_records = relationship("PartUsage", back_populates="customer_organization", cascade="all, delete-orphan")
 
 
+    @hybrid_property
+    def is_oraseas_ee(self):
+        """Check if this organization is Oraseas EE."""
+        return self.organization_type == OrganizationType.ORASEAS_EE
+
+    @hybrid_property
+    def is_customer(self):
+        """Check if this organization is a customer."""
+        return self.organization_type == OrganizationType.CUSTOMER
+
+    @hybrid_property
+    def is_supplier(self):
+        """Check if this organization is a supplier."""
+        return self.organization_type == OrganizationType.SUPPLIER
+
+    @hybrid_property
+    def is_bossaqua(self):
+        """Check if this organization is BossAqua."""
+        return self.organization_type == OrganizationType.BOSSAQUA
+
+    def validate_business_rules(self):
+        """Validate business rules for organization types."""
+        if self.organization_type == OrganizationType.SUPPLIER and not self.parent_organization_id:
+            raise ValueError("Supplier organizations must have a parent organization")
+        
+        # Additional validation can be added here
+        return True
+
     def __repr__(self):
-        return f"<Organization(id={self.id}, name='{self.name}', type='{self.type}')>"
+        return f"<Organization(id={self.id}, name='{self.name}', type='{self.organization_type.value}')>"
 
 
 class User(Base):
     """
     SQLAlchemy model for the 'users' table.
+    Enhanced with new authentication and security features.
     """
     __tablename__ = "users"
 
@@ -59,19 +140,45 @@ class User(Base):
     password_hash = Column(Text, nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
-    role = Column(String(50), nullable=False) # e.g., 'Oraseas Admin', 'Customer User'
-    is_active = Column(Boolean, server_default='True', nullable=False)
+    role = Column(Enum(UserRole), nullable=False)
+    user_status = Column(Enum(UserStatus), nullable=False, server_default='active')
+    failed_login_attempts = Column(Integer, nullable=False, server_default='0')
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    last_login = Column(DateTime(timezone=True), nullable=True)
+    invitation_token = Column(String(255), nullable=True)
+    invitation_expires_at = Column(DateTime(timezone=True), nullable=True)
+    password_reset_token = Column(String(255), nullable=True)
+    password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
+    is_active = Column(Boolean, server_default='true', nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     organization = relationship("Organization", back_populates="users")
     part_usage_records = relationship("PartUsage", back_populates="recorded_by_user")
-    customer_orders_placed = relationship("CustomerOrder", back_populates="ordered_by_user") # This side is correct
+    customer_orders_placed = relationship("CustomerOrder", back_populates="ordered_by_user")
     stock_adjustments = relationship("StockAdjustment", back_populates="user")
+    transactions_performed = relationship("Transaction", back_populates="performed_by_user")
+
+    @hybrid_property
+    def is_super_admin(self):
+        """Check if this user is a super admin."""
+        return self.role == UserRole.SUPER_ADMIN
+
+    @hybrid_property
+    def is_admin(self):
+        """Check if this user is an admin."""
+        return self.role == UserRole.ADMIN
+
+    @hybrid_property
+    def is_locked(self):
+        """Check if this user account is currently locked."""
+        return self.user_status == UserStatus.LOCKED or (
+            self.locked_until and self.locked_until > func.now()
+        )
 
     def __repr__(self):
-        return f"<User(id={self.id}, username='{self.username}', organization_id={self.organization_id})>"
+        return f"<User(id={self.id}, username='{self.username}', role='{self.role.value}', organization_id={self.organization_id})>"
 
 
 class Machine(Base):
@@ -82,7 +189,7 @@ class Machine(Base):
     __tablename__ = "machines"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     model_type = Column(String(100), nullable=False) # e.g., 'V3.1B', 'V4.0'
     name = Column(String(255), nullable=False)
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
@@ -90,7 +197,7 @@ class Machine(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
-    organization = relationship("Organization", back_populates="machines")
+    customer_organization = relationship("Organization", back_populates="machines")
     part_usage_records = relationship("PartUsage", back_populates="machine", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -107,8 +214,10 @@ class Part(Base):
     part_number = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    is_proprietary = Column(Boolean, nullable=False, default=False)
-    is_consumable = Column(Boolean, nullable=False, default=False)
+    part_type = Column(Enum(PartType), nullable=False, server_default='consumable')
+    is_proprietary = Column(Boolean, nullable=False, server_default='false')
+    unit_of_measure = Column(String(50), nullable=False, server_default='pieces')
+    manufacturer_part_number = Column(String(255), nullable=True)
     manufacturer_delivery_time_days = Column(Integer)
     local_supplier_delivery_time_days = Column(Integer)
     image_urls = Column(ARRAY(Text)) # Array of strings
@@ -125,36 +234,67 @@ class Part(Base):
         return f"<Part(id={self.id}, part_number='{self.part_number}', name='{self.name}')>"
 
 
-class Inventory(Base):
+class Warehouse(Base):
     """
-    SQLAlchemy model for the 'inventory' table.
-    Tracks part stock levels for each organization.
+    SQLAlchemy model for the 'warehouses' table.
+    Represents physical storage locations within organizations.
     """
-    __tablename__ = "inventory"
+    __tablename__ = "warehouses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
-    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
-    location = Column(String(255), nullable=True, index=True) # New: Location of the stock
-    current_stock = Column(Integer, nullable=False, default=0)
-    minimum_stock_recommendation = Column(Integer, nullable=False, default=0)
-    reorder_threshold_set_by = Column(String(50)) # e.g., 'system', 'user'
-    last_recommendation_update = Column(DateTime(timezone=True))
+    name = Column(String(255), nullable=False)
+    location = Column(String(500), nullable=True)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, server_default='true')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Composite unique constraint
     __table_args__ = (
-        UniqueConstraint('organization_id', 'part_id', name='_organization_part_uc'),
+        UniqueConstraint('organization_id', 'name', name='_org_warehouse_name_uc'),
     )
 
     # Relationships
-    organization = relationship("Organization", back_populates="inventory_items")
+    organization = relationship("Organization", back_populates="warehouses")
+    inventory_items = relationship("Inventory", back_populates="warehouse", cascade="all, delete-orphan")
+    transactions_from = relationship("Transaction", foreign_keys="[Transaction.from_warehouse_id]", back_populates="from_warehouse")
+    transactions_to = relationship("Transaction", foreign_keys="[Transaction.to_warehouse_id]", back_populates="to_warehouse")
+
+    def __repr__(self):
+        return f"<Warehouse(id={self.id}, name='{self.name}', organization_id={self.organization_id})>"
+
+
+class Inventory(Base):
+    """
+    SQLAlchemy model for the 'inventory' table.
+    Tracks part stock levels for each warehouse.
+    """
+    __tablename__ = "inventory"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    current_stock = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
+    minimum_stock_recommendation = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
+    unit_of_measure = Column(String(50), nullable=False)
+    reorder_threshold_set_by = Column(String(50), nullable=True)
+    last_recommendation_update = Column(DateTime(timezone=True), nullable=True)
+    last_updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Composite unique constraint
+    __table_args__ = (
+        UniqueConstraint('warehouse_id', 'part_id', name='_warehouse_part_uc'),
+    )
+
+    # Relationships
+    warehouse = relationship("Warehouse", back_populates="inventory_items")
     part = relationship("Part", back_populates="inventory_items")
     adjustments = relationship("StockAdjustment", order_by="StockAdjustment.adjustment_date", back_populates="inventory_item", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Inventory(id={self.id}, org_id={self.organization_id}, part_id={self.part_id}, stock={self.current_stock})>"
+        return f"<Inventory(id={self.id}, warehouse_id={self.warehouse_id}, part_id={self.part_id}, stock={self.current_stock})>"
 
 
 class SupplierOrder(Base):
@@ -193,7 +333,7 @@ class SupplierOrderItem(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     supplier_order_id = Column(UUID(as_uuid=True), ForeignKey("supplier_orders.id"), nullable=False)
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
-    quantity = Column(Integer, nullable=False, default=1)
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
     unit_price = Column(DECIMAL(10, 2))
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -253,7 +393,7 @@ class CustomerOrderItem(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_order_id = Column(UUID(as_uuid=True), ForeignKey("customer_orders.id"), nullable=False)
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
-    quantity = Column(Integer, nullable=False, default=1)
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
     unit_price = Column(DECIMAL(10, 2))
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -277,8 +417,8 @@ class PartUsage(Base):
     customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
     usage_date = Column(DateTime(timezone=True), nullable=False)
-    quantity_used = Column(Integer, nullable=False, default=1)
-    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True) # Updated: Foreign Key to machines.id
+    quantity_used = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
     recorded_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -287,24 +427,46 @@ class PartUsage(Base):
     # Relationships
     customer_organization = relationship("Organization", back_populates="part_usage_records")
     part = relationship("Part", back_populates="part_usage_records")
-    machine = relationship("Machine", back_populates="part_usage_records") # New: Relationship to Machine
+    machine = relationship("Machine", back_populates="part_usage_records")
     recorded_by_user = relationship("User", back_populates="part_usage_records")
 
     def __repr__(self):
         return f"<PartUsage(id={self.id}, customer_org_id={self.customer_organization_id}, part_id={self.part_id}, qty={self.quantity_used})>"
 
 
-# Enum for Stock Adjustment Reasons
-import enum
-class StockAdjustmentReason(enum.Enum):
-    STOCKTAKE_DISCREPANCY = "Stocktake Discrepancy"
-    DAMAGED_GOODS = "Damaged Goods"
-    FOUND_STOCK = "Found Stock"
-    INITIAL_STOCK_ENTRY = "Initial Stock Entry"
-    RETURN_TO_VENDOR = "Return to Vendor"
-    CUSTOMER_RETURN_RESALABLE = "Customer Return - Resalable"
-    CUSTOMER_RETURN_DAMAGED = "Customer Return - Damaged"
-    OTHER = "Other"
+class Transaction(Base):
+    """
+    SQLAlchemy model for the 'transactions' table.
+    Records all parts movements for comprehensive audit trail.
+    """
+    __tablename__ = "transactions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    transaction_type = Column(Enum(TransactionType), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    from_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
+    to_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    unit_of_measure = Column(String(50), nullable=False)
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    transaction_date = Column(DateTime(timezone=True), nullable=False)
+    notes = Column(Text, nullable=True)
+    reference_number = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    part = relationship("Part")
+    from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id], back_populates="transactions_from")
+    to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id], back_populates="transactions_to")
+    machine = relationship("Machine")
+    performed_by_user = relationship("User", back_populates="transactions_performed")
+
+    def __repr__(self):
+        return f"<Transaction(id={self.id}, type='{self.transaction_type.value}', part_id={self.part_id}, qty={self.quantity})>"
+
+
+
 
 
 class StockAdjustment(Base):
@@ -318,7 +480,7 @@ class StockAdjustment(Base):
     inventory_id = Column(UUID(as_uuid=True), ForeignKey("inventory.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False) # User who performed the adjustment
     adjustment_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    quantity_adjusted = Column(Integer, nullable=False) # Positive for increase, negative for decrease
+    quantity_adjusted = Column(DECIMAL(precision=10, scale=3), nullable=False) # Positive for increase, negative for decrease
     reason_code = Column(String(100), nullable=False) # From StockAdjustmentReason enum
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
