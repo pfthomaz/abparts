@@ -252,3 +252,203 @@ def get_users_by_organization(db: Session, organization_id: uuid.UUID, skip: int
     return db.query(models.User).filter(
         models.User.organization_id == organization_id
     ).offset(skip).limit(limit).all()
+
+
+# --- User Profile and Self-Service Functions ---
+
+def update_user_profile(db: Session, user_id: uuid.UUID, profile_update: schemas.UserProfileUpdate) -> Optional[models.User]:
+    """
+    Update user profile information (name, email).
+    """
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    update_data = profile_update.model_dump(exclude_unset=True)
+    
+    # Handle email change - set as pending if email is being changed
+    if "email" in update_data and update_data["email"] != db_user.email:
+        # Check if new email is already in use
+        existing_user = get_user_by_email(db, update_data["email"])
+        if existing_user and existing_user.id != user_id:
+            raise ValueError("Email address is already in use")
+        
+        # Set pending email instead of directly updating
+        db_user.pending_email = update_data["email"]
+        del update_data["email"]  # Don't update email directly
+    
+    # Update other fields
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def change_user_password(db: Session, user_id: uuid.UUID, current_password: str, new_password: str) -> bool:
+    """
+    Change user password with current password validation.
+    """
+    from ..auth import verify_password, get_password_hash
+    
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return False
+    
+    # Verify current password
+    if not verify_password(current_password, db_user.password_hash):
+        raise ValueError("Current password is incorrect")
+    
+    # Update password
+    db_user.password_hash = get_password_hash(new_password)
+    db.commit()
+    
+    return True
+
+def request_password_reset(db: Session, email: str) -> Optional[models.User]:
+    """
+    Generate password reset token for user.
+    """
+    db_user = get_user_by_email(db, email)
+    if not db_user:
+        return None
+    
+    # Generate secure reset token
+    reset_token = secrets.token_urlsafe(32)
+    reset_expires_at = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiry
+    
+    db_user.password_reset_token = reset_token
+    db_user.password_reset_expires_at = reset_expires_at
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def get_user_by_reset_token(db: Session, token: str) -> Optional[models.User]:
+    """
+    Get user by password reset token.
+    """
+    return db.query(models.User).filter(
+        models.User.password_reset_token == token,
+        models.User.password_reset_expires_at > datetime.utcnow()
+    ).first()
+
+def confirm_password_reset(db: Session, token: str, new_password: str) -> Optional[models.User]:
+    """
+    Confirm password reset with token.
+    """
+    from ..auth import get_password_hash
+    
+    db_user = get_user_by_reset_token(db, token)
+    if not db_user:
+        return None
+    
+    # Update password and clear reset token
+    db_user.password_hash = get_password_hash(new_password)
+    db_user.password_reset_token = None
+    db_user.password_reset_expires_at = None
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def request_email_verification(db: Session, user_id: uuid.UUID, new_email: str) -> Optional[models.User]:
+    """
+    Generate email verification token for email change.
+    """
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    # Check if new email is already in use
+    existing_user = get_user_by_email(db, new_email)
+    if existing_user and existing_user.id != user_id:
+        raise ValueError("Email address is already in use")
+    
+    # Generate secure verification token
+    verification_token = secrets.token_urlsafe(32)
+    verification_expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
+    
+    db_user.pending_email = new_email
+    db_user.email_verification_token = verification_token
+    db_user.email_verification_expires_at = verification_expires_at
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def get_user_by_verification_token(db: Session, token: str) -> Optional[models.User]:
+    """
+    Get user by email verification token.
+    """
+    return db.query(models.User).filter(
+        models.User.email_verification_token == token,
+        models.User.email_verification_expires_at > datetime.utcnow()
+    ).first()
+
+def confirm_email_verification(db: Session, token: str) -> Optional[models.User]:
+    """
+    Confirm email verification with token.
+    """
+    db_user = get_user_by_verification_token(db, token)
+    if not db_user:
+        return None
+    
+    # Update email and clear verification token
+    if db_user.pending_email:
+        db_user.email = db_user.pending_email
+        db_user.pending_email = None
+    
+    db_user.email_verification_token = None
+    db_user.email_verification_expires_at = None
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optional[dict]:
+    """
+    Get user profile with organization information.
+    """
+    result = db.query(models.User, models.Organization).join(
+        models.Organization, models.User.organization_id == models.Organization.id
+    ).filter(models.User.id == user_id).first()
+    
+    if not result:
+        return None
+    
+    user, organization = result
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "name": user.name,
+        "role": user.role,
+        "user_status": user.user_status,
+        "organization_id": user.organization_id,
+        "organization_name": organization.name,
+        "organization_type": organization.organization_type.value,
+        "last_login": user.last_login,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at
+    }
+
+def update_user_status(db: Session, user_id: uuid.UUID, new_status: models.UserStatus) -> Optional[models.User]:
+    """
+    Update user account status.
+    """
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    db_user.user_status = new_status
+    
+    # If deactivating, also set is_active to False
+    if new_status == models.UserStatus.inactive:
+        db_user.is_active = False
+    elif new_status == models.UserStatus.active:
+        db_user.is_active = True
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
 from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
-from ..tasks import send_invitation_email, send_invitation_accepted_notification
+from ..tasks import send_invitation_email, send_invitation_accepted_notification, send_password_reset_email, send_email_verification_email
 
 router = APIRouter()
 
@@ -407,3 +407,267 @@ async def get_users_by_organization(
     
     users = crud.users.get_users_by_organization(db, organization_id, skip, limit)
     return users
+
+
+# --- User Profile and Self-Service Management Endpoints ---
+
+@router.get("/me/profile", response_model=schemas.UserProfileResponse)
+async def get_my_profile(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get current user's profile with role and organization information.
+    Requirements: 2B.4
+    """
+    profile = crud.users.get_user_profile_with_organization(db, current_user.user_id)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found"
+        )
+    
+    return profile
+
+@router.put("/me/profile", response_model=schemas.UserProfileResponse)
+async def update_my_profile(
+    profile_update: schemas.UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Update current user's profile information (name, email).
+    Requirements: 2B.1, 2B.3
+    """
+    try:
+        updated_user = crud.users.update_user_profile(db, current_user.user_id, profile_update)
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # If email was changed, send verification email
+        if profile_update.email and updated_user.pending_email:
+            send_email_verification_email.delay(
+                email=updated_user.email,  # Send to current email
+                name=updated_user.name,
+                verification_token=updated_user.email_verification_token,
+                new_email=updated_user.pending_email
+            )
+        
+        # Return updated profile
+        profile = crud.users.get_user_profile_with_organization(db, current_user.user_id)
+        return profile
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile: {str(e)}"
+        )
+
+@router.post("/me/change-password")
+async def change_my_password(
+    password_change: schemas.UserPasswordChange,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Change current user's password with current password validation.
+    Requirements: 2B.2
+    """
+    try:
+        success = crud.users.change_user_password(
+            db, 
+            current_user.user_id, 
+            password_change.current_password, 
+            password_change.new_password
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return {"message": "Password changed successfully"}
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to change password: {str(e)}"
+        )
+
+@router.post("/request-password-reset")
+async def request_password_reset(
+    reset_request: schemas.PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Request password reset via email.
+    Requirements: 2B.6
+    """
+    try:
+        user = crud.users.request_password_reset(db, reset_request.email)
+        
+        # Always return success to prevent email enumeration attacks
+        if user:
+            send_password_reset_email.delay(
+                email=user.email,
+                name=user.name,
+                reset_token=user.password_reset_token
+            )
+        
+        return {"message": "If the email address exists, a password reset link has been sent"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process password reset request"
+        )
+
+@router.post("/confirm-password-reset")
+async def confirm_password_reset(
+    reset_confirm: schemas.PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    """
+    Confirm password reset with token.
+    Requirements: 2B.6
+    """
+    try:
+        user = crud.users.confirm_password_reset(db, reset_confirm.reset_token, reset_confirm.new_password)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset token"
+            )
+        
+        return {"message": "Password reset successfully"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset password: {str(e)}"
+        )
+
+@router.post("/me/request-email-verification")
+async def request_email_verification(
+    email_request: schemas.EmailVerificationRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Request email verification for email change.
+    Requirements: 2B.3
+    """
+    try:
+        user = crud.users.request_email_verification(db, current_user.user_id, email_request.new_email)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Send verification email to the new email address
+        send_email_verification_email.delay(
+            email=user.email,  # Current email for notification
+            name=user.name,
+            verification_token=user.email_verification_token,
+            new_email=user.pending_email
+        )
+        
+        return {"message": "Email verification link sent to the new email address"}
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to request email verification: {str(e)}"
+        )
+
+@router.post("/confirm-email-verification")
+async def confirm_email_verification(
+    verification_confirm: schemas.EmailVerificationConfirm,
+    db: Session = Depends(get_db)
+):
+    """
+    Confirm email verification with token.
+    Requirements: 2B.3
+    """
+    try:
+        user = crud.users.confirm_email_verification(db, verification_confirm.verification_token)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired verification token"
+            )
+        
+        return {"message": "Email address updated successfully"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to verify email: {str(e)}"
+        )
+
+@router.patch("/{user_id}/status", response_model=schemas.UserResponse)
+async def update_user_status(
+    user_id: uuid.UUID,
+    status_update: schemas.UserAccountStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Update user account status.
+    Requirements: 2B.5, 2C.3, 2C.4
+    """
+    # Get the user to update
+    user_to_update = crud.users.get_user(db, user_id)
+    if not user_to_update:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user_to_update.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update status for users in your organization"
+            )
+    
+    try:
+        updated_user = crud.users.update_user_status(db, user_id, status_update.user_status)
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to update user status"
+            )
+        
+        return updated_user
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update user status: {str(e)}"
+        )

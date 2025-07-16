@@ -160,6 +160,57 @@ class InvitationAuditLogResponse(BaseModel):
         from_attributes = True
 
 
+# --- User Profile and Self-Service Schemas ---
+class UserProfileUpdate(BaseModel):
+    """Schema for user profile self-service updates"""
+    name: Optional[str] = Field(None, max_length=255)
+    email: Optional[EmailStr] = Field(None, max_length=255)
+    
+class UserPasswordChange(BaseModel):
+    """Schema for secure password change"""
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+
+class UserProfileResponse(BaseModel):
+    """Schema for user profile view with role and organization info"""
+    id: uuid.UUID
+    username: str
+    email: str
+    name: Optional[str]
+    role: UserRoleEnum
+    user_status: UserStatusEnum
+    organization_id: uuid.UUID
+    organization_name: str
+    organization_type: str
+    last_login: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class PasswordResetRequest(BaseModel):
+    """Schema for password reset request"""
+    email: EmailStr = Field(..., max_length=255)
+
+class PasswordResetConfirm(BaseModel):
+    """Schema for password reset confirmation"""
+    reset_token: str = Field(..., min_length=32)
+    new_password: str = Field(..., min_length=8)
+
+class EmailVerificationRequest(BaseModel):
+    """Schema for email change verification"""
+    new_email: EmailStr = Field(..., max_length=255)
+
+class EmailVerificationConfirm(BaseModel):
+    """Schema for email verification confirmation"""
+    verification_token: str = Field(..., min_length=32)
+
+class UserAccountStatusUpdate(BaseModel):
+    """Schema for user account status management"""
+    user_status: UserStatusEnum
+
+
 # --- Dashboard Schemas (New!) ---
 class DashboardMetricsResponse(BaseModel):
     total_parts: int

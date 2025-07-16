@@ -385,3 +385,247 @@ def send_invitation_expired_notification(self, admin_email: str, user_email: str
     except Exception as exc:
         logger.error(f"Failed to send expiry notification to {admin_email}: {str(exc)}")
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+
+@celery.task(bind=True, max_retries=3)
+def send_password_reset_email(self, email: str, name: Optional[str], reset_token: str):
+    """
+    Send password reset email to user.
+    """
+    try:
+        if not all([SMTP_USERNAME, SMTP_PASSWORD]):
+            logger.error("SMTP credentials not configured")
+            return {"success": False, "error": "SMTP credentials not configured"}
+
+        # Create password reset URL
+        reset_url = f"{BASE_URL}/reset-password?token={reset_token}"
+        
+        # Create email content
+        subject = "Password Reset Request - ABParts"
+        
+        # HTML email template
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Password Reset - ABParts</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2c3e50;">Password Reset Request</h2>
+                
+                <p>Hello{f" {name}" if name else ""},</p>
+                
+                <p>We received a request to reset your password for your ABParts account.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong>To reset your password:</strong></p>
+                    <ol style="margin: 10px 0;">
+                        <li>Click the reset link below</li>
+                        <li>Enter your new password</li>
+                        <li>Confirm your new password</li>
+                    </ol>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" 
+                       style="background-color: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Reset Password
+                    </a>
+                </div>
+                
+                <p style="color: #666; font-size: 14px;">
+                    <strong>Important:</strong> This password reset link will expire in 1 hour for security reasons.
+                </p>
+                
+                <p style="color: #666; font-size: 14px;">
+                    If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+                </p>
+                
+                <p style="color: #666; font-size: 14px;">
+                    If you can't click the button above, copy and paste this link into your browser:<br>
+                    <a href="{reset_url}">{reset_url}</a>
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <p style="color: #999; font-size: 12px;">
+                    This email was sent by ABParts. If you received this email by mistake, please ignore it.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Plain text version
+        text_body = f"""
+        Password Reset Request
+        
+        Hello{f" {name}" if name else ""},
+        
+        We received a request to reset your password for your ABParts account.
+        
+        To reset your password:
+        1. Click this link: {reset_url}
+        2. Enter your new password
+        3. Confirm your new password
+        
+        Important: This password reset link will expire in 1 hour for security reasons.
+        
+        If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+        
+        If you can't click the link, copy and paste it into your browser:
+        {reset_url}
+        
+        ---
+        This email was sent by ABParts. If you received this email by mistake, please ignore it.
+        """
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = FROM_EMAIL
+        msg['To'] = email
+
+        # Attach both plain text and HTML versions
+        text_part = MIMEText(text_body, 'plain')
+        html_part = MIMEText(html_body, 'html')
+        
+        msg.attach(text_part)
+        msg.attach(html_part)
+
+        # Send email
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+
+        logger.info(f"Password reset email sent successfully to {email}")
+        return {"success": True, "message": f"Password reset email sent to {email}"}
+
+    except Exception as exc:
+        logger.error(f"Failed to send password reset email to {email}: {str(exc)}")
+        # Retry the task
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+
+@celery.task(bind=True, max_retries=3)
+def send_email_verification_email(self, email: str, name: Optional[str], verification_token: str, new_email: str):
+    """
+    Send email verification email for email change.
+    """
+    try:
+        if not all([SMTP_USERNAME, SMTP_PASSWORD]):
+            logger.error("SMTP credentials not configured")
+            return {"success": False, "error": "SMTP credentials not configured"}
+
+        # Create email verification URL
+        verification_url = f"{BASE_URL}/verify-email?token={verification_token}"
+        
+        # Create email content
+        subject = "Email Verification Required - ABParts"
+        
+        # HTML email template
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Email Verification - ABParts</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2c3e50;">Email Verification Required</h2>
+                
+                <p>Hello{f" {name}" if name else ""},</p>
+                
+                <p>You requested to change your email address to <strong>{new_email}</strong>.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong>To complete this change:</strong></p>
+                    <ol style="margin: 10px 0;">
+                        <li>Click the verification link below</li>
+                        <li>Your email address will be updated</li>
+                        <li>You can continue using ABParts with your new email</li>
+                    </ol>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{verification_url}" 
+                       style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Verify Email Address
+                    </a>
+                </div>
+                
+                <p style="color: #666; font-size: 14px;">
+                    <strong>Important:</strong> This verification link will expire in 24 hours for security reasons.
+                </p>
+                
+                <p style="color: #666; font-size: 14px;">
+                    If you didn't request this email change, please contact your administrator immediately.
+                </p>
+                
+                <p style="color: #666; font-size: 14px;">
+                    If you can't click the button above, copy and paste this link into your browser:<br>
+                    <a href="{verification_url}">{verification_url}</a>
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <p style="color: #999; font-size: 12px;">
+                    This email was sent by ABParts. If you received this email by mistake, please ignore it.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Plain text version
+        text_body = f"""
+        Email Verification Required
+        
+        Hello{f" {name}" if name else ""},
+        
+        You requested to change your email address to {new_email}.
+        
+        To complete this change:
+        1. Click this link: {verification_url}
+        2. Your email address will be updated
+        3. You can continue using ABParts with your new email
+        
+        Important: This verification link will expire in 24 hours for security reasons.
+        
+        If you didn't request this email change, please contact your administrator immediately.
+        
+        If you can't click the link, copy and paste it into your browser:
+        {verification_url}
+        
+        ---
+        This email was sent by ABParts. If you received this email by mistake, please ignore it.
+        """
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = FROM_EMAIL
+        msg['To'] = new_email  # Send to the new email address
+
+        # Attach both plain text and HTML versions
+        text_part = MIMEText(text_body, 'plain')
+        html_part = MIMEText(html_body, 'html')
+        
+        msg.attach(text_part)
+        msg.attach(html_part)
+
+        # Send email
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+
+        logger.info(f"Email verification email sent successfully to {new_email}")
+        return {"success": True, "message": f"Email verification email sent to {new_email}"}
+
+    except Exception as exc:
+        logger.error(f"Failed to send email verification email to {new_email}: {str(exc)}")
+        # Retry the task
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))

@@ -1,5 +1,5 @@
 # docker-compose.yml for ABParts Local Development
-version: "3.9"
+# version: "3.9"
 
 services:
   # PostgreSQL Database Service
@@ -50,6 +50,13 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD:-abparts_pass}@db:5432/${POSTGRES_DB:-abparts_dev}
       REDIS_URL: redis://redis:6379/0
+      # Email configuration for user profile features
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
       # Add any other FastAPI environment variables here (e.g., AUTH0_DOMAIN, KEYCLOAK_URL)
     volumes:
       - ./backend:/app # Mount your backend code for live reloading during development
@@ -72,6 +79,13 @@ services:
       # Celery needs access to Redis for the broker and DB for tasks that interact with data
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD:-abparts_pass}@db:5432/${POSTGRES_DB:-abparts_dev}
+      # Email configuration for user profile features (needed for email tasks)
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
     volumes:
       - ./backend:/app # Mount backend code for the worker
     depends_on:
