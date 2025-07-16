@@ -16,21 +16,48 @@ class BaseSchema(BaseModel):
 
 
 # --- Organization Schemas ---
+from enum import Enum
+
+class OrganizationTypeEnum(str, Enum):
+    ORASEAS_EE = "oraseas_ee"
+    BOSSAQUA = "bossaqua"
+    CUSTOMER = "customer"
+    SUPPLIER = "supplier"
+
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)
-    type: str = Field(..., max_length=50)
+    organization_type: OrganizationTypeEnum
+    parent_organization_id: Optional[uuid.UUID] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
+    is_active: bool = True
 
 class OrganizationCreate(OrganizationBase):
     pass
 
-class OrganizationUpdate(OrganizationBase):
+class OrganizationUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
-    type: Optional[str] = Field(None, max_length=50)
+    organization_type: Optional[OrganizationTypeEnum] = None
+    parent_organization_id: Optional[uuid.UUID] = None
+    address: Optional[str] = None
+    contact_info: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class OrganizationResponse(OrganizationBase, BaseSchema):
-    pass
+    parent_organization: Optional['OrganizationResponse'] = None
+    child_organizations: List['OrganizationResponse'] = []
+
+class OrganizationHierarchyResponse(BaseModel):
+    """Response schema for organization hierarchy queries"""
+    organization: OrganizationResponse
+    children: List['OrganizationHierarchyResponse'] = []
+    depth: int = 0
+
+class OrganizationTypeFilterResponse(BaseModel):
+    """Response schema for organization type filtering"""
+    organization_type: OrganizationTypeEnum
+    organizations: List[OrganizationResponse]
+    count: int
 
 
 # --- User Schemas ---

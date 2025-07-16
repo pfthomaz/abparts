@@ -1,37 +1,130 @@
 # backend/app/routers/organizations.py
 
 import uuid
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
-from .. import schemas, crud # Import schemas and CRUD functions
-from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
-from .. import models # Needed for fetching Oraseas ID for specific auth checks
+from .. import schemas, crud
+from ..database import get_db
+from ..auth import get_current_user, has_role, has_roles, TokenData
+from .. import models
+from ..models import OrganizationType
 
 router = APIRouter()
 
-# --- Organizations CRUD ---
+# --- Enhanced Organizations CRUD ---
 @router.get("/", response_model=List[schemas.OrganizationResponse])
 async def get_organizations(
+    organization_type: Optional[schemas.OrganizationTypeEnum] = Query(None, description="Filter by organization type"),
+    include_inactive: bool = Query(False, description="Include inactive organizations"),
     db: Session = Depends(get_db),
     # current_user: TokenData = Depends(get_current_user) # Temporarily removed for public access during development
 ):
-    # If current_user was present, the logic would be:
-    # if current_user.role == "Oraseas Admin":
-    #     organizations = crud.organizations.get_organizations(db)
-    # elif current_user.role in ["Customer Admin", "Customer User", "Supplier User"]:
-    #     organizations = [crud.organizations.get_organization(db, current_user.organization_id)]
-    #     if organizations[0] is None:
-    #         raise HTTPException(status_code=404, detail="User's organization not found")
-    # else:
-    #     raise HTTPException(status_code=403, detail="Not authorized to view organizations")
+    """Get all organizations with optional filtering by type."""
+    try:
+        if organization_type:
+            # Convert schema enum to model enum
+            model_type = OrganizationType(organization_type.value)
+            organizations = crud.organizations.get_organizations_by_type(db, model_type, include_inactive)
+        else:
+            organizations = crud.organizations.get_organizations(db, include_inactive)
+        return organizations
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # For now, allow everyone to see all organizations for frontend testing
-    organizations = crud.organizations.get_organizations(db)
-    return organizations
+@router.get("/types", response_model=List[schemas.OrganizationTypeFilterResponse])
+async def get_organizations_by_types(
+    include_inactive: bool = Query(False, description="Include inactive organizations"),
+    db: Session = Depends(get_db),
+    # current_user: TokenData = Depends(get_current_user)
+):
+    """Get organizations grouped by type."""
+    try:
+        result = []
+        for org_type in OrganizationType:
+            organizations = crud.organizations.get_organizations_by_type(db, org_type, include_inactive)
+            result.append({
+                "organization_type": org_type.value,
+                "organizations": organizations,
+                "count": len(organizations)
+            })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/hierarchy/roots", response_model=List[schemas.OrganizationResponse])
+async def get_root_organizations(
+    include_inactive: bool = Query(False, description="Include inactive organizations"),
+    db: Session = Depends(get_db),
+    # current_user: TokenData = Depends(get_current_user)
+):
+    """Get organizations that have no parent (root level)."""
+    try:
+        organizations = crud.organizations.get_root_organizations(db, include_inactive)
+        return organizations
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/{org_id}/hierarchy", response_model=schemas.OrganizationHierarchyResponse)
+async def get_organization_hierarchy(
+    org_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Get the complete hierarchy starting from an organization."""
+    try:
+        hierarchy = crud.organizations.get_organization_hierarchy(db, org_id)
+        if not hierarchy:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Check permissions
+        if current_user.role == "super_admin" or org_id == current_user.organization_id:
+            return hierarchy
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to view this organization's hierarchy")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/{org_id}/children", response_model=List[schemas.OrganizationResponse])
+async def get_child_organizations(
+    org_id: uuid.UUID,
+    include_inactive: bool = Query(False, description="Include inactive organizations"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Get direct children of an organization."""
+    try:
+        # Check if parent organization exists
+        parent_org = crud.organizations.get_organization(db, org_id)
+        if not parent_org:
+            raise HTTPException(status_code=404, detail="Parent organization not found")
+        
+        # Check permissions
+        if current_user.role == "super_admin" or org_id == current_user.organization_id:
+            children = crud.organizations.get_child_organizations(db, org_id, include_inactive)
+            return children
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to view this organization's children")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/search", response_model=List[schemas.OrganizationResponse])
+async def search_organizations(
+    q: str = Query(..., min_length=1, description="Search query"),
+    organization_type: Optional[schemas.OrganizationTypeEnum] = Query(None, description="Filter by organization type"),
+    include_inactive: bool = Query(False, description="Include inactive organizations"),
+    db: Session = Depends(get_db),
+    # current_user: TokenData = Depends(get_current_user)
+):
+    """Search organizations by name with optional type filtering."""
+    try:
+        model_type = OrganizationType(organization_type.value) if organization_type else None
+        organizations = crud.organizations.search_organizations(db, q, model_type, include_inactive)
+        return organizations
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{org_id}", response_model=schemas.OrganizationResponse)
 async def get_organization(
@@ -39,53 +132,104 @@ async def get_organization(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
-    organization = crud.organizations.get_organization(db, org_id)
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    """Get a single organization by ID."""
+    try:
+        organization = crud.organizations.get_organization(db, org_id)
+        if not organization:
+            raise HTTPException(status_code=404, detail="Organization not found")
 
-    if current_user.role == "Oraseas Admin" or org_id == current_user.organization_id:
-        return organization
-    else:
-        raise HTTPException(status_code=403, detail="Not authorized to view this organization's details")
+        # Check permissions
+        if current_user.role == "super_admin" or org_id == current_user.organization_id:
+            return organization
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to view this organization's details")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/", response_model=schemas.OrganizationResponse, status_code=status.HTTP_201_CREATED)
 async def create_organization(
     org: schemas.OrganizationCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin"))
+    current_user: TokenData = Depends(has_role("super_admin"))
 ):
-    db_organization = crud.organizations.create_organization(db, org)
-    if not db_organization:
-        raise HTTPException(status_code=400, detail="Failed to create organization") # Error handled in CRUD
-    return db_organization
+    """Create a new organization with business rule validation."""
+    try:
+        db_organization = crud.organizations.create_organization(db, org)
+        return db_organization
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to create organization")
 
 @router.put("/{org_id}", response_model=schemas.OrganizationResponse)
 async def update_organization(
     org_id: uuid.UUID,
     org_update: schemas.OrganizationUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"]))
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
 ):
-    db_organization = crud.organizations.get_organization(db, org_id)
-    if not db_organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    """Update an existing organization with business rule validation."""
+    try:
+        # Check if organization exists
+        db_organization = crud.organizations.get_organization(db, org_id)
+        if not db_organization:
+            raise HTTPException(status_code=404, detail="Organization not found")
 
-    if current_user.role == "Oraseas Admin" or (current_user.role == "Customer Admin" and org_id == current_user.organization_id):
-        updated_org = crud.organizations.update_organization(db, org_id, org_update)
-        if not updated_org: # Error handled in CRUD layer
-            raise HTTPException(status_code=400, detail="Failed to update organization")
-        return updated_org
-    else:
-        raise HTTPException(status_code=403, detail="Not authorized to update this organization")
+        # Check permissions
+        if current_user.role == "super_admin" or (current_user.role == "admin" and org_id == current_user.organization_id):
+            updated_org = crud.organizations.update_organization(db, org_id, org_update)
+            return updated_org
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to update this organization")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to update organization")
 
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(
     org_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin"))
+    current_user: TokenData = Depends(has_role("super_admin"))
 ):
-    result = crud.organizations.delete_organization(db, org_id)
-    if not result: # Error handled in CRUD layer
-        raise HTTPException(status_code=404, detail="Organization not found or could not be deleted")
-    return result
+    """Delete (deactivate) an organization."""
+    try:
+        result = crud.organizations.delete_organization(db, org_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        return None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to delete organization")
+
+# --- Supplier-Parent Relationship Management ---
+@router.post("/{org_id}/suppliers", response_model=schemas.OrganizationResponse, status_code=status.HTTP_201_CREATED)
+async def create_supplier_organization(
+    org_id: uuid.UUID,
+    supplier_data: schemas.OrganizationCreate,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """Create a supplier organization under a parent organization."""
+    try:
+        # Verify parent organization exists
+        parent_org = crud.organizations.get_organization(db, org_id)
+        if not parent_org:
+            raise HTTPException(status_code=404, detail="Parent organization not found")
+        
+        # Check permissions
+        if current_user.role == "super_admin" or (current_user.role == "admin" and org_id == current_user.organization_id):
+            # Force supplier type and set parent
+            supplier_data.organization_type = schemas.OrganizationTypeEnum.SUPPLIER
+            supplier_data.parent_organization_id = org_id
+            
+            supplier_org = crud.organizations.create_organization(db, supplier_data)
+            return supplier_org
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to create suppliers for this organization")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to create supplier organization")
 
