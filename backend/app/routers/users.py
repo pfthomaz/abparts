@@ -1,15 +1,16 @@
 # backend/app/routers/users.py
 
 import uuid
-from typing import List
+from typing import List, Optional
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
 from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
-from ..tasks import send_invitation_email, send_invitation_accepted_notification, send_password_reset_email, send_email_verification_email
+from ..tasks import send_invitation_email, send_invitation_accepted_notification, send_password_reset_email, send_email_verification_email, send_user_reactivation_notification
 
 router = APIRouter()
 
@@ -670,4 +671,344 @@ async def update_user_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update user status: {str(e)}"
+        )
+
+
+# --- Advanced User Administration Backend (Task 3.4) ---
+
+@router.get("/admin/search", response_model=List[schemas.UserResponse])
+async def search_users(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    role: Optional[schemas.UserRoleEnum] = Query(None, description="Filter by user role"),
+    status: Optional[schemas.UserStatusEnum] = Query(None, description="Filter by user status"),
+    search: Optional[str] = Query(None, description="Search by name or email"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Advanced user search and filtering with organization-scoped access.
+    Requirements: 2C.1, 2C.2
+    """
+    # Permission checks - admins can only search within their organization
+    if current_user.role == "admin":
+        if organization_id and organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only search users in your organization"
+            )
+        # Force organization filter for admins
+        organization_id = current_user.organization_id
+    
+    try:
+        users = crud.users.search_users(
+            db=db,
+            organization_id=organization_id,
+            role=role,
+            status=status,
+            search_term=search,
+            skip=skip,
+            limit=limit
+        )
+        return users
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search users: {str(e)}"
+        )
+
+@router.patch("/{user_id}/deactivate-advanced", response_model=schemas.UserResponse)
+async def deactivate_user_advanced(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Deactivate user with immediate session termination and audit logging.
+    Requirements: 2C.3
+    """
+    # Get the user to deactivate
+    user_to_deactivate = crud.users.get_user(db, user_id)
+    if not user_to_deactivate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user_to_deactivate.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only deactivate users in your organization"
+            )
+    
+    # Prevent self-deactivation
+    if user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate your own account"
+        )
+    
+    try:
+        # Deactivate user with session termination and audit logging
+        updated_user = crud.users.deactivate_user_with_session_termination(
+            db=db,
+            user_id=user_id,
+            performed_by_user_id=current_user.user_id
+        )
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to deactivate user"
+            )
+        
+        return updated_user
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to deactivate user: {str(e)}"
+        )
+
+@router.patch("/{user_id}/reactivate-advanced", response_model=schemas.UserResponse)
+async def reactivate_user_advanced(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Reactivate user with notification system and audit logging.
+    Requirements: 2C.4
+    """
+    # Get the user to reactivate
+    user_to_reactivate = crud.users.get_user(db, user_id)
+    if not user_to_reactivate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user_to_reactivate.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only reactivate users in your organization"
+            )
+    
+    try:
+        # Reactivate user with notification and audit logging
+        updated_user = crud.users.reactivate_user_with_notification(
+            db=db,
+            user_id=user_id,
+            performed_by_user_id=current_user.user_id
+        )
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to reactivate user"
+            )
+        
+        # Get organization and admin details for notification
+        organization = crud.organizations.get_organization(db, updated_user.organization_id)
+        admin_user = crud.users.get_user(db, current_user.user_id)
+        
+        # Send reactivation notification email
+        if organization and admin_user:
+            send_user_reactivation_notification.delay(
+                user_email=updated_user.email,
+                user_name=updated_user.name or updated_user.username,
+                admin_name=admin_user.name or admin_user.username,
+                organization_name=organization.name
+            )
+        
+        return updated_user
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reactivate user: {str(e)}"
+        )
+
+@router.delete("/{user_id}/soft-delete", response_model=dict)
+async def soft_delete_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Soft delete user with transaction dependency checking.
+    Requirements: 2C.5
+    """
+    # Get the user to delete
+    user_to_delete = crud.users.get_user(db, user_id)
+    if not user_to_delete:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user_to_delete.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only delete users in your organization"
+            )
+    
+    # Prevent self-deletion
+    if user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account"
+        )
+    
+    try:
+        # Check for transaction dependencies and perform soft delete
+        result = crud.users.soft_delete_user_with_dependency_check(
+            db=db,
+            user_id=user_id,
+            performed_by_user_id=current_user.user_id
+        )
+        
+        if not result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["message"]
+            )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user: {str(e)}"
+        )
+
+@router.get("/admin/inactive-users", response_model=List[schemas.UserResponse])
+async def get_inactive_users(
+    days_threshold: int = Query(90, ge=1, le=365, description="Days of inactivity threshold"),
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get users flagged as inactive based on 90-day threshold or custom threshold.
+    Requirements: 2C.6
+    """
+    # Permission checks - admins can only view users in their organization
+    if current_user.role == "admin":
+        if organization_id and organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view users in your organization"
+            )
+        # Force organization filter for admins
+        organization_id = current_user.organization_id
+    
+    try:
+        inactive_users = crud.users.get_inactive_users(
+            db=db,
+            days_threshold=days_threshold,
+            organization_id=organization_id,
+            skip=skip,
+            limit=limit
+        )
+        return inactive_users
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get inactive users: {str(e)}"
+        )
+
+@router.get("/{user_id}/audit-logs", response_model=List[schemas.UserManagementAuditLogResponse])
+async def get_user_management_audit_logs(
+    user_id: uuid.UUID,
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get user management audit logs for a specific user.
+    Requirements: 2C.7
+    """
+    # Get the user to check permissions
+    user = crud.users.get_user(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view audit logs for users in your organization"
+            )
+    
+    try:
+        audit_logs = crud.users.get_user_management_audit_logs(
+            db=db,
+            user_id=user_id,
+            skip=skip,
+            limit=limit
+        )
+        return audit_logs
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get audit logs: {str(e)}"
+        )
+
+@router.get("/admin/audit-logs", response_model=List[schemas.UserManagementAuditLogResponse])
+async def get_all_user_management_audit_logs(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    action: Optional[str] = Query(None, description="Filter by action type"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get all user management audit logs with filtering.
+    Requirements: 2C.7
+    """
+    # Permission checks - admins can only view logs for their organization
+    if current_user.role == "admin":
+        if organization_id and organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view audit logs for your organization"
+            )
+        # Force organization filter for admins
+        organization_id = current_user.organization_id
+    
+    try:
+        audit_logs = crud.users.get_all_user_management_audit_logs(
+            db=db,
+            organization_id=organization_id,
+            action=action,
+            skip=skip,
+            limit=limit
+        )
+        return audit_logs
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get audit logs: {str(e)}"
         )

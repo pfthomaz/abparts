@@ -629,3 +629,105 @@ def send_email_verification_email(self, email: str, name: Optional[str], verific
         logger.error(f"Failed to send email verification email to {new_email}: {str(exc)}")
         # Retry the task
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+
+@celery.task(bind=True, max_retries=3)
+def send_user_reactivation_notification(self, user_email: str, user_name: str, admin_name: str, organization_name: str):
+    """
+    Send notification to user when their account is reactivated.
+    Requirements: 2C.4
+    """
+    try:
+        if not all([SMTP_USERNAME, SMTP_PASSWORD]):
+            logger.error("SMTP credentials not configured")
+            return {"success": False, "error": "SMTP credentials not configured"}
+
+        subject = f"Your ABParts account has been reactivated - {organization_name}"
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Account Reactivated - ABParts</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #27ae60;">Account Reactivated!</h2>
+                
+                <p>Hello {user_name},</p>
+                
+                <p>Good news! Your ABParts account has been reactivated by {admin_name}.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong>Account Details:</strong></p>
+                    <ul style="margin: 10px 0;">
+                        <li><strong>Organization:</strong> {organization_name}</li>
+                        <li><strong>Status:</strong> Active</li>
+                        <li><strong>Reactivated by:</strong> {admin_name}</li>
+                    </ul>
+                </div>
+                
+                <p>You can now log in to ABParts and access all your previous functionality. If you have any questions, please contact your administrator.</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{BASE_URL}/login" 
+                       style="background-color: #27ae60; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Login to ABParts
+                    </a>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <p style="color: #999; font-size: 12px;">
+                    This is an automated notification from ABParts.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        text_body = f"""
+        Account Reactivated!
+        
+        Hello {user_name},
+        
+        Good news! Your ABParts account has been reactivated by {admin_name}.
+        
+        Account Details:
+        - Organization: {organization_name}
+        - Status: Active
+        - Reactivated by: {admin_name}
+        
+        You can now log in to ABParts and access all your previous functionality. If you have any questions, please contact your administrator.
+        
+        Login at: {BASE_URL}/login
+        
+        ---
+        This is an automated notification from ABParts.
+        """
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = FROM_EMAIL
+        msg['To'] = user_email
+
+        # Attach both versions
+        text_part = MIMEText(text_body, 'plain')
+        html_part = MIMEText(html_body, 'html')
+        
+        msg.attach(text_part)
+        msg.attach(html_part)
+
+        # Send email
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+
+        logger.info(f"User reactivation notification sent to {user_email}")
+        return {"success": True, "message": f"Notification sent to {user_email}"}
+
+    except Exception as exc:
+        logger.error(f"Failed to send reactivation notification to {user_email}: {str(exc)}")
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))

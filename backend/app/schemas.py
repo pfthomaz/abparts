@@ -211,6 +211,23 @@ class UserAccountStatusUpdate(BaseModel):
     user_status: UserStatusEnum
 
 
+# --- User Management Audit Log Schemas (Task 3.4) ---
+class UserManagementAuditLogResponse(BaseModel):
+    """Response schema for user management audit logs"""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    action: str  # 'deactivated', 'reactivated', 'soft_deleted', 'role_changed', 'status_changed'
+    performed_by_user_id: uuid.UUID
+    timestamp: datetime
+    details: Optional[str]
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    performed_by_name: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
 # --- Dashboard Schemas (New!) ---
 class DashboardMetricsResponse(BaseModel):
     total_parts: int

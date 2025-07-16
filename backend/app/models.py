@@ -521,3 +521,25 @@ class InvitationAuditLog(Base):
     def __repr__(self):
         return f"<InvitationAuditLog(id={self.id}, user_id={self.user_id}, action='{self.action}')>"
 
+
+class UserManagementAuditLog(Base):
+    """
+    SQLAlchemy model for the 'user_management_audit_logs' table.
+    Tracks user management actions for comprehensive audit trail.
+    """
+    __tablename__ = "user_management_audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    action = Column(String(50), nullable=False)  # 'deactivated', 'reactivated', 'soft_deleted', 'role_changed', 'status_changed'
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    details = Column(Text, nullable=True)
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    performed_by_user = relationship("User", foreign_keys=[performed_by_user_id])
+
+    def __repr__(self):
+        return f"<UserManagementAuditLog(id={self.id}, user_id={self.user_id}, action='{self.action}')>"
+
