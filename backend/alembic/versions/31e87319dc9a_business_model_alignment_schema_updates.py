@@ -21,36 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema to align with business model requirements."""
     
-    # Create enum types
-    organization_type_enum = postgresql.ENUM(
-        'oraseas_ee', 'bossaqua', 'customer', 'supplier',
-        name='organizationtype'
-    )
-    organization_type_enum.create(op.get_bind())
-    
-    part_type_enum = postgresql.ENUM(
-        'consumable', 'bulk_material',
-        name='parttype'
-    )
-    part_type_enum.create(op.get_bind())
-    
-    user_role_enum = postgresql.ENUM(
-        'user', 'admin', 'super_admin',
-        name='userrole'
-    )
-    user_role_enum.create(op.get_bind())
-    
-    user_status_enum = postgresql.ENUM(
-        'active', 'inactive', 'pending_invitation', 'locked',
-        name='userstatus'
-    )
-    user_status_enum.create(op.get_bind())
-    
-    transaction_type_enum = postgresql.ENUM(
-        'creation', 'transfer', 'consumption', 'adjustment',
-        name='transactiontype'
-    )
-    transaction_type_enum.create(op.get_bind())    
+    # Create enum types - SQLAlchemy will handle creation automatically when tables are created    
 
     # Create all tables first
     
@@ -58,7 +29,7 @@ def upgrade() -> None:
     op.create_table('organizations',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
-        sa.Column('organization_type', organization_type_enum, nullable=False),
+        sa.Column('organization_type', sa.Enum('oraseas_ee', 'bossaqua', 'customer', 'supplier', name='organizationtype'), nullable=False),
         sa.Column('parent_organization_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('address', sa.Text(), nullable=True),
         sa.Column('contact_info', sa.Text(), nullable=True),
@@ -98,8 +69,8 @@ def upgrade() -> None:
         sa.Column('password_hash', sa.Text(), nullable=False),
         sa.Column('email', sa.String(length=255), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=True),
-        sa.Column('role', user_role_enum, nullable=False),
-        sa.Column('user_status', user_status_enum, nullable=False, server_default='active'),
+        sa.Column('role', sa.Enum('user', 'admin', 'super_admin', name='userrole'), nullable=False),
+        sa.Column('user_status', sa.Enum('active', 'inactive', 'pending_invitation', 'locked', name='userstatus'), nullable=False, server_default='active'),
         sa.Column('failed_login_attempts', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True),
         sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
@@ -125,7 +96,7 @@ def upgrade() -> None:
         sa.Column('part_number', sa.String(length=255), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('part_type', part_type_enum, nullable=False, server_default='consumable'),
+        sa.Column('part_type', sa.Enum('consumable', 'bulk_material', name='parttype'), nullable=False, server_default='consumable'),
         sa.Column('is_proprietary', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('unit_of_measure', sa.String(length=50), nullable=False, server_default='pieces'),
         sa.Column('manufacturer_part_number', sa.String(length=255), nullable=True),
@@ -176,7 +147,7 @@ def upgrade() -> None:
     # Create transactions table
     op.create_table('transactions',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('transaction_type', transaction_type_enum, nullable=False),
+        sa.Column('transaction_type', sa.Enum('creation', 'transfer', 'consumption', 'adjustment', name='transactiontype'), nullable=False),
         sa.Column('part_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('from_warehouse_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('to_warehouse_id', postgresql.UUID(as_uuid=True), nullable=True),

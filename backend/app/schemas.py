@@ -61,27 +61,48 @@ class OrganizationTypeFilterResponse(BaseModel):
 
 
 # --- User Schemas ---
+class UserRoleEnum(str, Enum):
+    USER = "user"
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
+
+class UserStatusEnum(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING_INVITATION = "pending_invitation"
+    LOCKED = "locked"
+
 class UserBase(BaseModel):
     organization_id: uuid.UUID
     username: str = Field(..., max_length=255)
     email: EmailStr = Field(..., max_length=255)
     name: Optional[str] = Field(None, max_length=255)
-    role: str = Field(..., max_length=50) # e.g., 'Oraseas Admin', 'Customer User'
+    role: UserRoleEnum
+    user_status: UserStatusEnum = UserStatusEnum.ACTIVE
     is_active: bool = True
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8) # Password should be hashed in backend
 
-class UserUpdate(UserBase):
+class UserUpdate(BaseModel):
     organization_id: Optional[uuid.UUID] = None
     username: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
     password: Optional[str] = Field(None, min_length=8) # For password change
-    role: Optional[str] = Field(None, max_length=50)
+    role: Optional[UserRoleEnum] = None
+    user_status: Optional[UserStatusEnum] = None
+    is_active: Optional[bool] = None
 
 class UserResponse(UserBase, BaseSchema):
+    failed_login_attempts: int = 0
+    locked_until: Optional[datetime] = None
+    last_login: Optional[datetime] = None
+    invitation_token: Optional[str] = None
+    invitation_expires_at: Optional[datetime] = None
+    
     class Config(BaseSchema.Config):
-        exclude = {'password_hash'} # Do not expose password hash
+        exclude = {'password_hash', 'password_reset_token', 'password_reset_expires_at'} # Do not expose sensitive fields
 
 
 # --- Token Schemas (for authentication) ---
@@ -111,7 +132,7 @@ class LowStockByOrgResponse(BaseModel):
 
 # --- Machine Schemas (New!) ---
 class MachineBase(BaseModel):
-    organization_id: uuid.UUID
+    customer_organization_id: uuid.UUID
     model_type: str = Field(..., max_length=100) # e.g., 'V3.1B', 'V4.0'
     name: str = Field(..., max_length=255)
     serial_number: str = Field(..., max_length=255)
@@ -119,8 +140,8 @@ class MachineBase(BaseModel):
 class MachineCreate(MachineBase):
     pass
 
-class MachineUpdate(MachineBase):
-    organization_id: Optional[uuid.UUID] = None
+class MachineUpdate(BaseModel):
+    customer_organization_id: Optional[uuid.UUID] = None
     model_type: Optional[str] = Field(None, max_length=100)
     name: Optional[str] = Field(None, max_length=255)
     serial_number: Optional[str] = Field(None, max_length=255)
@@ -130,12 +151,18 @@ class MachineResponse(MachineBase, BaseSchema):
 
 
 # --- Part Schemas ---
+class PartTypeEnum(str, Enum):
+    CONSUMABLE = "consumable"
+    BULK_MATERIAL = "bulk_material"
+
 class PartBase(BaseModel):
     part_number: str = Field(..., max_length=255)
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
+    part_type: PartTypeEnum = PartTypeEnum.CONSUMABLE
     is_proprietary: bool = False
-    is_consumable: bool = False
+    unit_of_measure: str = Field(default="pieces", max_length=50)
+    manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
     image_urls: Optional[List[str]] = None
@@ -143,9 +170,17 @@ class PartBase(BaseModel):
 class PartCreate(PartBase):
     pass
 
-class PartUpdate(PartBase):
+class PartUpdate(BaseModel):
     part_number: Optional[str] = Field(None, max_length=255)
     name: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
+    part_type: Optional[PartTypeEnum] = None
+    is_proprietary: Optional[bool] = None
+    unit_of_measure: Optional[str] = Field(None, max_length=50)
+    manufacturer_part_number: Optional[str] = Field(None, max_length=255)
+    manufacturer_delivery_time_days: Optional[int] = None
+    local_supplier_delivery_time_days: Optional[int] = None
+    image_urls: Optional[List[str]] = None
 
 class PartResponse(PartBase, BaseSchema):
     pass
@@ -156,29 +191,54 @@ class ImageUploadResponse(BaseModel):
     message: str = "Image uploaded successfully"
 
 
-# --- Inventory Schemas ---
-class InventoryBase(BaseModel):
+# --- Warehouse Schemas ---
+class WarehouseBase(BaseModel):
     organization_id: uuid.UUID
+    name: str = Field(..., max_length=255)
+    location: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = None
+    is_active: bool = True
+
+class WarehouseCreate(WarehouseBase):
+    pass
+
+class WarehouseUpdate(BaseModel):
+    organization_id: Optional[uuid.UUID] = None
+    name: Optional[str] = Field(None, max_length=255)
+    location: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class WarehouseResponse(WarehouseBase, BaseSchema):
+    pass
+
+
+# --- Inventory Schemas ---
+from decimal import Decimal
+
+class InventoryBase(BaseModel):
+    warehouse_id: uuid.UUID
     part_id: uuid.UUID
-    location: Optional[str] = Field(None, max_length=255)
-    current_stock: int = 0
-    minimum_stock_recommendation: int = 0
+    current_stock: Decimal = Field(default=0, decimal_places=3)
+    minimum_stock_recommendation: Decimal = Field(default=0, decimal_places=3)
+    unit_of_measure: str = Field(..., max_length=50)
     reorder_threshold_set_by: Optional[str] = Field(None, max_length=50)
     last_recommendation_update: Optional[datetime] = None
 
 class InventoryCreate(InventoryBase):
     pass
 
-class InventoryUpdate(InventoryBase):
-    organization_id: Optional[uuid.UUID] = None
+class InventoryUpdate(BaseModel):
+    warehouse_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
-    location: Optional[str] = Field(None, max_length=255)
-    current_stock: Optional[int] = None
-    minimum_stock_recommendation: Optional[int] = None
+    current_stock: Optional[Decimal] = Field(None, decimal_places=3)
+    minimum_stock_recommendation: Optional[Decimal] = Field(None, decimal_places=3)
+    unit_of_measure: Optional[str] = Field(None, max_length=50)
     reorder_threshold_set_by: Optional[str] = Field(None, max_length=50)
     last_recommendation_update: Optional[datetime] = None
 
 class InventoryResponse(InventoryBase, BaseSchema):
+    last_updated: datetime
     pass
 
 
@@ -212,17 +272,17 @@ class SupplierOrderResponse(SupplierOrderBase, BaseSchema):
 class SupplierOrderItemBase(BaseModel):
     supplier_order_id: uuid.UUID
     part_id: uuid.UUID
-    quantity: int = 1
-    unit_price: Optional[float] = None
+    quantity: Decimal = Field(default=1, decimal_places=3)
+    unit_price: Optional[Decimal] = Field(None, decimal_places=2)
 
 class SupplierOrderItemCreate(SupplierOrderItemBase):
     pass
 
-class SupplierOrderItemUpdate(SupplierOrderItemBase):
+class SupplierOrderItemUpdate(BaseModel):
     supplier_order_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
-    quantity: Optional[int] = None
-    unit_price: Optional[float] = None
+    quantity: Optional[Decimal] = Field(None, decimal_places=3)
+    unit_price: Optional[Decimal] = Field(None, decimal_places=2)
 
 class SupplierOrderItemResponse(SupplierOrderItemBase, BaseSchema):
     part: PartResponse
@@ -260,17 +320,17 @@ class CustomerOrderResponse(CustomerOrderBase, BaseSchema):
 class CustomerOrderItemBase(BaseModel):
     customer_order_id: uuid.UUID
     part_id: uuid.UUID
-    quantity: int = 1
-    unit_price: Optional[float] = None
+    quantity: Decimal = Field(default=1, decimal_places=3)
+    unit_price: Optional[Decimal] = Field(None, decimal_places=2)
 
 class CustomerOrderItemCreate(CustomerOrderItemBase):
     pass
 
-class CustomerOrderItemUpdate(CustomerOrderItemBase):
+class CustomerOrderItemUpdate(BaseModel):
     customer_order_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
-    quantity: Optional[int] = None
-    unit_price: Optional[float] = None
+    quantity: Optional[Decimal] = Field(None, decimal_places=3)
+    unit_price: Optional[Decimal] = Field(None, decimal_places=2)
 
 class CustomerOrderItemResponse(CustomerOrderItemBase, BaseSchema):
     part: PartResponse
@@ -289,20 +349,20 @@ class PartUsageBase(BaseModel):
     customer_organization_id: uuid.UUID
     part_id: uuid.UUID
     usage_date: datetime
-    quantity_used: int = 1
-    machine_id: Optional[uuid.UUID] = None # Updated: now expects UUID
+    quantity_used: Decimal = Field(default=1, decimal_places=3)
+    machine_id: Optional[uuid.UUID] = None
     recorded_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
 
 class PartUsageCreate(PartUsageBase):
     pass
 
-class PartUsageUpdate(PartUsageBase):
+class PartUsageUpdate(BaseModel):
     customer_organization_id: Optional[uuid.UUID] = None
     part_id: Optional[uuid.UUID] = None
     usage_date: Optional[datetime] = None
-    quantity_used: Optional[int] = None
-    machine_id: Optional[uuid.UUID] = None # Updated: now expects UUID
+    quantity_used: Optional[Decimal] = Field(None, decimal_places=3)
+    machine_id: Optional[uuid.UUID] = None
     recorded_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
 
@@ -315,13 +375,13 @@ class StockAdjustmentBase(BaseModel):
     inventory_id: uuid.UUID
     user_id: uuid.UUID # Will be set from current_user in the router
     adjustment_date: datetime = Field(default_factory=datetime.now)
-    quantity_adjusted: int
+    quantity_adjusted: Decimal = Field(..., decimal_places=3)
     reason_code: str # Should match StockAdjustmentReason enum values
     notes: Optional[str] = None
 
 class StockAdjustmentCreate(BaseModel): # Separate from Base to not include user_id from request body
     # inventory_id will come from path parameter
-    quantity_adjusted: int
+    quantity_adjusted: Decimal = Field(..., decimal_places=3)
     reason_code: str # Should match StockAdjustmentReason enum values
     notes: Optional[str] = None
 

@@ -3,7 +3,7 @@
 import uuid
 import enum
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint, Enum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -25,16 +25,16 @@ class PartType(enum.Enum):
 
 
 class UserRole(enum.Enum):
-    USER = "user"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
+    user = "user"
+    admin = "admin"
+    super_admin = "super_admin"
 
 
 class UserStatus(enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING_INVITATION = "pending_invitation"
-    LOCKED = "locked"
+    active = "active"
+    inactive = "inactive"
+    pending_invitation = "pending_invitation"
+    locked = "locked"
 
 
 class TransactionType(enum.Enum):
@@ -140,8 +140,8 @@ class User(Base):
     password_hash = Column(Text, nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
-    role = Column(Enum(UserRole), nullable=False)
-    user_status = Column(Enum(UserStatus), nullable=False, server_default='active')
+    role = Column(ENUM(UserRole, name='userrole'), nullable=False)
+    user_status = Column(ENUM(UserStatus, name='userstatus'), nullable=False, server_default='active')
     failed_login_attempts = Column(Integer, nullable=False, server_default='0')
     locked_until = Column(DateTime(timezone=True), nullable=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
@@ -163,17 +163,17 @@ class User(Base):
     @hybrid_property
     def is_super_admin(self):
         """Check if this user is a super admin."""
-        return self.role == UserRole.SUPER_ADMIN
+        return self.role == UserRole.super_admin
 
     @hybrid_property
     def is_admin(self):
         """Check if this user is an admin."""
-        return self.role == UserRole.ADMIN
+        return self.role == UserRole.admin
 
     @hybrid_property
     def is_locked(self):
         """Check if this user account is currently locked."""
-        return self.user_status == UserStatus.LOCKED or (
+        return self.user_status == UserStatus.locked or (
             self.locked_until and self.locked_until > func.now()
         )
 

@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles # New: Import StaticFiles
 import os
 import logging
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 import redis
 
 # Import database configuration
@@ -112,7 +113,7 @@ async def health_check(db: Session = Depends(get_db)):
         redis_status = "unreachable"
 
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
@@ -125,12 +126,13 @@ async def health_check(db: Session = Depends(get_db)):
 
 
 # --- Database Table Creation on Startup ---
-@app.on_event("startup")
-def startup_event():
-    logger.info("Application startup event triggered.")
-    logger.info("Attempting to create database tables if they don't exist...")
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables checked/created successfully.")
-    except Exception as e:
-        logger.error(f"Error creating database tables on startup: {e}")
+# Commented out to allow Alembic migrations to handle schema creation
+# @app.on_event("startup")
+# def startup_event():
+#     logger.info("Application startup event triggered.")
+#     logger.info("Attempting to create database tables if they don't exist...")
+#     try:
+#         Base.metadata.create_all(bind=engine)
+#         logger.info("Database tables checked/created successfully.")
+#     except Exception as e:
+#         logger.error(f"Error creating database tables on startup: {e}")

@@ -28,8 +28,8 @@ sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..'
 # Load environment variables from .env file in the project root
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
-from backend.app.database import Base
-from backend.app import models  # Import your models module
+from app.database import Base
+from app import models  # Import your models module
 
 target_metadata = Base.metadata
 
