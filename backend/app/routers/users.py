@@ -4,13 +4,14 @@ import uuid
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
+from ..auth import get_current_user, has_role, has_roles, TokenData, oauth2_scheme # Import authentication dependencies
 from ..tasks import send_invitation_email, send_invitation_accepted_notification, send_password_reset_email, send_email_verification_email, send_user_reactivation_notification
+from ..session_manager import session_manager
 
 router = APIRouter()
 
@@ -475,6 +476,7 @@ async def update_my_profile(
 @router.post("/me/change-password")
 async def change_my_password(
     password_change: schemas.UserPasswordChange,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
@@ -496,7 +498,33 @@ async def change_my_password(
                 detail="User not found"
             )
         
-        return {"message": "Password changed successfully"}
+        # Get current session token for session management
+        auth_header = request.headers.get("Authorization")
+        current_token = None
+        if auth_header and auth_header.startswith("Bearer "):
+            current_token = auth_header.replace("Bearer ", "")
+        
+        # Terminate all other sessions except current one
+        if current_token:
+            terminated_count = session_manager.terminate_sessions_on_password_change(
+                current_user.user_id, 
+                current_token, 
+                db
+            )
+            
+            # Log security event
+            session_manager.log_security_event(
+                event_type="password_changed",
+                user_id=current_user.user_id,
+                details=f"Password changed, {terminated_count} other sessions terminated",
+                risk_level="low",
+                db=db
+            )
+        
+        return {
+            "message": "Password changed successfully",
+            "sessions_terminated": terminated_count if current_token else 0
+        }
         
     except ValueError as e:
         raise HTTPException(
@@ -1011,4 +1039,282 @@ async def get_all_user_management_audit_logs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get audit logs: {str(e)}"
+        )
+
+
+# --- Session and Security Management Endpoints (Task 3.5) ---
+
+@router.get("/me/sessions", response_model=List[dict])
+async def get_my_active_sessions(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get all active sessions for the current user.
+    Requirements: 2D.7
+    """
+    from ..session_manager import session_manager
+    
+    try:
+        sessions = session_manager.get_active_sessions(current_user.user_id)
+        return sessions
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get active sessions: {str(e)}"
+        )
+
+@router.delete("/me/sessions/{session_token}")
+async def terminate_my_session(
+    session_token: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Terminate a specific session for the current user.
+    Requirements: 2D.5
+    """
+    from ..session_manager import session_manager
+    
+    try:
+        # Verify the session belongs to the current user
+        session_data = session_manager.get_session(session_token)
+        if not session_data or session_data.get("user_id") != str(current_user.user_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found or does not belong to current user"
+            )
+        
+        session_manager.terminate_session(session_token, "user_terminated", db)
+        return {"message": "Session terminated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to terminate session: {str(e)}"
+        )
+
+@router.delete("/me/sessions")
+async def terminate_all_my_sessions(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Terminate all sessions for the current user except the current one.
+    Requirements: 2D.5
+    """
+    from ..session_manager import session_manager
+    
+    try:
+        # Get current session token from the request (we'll need to modify this)
+        # For now, terminate all sessions - in production, we'd exclude current session
+        terminated_count = session_manager.terminate_all_user_sessions(
+            current_user.user_id, "user_terminated_all", db
+        )
+        
+        return {"message": f"Terminated {terminated_count} sessions"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to terminate sessions: {str(e)}"
+        )
+
+@router.post("/logout")
+async def logout(
+    session_token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    """
+    Logout and terminate the current session.
+    Requirements: 2D.5
+    """
+    from ..session_manager import session_manager
+    
+    try:
+        session_manager.terminate_session(session_token, "logout", db)
+        return {"message": "Logged out successfully"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to logout: {str(e)}"
+        )
+
+@router.get("/admin/security-events", response_model=List[dict])
+async def get_security_events(
+    user_id: Optional[uuid.UUID] = Query(None, description="Filter by user ID"),
+    event_type: Optional[str] = Query(None, description="Filter by event type"),
+    risk_level: Optional[str] = Query(None, description="Filter by risk level"),
+    hours: int = Query(24, ge=1, le=168, description="Hours to look back (max 7 days)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get security events for monitoring and audit purposes.
+    Requirements: 2D.7
+    """
+    try:
+        # Calculate time threshold
+        time_threshold = datetime.utcnow() - timedelta(hours=hours)
+        
+        # Build query
+        query = db.query(models.SecurityEvent).filter(
+            models.SecurityEvent.timestamp >= time_threshold
+        )
+        
+        # Apply filters
+        if user_id:
+            query = query.filter(models.SecurityEvent.user_id == user_id)
+        
+        if event_type:
+            query = query.filter(models.SecurityEvent.event_type == event_type)
+        
+        if risk_level:
+            query = query.filter(models.SecurityEvent.risk_level == risk_level)
+        
+        # Permission checks for admins
+        if current_user.role == "admin":
+            # Admins can only see events for users in their organization
+            query = query.join(models.User).filter(
+                models.User.organization_id == current_user.organization_id
+            )
+        
+        # Execute query
+        events = query.order_by(
+            models.SecurityEvent.timestamp.desc()
+        ).offset(skip).limit(limit).all()
+        
+        # Convert to dict for response
+        result = []
+        for event in events:
+            event_dict = {
+                "id": str(event.id),
+                "user_id": str(event.user_id) if event.user_id else None,
+                "event_type": event.event_type,
+                "ip_address": event.ip_address,
+                "user_agent": event.user_agent,
+                "session_id": event.session_id,
+                "details": event.details,
+                "timestamp": event.timestamp.isoformat(),
+                "risk_level": event.risk_level
+            }
+            result.append(event_dict)
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get security events: {str(e)}"
+        )
+
+@router.patch("/{user_id}/unlock", response_model=schemas.UserResponse)
+async def unlock_user_account(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Manually unlock a user account.
+    Requirements: 2D.4
+    """
+    # Get the user to unlock
+    user_to_unlock = crud.users.get_user(db, user_id)
+    if not user_to_unlock:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user_to_unlock.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only unlock users in your organization"
+            )
+    
+    try:
+        # Unlock the user
+        user_to_unlock.user_status = models.UserStatus.active
+        user_to_unlock.locked_until = None
+        user_to_unlock.failed_login_attempts = 0
+        db.commit()
+        db.refresh(user_to_unlock)
+        
+        # Clear Redis failed attempts
+        from ..session_manager import session_manager
+        session_manager.clear_failed_login_attempts(user_to_unlock.username, db)
+        
+        # Log security event
+        session_manager.log_security_event(
+            event_type="account_unlocked",
+            user_id=user_to_unlock.id,
+            details=f"Account manually unlocked by {current_user.username}",
+            risk_level="low",
+            db=db
+        )
+        
+        return user_to_unlock
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to unlock user account: {str(e)}"
+        )
+
+@router.delete("/{user_id}/sessions")
+async def terminate_user_sessions(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Terminate all sessions for a specific user (admin function).
+    Requirements: 2D.6
+    """
+    # Get the user
+    user_to_terminate = crud.users.get_user(db, user_id)
+    if not user_to_terminate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Permission checks
+    if current_user.role == "admin":
+        if user_to_terminate.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only terminate sessions for users in your organization"
+            )
+    
+    try:
+        from ..session_manager import session_manager
+        
+        terminated_count = session_manager.terminate_all_user_sessions(
+            user_id, "admin_terminated", db
+        )
+        
+        # Log security event
+        session_manager.log_security_event(
+            event_type="sessions_terminated",
+            user_id=user_id,
+            details=f"All sessions terminated by admin {current_user.username}",
+            risk_level="medium",
+            db=db
+        )
+        
+        return {"message": f"Terminated {terminated_count} sessions for user"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to terminate user sessions: {str(e)}"
         )

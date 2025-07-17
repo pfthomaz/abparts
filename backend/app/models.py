@@ -2,6 +2,7 @@
 
 import uuid
 import enum
+from datetime import datetime
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint, Enum
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
@@ -542,4 +543,58 @@ class UserManagementAuditLog(Base):
 
     def __repr__(self):
         return f"<UserManagementAuditLog(id={self.id}, user_id={self.user_id}, action='{self.action}')>"
+
+
+class SecurityEvent(Base):
+    """
+    SQLAlchemy model for the 'security_events' table.
+    Tracks security-related events for monitoring and audit purposes.
+    """
+    __tablename__ = "security_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # Nullable for failed login attempts
+    event_type = Column(String(50), nullable=False)  # 'login_success', 'login_failed', 'account_locked', 'suspicious_activity', 'session_terminated'
+    ip_address = Column(String(45), nullable=True)  # IPv4 or IPv6
+    user_agent = Column(Text, nullable=True)
+    session_id = Column(String(255), nullable=True)
+    details = Column(Text, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    risk_level = Column(String(20), nullable=False, server_default='low')  # 'low', 'medium', 'high', 'critical'
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<SecurityEvent(id={self.id}, event_type='{self.event_type}', risk_level='{self.risk_level}')>"
+
+
+class UserSession(Base):
+    """
+    SQLAlchemy model for the 'user_sessions' table.
+    Tracks active user sessions for management and security purposes.
+    """
+    __tablename__ = "user_sessions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    session_token = Column(String(255), unique=True, nullable=False, index=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_activity = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_active = Column(Boolean, nullable=False, server_default='true')
+    terminated_reason = Column(String(100), nullable=True)  # 'logout', 'timeout', 'admin_terminated', 'password_changed'
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+
+    @hybrid_property
+    def is_expired(self):
+        """Check if this session is expired."""
+        return datetime.utcnow() > self.expires_at
+
+    def __repr__(self):
+        return f"<UserSession(id={self.id}, user_id={self.user_id}, is_active={self.is_active})>"
 

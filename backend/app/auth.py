@@ -7,7 +7,7 @@ import base64 # New: for Base64 encoding/decoding
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from passlib.context import CryptContext
@@ -18,6 +18,7 @@ from . import models
 from .database import get_db
 from .schemas import Token
 from .models import UserRole
+from .session_manager import session_manager
 
 # Role mapping for backward compatibility
 LEGACY_ROLE_MAPPING = {
@@ -88,15 +89,71 @@ def get_password_hash(password: str) -> str:
     """Hashes a password using passlib's bcrypt context."""
     return pwd_context.hash(password)
 
-async def authenticate_user(db: Session, username: str, password: str):
+async def authenticate_user(db: Session, username: str, password: str, ip_address: str = None):
     """
-    Authenticates a user against the database.
+    Authenticates a user against the database with security features.
+    Requirements: 2D.4
     """
+    # Check if user is locked
+    if session_manager.is_user_locked(username, db):
+        session_manager.log_security_event(
+            event_type="login_failed",
+            ip_address=ip_address,
+            details=f"Login attempt for locked account: {username}",
+            risk_level="medium",
+            db=db
+        )
+        return None
+    
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
+        # Record failed attempt for non-existent user
+        session_manager.record_failed_login(username, ip_address, db)
+        session_manager.log_security_event(
+            event_type="login_failed",
+            ip_address=ip_address,
+            details=f"Login attempt for non-existent user: {username}",
+            risk_level="low",
+            db=db
+        )
         return None
+    
+    # Check if user account is active
+    if not user.is_active or user.user_status != models.UserStatus.active:
+        session_manager.log_security_event(
+            event_type="login_failed",
+            user_id=user.id,
+            ip_address=ip_address,
+            details=f"Login attempt for inactive account: {username}",
+            risk_level="medium",
+            db=db
+        )
+        return None
+    
     if not verify_password(password, user.password_hash):
+        # Record failed login attempt
+        session_manager.record_failed_login(username, ip_address, db)
+        session_manager.log_security_event(
+            event_type="login_failed",
+            user_id=user.id,
+            ip_address=ip_address,
+            details="Invalid password",
+            risk_level="low",
+            db=db
+        )
         return None
+    
+    # Clear failed attempts on successful authentication
+    session_manager.clear_failed_login_attempts(username, db)
+    session_manager.log_security_event(
+        event_type="login_success",
+        user_id=user.id,
+        ip_address=ip_address,
+        details="Successful login",
+        risk_level="low",
+        db=db
+    )
+    
     return user
 
 def create_access_token(user: models.User, expires_delta: Optional[timedelta] = None):
@@ -115,48 +172,40 @@ def create_access_token(user: models.User, expires_delta: Optional[timedelta] = 
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
-    Dependency to get the current authenticated user from the token.
-    STUB: Decodes and validates the "fake" Base64 encoded token.
+    Dependency to get the current authenticated user from session token.
+    Requirements: 2D.1, 2D.2
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
     try:
-        # Split the token into header, payload, (and optional signature)
-        parts = token.split('.')
-        if len(parts) < 2: # Expect at least header.payload
+        # Get session data from Redis
+        session_data = session_manager.get_session(token)
+        if not session_data:
             raise credentials_exception
         
-        # Decode the payload (second part of the token)
-        # Add padding back if it was stripped
-        encoded_payload = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
-        decoded_payload = base64.urlsafe_b64decode(encoded_payload).decode('utf-8')
-        payload_data = json.loads(decoded_payload)
-
-        username = payload_data.get("sub")
-        user_id_str = payload_data.get("user_id")
-        organization_id_str = payload_data.get("organization_id")
-        role = payload_data.get("role")
-
-        if not all([username, user_id_str, organization_id_str, role]):
+        # Extract user information from session
+        user_id = uuid.UUID(session_data["user_id"])
+        username = session_data["username"]
+        organization_id = uuid.UUID(session_data["organization_id"])
+        role = session_data["role"]
+        
+        # Verify user still exists and is active
+        user = db.query(models.User).filter(
+            models.User.id == user_id, 
+            models.User.username == username,
+            models.User.is_active == True,
+            models.User.user_status == models.UserStatus.active
+        ).first()
+        
+        if not user:
+            # User no longer exists or is inactive, terminate session
+            session_manager.terminate_session(token, "user_inactive", db)
             raise credentials_exception
-
-        # Convert UUID strings back to UUID objects
-        user_id = uuid.UUID(user_id_str)
-        organization_id = uuid.UUID(organization_id_str)
-
-        # Basic user existence check
-        user = db.query(models.User).filter(models.User.id == user_id, models.User.username == username).first()
-        if user is None:
-            raise credentials_exception
-
-        # For the stub, we just confirm the role matches
-        user_role_value = user.role.value if isinstance(user.role, UserRole) else user.role
-        if user_role_value != role:
-            raise credentials_exception
-
+        
         current_user_data = TokenData(
             username=username,
             user_id=user_id,
@@ -164,11 +213,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             role=role
         )
         return current_user_data
-    except (json.JSONDecodeError, UnicodeDecodeError, ValueError, IndexError) as e:
-        logger.error(f"Token parsing error: {e}")
+        
+    except ValueError as e:
+        logger.error(f"Invalid UUID in session data: {e}")
+        session_manager.terminate_session(token, "invalid_data", db)
         raise credentials_exception
     except Exception as e:
-        logger.error(f"Unexpected error validating token: {e}")
+        logger.error(f"Unexpected error validating session: {e}")
         raise credentials_exception
 
 # Dependency factories for role-based authorization
@@ -192,16 +243,58 @@ def has_roles(required_roles: List[str]):
         return current_user
     return roles_checker
 
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = await authenticate_user(db, form_data.username, form_data.password)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), request: Request = None, db: Session = Depends(get_db)):
+    """
+    Enhanced login with session management and security features.
+    Requirements: 2D.1, 2D.4
+    """
+    # Extract client information
+    ip_address = None
+    user_agent = None
+    if request:
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+    
+    # Check rate limiting
+    if ip_address and not session_manager.check_rate_limit(ip_address, "login"):
+        session_manager.log_security_event(
+            event_type="rate_limit_exceeded",
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="Login rate limit exceeded",
+            risk_level="medium",
+            db=db
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please try again later.",
+            headers={"Retry-After": "60"}
+        )
+    
+    user = await authenticate_user(db, form_data.username, form_data.password, ip_address)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(user=user)
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    # Check for suspicious activity and require additional verification if needed
+    if ip_address and session_manager.detect_suspicious_activity(ip_address, user_agent, db):
+        session_manager.require_additional_verification(user.id, ip_address, db)
+        
+        # Send verification code
+        verification_code = session_manager.send_verification_code(user.id, "email", db)
+        
+        raise HTTPException(
+            status_code=status.HTTP_202_ACCEPTED,
+            detail="Additional verification required. Check your email for verification code.",
+            headers={"X-Verification-Required": "true"}
+        )
+    
+    # Create session instead of JWT token
+    session_token = session_manager.create_session(user, ip_address, user_agent, db)
+    return {"access_token": session_token, "token_type": "bearer"}
 
 async def read_users_me(current_user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
     user_db = db.query(models.User).filter(models.User.id == current_user.user_id).first()
