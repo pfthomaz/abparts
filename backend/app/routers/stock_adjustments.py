@@ -8,7 +8,11 @@ from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
+from ..auth import get_current_user, TokenData # Import authentication dependencies
+from ..permissions import (
+    ResourceType, PermissionType, require_permission, require_admin,
+    OrganizationScopedQueries, check_organization_access, permission_checker
+)
 
 router = APIRouter(
     prefix="/stock_adjustments", # Prefix for all routes in this router
@@ -21,7 +25,7 @@ async def create_new_stock_adjustment(
     adjustment_in: schemas.StockAdjustmentCreate,
     inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item to adjust"),
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.WRITE))
 ):
     """
     Create a new stock adjustment for a given inventory item.
@@ -43,17 +47,10 @@ async def create_new_stock_adjustment(
     if not inventory_item:
         raise HTTPException(status_code=404, detail=f"Inventory item with ID {inventory_id} not found.")
 
-    # Check if the current user's organization is 'Oraseas EE' if the inventory is for Oraseas EE.
-    # Or if the user is an Admin, they can adjust any.
-    # This logic might need refinement based on how multi-organization inventory is managed by Oraseas staff.
-    if not (current_user.role == "Oraseas Admin" or \
-            (current_user.role == "Oraseas Inventory Manager" and inventory_item.organization.name == "Oraseas EE")): # Assuming Oraseas Inventory Manager only manages Oraseas EE stock
-        # A more robust check would be to see if inventory_item.organization_id is one that current_user can manage
-        # For now, Oraseas Inventory Manager can only adjust stock for "Oraseas EE".
-        # Oraseas Admin can adjust any.
-        oraseas_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
-        if not (current_user.role == "Oraseas Admin" or (oraseas_org and oraseas_org.name == "Oraseas EE")):
-             raise HTTPException(status_code=403, detail="Not authorized to adjust stock for this inventory item's organization.")
+    # Check if user can adjust inventory for this warehouse using the permission system
+    warehouse = inventory_item.warehouse if hasattr(inventory_item, 'warehouse') else None
+    if warehouse and not permission_checker.can_adjust_inventory(current_user, warehouse.id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to adjust stock for this inventory item.")
 
 
     created_adjustment = crud.stock_adjustments.create_stock_adjustment(
@@ -71,29 +68,18 @@ async def list_adjustments_for_inventory_item(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user) # Allow any authenticated user to see adjustments for inventory they can see
+    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.READ))
 ):
     """
-    Get all stock adjustments for a specific inventory item.
-    \f
-    :param inventory_id: The ID of the inventory item.
-    :param db: Database session.
-    :param current_user: Authenticated user data.
-    :return: List of stock adjustments.
+    Get all stock adjustments for a specific inventory item with proper access control.
     """
     inventory_item = crud.inventory.get_inventory_item(db, inventory_id=inventory_id)
     if not inventory_item:
         raise HTTPException(status_code=404, detail=f"Inventory item with ID {inventory_id} not found.")
 
-    # Authorization: User must be able to view the inventory item itself.
-    # Oraseas Admin can see all. Customer roles can see their own org's inventory.
-    can_view = False
-    if current_user.role == "Oraseas Admin":
-        can_view = True
-    elif inventory_item.organization_id == current_user.organization_id:
-        can_view = True
-
-    if not can_view:
+    # Check if user can access this inventory item's organization
+    warehouse = inventory_item.warehouse if hasattr(inventory_item, 'warehouse') else None
+    if warehouse and not check_organization_access(current_user, warehouse.organization_id, db):
         raise HTTPException(status_code=403, detail="Not authorized to view adjustments for this inventory item.")
 
     adjustments = crud.stock_adjustments.get_stock_adjustments_for_inventory_item(
@@ -106,15 +92,10 @@ async def list_adjustments_for_inventory_item(
 async def get_specific_stock_adjustment(
     adjustment_id: uuid.UUID = Path(..., description="The ID of the stock adjustment"),
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user) # Allow any authenticated user to see adjustments for inventory they can see
+    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.READ))
 ):
     """
-    Get a specific stock adjustment by its ID.
-    \f
-    :param adjustment_id: The ID of the stock adjustment.
-    :param db: Database session.
-    :param current_user: Authenticated user data.
-    :return: The stock adjustment.
+    Get a specific stock adjustment by its ID with proper access control.
     """
     adjustment = crud.stock_adjustments.get_stock_adjustment(db, adjustment_id=adjustment_id)
     if not adjustment:
@@ -122,34 +103,34 @@ async def get_specific_stock_adjustment(
 
     # Authorization: User must be able to view the inventory item linked to the adjustment.
     inventory_item = crud.inventory.get_inventory_item(db, inventory_id=adjustment.inventory_id)
-    if not inventory_item: # Should not happen if DB integrity is maintained
+    if not inventory_item:
         raise HTTPException(status_code=404, detail="Associated inventory item not found.")
 
-    can_view = False
-    if current_user.role == "Oraseas Admin":
-        can_view = True
-    elif inventory_item.organization_id == current_user.organization_id:
-        can_view = True
-
-    if not can_view:
+    # Check if user can access this inventory item's organization
+    warehouse = inventory_item.warehouse if hasattr(inventory_item, 'warehouse') else None
+    if warehouse and not check_organization_access(current_user, warehouse.organization_id, db):
         raise HTTPException(status_code=403, detail="Not authorized to view this stock adjustment.")
 
     return adjustment
 
-# Endpoint for Oraseas Admin to see ALL stock adjustments (for audit purposes)
+# Endpoint for super admins to see ALL stock adjustments (for audit purposes)
 @router.get("/", response_model=List[schemas.StockAdjustmentResponse])
 async def list_all_stock_adjustments(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin")) # Only Oraseas Admin
+    current_user: TokenData = Depends(require_permission(ResourceType.AUDIT_LOG, PermissionType.READ))
 ):
     """
-    Get all stock adjustments across the system (Admin only).
-    \f
-    :param db: Database session.
-    :param current_user: Authenticated user data (must be Oraseas Admin).
-    :return: List of all stock adjustments.
+    Get all stock adjustments across the system with organization-scoped filtering.
+    Super admins see all adjustments, regular users see only their organization's adjustments.
     """
-    adjustments = crud.stock_adjustments.get_all_stock_adjustments(db=db, skip=skip, limit=limit)
+    # Apply organization-scoped filtering for audit logs
+    if permission_checker.is_super_admin(current_user):
+        adjustments = crud.stock_adjustments.get_all_stock_adjustments(db=db, skip=skip, limit=limit)
+    else:
+        # For non-super admins, filter to their organization's adjustments only
+        adjustments = crud.stock_adjustments.get_stock_adjustments_by_organization(
+            db=db, organization_id=current_user.organization_id, skip=skip, limit=limit
+        )
     return adjustments

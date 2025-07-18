@@ -1,9 +1,10 @@
 # backend/app/schemas/part.py
 
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from enum import Enum
 from datetime import datetime
+from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from .organization import OrganizationTypeEnum
@@ -48,11 +49,64 @@ class PartResponse(PartBase):
         orm_mode = True
 
 class ImageUploadResponse(BaseModel):
-    filename: str
     url: str
-    size: int
-    content_type: str
-    uploaded_at: datetime
 
+    class Config:
+        orm_mode = True
+
+class WarehouseInventoryItem(BaseModel):
+    """Inventory information for a part in a specific warehouse"""
+    warehouse_id: uuid.UUID
+    warehouse_name: str
+    current_stock: Decimal
+    minimum_stock_recommendation: Decimal
+    is_low_stock: bool
+    unit_of_measure: str
+
+    class Config:
+        orm_mode = True
+
+class PartWithInventoryResponse(PartResponse):
+    """Part response with inventory information across warehouses"""
+    total_stock: Decimal
+    warehouse_inventory: List[WarehouseInventoryItem] = []
+    is_low_stock: bool = False
+    
+    class Config:
+        orm_mode = True
+
+class PartUsageHistoryItem(BaseModel):
+    """Usage history item for a part"""
+    usage_date: datetime
+    quantity: Decimal
+    machine_id: Optional[uuid.UUID] = None
+    machine_serial: Optional[str] = None
+    warehouse_id: uuid.UUID
+    warehouse_name: str
+    
+    class Config:
+        orm_mode = True
+
+class PartWithUsageResponse(PartWithInventoryResponse):
+    """Part response with inventory and usage history"""
+    usage_history: List[PartUsageHistoryItem] = []
+    avg_monthly_usage: Optional[Decimal] = None
+    estimated_depletion_days: Optional[int] = None
+    
+    class Config:
+        orm_mode = True
+
+class PartReorderSuggestion(BaseModel):
+    """Reorder suggestion for a part based on usage patterns"""
+    part_id: uuid.UUID
+    part_number: str
+    part_name: str
+    current_total_stock: Decimal
+    avg_monthly_usage: Decimal
+    estimated_depletion_days: int
+    suggested_reorder_quantity: Decimal
+    unit_of_measure: str
+    is_proprietary: bool
+    
     class Config:
         orm_mode = True

@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field, VERSION
 
@@ -321,12 +322,20 @@ class WarehouseUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class WarehouseResponse(WarehouseBase, BaseSchema):
-    pass
+    """Response schema for warehouse endpoints"""
+    class Config:
+        from_attributes = True
+        
+# Explicitly export WarehouseResponse to ensure it's available
+__all__ = [
+    'WarehouseResponse',
+    'WarehouseBase',
+    'WarehouseCreate',
+    'WarehouseUpdate',
+]
 
 
 # --- Inventory Schemas ---
-from decimal import Decimal
-
 class InventoryBase(BaseModel):
     warehouse_id: uuid.UUID
     part_id: uuid.UUID
@@ -351,6 +360,14 @@ class InventoryUpdate(BaseModel):
 class InventoryResponse(InventoryBase, BaseSchema):
     last_updated: datetime
     pass
+
+class InventoryTransferRequest(BaseModel):
+    """Schema for inventory transfer requests between warehouses."""
+    from_warehouse_id: uuid.UUID
+    to_warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity: float = Field(..., gt=0, description="Quantity to transfer (must be positive)")
+    notes: Optional[str] = Field(None, max_length=500, description="Optional notes for the transfer")
 
 
 # --- Supplier Order Schemas ---
@@ -518,4 +535,36 @@ class StocktakeWorksheetItemResponse(BaseModel):
 # --- Stocktake Location Schema (New!) ---
 class StocktakeLocation(BaseModel):
     name: str
+
+
+# --- Session Schemas (New!) ---
+class UserSessionBase(BaseModel):
+    ip_address: str
+    user_agent: str
+    created_at: datetime
+    last_activity: datetime
+    expires_at: datetime
+
+class UserSessionResponse(UserSessionBase):
+    id: uuid.UUID
+    session_token: str
+    is_current: bool = False
+
+class SecurityEventResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    event_type: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    timestamp: datetime
+    details: Optional[str] = None
+    risk_level: str = "medium"
+    success: bool = False
+
+    class Config:
+        from_attributes = True
+
+class AdditionalVerification(BaseModel):
+    verification_type: str = "email_code"  # Default to email code verification
+    verification_code: str
 

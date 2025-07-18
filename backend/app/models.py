@@ -424,9 +424,10 @@ class PartUsage(Base):
     customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
     usage_date = Column(DateTime(timezone=True), nullable=False)
-    quantity_used = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
     machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
     recorded_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -436,9 +437,10 @@ class PartUsage(Base):
     part = relationship("Part", back_populates="part_usage_records")
     machine = relationship("Machine", back_populates="part_usage_records")
     recorded_by_user = relationship("User", back_populates="part_usage_records")
+    warehouse = relationship("Warehouse")
 
     def __repr__(self):
-        return f"<PartUsage(id={self.id}, customer_org_id={self.customer_organization_id}, part_id={self.part_id}, qty={self.quantity_used})>"
+        return f"<PartUsage(id={self.id}, customer_org_id={self.customer_organization_id}, part_id={self.part_id}, qty={self.quantity})>"
 
 
 class Transaction(Base):

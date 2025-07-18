@@ -37,3 +37,11 @@ class InventoryResponse(InventoryBase):
 
     class Config:
         orm_mode = True
+
+class InventoryTransferRequest(BaseModel):
+    """Schema for inventory transfer requests between warehouses."""
+    from_warehouse_id: uuid.UUID
+    to_warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity: float = Field(..., gt=0, description="Quantity to transfer (must be positive)")
+    notes: Optional[str] = Field(None, max_length=500, description="Optional notes for the transfer")

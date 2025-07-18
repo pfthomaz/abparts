@@ -11,6 +11,10 @@ from ..database import get_db
 from ..auth import get_current_user, has_role, has_roles, TokenData
 from .. import models
 from ..models import OrganizationType
+from ..permissions import (
+    ResourceType, PermissionType, require_permission, require_super_admin, require_admin,
+    OrganizationScopedQueries, check_organization_access, permission_checker
+)
 
 router = APIRouter()
 
@@ -20,16 +24,26 @@ async def get_organizations(
     organization_type: Optional[schemas.OrganizationTypeEnum] = Query(None, description="Filter by organization type"),
     include_inactive: bool = Query(False, description="Include inactive organizations"),
     db: Session = Depends(get_db),
-    # current_user: TokenData = Depends(get_current_user) # Temporarily removed for public access during development
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Get all organizations with optional filtering by type."""
     try:
+        # Get base query
         if organization_type:
             # Convert schema enum to model enum
             model_type = OrganizationType(organization_type.value)
-            organizations = crud.organizations.get_organizations_by_type(db, model_type, include_inactive)
+            query = db.query(models.Organization).filter(models.Organization.organization_type == model_type)
         else:
-            organizations = crud.organizations.get_organizations(db, include_inactive)
+            query = db.query(models.Organization)
+        
+        # Apply organization-scoped filtering
+        query = OrganizationScopedQueries.filter_organizations(query, current_user)
+        
+        # Apply inactive filter
+        if not include_inactive:
+            query = query.filter(models.Organization.is_active == True)
+        
+        organizations = query.all()
         return organizations
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -38,13 +52,20 @@ async def get_organizations(
 async def get_organizations_by_types(
     include_inactive: bool = Query(False, description="Include inactive organizations"),
     db: Session = Depends(get_db),
-    # current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Get organizations grouped by type."""
     try:
         result = []
         for org_type in OrganizationType:
-            organizations = crud.organizations.get_organizations_by_type(db, org_type, include_inactive)
+            # Get base query and apply organization-scoped filtering
+            query = db.query(models.Organization).filter(models.Organization.organization_type == org_type)
+            query = OrganizationScopedQueries.filter_organizations(query, current_user)
+            
+            if not include_inactive:
+                query = query.filter(models.Organization.is_active == True)
+            
+            organizations = query.all()
             result.append({
                 "organization_type": org_type.value,
                 "organizations": organizations,
@@ -58,11 +79,20 @@ async def get_organizations_by_types(
 async def get_root_organizations(
     include_inactive: bool = Query(False, description="Include inactive organizations"),
     db: Session = Depends(get_db),
-    # current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Get organizations that have no parent (root level)."""
     try:
-        organizations = crud.organizations.get_root_organizations(db, include_inactive)
+        # Get base query for root organizations
+        query = db.query(models.Organization).filter(models.Organization.parent_organization_id.is_(None))
+        
+        # Apply organization-scoped filtering
+        query = OrganizationScopedQueries.filter_organizations(query, current_user)
+        
+        if not include_inactive:
+            query = query.filter(models.Organization.is_active == True)
+        
+        organizations = query.all()
         return organizations
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -71,19 +101,19 @@ async def get_root_organizations(
 async def get_organization_hierarchy(
     org_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Get the complete hierarchy starting from an organization."""
     try:
+        # Check if user can access this organization
+        if not check_organization_access(current_user, org_id, db):
+            raise HTTPException(status_code=403, detail="Not authorized to view this organization's hierarchy")
+        
         hierarchy = crud.organizations.get_organization_hierarchy(db, org_id)
         if not hierarchy:
             raise HTTPException(status_code=404, detail="Organization not found")
         
-        # Check permissions
-        if current_user.role == "super_admin" or org_id == current_user.organization_id:
-            return hierarchy
-        else:
-            raise HTTPException(status_code=403, detail="Not authorized to view this organization's hierarchy")
+        return hierarchy
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -92,7 +122,7 @@ async def get_child_organizations(
     org_id: uuid.UUID,
     include_inactive: bool = Query(False, description="Include inactive organizations"),
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Get direct children of an organization."""
     try:
@@ -101,12 +131,12 @@ async def get_child_organizations(
         if not parent_org:
             raise HTTPException(status_code=404, detail="Parent organization not found")
         
-        # Check permissions
-        if current_user.role == "super_admin" or org_id == current_user.organization_id:
-            children = crud.organizations.get_child_organizations(db, org_id, include_inactive)
-            return children
-        else:
+        # Check if user can access this organization
+        if not check_organization_access(current_user, org_id, db):
             raise HTTPException(status_code=403, detail="Not authorized to view this organization's children")
+        
+        children = crud.organizations.get_child_organizations(db, org_id, include_inactive)
+        return children
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -116,12 +146,26 @@ async def search_organizations(
     organization_type: Optional[schemas.OrganizationTypeEnum] = Query(None, description="Filter by organization type"),
     include_inactive: bool = Query(False, description="Include inactive organizations"),
     db: Session = Depends(get_db),
-    # current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Search organizations by name with optional type filtering."""
     try:
-        model_type = OrganizationType(organization_type.value) if organization_type else None
-        organizations = crud.organizations.search_organizations(db, q, model_type, include_inactive)
+        # Build base query with search
+        query = db.query(models.Organization).filter(models.Organization.name.ilike(f"%{q}%"))
+        
+        # Apply type filter if specified
+        if organization_type:
+            model_type = OrganizationType(organization_type.value)
+            query = query.filter(models.Organization.organization_type == model_type)
+        
+        # Apply organization-scoped filtering
+        query = OrganizationScopedQueries.filter_organizations(query, current_user)
+        
+        # Apply inactive filter
+        if not include_inactive:
+            query = query.filter(models.Organization.is_active == True)
+        
+        organizations = query.all()
         return organizations
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -130,7 +174,7 @@ async def search_organizations(
 async def get_organization(
     org_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
     """Get a single organization by ID."""
     try:
@@ -138,11 +182,11 @@ async def get_organization(
         if not organization:
             raise HTTPException(status_code=404, detail="Organization not found")
 
-        # Check permissions
-        if current_user.role == "super_admin" or org_id == current_user.organization_id:
-            return organization
-        else:
+        # Check if user can access this organization
+        if not check_organization_access(current_user, org_id, db):
             raise HTTPException(status_code=403, detail="Not authorized to view this organization's details")
+        
+        return organization
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -150,7 +194,7 @@ async def get_organization(
 async def create_organization(
     org: schemas.OrganizationCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("super_admin"))
+    current_user: TokenData = Depends(require_super_admin())
 ):
     """Create a new organization with business rule validation."""
     try:
@@ -166,7 +210,7 @@ async def update_organization(
     org_id: uuid.UUID,
     org_update: schemas.OrganizationUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.WRITE))
 ):
     """Update an existing organization with business rule validation."""
     try:
@@ -176,7 +220,7 @@ async def update_organization(
             raise HTTPException(status_code=404, detail="Organization not found")
 
         # Check permissions
-        if current_user.role == "super_admin" or (current_user.role == "admin" and org_id == current_user.organization_id):
+        if permission_checker.is_super_admin(current_user) or (permission_checker.is_admin(current_user) and org_id == current_user.organization_id):
             updated_org = crud.organizations.update_organization(db, org_id, org_update)
             return updated_org
         else:
@@ -190,7 +234,7 @@ async def update_organization(
 async def delete_organization(
     org_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("super_admin"))
+    current_user: TokenData = Depends(require_super_admin())
 ):
     """Delete (deactivate) an organization."""
     try:

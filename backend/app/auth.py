@@ -301,3 +301,57 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user), db:
     if not user_db:
         raise HTTPException(status_code=404, detail="User not found in DB")
     return user_db
+
+async def get_current_user_from_token(token: str, db: Session = None) -> TokenData:
+    """
+    Helper function to get current user from token without FastAPI dependencies.
+    Used by middleware for permission checking.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        # Get session data from Redis
+        session_data = session_manager.get_session(token)
+        if not session_data:
+            raise credentials_exception
+        
+        # Extract user information from session
+        user_id = uuid.UUID(session_data["user_id"])
+        username = session_data["username"]
+        organization_id = uuid.UUID(session_data["organization_id"])
+        role = session_data["role"]
+        
+        # If database session provided, verify user is still active
+        if db:
+            user = db.query(models.User).filter(
+                models.User.id == user_id, 
+                models.User.username == username,
+                models.User.is_active == True,
+                models.User.user_status == models.UserStatus.active
+            ).first()
+            
+            if not user:
+                # User no longer exists or is inactive, terminate session
+                session_manager.terminate_session(token, "user_inactive", db)
+                raise credentials_exception
+        
+        current_user_data = TokenData(
+            username=username,
+            user_id=user_id,
+            organization_id=organization_id,
+            role=role
+        )
+        return current_user_data
+        
+    except ValueError as e:
+        logger.error(f"Invalid UUID in session data: {e}")
+        if db:
+            session_manager.terminate_session(token, "invalid_data", db)
+        raise credentials_exception
+    except Exception as e:
+        logger.error(f"Unexpected error validating session: {e}")
+        raise credentials_exception

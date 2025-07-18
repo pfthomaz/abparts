@@ -19,6 +19,7 @@ from . import models, schemas
 from .routers.organizations import router as organizations_router
 from .routers.users import router as users_router
 from .routers.parts import router as parts_router
+from .routers.warehouses import router as warehouses_router
 from .routers.inventory import router as inventory_router
 from .routers.supplier_orders import router as supplier_orders_router
 from .routers.supplier_order_items import router as supplier_order_items_router
@@ -58,6 +59,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Add Security and Permission Middleware ---
+from .middleware import (
+    SecurityHeadersMiddleware, RequestLoggingMiddleware, ErrorHandlingMiddleware,
+    PermissionEnforcementMiddleware, RateLimitingMiddleware, SessionManagementMiddleware
+)
+import os
+import redis
+
+# Initialize Redis client for middleware
+redis_url = os.getenv("REDIS_URL")
+redis_client = None
+if redis_url:
+    try:
+        redis_client = redis.StrictRedis.from_url(redis_url, decode_responses=True)
+        redis_client.ping()  # Test connection
+        logger.info("Redis connection established for middleware")
+    except Exception as e:
+        logger.warning(f"Redis connection failed, middleware will work without caching: {e}")
+        redis_client = None
+
+# Apply middleware stack (in reverse order - last added is executed first)
+app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(PermissionEnforcementMiddleware)
+if redis_client:
+    app.add_middleware(SessionManagementMiddleware, redis_client=redis_client)
+    app.add_middleware(RateLimitingMiddleware, redis_client=redis_client)
+
 # --- Mount Static Files Directory ---
 # This makes files in the UPLOAD_DIRECTORY accessible via /static/images/your_image.jpg
 # IMPORTANT: In production, consider serving static files via a CDN or dedicated static file server.
@@ -74,6 +104,7 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 app.include_router(organizations_router, prefix="/organizations", tags=["Organizations"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(parts_router, prefix="/parts", tags=["Parts"])
+app.include_router(warehouses_router, prefix="/warehouses", tags=["Warehouses"])
 app.include_router(inventory_router, prefix="/inventory", tags=["Inventory"])
 app.include_router(supplier_orders_router, prefix="/supplier_orders", tags=["Supplier Orders"])
 app.include_router(supplier_order_items_router, prefix="/supplier_order_items", tags=["Supplier Order Items"])

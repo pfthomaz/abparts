@@ -4,6 +4,7 @@
 from . import organizations
 from . import users
 from . import parts
+from . import warehouses
 from . import inventory
 from . import supplier_orders
 from . import supplier_order_items

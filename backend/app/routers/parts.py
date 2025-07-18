@@ -1,15 +1,20 @@
 # backend/app/routers/parts.py
 
 import uuid
-from typing import List
+from typing import List, Optional
 import os
 import shutil # For saving files
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File # New: UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query # Added: Query
 from sqlalchemy.orm import Session
 
-from .. import schemas, crud # Import schemas and CRUD functions
+from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
+from ..auth import get_current_user, TokenData # Import authentication dependencies
+from ..permissions import (
+    ResourceType, PermissionType, require_permission, require_super_admin,
+    OrganizationScopedQueries, check_organization_access, permission_checker
+)
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -26,7 +31,7 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 @router.post("/upload-image", response_model=schemas.ImageUploadResponse, tags=["Images"]) # Define a new schema for this response
 async def upload_image(
     file: UploadFile = File(...),
-    current_user: TokenData = Depends(has_role("Oraseas Admin")) # Only Oraseas Admin can upload images
+    current_user: TokenData = Depends(require_super_admin()) # Only super admins can upload images
 ):
     """
     Uploads an image file and returns its URL.
@@ -52,18 +57,42 @@ async def upload_image(
 # --- Parts CRUD ---
 @router.get("/", response_model=List[schemas.PartResponse])
 async def get_parts(
+    part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
+    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user) # All authenticated users can view parts
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
 ):
-    parts = crud.parts.get_parts(db)
+    """
+    Get all parts with optional filtering by type and origin.
+    All authenticated users can view parts.
+    """
+    parts = crud.parts.get_filtered_parts(db, part_type=part_type, is_proprietary=is_proprietary)
+    return parts
+
+@router.get("/search", response_model=List[schemas.PartResponse])
+async def search_parts(
+    q: str = Query(..., min_length=1, description="Search query for part name or part number"),
+    part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
+    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Search parts by name or part number with optional filtering by type and origin.
+    All authenticated users can search parts.
+    """
+    parts = crud.parts.search_parts(db, q, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit)
     return parts
 
 @router.get("/{part_id}", response_model=schemas.PartResponse)
 async def get_part(
     part_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user) # All authenticated users can view parts
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
 ):
+    """Get a single part by ID. All authenticated users can view parts."""
     part = crud.parts.get_part(db, part_id)
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
@@ -71,10 +100,11 @@ async def get_part(
 
 @router.post("/", response_model=schemas.PartResponse, status_code=status.HTTP_201_CREATED)
 async def create_part(
-    part: schemas.PartCreate, # Now expects image_urls
+    part: schemas.PartCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin")) # Only Oraseas Admin can create parts
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.WRITE))
 ):
+    """Create a new part. Only super admins can create parts."""
     db_part = crud.parts.create_part(db, part)
     if not db_part:
         raise HTTPException(status_code=400, detail="Failed to create part")
@@ -83,10 +113,11 @@ async def create_part(
 @router.put("/{part_id}", response_model=schemas.PartResponse)
 async def update_part(
     part_id: uuid.UUID,
-    part_update: schemas.PartUpdate, # Now expects image_urls
+    part_update: schemas.PartUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin")) # Only Oraseas Admin can update parts
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.WRITE))
 ):
+    """Update an existing part. Only super admins can update parts."""
     updated_part = crud.parts.update_part(db, part_id, part_update)
     if not updated_part:
         raise HTTPException(status_code=404, detail="Part not found")
@@ -96,9 +127,189 @@ async def update_part(
 async def delete_part(
     part_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin")) # Only Oraseas Admin can delete parts
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.DELETE))
 ):
+    """Delete a part. Only super admins can delete parts."""
     result = crud.parts.delete_part(db, part_id)
     if not result:
         raise HTTPException(status_code=404, detail="Part not found or could not be deleted")
     return result
+
+@router.get("/types", response_model=List[str])
+async def get_part_types(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get all available part types.
+    All authenticated users can view part types.
+    """
+    # Return the enum values as strings
+    return [part_type.value for part_type in models.PartType]
+
+@router.get("/by-type/{part_type}", response_model=List[schemas.PartResponse])
+async def get_parts_by_type(
+    part_type: str,
+    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get parts filtered by type (consumable or bulk_material).
+    All authenticated users can view parts.
+    """
+    try:
+        # Validate part_type
+        models.PartType(part_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid part type: {part_type}. Valid types are: {[t.value for t in models.PartType]}")
+    
+    parts = crud.parts.get_filtered_parts(db, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit)
+    return parts
+# --- Parts Inventory Integration Endpoints ---
+
+@router.get("/with-inventory", response_model=List[schemas.PartWithInventoryResponse])
+async def get_parts_with_inventory(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter inventory by organization ID"),
+    part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
+    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get all parts with inventory information across all warehouses.
+    If organization_id is provided, only inventory from that organization's warehouses is included.
+    Otherwise, for regular users, only inventory from their organization's warehouses is shown.
+    Super admins see all inventory across all organizations if no organization_id is specified.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's inventory")
+    
+    parts = crud.parts.get_parts_with_inventory(
+        db, organization_id, part_type, is_proprietary, skip, limit
+    )
+    return parts
+
+@router.get("/with-inventory/{part_id}", response_model=schemas.PartWithInventoryResponse)
+async def get_part_with_inventory(
+    part_id: uuid.UUID,
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter inventory by organization ID"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get a single part with inventory information across all warehouses.
+    If organization_id is provided, only inventory from that organization's warehouses is included.
+    Otherwise, for regular users, only inventory from their organization's warehouses is shown.
+    Super admins see all inventory across all organizations if no organization_id is specified.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's inventory")
+    
+    part = crud.parts.get_part_with_inventory(db, part_id, organization_id)
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+    
+    return part
+
+@router.get("/with-usage/{part_id}", response_model=schemas.PartWithUsageResponse)
+async def get_part_with_usage_history(
+    part_id: uuid.UUID,
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    days: int = Query(90, ge=1, le=365, description="Number of days to look back for usage history"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get a part with inventory information and usage history.
+    If organization_id is provided, only data from that organization is included.
+    Otherwise, for regular users, only data from their organization is shown.
+    Super admins see all data across all organizations if no organization_id is specified.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's data")
+    
+    part = crud.parts.get_part_with_usage_history(db, part_id, organization_id, days)
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+    
+    return part
+
+@router.get("/reorder-suggestions", response_model=List[schemas.PartReorderSuggestion])
+async def get_parts_reorder_suggestions(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    threshold_days: int = Query(30, ge=1, le=90, description="Threshold for days of stock remaining"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of suggestions to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get reorder suggestions for parts based on usage patterns.
+    If organization_id is provided, only data from that organization is included.
+    Otherwise, for regular users, only data from their organization is shown.
+    Super admins see all data across all organizations if no organization_id is specified.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's data")
+    
+    suggestions = crud.parts.get_parts_reorder_suggestions(db, organization_id, threshold_days, limit)
+    return suggestions
+
+@router.get("/search-with-inventory", response_model=List[schemas.PartWithInventoryResponse])
+async def search_parts_with_inventory(
+    q: str = Query(..., min_length=1, description="Search query for part name or part number"),
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter inventory by organization ID"),
+    part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
+    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Search parts by name or part number with inventory context.
+    If organization_id is provided, only inventory from that organization's warehouses is included.
+    Otherwise, for regular users, only inventory from their organization's warehouses is shown.
+    Super admins see all inventory across all organizations if no organization_id is specified.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's inventory")
+    
+    parts = crud.parts.search_parts_with_inventory(
+        db, q, organization_id, part_type, is_proprietary, skip, limit
+    )
+    return parts

@@ -12,20 +12,24 @@ from ..database import get_db # Import DB session dependency
 from ..auth import get_current_user, has_role, has_roles, TokenData, oauth2_scheme # Import authentication dependencies
 from ..tasks import send_invitation_email, send_invitation_accepted_notification, send_password_reset_email, send_email_verification_email, send_user_reactivation_notification
 from ..session_manager import session_manager
+from ..permissions import (
+    ResourceType, PermissionType, require_permission, require_super_admin, require_admin,
+    OrganizationScopedQueries, check_organization_access, permission_checker
+)
 
 router = APIRouter()
 
 def _check_update_user_permissions(user_to_update: models.User, user_update: schemas.UserUpdate, current_user: TokenData):
     """Helper to centralize complex permission checks for updating a user."""
-    is_oraseas_admin = current_user.role == "Oraseas Admin"
-    is_customer_admin_in_own_org = (
-        current_user.role == "Customer Admin" and
+    is_super_admin = permission_checker.is_super_admin(current_user)
+    is_admin_in_own_org = (
+        permission_checker.is_admin(current_user) and
         user_to_update.organization_id == current_user.organization_id
     )
     is_self_update = user_to_update.id == current_user.user_id
 
-    if is_oraseas_admin:
-        return # Oraseas Admin has full permissions
+    if is_super_admin:
+        return # Super admin has full permissions
 
     if user_update.organization_id is not None and user_update.organization_id != user_to_update.organization_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot change a user's organization.")
@@ -33,7 +37,7 @@ def _check_update_user_permissions(user_to_update: models.User, user_update: sch
     if user_update.role is not None and user_update.role != user_to_update.role:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot change a user's role.")
 
-    if not (is_customer_admin_in_own_org or is_self_update):
+    if not (is_admin_in_own_org or is_self_update):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this user")
 
 def _check_create_user_permissions(user_to_create: schemas.UserCreate, organization: models.Organization, current_user: TokenData):
@@ -41,37 +45,41 @@ def _check_create_user_permissions(user_to_create: schemas.UserCreate, organizat
     if not organization:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Organization ID not found")
 
-    if current_user.role == "Customer Admin":
+    if permission_checker.is_admin(current_user) and not permission_checker.is_super_admin(current_user):
         if user_to_create.organization_id != current_user.organization_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer Admin can only create users within their own organization")
-        if user_to_create.role not in ["Customer Admin", "Customer User"]:
-             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer Admin can only create 'Customer Admin' or 'Customer User' roles.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin can only create users within their own organization")
+        if user_to_create.role == "super_admin":
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only super admins can create super admin users.")
 
-    if current_user.role == "Oraseas Admin":
-        if user_to_create.role == "Oraseas Admin" and organization.type != "Warehouse":
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot assign 'Oraseas Admin' role to non-Warehouse organization user.")
+    if permission_checker.is_super_admin(current_user):
+        if user_to_create.role == "super_admin" and organization.organization_type != models.OrganizationType.ORASEAS_EE:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super admin role can only be assigned to Oraseas EE organization users.")
 
 
 # --- Users CRUD ---
 @router.get("/", response_model=List[schemas.UserResponse])
 async def get_users(
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin")) # Only Oraseas Admin can list all users
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.READ))
 ):
-    users = crud.users.get_users(db)
+    # Get base query and apply organization-scoped filtering
+    query = db.query(models.User)
+    query = OrganizationScopedQueries.filter_users(query, current_user)
+    users = query.all()
     return users
 
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 async def get_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.READ))
 ):
     user = crud.users.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if current_user.role == "Oraseas Admin" or user_id == current_user.user_id:
+    # Check if user can access this user's details
+    if permission_checker.is_super_admin(current_user) or user_id == current_user.user_id or user.organization_id == current_user.organization_id:
         return user
     else:
         raise HTTPException(status_code=403, detail="Not authorized to view this user's details")
@@ -80,7 +88,7 @@ async def get_user(
 async def create_user(
     user: schemas.UserCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"])) # Admin roles can create users
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.WRITE))
 ):
     organization = crud.organizations.get_organization(db, user.organization_id)
     _check_create_user_permissions(user, organization, current_user)
@@ -94,7 +102,7 @@ async def update_user(
     user_id: uuid.UUID,
     user_update: schemas.UserUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin", "Customer User"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.WRITE))
 ):
     db_user = crud.users.get_user(db, user_id)
     if not db_user:
@@ -110,13 +118,14 @@ async def update_user(
 async def deactivate_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.WRITE))
 ):
     user_to_deactivate = crud.users.get_user(db, user_id)
     if not user_to_deactivate:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if current_user.role == "Customer Admin" and user_to_deactivate.organization_id != current_user.organization_id:
+    # Check if user can manage this user (same organization or super admin)
+    if not permission_checker.is_super_admin(current_user) and user_to_deactivate.organization_id != current_user.organization_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to deactivate this user")
 
     return crud.users.set_user_active_status(db, user_id, False)
@@ -125,13 +134,13 @@ async def deactivate_user(
 async def reactivate_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.WRITE))
 ):
     user_to_reactivate = crud.users.get_user(db, user_id)
     if not user_to_reactivate:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if current_user.role == "Customer Admin" and user_to_reactivate.organization_id != current_user.organization_id:
+    if not permission_checker.is_super_admin(current_user) and user_to_reactivate.organization_id != current_user.organization_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to reactivate this user")
 
     return crud.users.set_user_active_status(db, user_id, True)
@@ -140,7 +149,7 @@ async def reactivate_user(
 async def delete_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin"))
+    current_user: TokenData = Depends(require_super_admin())
 ):
     result = crud.users.delete_user(db, user_id)
     if not result:
@@ -154,7 +163,7 @@ async def delete_user(
 async def invite_user(
     invitation: schemas.UserInvitationCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.USER, PermissionType.WRITE))
 ):
     """
     Send an invitation to a new user.
