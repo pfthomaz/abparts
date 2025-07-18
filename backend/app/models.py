@@ -463,6 +463,8 @@ class Transaction(Base):
     notes = Column(Text, nullable=True)
     reference_number = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    requires_approval = Column(Boolean, nullable=False, server_default='false')
+    approval_status = Column(String(50), nullable=True)  # 'pending', 'approved', 'rejected'
 
     # Relationships
     part = relationship("Part")
@@ -470,9 +472,38 @@ class Transaction(Base):
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id], back_populates="transactions_to")
     machine = relationship("Machine")
     performed_by_user = relationship("User", back_populates="transactions_performed")
+    approvals = relationship("TransactionApproval", back_populates="transaction", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Transaction(id={self.id}, type='{self.transaction_type.value}', part_id={self.part_id}, qty={self.quantity})>"
+
+
+class TransactionApprovalStatus(enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class TransactionApproval(Base):
+    """
+    SQLAlchemy model for the 'transaction_approvals' table.
+    Records approvals for transactions that require approval.
+    """
+    __tablename__ = "transaction_approvals"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=False)
+    approver_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    status = Column(Enum(TransactionApprovalStatus), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    transaction = relationship("Transaction", back_populates="approvals")
+    approver = relationship("User")
+
+    def __repr__(self):
+        return f"<TransactionApproval(id={self.id}, transaction_id={self.transaction_id}, status='{self.status.value}')>"
 
 
 

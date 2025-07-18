@@ -1,7 +1,7 @@
 # backend/app/schemas/transaction.py
 
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import datetime
 from enum import Enum
@@ -55,7 +55,7 @@ class TransactionResponse(TransactionBase):
     performed_by_username: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TransactionFilter(BaseModel):
     transaction_type: Optional[TransactionTypeEnum] = None
@@ -79,7 +79,7 @@ class TransactionSummary(BaseModel):
     transaction_count: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class WarehouseTransactionSummary(BaseModel):
     warehouse_id: uuid.UUID
@@ -89,7 +89,7 @@ class WarehouseTransactionSummary(BaseModel):
     net_quantity: Decimal
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PartTransactionHistory(BaseModel):
     part_id: uuid.UUID
@@ -103,4 +103,64 @@ class PartTransactionHistory(BaseModel):
     net_quantity: Decimal
     
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class TransactionApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+class TransactionApprovalRequest(BaseModel):
+    transaction_id: uuid.UUID
+    approver_id: uuid.UUID
+    status: TransactionApprovalStatus
+    notes: Optional[str] = None
+
+class TransactionApprovalResponse(BaseModel):
+    transaction_id: uuid.UUID
+    approver_id: uuid.UUID
+    status: TransactionApprovalStatus
+    notes: Optional[str] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class TransactionBatchRequest(BaseModel):
+    transactions: List[TransactionCreate]
+    reference: Optional[str] = None
+
+class TransactionBatchResponse(BaseModel):
+    transactions: List[TransactionResponse]
+    reference: Optional[str] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class InventoryReconciliationItem(BaseModel):
+    warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    current_stock: Decimal
+    calculated_balance: Decimal
+    discrepancy: Decimal
+    reconciled: bool
+    
+    class Config:
+        from_attributes = True
+
+class InventoryReconciliationRequest(BaseModel):
+    warehouse_id: uuid.UUID
+    part_id: Optional[uuid.UUID] = None
+
+class TransactionAnalytics(BaseModel):
+    period_days: int
+    total_transactions: int
+    daily_average: float
+    transactions_by_type: Dict[str, int]
+    quantities_by_type: Dict[str, float]
+    top_parts: List[Dict[str, Any]]
+    top_warehouses: List[Dict[str, Any]]
+    
+    class Config:
+        from_attributes = True

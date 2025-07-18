@@ -21,6 +21,7 @@ from .routers.users import router as users_router
 from .routers.parts import router as parts_router
 from .routers.warehouses import router as warehouses_router
 from .routers.inventory import router as inventory_router
+from .routers.inventory_reports import router as inventory_reports_router # New: Import inventory_reports_router
 from .routers.supplier_orders import router as supplier_orders_router
 from .routers.supplier_order_items import router as supplier_order_items_router
 from .routers.customer_orders import router as customer_orders_router
@@ -119,6 +120,7 @@ app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(parts_router, prefix="/parts", tags=["Parts"])
 app.include_router(warehouses_router, prefix="/warehouses", tags=["Warehouses"])
 app.include_router(inventory_router, prefix="/inventory", tags=["Inventory"])
+app.include_router(inventory_reports_router, prefix="/inventory-reports", tags=["Inventory Reports"])
 app.include_router(supplier_orders_router, prefix="/supplier_orders", tags=["Supplier Orders"])
 app.include_router(supplier_order_items_router, prefix="/supplier_order_items", tags=["Supplier Order Items"])
 app.include_router(customer_orders_router, prefix="/customer_orders", tags=["Customer Orders"])

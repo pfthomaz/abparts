@@ -263,3 +263,183 @@ async def get_part_transaction_history(
         return history
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+@router.post("/batch", response_model=List[schemas.TransactionResponse], status_code=status.HTTP_201_CREATED)
+async def create_transaction_batch(
+    batch: schemas.TransactionBatchRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Create a batch of transactions in a single database transaction.
+    Users can only create transactions involving their organization's warehouses.
+    """
+    # Check if user can access the warehouses involved in all transactions
+    if not permission_checker.is_super_admin(current_user):
+        # Get all warehouses for the user's organization
+        warehouses = db.query(models.Warehouse).filter(models.Warehouse.organization_id == current_user.organization_id).all()
+        warehouse_ids = [w.id for w in warehouses]
+        
+        # Check if all transactions involve the organization's warehouses
+        for transaction in batch.transactions:
+            if transaction.from_warehouse_id and transaction.from_warehouse_id not in warehouse_ids:
+                raise HTTPException(status_code=403, detail="Not authorized to create transactions from this warehouse")
+            
+            if transaction.to_warehouse_id and transaction.to_warehouse_id not in warehouse_ids:
+                raise HTTPException(status_code=403, detail="Not authorized to create transactions to this warehouse")
+    
+    # Set performed_by_user_id to current user if not provided for each transaction
+    for transaction in batch.transactions:
+        if not transaction.performed_by_user_id:
+            transaction.performed_by_user_id = current_user.user_id
+    
+    # Create the transaction batch
+    try:
+        from ..transaction_processor import get_transaction_processor
+        processor = get_transaction_processor(db)
+        db_transactions = processor.process_transaction_batch(batch.transactions)
+        return db_transactions
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/approval", response_model=schemas.TransactionApprovalResponse)
+async def approve_transaction(
+    approval: schemas.TransactionApprovalRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Approve or reject a transaction that requires approval.
+    Only admins and super_admins can approve transactions.
+    """
+    # Check if user is an admin or super_admin
+    if not (permission_checker.is_admin(current_user) or permission_checker.is_super_admin(current_user)):
+        raise HTTPException(status_code=403, detail="Only admins can approve transactions")
+    
+    # Get the transaction
+    transaction = crud.transaction.get_transaction(db, approval.transaction_id)
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Check if user can access this transaction
+    if not permission_checker.is_super_admin(current_user):
+        # Get all warehouses for the user's organization
+        warehouses = db.query(models.Warehouse).filter(models.Warehouse.organization_id == current_user.organization_id).all()
+        warehouse_ids = [w.id for w in warehouses]
+        
+        # Check if transaction involves the organization's warehouses
+        if (transaction.get("from_warehouse_id") not in warehouse_ids and 
+            transaction.get("to_warehouse_id") not in warehouse_ids):
+            raise HTTPException(status_code=403, detail="Not authorized to approve this transaction")
+    
+    # Set approver_id to current user if not provided
+    if not approval.approver_id:
+        approval.approver_id = current_user.user_id
+    
+    # Create a new TransactionApproval record
+    db_approval = models.TransactionApproval(
+        transaction_id=approval.transaction_id,
+        approver_id=approval.approver_id,
+        status=approval.status,
+        notes=approval.notes,
+        created_at=datetime.now()
+    )
+    
+    try:
+        db.add(db_approval)
+        db.commit()
+        db.refresh(db_approval)
+        
+        # If approved, process the transaction
+        if approval.status == schemas.TransactionApprovalStatus.APPROVED:
+            from ..transaction_processor import get_transaction_processor
+            processor = get_transaction_processor(db)
+            try:
+                processor.process_approved_transaction(approval.transaction_id)
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(status_code=400, detail=f"Error processing approved transaction: {str(e)}")
+        
+        return db_approval
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error approving transaction: {str(e)}")
+
+@router.get("/pending-approval", response_model=List[schemas.TransactionResponse])
+async def get_pending_approval_transactions(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.READ))
+):
+    """
+    Get all transactions that require approval and are currently pending.
+    Only admins and super_admins can view pending approval transactions.
+    """
+    # Check if user is an admin or super_admin
+    if not (permission_checker.is_admin(current_user) or permission_checker.is_super_admin(current_user)):
+        raise HTTPException(status_code=403, detail="Only admins can view pending approval transactions")
+    
+    # Query for transactions that require approval and are pending
+    query = db.query(models.Transaction).filter(
+        models.Transaction.requires_approval == True,
+        models.Transaction.approval_status == 'pending'
+    )
+    
+    # If user is not a super_admin, filter transactions by organization
+    if not permission_checker.is_super_admin(current_user):
+        # Get all warehouses for the user's organization
+        warehouses = db.query(models.Warehouse).filter(models.Warehouse.organization_id == current_user.organization_id).all()
+        warehouse_ids = [w.id for w in warehouses]
+        
+        # Filter transactions where from_warehouse_id or to_warehouse_id is in the organization's warehouses
+        query = query.filter(
+            (models.Transaction.from_warehouse_id.in_(warehouse_ids)) | 
+            (models.Transaction.to_warehouse_id.in_(warehouse_ids))
+        )
+    
+    # Apply pagination
+    transactions = query.order_by(models.Transaction.created_at.desc()).offset(skip).limit(limit).all()
+    
+    # Convert to response format
+    results = []
+    for transaction in transactions:
+        # Get part details
+        part = db.query(models.Part).filter(models.Part.id == transaction.part_id).first()
+        
+        # Get user details
+        user = db.query(models.User).filter(models.User.id == transaction.performed_by_user_id).first()
+        
+        # Get warehouse names
+        from_warehouse_name = None
+        if transaction.from_warehouse_id:
+            from_warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == transaction.from_warehouse_id).first()
+            if from_warehouse:
+                from_warehouse_name = from_warehouse.name
+        
+        to_warehouse_name = None
+        if transaction.to_warehouse_id:
+            to_warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == transaction.to_warehouse_id).first()
+            if to_warehouse:
+                to_warehouse_name = to_warehouse.name
+        
+        # Get machine serial if it exists
+        machine_serial = None
+        if transaction.machine_id:
+            machine = db.query(models.Machine).filter(models.Machine.id == transaction.machine_id).first()
+            if machine:
+                machine_serial = machine.serial_number
+        
+        # Create response object
+        result = {
+            **transaction.__dict__,
+            "part_name": part.name if part else None,
+            "part_number": part.part_number if part else None,
+            "from_warehouse_name": from_warehouse_name,
+            "to_warehouse_name": to_warehouse_name,
+            "machine_serial": machine_serial,
+            "performed_by_username": user.username if user else None
+        }
+        
+        results.append(result)
+    
+    return results
