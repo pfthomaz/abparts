@@ -31,6 +31,7 @@ from .routers.stock_adjustments import router as stock_adjustments_router # New:
 from .routers.stocktake import router as stocktake_router
 from .routers.dashboard import router as dashboard_router # New: Import dashboard router
 from .routers.sessions import router as sessions_router # New: Import sessions router
+from .routers.transactions import router as transactions_router # New: Import transactions router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -128,6 +129,7 @@ app.include_router(stock_adjustments_router, prefix="/stock_adjustments", tags=[
 app.include_router(stocktake_router, prefix="/stocktake", tags=["Stocktake"])
 app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
+app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)
