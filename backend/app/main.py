@@ -38,11 +38,23 @@ from .auth import login_for_access_token, read_users_me, TokenData
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.responses import HTMLResponse
+
 # --- FastAPI App Initialization ---
 app = FastAPI(
     title="ABParts API",
     description="API for managing AutoBoss parts inventory and customer stock.",
     version="0.1.0",
+    swagger_ui_parameters={
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+        "docExpansion": "none",
+        "filter": True,
+        "tryItOutEnabled": True
+    },
+    docs_url=None,  # Disable automatic docs
+    redoc_url=None,  # Disable automatic redoc
 )
 
 # --- CORS Configuration ---
@@ -169,3 +181,41 @@ async def health_check(db: Session = Depends(get_db)):
 #         logger.info("Database tables checked/created successfully.")
 #     except Exception as e:
 #         logger.error(f"Error creating database tables on startup: {e}")
+# --- Custom Swagger UI and ReDoc routes ---
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=f"{app.title} - Swagger UI",
+        oauth2_redirect_url="/docs/oauth2-redirect",
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png",
+        swagger_ui_parameters=app.swagger_ui_parameters,
+    )
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title=f"{app.title} - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
+        redoc_favicon_url="https://fastapi.tiangolo.com/img/favicon.png",
+    )
+
+@app.get("/docs/oauth2-redirect", include_in_schema=False)
+async def oauth2_redirect():
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>OAuth2 Redirect</title>
+    </head>
+    <body>
+        <script>
+            window.opener.swaggerUIRedirectOauth2(window.location.href.split('#')[1]);
+            window.close();
+        </script>
+    </body>
+    </html>
+    """)

@@ -34,7 +34,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        
+        # More permissive CSP for Swagger UI
+        if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
+            response.headers["Content-Security-Policy"] = "default-src 'self' cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net"
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
         
         # Remove server header for security
         if "server" in response.headers:
@@ -199,6 +204,10 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
         
         # Skip static files
         if path.startswith("/static"):
+            return False
+        
+        # Skip Swagger UI files
+        if path.startswith("/docs/") or path == "/docs" or path == "/openapi.json" or path == "/redoc" or path.startswith("/redoc/"):
             return False
         
         # Skip custom permission endpoints (they handle permissions internally)
