@@ -188,9 +188,15 @@ class User(Base):
         return f"<User(id={self.id}, username='{self.username}', role='{self.role.value}', organization_id={self.organization_id})>"
 
 
+class MachineStatus(enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    MAINTENANCE = "maintenance"
+    DECOMMISSIONED = "decommissioned"
+
 class Machine(Base):
     """
-    SQLAlchemy model for the 'machines' table. (New!)
+    SQLAlchemy model for the 'machines' table.
     Represents AutoBoss machines owned by customer organizations.
     """
     __tablename__ = "machines"
@@ -200,12 +206,21 @@ class Machine(Base):
     model_type = Column(String(100), nullable=False) # e.g., 'V3.1B', 'V4.0'
     name = Column(String(255), nullable=False)
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
+    purchase_date = Column(DateTime(timezone=True), nullable=True)
+    warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)
+    status = Column(Enum(MachineStatus), nullable=False, server_default='active')
+    last_maintenance_date = Column(DateTime(timezone=True), nullable=True)
+    next_maintenance_date = Column(DateTime(timezone=True), nullable=True)
+    location = Column(String(255), nullable=True)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     customer_organization = relationship("Organization", back_populates="machines")
     part_usage_records = relationship("PartUsage", back_populates="machine", cascade="all, delete-orphan")
+    maintenance_records = relationship("MachineMaintenance", back_populates="machine", cascade="all, delete-orphan")
+    compatible_parts = relationship("MachinePartCompatibility", back_populates="machine", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Machine(id={self.id}, name='{self.name}', model_type='{self.model_type}', serial_number='{self.serial_number}')>"
@@ -631,3 +646,89 @@ class UserSession(Base):
     def __repr__(self):
         return f"<UserSession(id={self.id}, user_id={self.user_id}, is_active={self.is_active})>"
 
+class MaintenanceType(enum.Enum):
+    SCHEDULED = "scheduled"
+    UNSCHEDULED = "unscheduled"
+    REPAIR = "repair"
+    INSPECTION = "inspection"
+    CLEANING = "cleaning"
+    CALIBRATION = "calibration"
+    OTHER = "other"
+
+class MachineMaintenance(Base):
+    """
+    SQLAlchemy model for the 'machine_maintenance' table.
+    Records maintenance activities performed on machines.
+    """
+    __tablename__ = "machine_maintenance"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    maintenance_date = Column(DateTime(timezone=True), nullable=False)
+    maintenance_type = Column(Enum(MaintenanceType), nullable=False)
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    description = Column(Text, nullable=False)
+    hours_spent = Column(DECIMAL(precision=5, scale=2), nullable=True)
+    cost = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    next_maintenance_date = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    machine = relationship("Machine", back_populates="maintenance_records")
+    performed_by_user = relationship("User")
+    parts_used = relationship("MaintenancePartUsage", back_populates="maintenance_record", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<MachineMaintenance(id={self.id}, machine_id={self.machine_id}, type='{self.maintenance_type.value}')>"
+
+class MaintenancePartUsage(Base):
+    """
+    SQLAlchemy model for the 'maintenance_part_usage' table.
+    Records parts used during maintenance activities.
+    """
+    __tablename__ = "maintenance_part_usage"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    maintenance_id = Column(UUID(as_uuid=True), ForeignKey("machine_maintenance.id"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    maintenance_record = relationship("MachineMaintenance", back_populates="parts_used")
+    part = relationship("Part")
+    warehouse = relationship("Warehouse")
+
+    def __repr__(self):
+        return f"<MaintenancePartUsage(id={self.id}, maintenance_id={self.maintenance_id}, part_id={self.part_id}, qty={self.quantity})>"
+
+class MachinePartCompatibility(Base):
+    """
+    SQLAlchemy model for the 'machine_part_compatibility' table.
+    Records which parts are compatible with which machines.
+    """
+    __tablename__ = "machine_part_compatibility"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    is_recommended = Column(Boolean, nullable=False, server_default='false')
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Composite unique constraint
+    __table_args__ = (
+        UniqueConstraint('machine_id', 'part_id', name='_machine_part_uc'),
+    )
+
+    # Relationships
+    machine = relationship("Machine", back_populates="compatible_parts")
+    part = relationship("Part")
+
+    def __repr__(self):
+        return f"<MachinePartCompatibility(id={self.id}, machine_id={self.machine_id}, part_id={self.part_id})>"
