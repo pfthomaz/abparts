@@ -10,7 +10,7 @@ from ..database import get_db
 from ..auth import get_current_user
 from ..crud import inventory_workflow as crud
 
-router = APIRouter(prefix="/inventory-workflows", tags=["inventory-workflows"])
+router = APIRouter(prefix="/inventory-workflows", tags=["Inventory Workflows"])
 
 # Stocktake endpoints
 @router.post("/stocktakes", response_model=schemas.StocktakeResponse)
