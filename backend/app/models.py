@@ -221,6 +221,8 @@ class Machine(Base):
     part_usage_records = relationship("PartUsage", back_populates="machine", cascade="all, delete-orphan")
     maintenance_records = relationship("MachineMaintenance", back_populates="machine", cascade="all, delete-orphan")
     compatible_parts = relationship("MachinePartCompatibility", back_populates="machine", cascade="all, delete-orphan")
+    predictions = relationship("MachinePrediction", back_populates="machine", cascade="all, delete-orphan")
+    maintenance_recommendations = relationship("MaintenanceRecommendation", back_populates="machine", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Machine(id={self.id}, name='{self.name}', model_type='{self.model_type}', serial_number='{self.serial_number}')>"
@@ -732,3 +734,183 @@ class MachinePartCompatibility(Base):
 
     def __repr__(self):
         return f"<MachinePartCompatibility(id={self.id}, machine_id={self.machine_id}, part_id={self.part_id})>"
+# Predictive Maintenance Models
+class MaintenanceRiskLevel(enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class MaintenancePriority(enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"
+
+class MaintenanceStatus(enum.Enum):
+    PENDING = "pending"
+    SCHEDULED = "scheduled"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+class PredictiveMaintenanceModel(Base):
+    """
+    SQLAlchemy model for the 'predictive_maintenance_models' table.
+    Represents machine learning models for predictive maintenance.
+    """
+    __tablename__ = "predictive_maintenance_models"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    model_type = Column(String(100), nullable=False)  # e.g., 'regression', 'classification', 'time_series'
+    target_metric = Column(String(100), nullable=False)  # e.g., 'failure_probability', 'remaining_useful_life'
+    features = Column(Text, nullable=False)  # JSON array of feature names used by the model
+    hyperparameters = Column(Text, nullable=True)  # JSON object of model hyperparameters
+    performance_metrics = Column(Text, nullable=True)  # JSON object of model performance metrics
+    version = Column(String(50), nullable=False)
+    is_active = Column(Boolean, nullable=False, server_default='true')
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    # Relationships
+    created_by_user = relationship("User")
+
+    def __repr__(self):
+        return f"<PredictiveMaintenanceModel(id={self.id}, name='{self.name}', version='{self.version}')>"
+
+class MachinePrediction(Base):
+    """
+    SQLAlchemy model for the 'machine_predictions' table.
+    Stores predictions made by predictive maintenance models for specific machines.
+    """
+    __tablename__ = "machine_predictions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    predictive_model_id = Column(UUID(as_uuid=True), ForeignKey("predictive_maintenance_models.id"), nullable=False)
+    prediction_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    failure_probability = Column(DECIMAL(precision=5, scale=4), nullable=True)
+    remaining_useful_life = Column(Integer, nullable=True)  # in days
+    predicted_failure_date = Column(DateTime(timezone=True), nullable=True)
+    risk_level = Column(Enum(MaintenanceRiskLevel), nullable=False)
+    prediction_details = Column(Text, nullable=True)  # JSON object with detailed prediction information
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    machine = relationship("Machine", back_populates="predictions")
+    predictive_model = relationship("PredictiveMaintenanceModel")
+
+    def __repr__(self):
+        return f"<MachinePrediction(id={self.id}, machine_id={self.machine_id}, risk_level='{self.risk_level.value}')>"
+
+class MaintenanceRecommendation(Base):
+    """
+    SQLAlchemy model for the 'maintenance_recommendations' table.
+    Stores maintenance recommendations based on predictive model outputs.
+    """
+    __tablename__ = "maintenance_recommendations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    prediction_id = Column(UUID(as_uuid=True), ForeignKey("machine_predictions.id"), nullable=False)
+    recommendation_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    recommended_maintenance_type = Column(String(50), nullable=False)  # Will store maintenance type as string
+    priority = Column(Enum(MaintenancePriority), nullable=False)
+    recommended_completion_date = Column(DateTime(timezone=True), nullable=False)
+    description = Column(Text, nullable=False)
+    status = Column(Enum(MaintenanceStatus), nullable=False, server_default='pending')
+    resolved_by_maintenance_id = Column(UUID(as_uuid=True), ForeignKey("machine_maintenance.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    machine = relationship("Machine", back_populates="maintenance_recommendations")
+    prediction = relationship("MachinePrediction")
+    resolved_by_maintenance = relationship("MachineMaintenance")
+
+    def __repr__(self):
+        return f"<MaintenanceRecommendation(id={self.id}, machine_id={self.machine_id}, priority='{self.priority.value}')>"
+
+# Part Order Models
+class OrderStatus(enum.Enum):
+    REQUESTED = "requested"
+    APPROVED = "approved"
+    ORDERED = "ordered"
+    SHIPPED = "shipped"
+    RECEIVED = "received"
+    CANCELLED = "cancelled"
+
+class SupplierType(enum.Enum):
+    ORASEAS_EE = "oraseas_ee"
+    EXTERNAL_SUPPLIER = "external_supplier"
+
+class OrderPriority(enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"
+
+class PartOrderRequest(Base):
+    """
+    SQLAlchemy model for the 'part_order_requests' table.
+    Represents part order requests from customers.
+    """
+    __tablename__ = "part_order_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order_number = Column(String(50), unique=True, nullable=False, index=True)
+    customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    supplier_type = Column(Enum(SupplierType), nullable=False)
+    supplier_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    supplier_name = Column(String(255), nullable=True)
+    status = Column(Enum(OrderStatus), nullable=False, server_default='requested')
+    priority = Column(Enum(OrderPriority), nullable=False, server_default='medium')
+    requested_delivery_date = Column(DateTime(timezone=True), nullable=True)
+    expected_delivery_date = Column(DateTime(timezone=True), nullable=True)
+    actual_delivery_date = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    fulfillment_notes = Column(Text, nullable=True)
+    requested_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    approved_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    received_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    customer_organization = relationship("Organization", foreign_keys=[customer_organization_id])
+    supplier_organization = relationship("Organization", foreign_keys=[supplier_organization_id])
+    requested_by_user = relationship("User", foreign_keys=[requested_by_user_id])
+    approved_by_user = relationship("User", foreign_keys=[approved_by_user_id])
+    received_by_user = relationship("User", foreign_keys=[received_by_user_id])
+
+    def __repr__(self):
+        return f"<PartOrderRequest(id={self.id}, order_number='{self.order_number}', status='{self.status.value}')>"
+
+class PartOrderItem(Base):
+    """
+    SQLAlchemy model for the 'part_order_items' table.
+    Represents individual items within a part order request.
+    """
+    __tablename__ = "part_order_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order_request_id = Column(UUID(as_uuid=True), ForeignKey("part_order_requests.id"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    unit_price = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    destination_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    received_quantity = Column(DECIMAL(precision=10, scale=3), nullable=True, server_default='0')
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    order_request = relationship("PartOrderRequest")
+    part = relationship("Part")
+    destination_warehouse = relationship("Warehouse")
+
+    def __repr__(self):
+        return f"<PartOrderItem(id={self.id}, order_request_id={self.order_request_id}, part_id={self.part_id}, quantity={self.quantity})>"

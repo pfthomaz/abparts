@@ -300,7 +300,13 @@ This implementation plan converts the business model alignment design into actio
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
 - [ ] 8. Business Workflow API Endpoints
-  - [ ] 8.1 Part Ordering Workflow
+  - [x] 8.1 Part Ordering Workflow
+
+
+
+
+
+
     - Create part request/order creation endpoints with supplier selection
     - Implement order status management (Requested → Received)
     - Add order fulfillment workflow with inventory updates
@@ -308,7 +314,10 @@ This implementation plan converts the business model alignment design into actio
     - Implement order history and tracking
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-  - [ ] 8.2 Inventory Management Workflows
+  - [x] 8.2 Inventory Management Workflows
+
+
+
     - Create inventory adjustment endpoints with transaction logging
     - Implement stock transfer workflows between warehouses
     - Add bulk inventory operations with validation
