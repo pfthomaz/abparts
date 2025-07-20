@@ -19,6 +19,7 @@ import Orders from './pages/Orders';
 import Stocktake from './pages/Stocktake';
 import Machines from './pages/Machines'; // New: Import Machines page
 import UsersPage from './pages/UsersPage'; // New: Import UsersPage
+import AcceptInvitation from './pages/AcceptInvitation'; // New: Import AcceptInvitation page
 
 function App() {
   const { token, loadingUser } = useAuth();
@@ -37,6 +38,10 @@ function App() {
         <Route
           path="/login"
           element={!token ? <LoginForm /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/accept-invitation"
+          element={<AcceptInvitation />}
         />
         <Route
           path="/*"

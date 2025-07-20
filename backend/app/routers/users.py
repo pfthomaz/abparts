@@ -68,6 +68,233 @@ async def get_users(
     users = query.all()
     return users
 
+@router.get("/me/profile", response_model=schemas.UserProfileResponse)
+async def get_my_profile(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get current user's profile with role and organization information.
+    Requirements: 2B.4
+    """
+    profile = crud.users.get_user_profile_with_organization(db, current_user.user_id)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found"
+        )
+    
+    return profile
+
+@router.get("/admin/search", response_model=List[schemas.UserResponse])
+async def search_users(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    role: Optional[schemas.UserRoleEnum] = Query(None, description="Filter by user role"),
+    status: Optional[schemas.UserStatusEnum] = Query(None, description="Filter by user status"),
+    search: Optional[str] = Query(None, description="Search by name or email"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Advanced user search and filtering with organization-scoped access.
+    Requirements: 2C.1, 2C.2
+    """
+    # Permission checks - admins can only search within their organization
+    if current_user.role == "admin":
+        if organization_id and organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only search users in your organization"
+            )
+        # Force organization filter for admins
+        organization_id = current_user.organization_id
+    
+    try:
+        users = crud.users.search_users(
+            db=db,
+            organization_id=organization_id,
+            role=role,
+            status=status,
+            search_term=search,
+            skip=skip,
+            limit=limit
+        )
+        return users
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search users: {str(e)}"
+        )
+
+@router.get("/admin/inactive-users", response_model=List[schemas.UserResponse])
+async def get_inactive_users(
+    days_threshold: int = Query(90, ge=1, le=365, description="Days of inactivity threshold"),
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get users flagged as inactive based on 90-day threshold or custom threshold.
+    Requirements: 2C.6
+    """
+    # Permission checks - admins can only view users in their organization
+    if current_user.role == "admin":
+        if organization_id and organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view users in your organization"
+            )
+        # Force organization filter for admins
+        organization_id = current_user.organization_id
+    
+    try:
+        inactive_users = crud.users.get_inactive_users(
+            db=db,
+            days_threshold=days_threshold,
+            organization_id=organization_id,
+            skip=skip,
+            limit=limit
+        )
+        return inactive_users
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get inactive users: {str(e)}"
+        )
+
+@router.get("/admin/audit-logs", response_model=List[schemas.UserManagementAuditLogResponse])
+async def get_all_user_management_audit_logs(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
+    action: Optional[str] = Query(None, description="Filter by action type"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get all user management audit logs with filtering.
+    Requirements: 2C.7
+    """
+    # Permission checks - admins can only view logs for their organization
+    if current_user.role == "admin":
+        if organization_id and organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view audit logs for your organization"
+            )
+        # Force organization filter for admins
+        organization_id = current_user.organization_id
+    
+    try:
+        audit_logs = crud.users.get_all_user_management_audit_logs(
+            db=db,
+            organization_id=organization_id,
+            action=action,
+            skip=skip,
+            limit=limit
+        )
+        return audit_logs
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get audit logs: {str(e)}"
+        )
+
+@router.get("/me/sessions", response_model=List[dict])
+async def get_my_active_sessions(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get all active sessions for the current user.
+    Requirements: 2D.7
+    """
+    from ..session_manager import session_manager
+    
+    try:
+        sessions = session_manager.get_active_sessions(current_user.user_id)
+        return sessions
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get active sessions: {str(e)}"
+        )
+
+@router.get("/admin/security-events", response_model=List[dict])
+async def get_security_events(
+    user_id: Optional[uuid.UUID] = Query(None, description="Filter by user ID"),
+    event_type: Optional[str] = Query(None, description="Filter by event type"),
+    risk_level: Optional[str] = Query(None, description="Filter by risk level"),
+    hours: int = Query(24, ge=1, le=168, description="Hours to look back (max 7 days)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+):
+    """
+    Get security events for monitoring and audit purposes.
+    Requirements: 2D.7
+    """
+    try:
+        # Calculate time threshold
+        time_threshold = datetime.utcnow() - timedelta(hours=hours)
+        
+        # Build query
+        query = db.query(models.SecurityEvent).filter(
+            models.SecurityEvent.timestamp >= time_threshold
+        )
+        
+        # Apply filters
+        if user_id:
+            query = query.filter(models.SecurityEvent.user_id == user_id)
+        
+        if event_type:
+            query = query.filter(models.SecurityEvent.event_type == event_type)
+        
+        if risk_level:
+            query = query.filter(models.SecurityEvent.risk_level == risk_level)
+        
+        # Permission checks for admins
+        if current_user.role == "admin":
+            # Admins can only see events for users in their organization
+            query = query.join(models.User).filter(
+                models.User.organization_id == current_user.organization_id
+            )
+        
+        # Execute query
+        events = query.order_by(
+            models.SecurityEvent.timestamp.desc()
+        ).offset(skip).limit(limit).all()
+        
+        # Convert to dict format for response
+        return [
+            {
+                "id": event.id,
+                "user_id": event.user_id,
+                "event_type": event.event_type,
+                "details": event.details,
+                "risk_level": event.risk_level,
+                "timestamp": event.timestamp,
+                "ip_address": event.ip_address,
+                "user_agent": event.user_agent
+            }
+            for event in events
+        ]
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get security events: {str(e)}"
+        )
+
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 async def get_user(
     user_id: uuid.UUID,
@@ -348,26 +575,6 @@ async def resend_invitation(
             detail=f"Failed to resend invitation: {str(e)}"
         )
 
-@router.get("/pending-invitations", response_model=List[schemas.UserInvitationResponse])
-async def get_pending_invitations(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
-):
-    """
-    Get pending invitations.
-    Requirements: 2A.6
-    """
-    organization_id = None
-    
-    # Admins can only see invitations for their organization
-    if current_user.role == "admin":
-        organization_id = current_user.organization_id
-    
-    pending_invitations = crud.users.get_pending_invitations(db, organization_id, skip, limit)
-    return pending_invitations
-
 @router.get("/{user_id}/invitation-audit", response_model=List[schemas.InvitationAuditLogResponse])
 async def get_invitation_audit_logs(
     user_id: uuid.UUID,
@@ -421,24 +628,7 @@ async def get_users_by_organization(
 
 
 # --- User Profile and Self-Service Management Endpoints ---
-
-@router.get("/me/profile", response_model=schemas.UserProfileResponse)
-async def get_my_profile(
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    """
-    Get current user's profile with role and organization information.
-    Requirements: 2B.4
-    """
-    profile = crud.users.get_user_profile_with_organization(db, current_user.user_id)
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User profile not found"
-        )
-    
-    return profile
+# /me/profile GET route moved above to fix routing conflict with /{user_id}
 
 @router.put("/me/profile", response_model=schemas.UserProfileResponse)
 async def update_my_profile(
@@ -712,49 +902,7 @@ async def update_user_status(
 
 
 # --- Advanced User Administration Backend (Task 3.4) ---
-
-@router.get("/admin/search", response_model=List[schemas.UserResponse])
-async def search_users(
-    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
-    role: Optional[schemas.UserRoleEnum] = Query(None, description="Filter by user role"),
-    status: Optional[schemas.UserStatusEnum] = Query(None, description="Filter by user status"),
-    search: Optional[str] = Query(None, description="Search by name or email"),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
-):
-    """
-    Advanced user search and filtering with organization-scoped access.
-    Requirements: 2C.1, 2C.2
-    """
-    # Permission checks - admins can only search within their organization
-    if current_user.role == "admin":
-        if organization_id and organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only search users in your organization"
-            )
-        # Force organization filter for admins
-        organization_id = current_user.organization_id
-    
-    try:
-        users = crud.users.search_users(
-            db=db,
-            organization_id=organization_id,
-            role=role,
-            status=status,
-            search_term=search,
-            skip=skip,
-            limit=limit
-        )
-        return users
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to search users: {str(e)}"
-        )
+# /admin/search route moved above to fix routing conflict with /{user_id}
 
 @router.patch("/{user_id}/deactivate-advanced", response_model=schemas.UserResponse)
 async def deactivate_user_advanced(
@@ -929,44 +1077,7 @@ async def soft_delete_user(
             detail=f"Failed to delete user: {str(e)}"
         )
 
-@router.get("/admin/inactive-users", response_model=List[schemas.UserResponse])
-async def get_inactive_users(
-    days_threshold: int = Query(90, ge=1, le=365, description="Days of inactivity threshold"),
-    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
-):
-    """
-    Get users flagged as inactive based on 90-day threshold or custom threshold.
-    Requirements: 2C.6
-    """
-    # Permission checks - admins can only view users in their organization
-    if current_user.role == "admin":
-        if organization_id and organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only view users in your organization"
-            )
-        # Force organization filter for admins
-        organization_id = current_user.organization_id
-    
-    try:
-        inactive_users = crud.users.get_inactive_users(
-            db=db,
-            days_threshold=days_threshold,
-            organization_id=organization_id,
-            skip=skip,
-            limit=limit
-        )
-        return inactive_users
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get inactive users: {str(e)}"
-        )
+# /admin/inactive-users route moved above to fix routing conflict with /{user_id}
 
 @router.get("/{user_id}/audit-logs", response_model=List[schemas.UserManagementAuditLogResponse])
 async def get_user_management_audit_logs(
@@ -1011,68 +1122,11 @@ async def get_user_management_audit_logs(
             detail=f"Failed to get audit logs: {str(e)}"
         )
 
-@router.get("/admin/audit-logs", response_model=List[schemas.UserManagementAuditLogResponse])
-async def get_all_user_management_audit_logs(
-    organization_id: Optional[uuid.UUID] = Query(None, description="Filter by organization ID"),
-    action: Optional[str] = Query(None, description="Filter by action type"),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
-):
-    """
-    Get all user management audit logs with filtering.
-    Requirements: 2C.7
-    """
-    # Permission checks - admins can only view logs for their organization
-    if current_user.role == "admin":
-        if organization_id and organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only view audit logs for your organization"
-            )
-        # Force organization filter for admins
-        organization_id = current_user.organization_id
-    
-    try:
-        audit_logs = crud.users.get_all_user_management_audit_logs(
-            db=db,
-            organization_id=organization_id,
-            action=action,
-            skip=skip,
-            limit=limit
-        )
-        return audit_logs
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get audit logs: {str(e)}"
-        )
+# /admin/audit-logs route moved above to fix routing conflict with /{user_id}
 
 
 # --- Session and Security Management Endpoints (Task 3.5) ---
-
-@router.get("/me/sessions", response_model=List[dict])
-async def get_my_active_sessions(
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    """
-    Get all active sessions for the current user.
-    Requirements: 2D.7
-    """
-    from ..session_manager import session_manager
-    
-    try:
-        sessions = session_manager.get_active_sessions(current_user.user_id)
-        return sessions
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get active sessions: {str(e)}"
-        )
+# /me/sessions route moved above to fix routing conflict with /{user_id}
 
 @router.delete("/me/sessions/{session_token}")
 async def terminate_my_session(
@@ -1153,75 +1207,7 @@ async def logout(
             detail=f"Failed to logout: {str(e)}"
         )
 
-@router.get("/admin/security-events", response_model=List[dict])
-async def get_security_events(
-    user_id: Optional[uuid.UUID] = Query(None, description="Filter by user ID"),
-    event_type: Optional[str] = Query(None, description="Filter by event type"),
-    risk_level: Optional[str] = Query(None, description="Filter by risk level"),
-    hours: int = Query(24, ge=1, le=168, description="Hours to look back (max 7 days)"),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
-):
-    """
-    Get security events for monitoring and audit purposes.
-    Requirements: 2D.7
-    """
-    try:
-        # Calculate time threshold
-        time_threshold = datetime.utcnow() - timedelta(hours=hours)
-        
-        # Build query
-        query = db.query(models.SecurityEvent).filter(
-            models.SecurityEvent.timestamp >= time_threshold
-        )
-        
-        # Apply filters
-        if user_id:
-            query = query.filter(models.SecurityEvent.user_id == user_id)
-        
-        if event_type:
-            query = query.filter(models.SecurityEvent.event_type == event_type)
-        
-        if risk_level:
-            query = query.filter(models.SecurityEvent.risk_level == risk_level)
-        
-        # Permission checks for admins
-        if current_user.role == "admin":
-            # Admins can only see events for users in their organization
-            query = query.join(models.User).filter(
-                models.User.organization_id == current_user.organization_id
-            )
-        
-        # Execute query
-        events = query.order_by(
-            models.SecurityEvent.timestamp.desc()
-        ).offset(skip).limit(limit).all()
-        
-        # Convert to dict for response
-        result = []
-        for event in events:
-            event_dict = {
-                "id": str(event.id),
-                "user_id": str(event.user_id) if event.user_id else None,
-                "event_type": event.event_type,
-                "ip_address": event.ip_address,
-                "user_agent": event.user_agent,
-                "session_id": event.session_id,
-                "details": event.details,
-                "timestamp": event.timestamp.isoformat(),
-                "risk_level": event.risk_level
-            }
-            result.append(event_dict)
-        
-        return result
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get security events: {str(e)}"
-        )
+# /admin/security-events route moved above to fix routing conflict with /{user_id}
 
 @router.patch("/{user_id}/unlock", response_model=schemas.UserResponse)
 async def unlock_user_account(

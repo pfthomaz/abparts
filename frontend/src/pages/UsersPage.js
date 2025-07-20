@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import UserForm from '../components/UserForm';
+import UserInvitationForm from '../components/UserInvitationForm';
+import PendingInvitations from '../components/PendingInvitations';
 import { userService } from '../services/userService';
 import { organizationsService } from '../services/organizationsService';
 
@@ -23,10 +25,13 @@ function UsersPage() {
   const [filterRole, setFilterRole] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showInvitationForm, setShowInvitationForm] = useState(false);
+  const [showPendingInvitations, setShowPendingInvitations] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [bulkSelection, setBulkSelection] = useState([]);
 
   // Fetch users and organizations on mount
@@ -110,6 +115,32 @@ function UsersPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Invitation handlers
+  async function handleInviteUser(invitationData) {
+    setLoading(true);
+    setActionError(null);
+    setSuccessMessage(null);
+    try {
+      await userService.inviteUser(invitationData);
+      setSuccessMessage(`Invitation sent successfully to ${invitationData.email}`);
+      setShowInvitationForm(false);
+      fetchUsers(); // Refresh to show pending invitations
+    } catch (err) {
+      setActionError(err.message || 'Failed to send invitation.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleShowInvitations() {
+    setShowPendingInvitations(true);
+  }
+
+  function handleResendInvitation() {
+    setSuccessMessage('Invitation resent successfully');
+    fetchUsers(); // Refresh user list
   }
 
   // Bulk operations handlers
@@ -213,12 +244,26 @@ function UsersPage() {
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-          onClick={handleCreate}
-        >
-          + Add User
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+            onClick={() => setShowInvitationForm(true)}
+          >
+            📧 Invite User
+          </button>
+          <button
+            className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition"
+            onClick={handleShowInvitations}
+          >
+            📋 Pending Invitations
+          </button>
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+            onClick={handleCreate}
+          >
+            + Add User
+          </button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
         <input
@@ -253,6 +298,11 @@ function UsersPage() {
       {actionError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
           {actionError}
+        </div>
+      )}
+      {successMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
+          {successMessage}
         </div>
       )}
       {/* Bulk Actions Bar */}
@@ -409,6 +459,46 @@ function UsersPage() {
               onClose={() => setShowForm(false)}
               editingSelf={false}
             />
+          </div>
+        </div>
+      )}
+
+      {/* User Invitation Modal */}
+      {showInvitationForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowInvitationForm(false)}
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <UserInvitationForm
+              organizations={organizations}
+              onSubmit={handleInviteUser}
+              onClose={() => setShowInvitationForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Pending Invitations Modal */}
+      {showPendingInvitations && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl relative max-h-[80vh] overflow-y-auto">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowPendingInvitations(false)}
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <PendingInvitations onResendInvitation={handleResendInvitation} />
           </div>
         </div>
       )}
