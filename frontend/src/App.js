@@ -25,6 +25,7 @@ import UsersPage from './pages/UsersPage'; // New: Import UsersPage
 import AcceptInvitation from './pages/AcceptInvitation'; // New: Import AcceptInvitation page
 import UserProfile from './pages/UserProfile'; // New: Import UserProfile page
 import Security from './pages/Security'; // New: Import Security page
+import Warehouses from './pages/Warehouses'; // New: Import Warehouses page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 
 function App() {
@@ -201,6 +202,24 @@ function App() {
               <Security />
             </PermissionErrorBoundary>
           } />
+          <Route
+            path="warehouses"
+            element={
+              <PermissionErrorBoundary
+                feature="Warehouse Management"
+                requiredPermission={PERMISSIONS.VIEW_WAREHOUSES}
+                resource="warehouses"
+                action="view"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.VIEW_WAREHOUSES}
+                  feature="Warehouse Management"
+                >
+                  <Warehouses />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
         </Route>
       </Routes>
     </Router>

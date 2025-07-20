@@ -238,7 +238,7 @@ class Part(Base):
     part_number = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    part_type = Column(Enum(PartType), nullable=False, server_default='consumable')
+    part_type = Column(Enum(PartType, values_callable=lambda obj: [e.value for e in obj]), nullable=False, server_default='consumable')
     is_proprietary = Column(Boolean, nullable=False, server_default='false')
     unit_of_measure = Column(String(50), nullable=False, server_default='pieces')
     manufacturer_part_number = Column(String(255), nullable=True)
