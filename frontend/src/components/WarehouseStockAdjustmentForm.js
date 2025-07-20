@@ -1,7 +1,6 @@
 // frontend/src/components/WarehouseStockAdjustmentForm.js
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import { partsService } from '../services/partsService';
 import { inventoryService } from '../services/inventoryService';
 
@@ -23,9 +22,9 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       fetchParts();
       fetchWarehouseInventory();
     }
-  }, [warehouseId]);
+  }, [warehouseId, fetchParts, fetchWarehouseInventory]);
 
-  const fetchParts = async () => {
+  const fetchParts = useCallback(async () => {
     try {
       const data = await partsService.getParts({ limit: 200 });
       setParts(data);
@@ -33,9 +32,9 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       setError('Failed to fetch parts');
       console.error('Failed to fetch parts:', err);
     }
-  };
+  }, []);
 
-  const fetchWarehouseInventory = async () => {
+  const fetchWarehouseInventory = useCallback(async () => {
     try {
       const data = await inventoryService.getWarehouseInventory(warehouseId);
       setWarehouseInventory(data);
@@ -43,7 +42,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       console.error('Failed to fetch warehouse inventory:', err);
       setWarehouseInventory([]);
     }
-  };
+  }, [warehouseId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

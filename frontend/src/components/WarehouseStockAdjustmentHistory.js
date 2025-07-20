@@ -1,9 +1,8 @@
 // frontend/src/components/WarehouseStockAdjustmentHistory.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
-import { useAuth } from '../AuthContext';
 
 const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
   const [adjustments, setAdjustments] = useState([]);
@@ -22,9 +21,9 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
     if (warehouseId) {
       fetchData();
     }
-  }, [warehouseId, filters]);
+  }, [warehouseId, filters, fetchData]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -41,7 +40,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [warehouseId, filters]);
 
   const getPartDetails = (partId) => {
     return parts.find(p => p.id === partId) || {};

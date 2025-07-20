@@ -1,9 +1,8 @@
 // frontend/src/components/WarehouseInventoryReporting.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
-import { useAuth } from '../AuthContext';
 
 const WarehouseInventoryReporting = ({ organizationId }) => {
   const [reportData, setReportData] = useState(null);
@@ -23,19 +22,7 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
     max_value: ''
   });
 
-  useEffect(() => {
-    if (organizationId) {
-      fetchWarehouses();
-    }
-  }, [organizationId]);
-
-  useEffect(() => {
-    if (organizationId && selectedWarehouses.length > 0) {
-      generateReport();
-    }
-  }, [organizationId, selectedWarehouses, reportType, dateRange, filters]);
-
-  const fetchWarehouses = async () => {
+  const fetchWarehouses = useCallback(async () => {
     try {
       const data = await warehouseService.getOrganizationWarehouses(organizationId);
       setWarehouses(data);
@@ -45,9 +32,9 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       setError('Failed to fetch warehouses');
       console.error('Failed to fetch warehouses:', err);
     }
-  };
+  }, [organizationId]);
 
-  const generateReport = async () => {
+  const generateReport = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -67,7 +54,19 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedWarehouses, reportType, dateRange, filters]);
+
+  useEffect(() => {
+    if (organizationId) {
+      fetchWarehouses();
+    }
+  }, [organizationId, fetchWarehouses]);
+
+  useEffect(() => {
+    if (organizationId && selectedWarehouses.length > 0) {
+      generateReport();
+    }
+  }, [organizationId, selectedWarehouses, reportType, dateRange, filters, generateReport]);
 
   const handleWarehouseToggle = (warehouseId) => {
     setSelectedWarehouses(prev => {

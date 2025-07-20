@@ -1,6 +1,6 @@
 // frontend/src/pages/Inventory.js
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
 import { api } from '../services/api'; // For fetching related data
@@ -9,7 +9,6 @@ import Modal from '../components/Modal';
 import InventoryForm from '../components/InventoryForm';
 import InventoryTransferForm from '../components/InventoryTransferForm';
 import WarehouseStockAdjustmentForm from '../components/WarehouseStockAdjustmentForm';
-
 import WarehouseInventoryAggregationView from '../components/WarehouseInventoryAggregationView';
 import WarehouseInventoryAnalytics from '../components/WarehouseInventoryAnalytics';
 import WarehouseInventoryReporting from '../components/WarehouseInventoryReporting';
@@ -29,10 +28,9 @@ const Inventory = () => {
   const [modalType, setModalType] = useState('inventory'); // 'inventory', 'transfer', 'adjustment'
   const [editingInventory, setEditingInventory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
-  const [viewMode, setViewMode] = useState('warehouse'); // 'warehouse', 'aggregated', 'analytics'
+  const [viewMode, setViewMode] = useState('warehouse'); // 'warehouse', 'aggregated', 'analytics', 'reporting'
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -43,14 +41,13 @@ const Inventory = () => {
         filters.warehouse_id = selectedWarehouseId;
       }
 
-      const [inventoryData, orgsData, warehousesData, partsData] = await Promise.all([
+      const [, orgsData, warehousesData, partsData] = await Promise.all([
         inventoryService.getInventory(filters),
         api.get('/organizations'),
         warehouseService.getWarehouses(),
         api.get('/parts'),
       ]);
 
-      setInventoryItems(inventoryData);
       setOrganizations(orgsData);
       setWarehouses(warehousesData);
       setParts(partsData);
@@ -64,20 +61,6 @@ const Inventory = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const partsMap = useMemo(() => {
-    return new Map(parts.map(p => [p.id, p]));
-  }, [parts]);
-
-  const organizationsMap = useMemo(() => {
-    return new Map(organizations.map(o => [o.id, o]));
-  }, [organizations]);
-
-  const warehousesMap = useMemo(() => {
-    return new Map(warehouses.map(w => [w.id, w]));
-  }, [warehouses]);
-
-
 
   const handleCreateOrUpdate = async (inventoryData) => {
     try {
@@ -117,8 +100,6 @@ const Inventory = () => {
       throw err;
     }
   };
-
-
 
   const openModal = (type = 'inventory', inventory = null) => {
     setModalType(type);
@@ -264,8 +245,6 @@ const Inventory = () => {
           <span className="block sm:inline">{error}</span>
         </div>
       )}
-
-
 
       {/* Warehouse Selector for Warehouse View */}
       {viewMode === 'warehouse' && (
