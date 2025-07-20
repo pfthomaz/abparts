@@ -20,6 +20,7 @@ import Stocktake from './pages/Stocktake';
 import Machines from './pages/Machines'; // New: Import Machines page
 import UsersPage from './pages/UsersPage'; // New: Import UsersPage
 import AcceptInvitation from './pages/AcceptInvitation'; // New: Import AcceptInvitation page
+import UserProfile from './pages/UserProfile'; // New: Import UserProfile page
 
 function App() {
   const { token, loadingUser } = useAuth();
@@ -55,6 +56,7 @@ function App() {
           <Route path="stocktake" element={<Stocktake />} />
           <Route path="machines" element={<Machines />} /> {/* New: Add Machines route */}
           <Route path="users" element={<UsersPage />} /> {/* New: Add UsersPage route */}
+          <Route path="profile" element={<UserProfile />} /> {/* New: Add UserProfile route */}
         </Route>
       </Routes>
     </Router>
