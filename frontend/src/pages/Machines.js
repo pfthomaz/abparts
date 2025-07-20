@@ -3,8 +3,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { machinesService } from '../services/machinesService';
 import { api } from '../services/api'; // For fetching organizations
+import { useAuth } from '../AuthContext';
+import { getContextualPermissions } from '../utils/permissions';
 import Modal from '../components/Modal';
 import MachineForm from '../components/MachineForm';
+import MachineDetails from '../components/MachineDetails';
+import MachineTransferForm from '../components/MachineTransferForm';
 
 const Machines = () => {
   const [machines, setMachines] = useState([]);
@@ -15,6 +19,13 @@ const Machines = () => {
   const [editingMachine, setEditingMachine] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOrgId, setFilterOrgId] = useState('all');
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferMachine, setTransferMachine] = useState(null);
+
+  const { user } = useAuth();
+  const permissions = getContextualPermissions(user, 'machines');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -46,7 +57,7 @@ const Machines = () => {
       .map(machine => {
         // Augment item with organization details for easier filtering and display
         // Using a Map is more performant for lookups than Array.find() in a loop
-        const organization = organizationsMap.get(machine.organization_id);
+        const organization = organizationsMap.get(machine.customer_organization_id);
         return {
           ...machine,
           organizationName: organization ? organization.name : 'Unknown',
@@ -54,7 +65,7 @@ const Machines = () => {
       })
       .filter(machine => {
         if (filterOrgId === 'all') return true;
-        return machine.organization_id === filterOrgId;
+        return machine.customer_organization_id === filterOrgId;
       })
       .filter(machine => {
         if (!searchTerm) return true;
@@ -91,6 +102,27 @@ const Machines = () => {
     }
   };
 
+  const handleTransfer = async (transferData) => {
+    try {
+      await machinesService.transferMachine(transferData);
+      await fetchData();
+      setShowTransferModal(false);
+      setTransferMachine(null);
+    } catch (err) {
+      throw err; // Re-throw for form error handling
+    }
+  };
+
+  const openMachineDetails = (machine) => {
+    setSelectedMachine(machine);
+    setShowDetailsModal(true);
+  };
+
+  const openTransferModal = (machine) => {
+    setTransferMachine(machine);
+    setShowTransferModal(true);
+  };
+
   const openModal = (machine = null) => {
     setEditingMachine(machine);
     setShowModal(true);
@@ -105,9 +137,16 @@ const Machines = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Machines</h1>
-        <button onClick={() => openModal()} className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold">
-          Add Machine
-        </button>
+        <div className="flex space-x-2">
+          {permissions.canRegister && (
+            <button
+              onClick={() => openModal()}
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold"
+            >
+              Register Machine
+            </button>
+          )}
+        </div>
       </div>
 
       {loading && <p className="text-gray-500">Loading machines...</p>}
@@ -141,9 +180,11 @@ const Machines = () => {
               onChange={(e) => setFilterOrgId(e.target.value)}
             >
               <option value="all">All Owners</option>
-              {organizations.map(org => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
+              {organizations
+                .filter(org => org.organization_type === 'customer')
+                .map(org => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
             </select>
           </div>
         </div>
@@ -159,27 +200,108 @@ const Machines = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {filteredMachines.map((machine) => (
-            <div key={machine.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">{machine.name}</h3>
-              <p className="text-gray-600 mb-1"><span className="font-medium">Model:</span> {machine.model_type}</p>
-              <p className="text-gray-600 mb-1"><span className="font-medium">Serial #:</span> {machine.serial_number}</p>
-              <p className="text-gray-600 mb-1"><span className="font-medium">Owner:</span> {machine.organizationName}</p>
-              <p className="text-sm text-gray-400 mt-3">ID: {machine.id}</p>
-              <div className="mt-4 flex space-x-2">
-                <button onClick={() => openModal(machine)} className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm">
-                  Edit
+            <div key={machine.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-xl font-semibold text-gray-800">{machine.name}</h3>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${machine.status === 'active' ? 'bg-green-100 text-green-800' :
+                  machine.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                    machine.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                      'bg-red-100 text-red-800'
+                  }`}>
+                  {machine.status || 'Active'}
+                </span>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <p className="text-gray-600"><span className="font-medium">Model:</span> {machine.model_type}</p>
+                <p className="text-gray-600"><span className="font-medium">Serial:</span> {machine.serial_number}</p>
+                <p className="text-gray-600"><span className="font-medium">Owner:</span> {machine.organizationName}</p>
+                {machine.last_maintenance_date && (
+                  <p className="text-gray-600">
+                    <span className="font-medium">Last Maintenance:</span> {' '}
+                    {new Date(machine.last_maintenance_date).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => openMachineDetails(machine)}
+                  className="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 text-sm flex-1"
+                >
+                  View Details
                 </button>
-                <button onClick={() => handleDelete(machine.id)} className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm">
-                  Delete
-                </button>
+
+                {permissions.canEdit && (
+                  <button
+                    onClick={() => openModal(machine)}
+                    className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                  >
+                    Edit
+                  </button>
+                )}
+
+                {permissions.canManage && (
+                  <button
+                    onClick={() => openTransferModal(machine)}
+                    className="bg-purple-500 text-white py-1 px-3 rounded-md hover:bg-purple-600 text-sm"
+                  >
+                    Transfer
+                  </button>
+                )}
+
+                {permissions.canDelete && (
+                  <button
+                    onClick={() => handleDelete(machine.id)}
+                    className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <Modal show={showModal} onClose={closeModal} title={editingMachine ? "Edit Machine" : "Add New Machine"}>
-        <MachineForm initialData={editingMachine || {}} organizations={organizations} onSubmit={handleCreateOrUpdate} onClose={closeModal} />
+      {/* Machine Form Modal */}
+      <Modal show={showModal} onClose={closeModal} title={editingMachine ? "Edit Machine" : "Register New Machine"}>
+        <MachineForm
+          initialData={editingMachine || {}}
+          organizations={organizations.filter(org => org.organization_type === 'customer')}
+          onSubmit={handleCreateOrUpdate}
+          onClose={closeModal}
+        />
+      </Modal>
+
+      {/* Machine Details Modal */}
+      <Modal
+        show={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        title="Machine Details"
+        size="large"
+      >
+        {selectedMachine && (
+          <MachineDetails
+            machineId={selectedMachine.id}
+            onClose={() => setShowDetailsModal(false)}
+          />
+        )}
+      </Modal>
+
+      {/* Machine Transfer Modal */}
+      <Modal
+        show={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        title="Transfer Machine"
+      >
+        {transferMachine && (
+          <MachineTransferForm
+            machine={transferMachine}
+            onSubmit={handleTransfer}
+            onClose={() => setShowTransferModal(false)}
+          />
+        )}
       </Modal>
     </div>
   );
