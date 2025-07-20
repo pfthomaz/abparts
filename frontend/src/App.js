@@ -21,6 +21,8 @@ import Machines from './pages/Machines'; // New: Import Machines page
 import UsersPage from './pages/UsersPage'; // New: Import UsersPage
 import AcceptInvitation from './pages/AcceptInvitation'; // New: Import AcceptInvitation page
 import UserProfile from './pages/UserProfile'; // New: Import UserProfile page
+import Security from './pages/Security'; // New: Import Security page
+import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 
 function App() {
   const { token, loadingUser } = useAuth();
@@ -35,6 +37,9 @@ function App() {
 
   return (
     <Router>
+      {/* Global session timeout warning - only shows when user is authenticated */}
+      {token && <SessionTimeoutWarning />}
+
       <Routes>
         <Route
           path="/login"
@@ -57,6 +62,7 @@ function App() {
           <Route path="machines" element={<Machines />} /> {/* New: Add Machines route */}
           <Route path="users" element={<UsersPage />} /> {/* New: Add UsersPage route */}
           <Route path="profile" element={<UserProfile />} /> {/* New: Add UserProfile route */}
+          <Route path="security" element={<Security />} /> {/* New: Add Security route */}
         </Route>
       </Routes>
     </Router>
