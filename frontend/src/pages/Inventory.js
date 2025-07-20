@@ -2,45 +2,64 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { inventoryService } from '../services/inventoryService';
+import { warehouseService } from '../services/warehouseService';
 import { api } from '../services/api'; // For fetching related data
 import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
 import InventoryForm from '../components/InventoryForm';
+import InventoryTransferForm from '../components/InventoryTransferForm';
+import WarehouseStockAdjustmentForm from '../components/WarehouseStockAdjustmentForm';
+
+import WarehouseInventoryAggregationView from '../components/WarehouseInventoryAggregationView';
+import WarehouseInventoryAnalytics from '../components/WarehouseInventoryAnalytics';
+import WarehouseInventoryReporting from '../components/WarehouseInventoryReporting';
+import WarehouseDetailedView from '../components/WarehouseDetailedView';
+import WarehouseSelector from '../components/WarehouseSelector';
 import PermissionGuard from '../components/PermissionGuard';
-import { PERMISSIONS, isSuperAdmin, canViewOrganization } from '../utils/permissions';
+import { PERMISSIONS } from '../utils/permissions';
 
 const Inventory = () => {
   const { user } = useAuth();
-  const [inventoryItems, setInventoryItems] = useState([]);
   const [organizations, setOrganizations] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState('inventory'); // 'inventory', 'transfer', 'adjustment'
   const [editingInventory, setEditingInventory] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterOrgId, setFilterOrgId] = useState('all');
+
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState(null);
+  const [viewMode, setViewMode] = useState('warehouse'); // 'warehouse', 'aggregated', 'analytics'
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [inventoryData, orgsData, partsData] = await Promise.all([
-        inventoryService.getInventory(),
+      const filters = {};
+      if (selectedWarehouseId) {
+        filters.warehouse_id = selectedWarehouseId;
+      }
+
+      const [inventoryData, orgsData, warehousesData, partsData] = await Promise.all([
+        inventoryService.getInventory(filters),
         api.get('/organizations'),
+        warehouseService.getWarehouses(),
         api.get('/parts'),
       ]);
 
       setInventoryItems(inventoryData);
       setOrganizations(orgsData);
+      setWarehouses(warehousesData);
       setParts(partsData);
     } catch (err) {
       setError(err.message || 'Failed to fetch inventory data.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedWarehouseId]);
 
   useEffect(() => {
     fetchData();
@@ -54,39 +73,11 @@ const Inventory = () => {
     return new Map(organizations.map(o => [o.id, o]));
   }, [organizations]);
 
-  const filteredInventoryItems = useMemo(() => {
-    return inventoryItems
-      .map(item => {
-        // Augment item with part and organization details for easier filtering and display
-        // Using Maps for O(1) lookup is much more performant than Array.find() in a loop
-        const part = partsMap.get(item.part_id);
-        const organization = organizationsMap.get(item.organization_id);
-        return {
-          ...item,
-          partName: part ? part.name : 'Unknown Part',
-          partNumber: part ? part.part_number : '',
-          organizationName: organization ? organization.name : 'Unknown Organization',
-        };
-      })
-      // Organization-scoped data access - only show items from user's organization unless super_admin
-      .filter(item => {
-        // Super admins can see all inventory items
-        if (isSuperAdmin(user)) return true;
-        // Regular users can only see inventory items from their organization
-        return item.organization_id === user.organization_id;
-      })
-      // User-selected organization filter
-      .filter(item => {
-        if (filterOrgId === 'all') return true;
-        return item.organization_id === filterOrgId;
-      })
-      // Search term filter
-      .filter(item => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        return item.partName.toLowerCase().includes(term) || item.partNumber.toLowerCase().includes(term);
-      });
-  }, [inventoryItems, partsMap, organizationsMap, searchTerm, filterOrgId]);
+  const warehousesMap = useMemo(() => {
+    return new Map(warehouses.map(w => [w.id, w]));
+  }, [warehouses]);
+
+
 
   const handleCreateOrUpdate = async (inventoryData) => {
     try {
@@ -105,20 +96,32 @@ const Inventory = () => {
     }
   };
 
-  const handleDelete = async (inventoryId) => {
-    if (!window.confirm("Are you sure you want to delete this inventory item?")) {
-      return;
-    }
-    setError(null);
+  const handleInventoryTransfer = async (transferData) => {
     try {
-      await inventoryService.deleteInventoryItem(inventoryId);
+      await inventoryService.transferInventory(transferData);
       await fetchData();
+      closeModal();
     } catch (err) {
-      setError(err.message || 'Failed to delete inventory item.');
+      console.error("Error creating inventory transfer:", err);
+      throw err;
     }
   };
 
-  const openModal = (inventory = null) => {
+  const handleStockAdjustment = async (adjustmentData) => {
+    try {
+      await inventoryService.createWarehouseStockAdjustment(selectedWarehouseId, adjustmentData);
+      await fetchData();
+      closeModal();
+    } catch (err) {
+      console.error("Error creating stock adjustment:", err);
+      throw err;
+    }
+  };
+
+
+
+  const openModal = (type = 'inventory', inventory = null) => {
+    setModalType(type);
     setEditingInventory(inventory);
     setIsEditMode(!!inventory);
     setShowModal(true);
@@ -126,22 +129,132 @@ const Inventory = () => {
 
   const closeModal = () => {
     setShowModal(false);
+    setModalType('inventory');
     setEditingInventory(null);
     setIsEditMode(false);
+  };
+
+  const handleWarehouseChange = (warehouseId, warehouse) => {
+    setSelectedWarehouseId(warehouseId);
+    setSelectedWarehouse(warehouse);
+  };
+
+  const getModalTitle = () => {
+    switch (modalType) {
+      case 'transfer':
+        return 'Transfer Inventory Between Warehouses';
+      case 'adjustment':
+        return 'Adjust Warehouse Stock';
+      default:
+        return editingInventory ? "Edit Inventory Item" : "Add New Inventory Item";
+    }
+  };
+
+  const renderModalContent = () => {
+    switch (modalType) {
+      case 'transfer':
+        return (
+          <InventoryTransferForm
+            onSubmit={handleInventoryTransfer}
+            onCancel={closeModal}
+          />
+        );
+      case 'adjustment':
+        return (
+          <WarehouseStockAdjustmentForm
+            warehouseId={selectedWarehouseId}
+            warehouse={selectedWarehouse}
+            onSubmit={handleStockAdjustment}
+            onCancel={closeModal}
+          />
+        );
+      default:
+        return (
+          <InventoryForm
+            initialData={editingInventory || {}}
+            organizations={organizations}
+            parts={parts}
+            onSubmit={handleCreateOrUpdate}
+            onClose={closeModal}
+            isEditMode={isEditMode}
+          />
+        );
+    }
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Inventory</h1>
-        <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+        <h1 className="text-3xl font-bold text-gray-800">Warehouse Inventory Management</h1>
+        <div className="flex space-x-2">
+          <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+            <button
+              onClick={() => openModal('transfer')}
+              className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+            >
+              Transfer Inventory
+            </button>
+          </PermissionGuard>
+          <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+            <button
+              onClick={() => openModal('adjustment')}
+              disabled={!selectedWarehouseId}
+              className="bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Adjust Stock
+            </button>
+          </PermissionGuard>
+          <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+            <button
+              onClick={() => openModal('inventory')}
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+            >
+              Add Inventory Item
+            </button>
+          </PermissionGuard>
+        </div>
+      </div>
+
+      {/* View Mode Selector */}
+      <div className="mb-6">
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
           <button
-            onClick={() => openModal()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+            onClick={() => setViewMode('warehouse')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'warehouse'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
-            Add Inventory Item
+            Warehouse View
           </button>
-        </PermissionGuard>
+          <button
+            onClick={() => setViewMode('aggregated')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'aggregated'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
+          >
+            Aggregated View
+          </button>
+          <button
+            onClick={() => setViewMode('analytics')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'analytics'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
+          >
+            Analytics
+          </button>
+          <button
+            onClick={() => setViewMode('reporting')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'reporting'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
+          >
+            Reports
+          </button>
+        </div>
       </div>
 
       {loading && <p className="text-gray-500">Loading inventory...</p>}
@@ -152,94 +265,91 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Search and Filter Bar */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Search by Part</label>
-            <input
-              type="text"
-              id="search"
-              placeholder="Name or number..."
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+
+
+      {/* Warehouse Selector for Warehouse View */}
+      {viewMode === 'warehouse' && (
+        <div className="mb-6">
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Warehouse
+            </label>
+            <WarehouseSelector
+              selectedWarehouseId={selectedWarehouseId}
+              onWarehouseChange={handleWarehouseChange}
+              placeholder="Select a warehouse to view inventory"
             />
           </div>
-          <div>
-            <label htmlFor="filterOrganization" className="block text-sm font-medium text-gray-700">Filter by Organization</label>
-            <select
-              id="filterOrganization"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              value={filterOrgId}
-              onChange={(e) => setFilterOrgId(e.target.value)}
-            >
-              <option value="all">All Organizations</option>
-              {organizations
-                .filter(org => isSuperAdmin(user) || org.id === user.organization_id)
-                .map(org => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-            </select>
-          </div>
         </div>
-      </div>
+      )}
 
-      {!loading && filteredInventoryItems.length === 0 ? (
-        <div className="text-center py-10 bg-white rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-700">No Inventory Items Found</h3>
-          <p className="text-gray-500 mt-2">
-            {inventoryItems.length > 0 ? 'Try adjusting your search or filter criteria.' : 'There are no inventory items in the system yet.'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {filteredInventoryItems.map((item) => (
-            <div key={item.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-              <h3 className="text-2xl font-semibold text-orange-700 mb-2">
-                {item.partName}
-              </h3>
-              <p className="text-gray-600 mb-1"><span className="font-medium">Location:</span> {item.organizationName}</p>
-              <p className="text-gray-600 mb-1"><span className="font-medium">Current Stock:</span> {item.current_stock}</p>
-              <p className="text-gray-600 mb-1"><span className="font-medium">Min Stock Rec:</span> {item.minimum_stock_recommendation}</p>
-              {item.reorder_threshold_set_by && <p className="text-gray-600 mb-1"><span className="font-medium">Set By:</span> {item.reorder_threshold_set_by}</p>}
-              <p className="text-sm text-gray-400 mt-3">ID: {item.id}</p>
-              <div className="mt-4 flex space-x-2">
-                <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
-                  <button
-                    onClick={() => openModal(item)}
-                    className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
-                  >
-                    Edit
-                  </button>
-                </PermissionGuard>
-                <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
-                  >
-                    Delete
-                  </button>
-                </PermissionGuard>
+      {/* Render content based on view mode */}
+      {viewMode === 'warehouse' && (
+        <>
+          {selectedWarehouseId ? (
+            <WarehouseDetailedView
+              warehouseId={selectedWarehouseId}
+              warehouse={selectedWarehouse}
+            />
+          ) : (
+            <div className="text-center py-10 bg-white rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold text-gray-700">Select a Warehouse</h3>
+              <p className="text-gray-500 mt-2">
+                Choose a warehouse from the dropdown above to view its inventory.
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {viewMode === 'aggregated' && (
+        <WarehouseInventoryAggregationView
+          organizationId={user.organization_id}
+        />
+      )}
+
+      {viewMode === 'analytics' && (
+        <>
+          {selectedWarehouseId ? (
+            <WarehouseInventoryAnalytics
+              warehouseId={selectedWarehouseId}
+              warehouse={selectedWarehouse}
+            />
+          ) : (
+            <div className="mb-6">
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Warehouse for Analytics
+                </label>
+                <WarehouseSelector
+                  selectedWarehouseId={selectedWarehouseId}
+                  onWarehouseChange={handleWarehouseChange}
+                  placeholder="Select a warehouse to view analytics"
+                />
+              </div>
+              <div className="text-center py-10 bg-white rounded-lg shadow-md mt-4">
+                <h3 className="text-xl font-semibold text-gray-700">Select a Warehouse</h3>
+                <p className="text-gray-500 mt-2">
+                  Choose a warehouse from the dropdown above to view its analytics.
+                </p>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
+      )}
+
+      {viewMode === 'reporting' && (
+        <WarehouseInventoryReporting
+          organizationId={user.organization_id}
+        />
       )}
 
       <Modal
         show={showModal}
         onClose={closeModal}
-        title={editingInventory ? "Edit Inventory Item" : "Add New Inventory Item"}
+        title={getModalTitle()}
       >
-        <InventoryForm
-          initialData={editingInventory || {}}
-          organizations={organizations}
-          parts={parts}
-          onSubmit={handleCreateOrUpdate}
-          onClose={closeModal}
-          isEditMode={isEditMode}
-        />
+        {renderModalContent()}
       </Modal>
     </div>
   );

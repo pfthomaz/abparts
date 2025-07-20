@@ -1,12 +1,124 @@
-// c:/abparts/frontend/src/services/inventoryService.js
+// frontend/src/services/inventoryService.js
 
 import { api } from './api';
 
 /**
- * Fetches all inventory items.
+ * Fetches all inventory items with optional filtering.
+ * @param {object} filters Optional filters for inventory
  */
-const getInventory = () => {
-  return api.get('/inventory');
+const getInventory = (filters = {}) => {
+  // Build query string from filters
+  const queryParams = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      queryParams.append(key, filters[key]);
+    }
+  });
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/inventory?${queryString}` : '/inventory';
+
+  return api.get(endpoint);
+};
+
+/**
+ * Get inventory for a specific warehouse
+ * @param {string} warehouseId Warehouse ID
+ * @param {object} filters Optional additional filters
+ */
+const getWarehouseInventory = (warehouseId, filters = {}) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('warehouse_id', warehouseId);
+
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      queryParams.append(key, filters[key]);
+    }
+  });
+
+  return api.get(`/inventory?${queryParams.toString()}`);
+};
+
+/**
+ * Get aggregated inventory across all warehouses for an organization
+ * @param {string} organizationId Organization ID
+ */
+const getOrganizationInventoryAggregation = (organizationId) => {
+  return api.get(`/inventory/organization/${organizationId}/aggregated`);
+};
+
+/**
+ * Get inventory analytics for a warehouse
+ * @param {string} warehouseId Warehouse ID
+ * @param {object} dateRange Optional date range filter
+ */
+const getWarehouseInventoryAnalytics = (warehouseId, dateRange = {}) => {
+  const queryParams = new URLSearchParams();
+  if (dateRange.start_date) queryParams.append('start_date', dateRange.start_date);
+  if (dateRange.end_date) queryParams.append('end_date', dateRange.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString
+    ? `/inventory/warehouse/${warehouseId}/analytics?${queryString}`
+    : `/inventory/warehouse/${warehouseId}/analytics`;
+
+  return api.get(endpoint);
+};
+
+/**
+ * Transfer inventory between warehouses
+ * @param {object} transferData Transfer details
+ */
+const transferInventory = (transferData) => {
+  return api.post('/inventory/transfer', transferData);
+};
+
+/**
+ * Get inventory transfer history
+ * @param {object} filters Optional filters
+ */
+const getInventoryTransfers = (filters = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      queryParams.append(key, filters[key]);
+    }
+  });
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/inventory/transfers?${queryString}` : '/inventory/transfers';
+
+  return api.get(endpoint);
+};
+
+/**
+ * Create warehouse-specific stock adjustment
+ * @param {string} warehouseId Warehouse ID
+ * @param {object} adjustmentData Adjustment details
+ */
+const createWarehouseStockAdjustment = (warehouseId, adjustmentData) => {
+  return api.post(`/inventory/warehouse/${warehouseId}/adjustment`, adjustmentData);
+};
+
+/**
+ * Get stock adjustment history for a warehouse
+ * @param {string} warehouseId Warehouse ID
+ * @param {object} filters Optional filters
+ */
+const getWarehouseStockAdjustments = (warehouseId, filters = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      queryParams.append(key, filters[key]);
+    }
+  });
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString
+    ? `/inventory/warehouse/${warehouseId}/adjustments?${queryString}`
+    : `/inventory/warehouse/${warehouseId}/adjustments`;
+
+  return api.get(endpoint);
 };
 
 /**
@@ -34,9 +146,36 @@ const deleteInventoryItem = (inventoryId) => {
   return api.delete(`/inventory/${inventoryId}`);
 };
 
+/**
+ * Generate comprehensive inventory report
+ * @param {object} reportParams Report parameters
+ */
+const getInventoryReport = (reportParams) => {
+  const queryParams = new URLSearchParams();
+  Object.keys(reportParams).forEach(key => {
+    if (reportParams[key] !== undefined && reportParams[key] !== null && reportParams[key] !== '') {
+      if (Array.isArray(reportParams[key])) {
+        reportParams[key].forEach(value => queryParams.append(key, value));
+      } else {
+        queryParams.append(key, reportParams[key]);
+      }
+    }
+  });
+
+  return api.get(`/inventory/reports?${queryParams.toString()}`);
+};
+
 export const inventoryService = {
   getInventory,
+  getWarehouseInventory,
+  getOrganizationInventoryAggregation,
+  getWarehouseInventoryAnalytics,
+  transferInventory,
+  getInventoryTransfers,
+  createWarehouseStockAdjustment,
+  getWarehouseStockAdjustments,
   createInventoryItem,
   updateInventoryItem,
   deleteInventoryItem,
+  getInventoryReport,
 };
