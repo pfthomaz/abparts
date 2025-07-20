@@ -26,6 +26,7 @@ import AcceptInvitation from './pages/AcceptInvitation'; // New: Import AcceptIn
 import UserProfile from './pages/UserProfile'; // New: Import UserProfile page
 import Security from './pages/Security'; // New: Import Security page
 import Warehouses from './pages/Warehouses'; // New: Import Warehouses page
+import Transactions from './pages/Transactions'; // New: Import Transactions page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 
 function App() {
@@ -216,6 +217,24 @@ function App() {
                   feature="Warehouse Management"
                 >
                   <Warehouses />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="transactions"
+            element={
+              <PermissionErrorBoundary
+                feature="Transaction Management"
+                requiredPermission={PERMISSIONS.VIEW_ORG_TRANSACTIONS}
+                resource="transactions"
+                action="view"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.VIEW_ORG_TRANSACTIONS}
+                  feature="Transaction Management"
+                >
+                  <Transactions />
                 </ProtectedRoute>
               </PermissionErrorBoundary>
             }

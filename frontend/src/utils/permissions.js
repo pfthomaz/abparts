@@ -351,6 +351,19 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Transactions - all users can view their org's transactions
+  if (hasPermission(user, PERMISSIONS.VIEW_ORG_TRANSACTIONS)) {
+    items.push({
+      path: '/transactions',
+      label: 'Transactions',
+      icon: 'transactions',
+      permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS,
+      description: 'View and manage transaction history',
+      category: 'operations',
+      accessScope: hasPermission(user, PERMISSIONS.VIEW_ALL_TRANSACTIONS) ? 'global' : 'organization'
+    });
+  }
+
   return items;
 };
 
