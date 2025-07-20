@@ -5,6 +5,8 @@ import { organizationsService, OrganizationType, ORGANIZATION_TYPE_CONFIG } from
 import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
 import OrganizationForm from '../components/OrganizationForm';
+import PermissionGuard from '../components/PermissionGuard';
+import { PERMISSIONS } from '../utils/permissions';
 
 const Organizations = () => {
   const { user } = useAuth();
@@ -21,8 +23,8 @@ const Organizations = () => {
   const [hierarchyData, setHierarchyData] = useState([]);
   const [loadingHierarchy, setLoadingHierarchy] = useState(false);
 
-  // Check permissions
-  const canManageOrganizations = user?.role === 'super_admin' || user?.role === 'admin';
+  // Check permissions using the new permission system
+  const canManageOrganizations = user?.role === 'super_admin'; // Only super_admin can manage organizations
 
   const fetchOrganizations = useCallback(async () => {
     setLoading(true);
@@ -149,7 +151,7 @@ const Organizations = () => {
               {config.label}
             </span>
           </div>
-          {canManageOrganizations && (
+          <PermissionGuard permission={PERMISSIONS.MANAGE_ORGANIZATIONS} hideIfNoPermission={true}>
             <div className="flex space-x-2">
               <button
                 onClick={() => openModal(organizations.find(org => org.id === node.id))}
@@ -164,7 +166,7 @@ const Organizations = () => {
                 Delete
               </button>
             </div>
-          )}
+          </PermissionGuard>
         </div>
         {node.children && node.children.map(child => renderHierarchyNode(child, level + 1))}
       </div>
@@ -202,14 +204,14 @@ const Organizations = () => {
             </button>
           </div>
 
-          {canManageOrganizations && (
+          <PermissionGuard permission={PERMISSIONS.MANAGE_ORGANIZATIONS} hideIfNoPermission={true}>
             <button
               onClick={() => openModal()}
               className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
             >
               Add Organization
             </button>
-          )}
+          </PermissionGuard>
         </div>
       </div>
 
@@ -311,7 +313,7 @@ const Organizations = () => {
                       <div>Users: {org.users_count || 0}</div>
                     </div>
 
-                    {canManageOrganizations && (
+                    <PermissionGuard permission={PERMISSIONS.MANAGE_ORGANIZATIONS} hideIfNoPermission={true}>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => openModal(org)}
@@ -326,7 +328,7 @@ const Organizations = () => {
                           Delete
                         </button>
                       </div>
-                    )}
+                    </PermissionGuard>
                   </div>
                 </div>
               );

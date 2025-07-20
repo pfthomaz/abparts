@@ -11,6 +11,9 @@ import './index.css'; // Import Tailwind CSS base styles
 import { useAuth } from './AuthContext'; // Import useAuth hook
 import LoginForm from './components/LoginForm'; // Import LoginForm component
 import Layout from './components/Layout'; // Import Layout component
+import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute component
+import PermissionErrorBoundary from './components/PermissionErrorBoundary'; // Import PermissionErrorBoundary
+import { PERMISSIONS } from './utils/permissions'; // Import permissions
 import Dashboard from './pages/Dashboard';
 import Organizations from './pages/Organizations';
 import Parts from './pages/Parts';
@@ -53,16 +56,151 @@ function App() {
           path="/*"
           element={token ? <Layout /> : <Navigate to="/login" />}
         >
-          <Route index element={<Dashboard />} />
-          <Route path="organizations" element={<Organizations />} />
-          <Route path="parts" element={<Parts />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="stocktake" element={<Stocktake />} />
-          <Route path="machines" element={<Machines />} /> {/* New: Add Machines route */}
-          <Route path="users" element={<UsersPage />} /> {/* New: Add UsersPage route */}
-          <Route path="profile" element={<UserProfile />} /> {/* New: Add UserProfile route */}
-          <Route path="security" element={<Security />} /> {/* New: Add Security route */}
+          <Route index element={
+            <PermissionErrorBoundary feature="Dashboard">
+              <Dashboard />
+            </PermissionErrorBoundary>
+          } />
+          <Route
+            path="organizations"
+            element={
+              <PermissionErrorBoundary
+                feature="Organizations Management"
+                requiredPermission={PERMISSIONS.VIEW_ALL_ORGANIZATIONS}
+                requiredRole="super_admin"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.VIEW_ALL_ORGANIZATIONS}
+                  requiredRole="super_admin"
+                  feature="Organizations Management"
+                >
+                  <Organizations />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="parts"
+            element={
+              <PermissionErrorBoundary
+                feature="Parts Catalog"
+                requiredPermission={PERMISSIONS.VIEW_PARTS}
+                resource="parts"
+                action="view"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.VIEW_PARTS}
+                  feature="Parts Catalog"
+                >
+                  <Parts />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="inventory"
+            element={
+              <PermissionErrorBoundary
+                feature="Inventory Management"
+                requiredPermission={PERMISSIONS.VIEW_INVENTORY}
+                resource="inventory"
+                action="view"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.VIEW_INVENTORY}
+                  feature="Inventory Management"
+                >
+                  <Inventory />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="orders"
+            element={
+              <PermissionErrorBoundary
+                feature="Order Management"
+                requiredPermission={PERMISSIONS.ORDER_PARTS}
+                resource="orders"
+                action="view"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.ORDER_PARTS}
+                  feature="Order Management"
+                >
+                  <Orders />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="stocktake"
+            element={
+              <PermissionErrorBoundary
+                feature="Stocktake Management"
+                requiredPermission={PERMISSIONS.ADJUST_INVENTORY}
+                requiredRole="admin"
+                resource="inventory"
+                action="manage"
+              >
+                <ProtectedRoute
+                  permission={PERMISSIONS.ADJUST_INVENTORY}
+                  requiredRole="admin"
+                  feature="Stocktake Management"
+                >
+                  <Stocktake />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="machines"
+            element={
+              <PermissionErrorBoundary
+                feature="Machine Management"
+                requiredPermission={PERMISSIONS.VIEW_ORG_MACHINES}
+                resource="machines"
+                action="view"
+              >
+                <ProtectedRoute
+                  permissions={[PERMISSIONS.VIEW_ORG_MACHINES, PERMISSIONS.VIEW_ALL_MACHINES]}
+                  feature="Machine Management"
+                >
+                  <Machines />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <PermissionErrorBoundary
+                feature="User Management"
+                requiredPermission={PERMISSIONS.MANAGE_ORG_USERS}
+                requiredRole="admin"
+                resource="users"
+                action="manage"
+              >
+                <ProtectedRoute
+                  permissions={[PERMISSIONS.MANAGE_ORG_USERS, PERMISSIONS.MANAGE_ALL_USERS]}
+                  requiredRole="admin"
+                  feature="User Management"
+                >
+                  <UsersPage />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route path="profile" element={
+            <PermissionErrorBoundary feature="User Profile">
+              <UserProfile />
+            </PermissionErrorBoundary>
+          } />
+          <Route path="security" element={
+            <PermissionErrorBoundary feature="Security Center">
+              <Security />
+            </PermissionErrorBoundary>
+          } />
         </Route>
       </Routes>
     </Router>

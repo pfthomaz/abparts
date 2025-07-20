@@ -3,10 +3,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { api } from '../services/api'; // For fetching related data
+import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
 import InventoryForm from '../components/InventoryForm';
+import PermissionGuard from '../components/PermissionGuard';
+import { PERMISSIONS, isSuperAdmin, canViewOrganization } from '../utils/permissions';
 
 const Inventory = () => {
+  const { user } = useAuth();
   const [inventoryItems, setInventoryItems] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [parts, setParts] = useState([]);
@@ -64,10 +68,19 @@ const Inventory = () => {
           organizationName: organization ? organization.name : 'Unknown Organization',
         };
       })
+      // Organization-scoped data access - only show items from user's organization unless super_admin
+      .filter(item => {
+        // Super admins can see all inventory items
+        if (isSuperAdmin(user)) return true;
+        // Regular users can only see inventory items from their organization
+        return item.organization_id === user.organization_id;
+      })
+      // User-selected organization filter
       .filter(item => {
         if (filterOrgId === 'all') return true;
         return item.organization_id === filterOrgId;
       })
+      // Search term filter
       .filter(item => {
         if (!searchTerm) return true;
         const term = searchTerm.toLowerCase();
@@ -121,12 +134,14 @@ const Inventory = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Inventory</h1>
-        <button
-          onClick={() => openModal()}
-          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
-        >
-          Add Inventory Item
-        </button>
+        <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+          <button
+            onClick={() => openModal()}
+            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+          >
+            Add Inventory Item
+          </button>
+        </PermissionGuard>
       </div>
 
       {loading && <p className="text-gray-500">Loading inventory...</p>}
@@ -160,9 +175,11 @@ const Inventory = () => {
               onChange={(e) => setFilterOrgId(e.target.value)}
             >
               <option value="all">All Organizations</option>
-              {organizations.map(org => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
+              {organizations
+                .filter(org => isSuperAdmin(user) || org.id === user.organization_id)
+                .map(org => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
             </select>
           </div>
         </div>
@@ -188,18 +205,22 @@ const Inventory = () => {
               {item.reorder_threshold_set_by && <p className="text-gray-600 mb-1"><span className="font-medium">Set By:</span> {item.reorder_threshold_set_by}</p>}
               <p className="text-sm text-gray-400 mt-3">ID: {item.id}</p>
               <div className="mt-4 flex space-x-2">
-                <button
-                  onClick={() => openModal(item)}
-                  className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
-                >
-                  Delete
-                </button>
+                <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+                  <button
+                    onClick={() => openModal(item)}
+                    className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                  >
+                    Edit
+                  </button>
+                </PermissionGuard>
+                <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                  >
+                    Delete
+                  </button>
+                </PermissionGuard>
               </div>
             </div>
           ))}

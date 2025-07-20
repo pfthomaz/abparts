@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { dashboardService } from '../services/dashboardService';
+import { isSuperAdmin, hasPermission, PERMISSIONS } from '../utils/permissions';
+import PermissionGuard from '../components/PermissionGuard';
 import {
   BarChart,
   Bar,
@@ -23,6 +26,7 @@ const MetricCard = ({ title, value, linkTo, bgColor = 'bg-white', textColor = 't
 );
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [lowStockData, setLowStockData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,47 +84,98 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Welcome back, {user.name || user.username}</p>
+          <p className="text-xs text-gray-500">
+            {user.role === 'super_admin' ? 'Super Administrator' :
+              user.role === 'admin' ? 'Administrator' : 'User'}
+            {!isSuperAdmin(user) && user.organization && ` • ${user.organization.name}`}
+          </p>
+          <p className="text-xs text-gray-500">
+            Access: {isSuperAdmin(user) ? 'All Organizations' : 'Own Organization Only'}
+          </p>
+        </div>
+      </div>
+
       {metrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          <MetricCard title="Total Parts" value={metrics.total_parts} linkTo="/parts" />
-          <MetricCard title="Inventory Items" value={metrics.total_inventory_items} linkTo="/inventory" />
-          <MetricCard title="Low Stock Items" value={metrics.low_stock_items} linkTo="/inventory" bgColor={metrics.low_stock_items > 0 ? 'bg-yellow-200' : 'bg-white'} textColor={metrics.low_stock_items > 0 ? 'text-yellow-800' : 'text-gray-800'} />
-          <MetricCard title="Pending Customer Orders" value={metrics.pending_customer_orders} linkTo="/orders" bgColor={metrics.pending_customer_orders > 0 ? 'bg-blue-200' : 'bg-white'} textColor={metrics.pending_customer_orders > 0 ? 'text-blue-800' : 'text-gray-800'} />
-          <MetricCard title="Pending Supplier Orders" value={metrics.pending_supplier_orders} linkTo="/orders" bgColor={metrics.pending_supplier_orders > 0 ? 'bg-red-200' : 'bg-white'} textColor={metrics.pending_supplier_orders > 0 ? 'text-red-800' : 'text-gray-800'} />
+          <PermissionGuard permission={PERMISSIONS.VIEW_PARTS}>
+            <MetricCard title="Total Parts" value={metrics.total_parts} linkTo="/parts" />
+          </PermissionGuard>
+
+          <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY}>
+            <MetricCard title="Inventory Items" value={metrics.total_inventory_items} linkTo="/inventory" />
+          </PermissionGuard>
+
+          <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY}>
+            <MetricCard
+              title="Low Stock Items"
+              value={metrics.low_stock_items}
+              linkTo="/inventory"
+              bgColor={metrics.low_stock_items > 0 ? 'bg-yellow-200' : 'bg-white'}
+              textColor={metrics.low_stock_items > 0 ? 'text-yellow-800' : 'text-gray-800'}
+            />
+          </PermissionGuard>
+
+          <PermissionGuard permission={PERMISSIONS.ORDER_PARTS}>
+            <MetricCard
+              title="Pending Customer Orders"
+              value={metrics.pending_customer_orders}
+              linkTo="/orders"
+              bgColor={metrics.pending_customer_orders > 0 ? 'bg-blue-200' : 'bg-white'}
+              textColor={metrics.pending_customer_orders > 0 ? 'text-blue-800' : 'text-gray-800'}
+            />
+          </PermissionGuard>
+
+          <PermissionGuard permission={PERMISSIONS.ORDER_PARTS}>
+            <MetricCard
+              title="Pending Supplier Orders"
+              value={metrics.pending_supplier_orders}
+              linkTo="/orders"
+              bgColor={metrics.pending_supplier_orders > 0 ? 'bg-red-200' : 'bg-white'}
+              textColor={metrics.pending_supplier_orders > 0 ? 'text-red-800' : 'text-gray-800'}
+            />
+          </PermissionGuard>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-700 mb-4">Pending Orders</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={pendingOrdersData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis allowDecimals={false} />
-              <Tooltip cursor={{fill: 'rgba(243, 244, 246, 0.5)'}} />
-              <Bar dataKey="Pending" fill="#8884d8">
-                {pendingOrdersData.map((entry, index) => (
-                  <Bar key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-700 mb-4">Low Stock Items by Organization</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={lowStockData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="organization_name" />
-              <YAxis allowDecimals={false} />
-              <Tooltip cursor={{fill: 'rgba(243, 244, 246, 0.5)'}} />
-              <Legend />
-              <Bar dataKey="low_stock_count" name="Low Stock Count" fill="#f59e0b" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <PermissionGuard permission={PERMISSIONS.ORDER_PARTS}>
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Pending Orders</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={pendingOrdersData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'rgba(243, 244, 246, 0.5)' }} />
+                <Bar dataKey="Pending" fill="#8884d8">
+                  {pendingOrdersData.map((entry, index) => (
+                    <Bar key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </PermissionGuard>
+
+        <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY}>
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Low Stock Items by Organization</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={lowStockData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="organization_name" />
+                <YAxis allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'rgba(243, 244, 246, 0.5)' }} />
+                <Legend />
+                <Bar dataKey="low_stock_count" name="Low Stock Count" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </PermissionGuard>
       </div>
     </div>
   );

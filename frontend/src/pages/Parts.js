@@ -5,6 +5,8 @@ import { partsService } from '../services/partsService';
 import { API_BASE_URL } from '../services/api';
 import Modal from '../components/Modal';
 import PartForm from '../components/PartForm';
+import PermissionGuard from '../components/PermissionGuard';
+import { PERMISSIONS } from '../utils/permissions';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
@@ -98,12 +100,14 @@ const Parts = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Parts</h1>
-        <button
-          onClick={() => openModal()}
-          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
-        >
-          Add Part
-        </button>
+        <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
+          <button
+            onClick={() => openModal()}
+            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+          >
+            Add Part
+          </button>
+        </PermissionGuard>
       </div>
 
       {loading && <p className="text-gray-500">Loading parts...</p>}
@@ -160,51 +164,55 @@ const Parts = () => {
       {!loading && filteredParts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {filteredParts.map((part) => (
-          <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-            <h3 className="text-2xl font-semibold text-purple-700 mb-2">{part.name}</h3>
-            <p className="text-gray-600 mb-1"><span className="font-medium">Part #:</span> {part.part_number}</p>
-            {part.description && <p className="text-gray-600 mb-1"><span className="font-medium">Description:</span> {part.description}</p>}
-            <p className="text-gray-600 mb-1">
-              <span className="font-medium">Proprietary:</span> {part.is_proprietary ? 'Yes' : 'No'}
-            </p>
-            <p className="text-gray-600 mb-1">
-              <span className="font-medium">Consumable:</span> {part.is_consumable ? 'Yes' : 'No'}
-            </p>
-            {part.image_urls && part.image_urls.length > 0 && (
-              <div className="mt-3">
-                <span className="font-medium text-gray-600">Images:</span>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {part.image_urls.map((imageUrl, imgIndex) => (
-                    <img
-                      key={imgIndex}
-                      src={`${API_BASE_URL}${imageUrl}`}
-                      alt={`Part Image ${imgIndex + 1}`}
-                      className="w-full h-24 object-cover rounded-md shadow-sm"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "https://placehold.co/100x100?text=Image+Error";
-                      }}
-                    />
-                  ))}
+            <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+              <h3 className="text-2xl font-semibold text-purple-700 mb-2">{part.name}</h3>
+              <p className="text-gray-600 mb-1"><span className="font-medium">Part #:</span> {part.part_number}</p>
+              {part.description && <p className="text-gray-600 mb-1"><span className="font-medium">Description:</span> {part.description}</p>}
+              <p className="text-gray-600 mb-1">
+                <span className="font-medium">Proprietary:</span> {part.is_proprietary ? 'Yes' : 'No'}
+              </p>
+              <p className="text-gray-600 mb-1">
+                <span className="font-medium">Consumable:</span> {part.is_consumable ? 'Yes' : 'No'}
+              </p>
+              {part.image_urls && part.image_urls.length > 0 && (
+                <div className="mt-3">
+                  <span className="font-medium text-gray-600">Images:</span>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    {part.image_urls.map((imageUrl, imgIndex) => (
+                      <img
+                        key={imgIndex}
+                        src={`${API_BASE_URL}${imageUrl}`}
+                        alt={`Part Image ${imgIndex + 1}`}
+                        className="w-full h-24 object-cover rounded-md shadow-sm"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://placehold.co/100x100?text=Image+Error";
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
+              )}
+              <p className="text-sm text-gray-400 mt-3">ID: {part.id}</p>
+              <div className="mt-4 flex space-x-2">
+                <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
+                  <button
+                    onClick={() => openModal(part)}
+                    className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
+                  >
+                    Edit
+                  </button>
+                </PermissionGuard>
+                <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
+                  <button
+                    onClick={() => handleDelete(part.id)}
+                    className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
+                  >
+                    Delete
+                  </button>
+                </PermissionGuard>
               </div>
-            )}
-            <p className="text-sm text-gray-400 mt-3">ID: {part.id}</p>
-            <div className="mt-4 flex space-x-2">
-              <button
-                onClick={() => openModal(part)}
-                className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(part.id)}
-                className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
-              >
-                Delete
-              </button>
             </div>
-          </div>
           ))}
         </div>
       )}
