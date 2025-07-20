@@ -20,10 +20,10 @@ class BaseSchema(BaseModel):
 from enum import Enum
 
 class OrganizationTypeEnum(str, Enum):
-    ORASEAS_EE = "oraseas_ee"
-    BOSSAQUA = "bossaqua"
-    CUSTOMER = "customer"
-    SUPPLIER = "supplier"
+    oraseas_ee = "oraseas_ee"
+    bossaqua = "bossaqua"
+    customer = "customer"
+    supplier = "supplier"
 
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)

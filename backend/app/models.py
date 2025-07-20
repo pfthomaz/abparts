@@ -14,10 +14,10 @@ from .database import Base
 
 # Enums for the new business model
 class OrganizationType(enum.Enum):
-    ORASEAS_EE = "oraseas_ee"
-    BOSSAQUA = "bossaqua"
-    CUSTOMER = "customer"
-    SUPPLIER = "supplier"
+    oraseas_ee = "oraseas_ee"
+    bossaqua = "bossaqua"
+    customer = "customer"
+    supplier = "supplier"
 
 
 class PartType(enum.Enum):
@@ -99,26 +99,26 @@ class Organization(Base):
     @hybrid_property
     def is_oraseas_ee(self):
         """Check if this organization is Oraseas EE."""
-        return self.organization_type == OrganizationType.ORASEAS_EE
+        return self.organization_type == OrganizationType.oraseas_ee
 
     @hybrid_property
     def is_customer(self):
         """Check if this organization is a customer."""
-        return self.organization_type == OrganizationType.CUSTOMER
+        return self.organization_type == OrganizationType.customer
 
     @hybrid_property
     def is_supplier(self):
         """Check if this organization is a supplier."""
-        return self.organization_type == OrganizationType.SUPPLIER
+        return self.organization_type == OrganizationType.supplier
 
     @hybrid_property
     def is_bossaqua(self):
         """Check if this organization is BossAqua."""
-        return self.organization_type == OrganizationType.BOSSAQUA
+        return self.organization_type == OrganizationType.bossaqua
 
     def validate_business_rules(self):
         """Validate business rules for organization types."""
-        if self.organization_type == OrganizationType.SUPPLIER and not self.parent_organization_id:
+        if self.organization_type == OrganizationType.supplier and not self.parent_organization_id:
             raise ValueError("Supplier organizations must have a parent organization")
         
         # Additional validation can be added here

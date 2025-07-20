@@ -255,6 +255,10 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method
         
+        # Skip permission checking for OPTIONS requests (CORS preflight)
+        if method == "OPTIONS":
+            return await call_next(request)
+        
         # Skip permission checking for certain endpoints
         if not self._should_check_permissions(path):
             return await call_next(request)

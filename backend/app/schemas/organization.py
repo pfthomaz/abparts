@@ -7,10 +7,10 @@ from enum import Enum
 from pydantic import BaseModel
 
 class OrganizationTypeEnum(str, Enum):
-    ORASEAS_EE = "oraseas_ee"
-    BOSSAQUA = "bossaqua"
-    CUSTOMER = "customer"
-    SUPPLIER = "supplier"
+    oraseas_ee = "oraseas_ee"
+    bossaqua = "bossaqua"
+    customer = "customer"
+    supplier = "supplier"
 
 class OrganizationBase(BaseModel):
     name: str
