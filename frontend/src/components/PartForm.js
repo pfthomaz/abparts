@@ -9,8 +9,10 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
     part_number: '',
     name: '',
     description: '',
+    part_type: 'consumable',
     is_proprietary: false,
-    is_consumable: false,
+    unit_of_measure: 'pieces',
+    manufacturer_part_number: '',
     manufacturer_delivery_time_days: '',
     local_supplier_delivery_time_days: '',
     image_urls: [], // Initialize with empty array for image URLs
@@ -29,8 +31,10 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       part_number: '',
       name: '',
       description: '',
+      part_type: 'consumable',
       is_proprietary: false,
-      is_consumable: false,
+      unit_of_measure: 'pieces',
+      manufacturer_part_number: '',
       manufacturer_delivery_time_days: '',
       local_supplier_delivery_time_days: '',
       image_urls: [], // Ensure image_urls is reset
@@ -132,10 +136,14 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       // Prepare data, converting empty strings to null for optional int fields
       const dataToSend = {
         ...formData,
+        manufacturer_part_number: formData.manufacturer_part_number === '' ? null : formData.manufacturer_part_number,
         manufacturer_delivery_time_days: formData.manufacturer_delivery_time_days === '' ? null : parseInt(formData.manufacturer_delivery_time_days, 10),
         local_supplier_delivery_time_days: formData.local_supplier_delivery_time_days === '' ? null : parseInt(formData.local_supplier_delivery_time_days, 10),
         image_urls: finalImageUrls, // Set the combined image URLs
       };
+
+      // Remove deprecated field if it exists
+      delete dataToSend.is_consumable;
 
       await onSubmit(dataToSend);
       onClose(); // Close modal on successful submission
@@ -198,35 +206,78 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
           disabled={loading}
         ></textarea>
       </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="is_proprietary"
-            name="is_proprietary"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            checked={formData.is_proprietary}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="part_type" className="block text-sm font-medium text-gray-700 mb-1">
+            Part Type
+          </label>
+          <select
+            id="part_type"
+            name="part_type"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            value={formData.part_type}
             onChange={handleChange}
             disabled={loading}
-          />
-          <label htmlFor="is_proprietary" className="ml-2 block text-sm text-gray-900">
-            Proprietary (Only from NZ Manufacturer)
-          </label>
+          >
+            <option value="consumable">Consumable (Whole Units)</option>
+            <option value="bulk_material">Bulk Material (Measurable Quantities)</option>
+          </select>
         </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="is_consumable"
-            name="is_consumable"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            checked={formData.is_consumable}
+
+        <div>
+          <label htmlFor="unit_of_measure" className="block text-sm font-medium text-gray-700 mb-1">
+            Unit of Measure
+          </label>
+          <select
+            id="unit_of_measure"
+            name="unit_of_measure"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            value={formData.unit_of_measure}
             onChange={handleChange}
             disabled={loading}
-          />
-          <label htmlFor="is_consumable" className="ml-2 block text-sm text-gray-900">
-            Consumable (Widely Available)
-          </label>
+          >
+            <option value="pieces">Pieces</option>
+            <option value="liters">Liters</option>
+            <option value="kg">Kilograms</option>
+            <option value="meters">Meters</option>
+            <option value="gallons">Gallons</option>
+            <option value="pounds">Pounds</option>
+            <option value="feet">Feet</option>
+            <option value="boxes">Boxes</option>
+            <option value="sets">Sets</option>
+          </select>
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="manufacturer_part_number" className="block text-sm font-medium text-gray-700 mb-1">
+          Manufacturer Part Number
+        </label>
+        <input
+          type="text"
+          id="manufacturer_part_number"
+          name="manufacturer_part_number"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          value={formData.manufacturer_part_number || ''}
+          onChange={handleChange}
+          disabled={loading}
+        />
+      </div>
+
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="is_proprietary"
+          name="is_proprietary"
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          checked={formData.is_proprietary}
+          onChange={handleChange}
+          disabled={loading}
+        />
+        <label htmlFor="is_proprietary" className="ml-2 block text-sm text-gray-900">
+          Proprietary (BossAqua exclusive part)
+        </label>
       </div>
       <div>
         <label htmlFor="manufacturer_delivery_time_days" className="block text-sm font-medium text-gray-700 mb-1">

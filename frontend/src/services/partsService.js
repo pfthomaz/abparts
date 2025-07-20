@@ -43,10 +43,64 @@ const uploadImage = (formData) => {
   return api.post('/parts/upload-image', formData);
 };
 
+/**
+ * Fetches all parts with inventory information across warehouses.
+ * @param {object} filters Optional filters for parts and inventory
+ */
+const getPartsWithInventory = (filters = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      queryParams.append(key, filters[key]);
+    }
+  });
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/parts/with-inventory?${queryString}` : '/parts/with-inventory';
+  return api.get(endpoint);
+};
+
+/**
+ * Get a specific part with inventory information.
+ * @param {string} partId The ID of the part.
+ * @param {string} organizationId Optional organization ID filter.
+ */
+const getPartWithInventory = (partId, organizationId = null) => {
+  const queryParams = new URLSearchParams();
+  if (organizationId) {
+    queryParams.append('organization_id', organizationId);
+  }
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/parts/${partId}/with-inventory?${queryString}` : `/parts/${partId}/with-inventory`;
+  return api.get(endpoint);
+};
+
+/**
+ * Search parts with inventory information.
+ * @param {string} searchTerm The search query.
+ * @param {object} filters Optional additional filters.
+ */
+const searchPartsWithInventory = (searchTerm, filters = {}) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('q', searchTerm);
+
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      queryParams.append(key, filters[key]);
+    }
+  });
+
+  return api.get(`/parts/search-with-inventory?${queryParams.toString()}`);
+};
+
 export const partsService = {
   getParts,
   createPart,
   updatePart,
   deletePart,
   uploadImage,
+  getPartsWithInventory,
+  getPartWithInventory,
+  searchPartsWithInventory,
 };

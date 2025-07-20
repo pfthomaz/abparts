@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import QuantityInput from './QuantityInput';
 
 function PartUsageForm({ organizations = [], parts = [], users = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth(); // Current logged-in user
@@ -9,7 +10,7 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
     customer_organization_id: '',
     part_id: '',
     usage_date: new Date().toISOString().split('T')[0], // Default to today's date
-    quantity_used: 1,
+    quantity_used: '',
     machine_id: '',
     recorded_by_user_id: '',
     notes: '',
@@ -23,7 +24,7 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
       customer_organization_id: '',
       part_id: '',
       usage_date: new Date().toISOString().split('T')[0],
-      quantity_used: 1,
+      quantity_used: '',
       machine_id: '',
       recorded_by_user_id: '',
       notes: '',
@@ -42,7 +43,7 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
     const { name, value, type } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: type === 'number' ? parseInt(value, 10) : value,
+      [name]: value,
     }));
   };
 
@@ -56,7 +57,7 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
       const dataToSend = {
         ...formData,
         usage_date: formData.usage_date ? new Date(formData.usage_date).toISOString() : null,
-        quantity_used: parseInt(formData.quantity_used, 10),
+        quantity_used: parseFloat(formData.quantity_used) || 0,
         machine_id: formData.machine_id || null, // Convert empty string to null for optional field
         recorded_by_user_id: formData.recorded_by_user_id || null, // Convert empty string to null for optional field
         notes: formData.notes || null, // Convert empty string to null for optional field
@@ -81,6 +82,9 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
   const disableOrgSelection = loading || (user && (user.role === 'Customer Admin' || user.role === 'Customer User'));
   // Determine if the user dropdown should be disabled
   const disableUserSelection = loading || (user && (user.role === 'Customer Admin' || user.role === 'Customer User'));
+
+  // Get selected part information for quantity input
+  const selectedPart = parts.find(part => part.id === formData.part_id);
 
 
   return (
@@ -152,15 +156,19 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
       <div>
         <label htmlFor="quantity_used" className="block text-sm font-medium text-gray-700 mb-1">
           Quantity Used
+          {selectedPart && (
+            <span className="text-sm text-gray-500 ml-2">
+              ({selectedPart.part_type === 'consumable' ? 'Whole units' : 'Decimal quantities allowed'})
+            </span>
+          )}
         </label>
-        <input
-          type="number"
-          id="quantity_used"
+        <QuantityInput
           name="quantity_used"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           value={formData.quantity_used}
           onChange={handleChange}
-          min="1"
+          partType={selectedPart?.part_type || 'consumable'}
+          unitOfMeasure={selectedPart?.unit_of_measure || 'pieces'}
+          min={selectedPart?.part_type === 'bulk_material' ? 0.001 : 1}
           required
           disabled={loading}
         />

@@ -16,13 +16,13 @@ const Parts = () => {
   const [editingPart, setEditingPart] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProprietary, setFilterProprietary] = useState('all');
-  const [filterConsumable, setFilterConsumable] = useState('all');
+  const [filterPartType, setFilterPartType] = useState('all');
 
   const fetchParts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await partsService.getParts();
+      const data = await partsService.getPartsWithInventory();
       setParts(data);
     } catch (err) {
       setError(err.message || 'Failed to fetch parts.');
@@ -50,10 +50,10 @@ const Parts = () => {
         return part.is_proprietary === (filterProprietary === 'yes');
       })
       .filter(part => {
-        if (filterConsumable === 'all') return true;
-        return part.is_consumable === (filterConsumable === 'yes');
+        if (filterPartType === 'all') return true;
+        return part.part_type === filterPartType;
       });
-  }, [parts, searchTerm, filterProprietary, filterConsumable]);
+  }, [parts, searchTerm, filterProprietary, filterPartType]);
 
   const handleCreateOrUpdate = async (partData) => {
     try {
@@ -146,16 +146,16 @@ const Parts = () => {
             </select>
           </div>
           <div>
-            <label htmlFor="filterConsumable" className="block text-sm font-medium text-gray-700">Consumable</label>
+            <label htmlFor="filterPartType" className="block text-sm font-medium text-gray-700">Part Type</label>
             <select
-              id="filterConsumable"
+              id="filterPartType"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              value={filterConsumable}
-              onChange={(e) => setFilterConsumable(e.target.value)}
+              value={filterPartType}
+              onChange={(e) => setFilterPartType(e.target.value)}
             >
-              <option value="all">All</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
+              <option value="all">All Types</option>
+              <option value="consumable">Consumable</option>
+              <option value="bulk_material">Bulk Material</option>
             </select>
           </div>
         </div>
@@ -169,11 +169,50 @@ const Parts = () => {
               <p className="text-gray-600 mb-1"><span className="font-medium">Part #:</span> {part.part_number}</p>
               {part.description && <p className="text-gray-600 mb-1"><span className="font-medium">Description:</span> {part.description}</p>}
               <p className="text-gray-600 mb-1">
-                <span className="font-medium">Proprietary:</span> {part.is_proprietary ? 'Yes' : 'No'}
+                <span className="font-medium">Type:</span> {part.part_type === 'consumable' ? 'Consumable' : 'Bulk Material'}
               </p>
               <p className="text-gray-600 mb-1">
-                <span className="font-medium">Consumable:</span> {part.is_consumable ? 'Yes' : 'No'}
+                <span className="font-medium">Unit:</span> {part.unit_of_measure}
               </p>
+              <p className="text-gray-600 mb-1">
+                <span className="font-medium">Proprietary:</span> {part.is_proprietary ? 'Yes' : 'No'}
+              </p>
+              {part.manufacturer_part_number && (
+                <p className="text-gray-600 mb-1">
+                  <span className="font-medium">Mfg Part #:</span> {part.manufacturer_part_number}
+                </p>
+              )}
+
+              {/* Inventory Information */}
+              <div className="mt-3 p-3 bg-gray-100 rounded-md">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-gray-700">Total Stock:</span>
+                  <span className={`font-semibold ${part.is_low_stock ? 'text-red-600' : 'text-green-600'}`}>
+                    {part.total_stock || 0} {part.unit_of_measure}
+                    {part.is_low_stock && <span className="ml-1 text-xs">(LOW)</span>}
+                  </span>
+                </div>
+
+                {part.warehouse_inventory && part.warehouse_inventory.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-600">By Warehouse:</span>
+                    {part.warehouse_inventory.map((warehouse, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-600">{warehouse.warehouse_name}:</span>
+                        <span className={warehouse.is_low_stock ? 'text-red-600' : 'text-gray-800'}>
+                          {warehouse.current_stock} {warehouse.unit_of_measure}
+                          {warehouse.is_low_stock && <span className="ml-1 text-xs">(LOW)</span>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {(!part.warehouse_inventory || part.warehouse_inventory.length === 0) && (
+                  <p className="text-sm text-gray-500">No inventory data available</p>
+                )}
+              </div>
+
               {part.image_urls && part.image_urls.length > 0 && (
                 <div className="mt-3">
                   <span className="font-medium text-gray-600">Images:</span>
