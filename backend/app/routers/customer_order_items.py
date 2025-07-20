@@ -8,34 +8,39 @@ from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
+from ..auth import get_current_user, TokenData # Import authentication dependencies
+from ..permissions import (
+    ResourceType, PermissionType, require_permission,
+    OrganizationScopedQueries, check_organization_access, permission_checker
+)
 
 router = APIRouter()
 
 # --- Customer Order Items CRUD ---
 @router.get("/", response_model=List[schemas.CustomerOrderItemResponse])
-async def get_customer_order_items(
+def get_customer_order_items(
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.READ))
 ):
-    if current_user.role in ["Oraseas Admin", "Oraseas Inventory Manager"]:
-        items = crud.customer_order_items.get_customer_order_items(db)
-    elif current_user.role in ["Customer Admin", "Customer User"]:
-        # Customers can only see order items for orders placed by their own organization
-        # First, get all customer orders associated with the current user's organization
-        customer_orders_ids = [str(o.id) for o in db.query(models.CustomerOrder.id).filter(models.CustomerOrder.customer_organization_id == current_user.organization_id).all()]
-        if not customer_orders_ids: # If customer has no orders, no items to show
-            return []
-        items = db.query(models.CustomerOrderItem).filter(models.CustomerOrderItem.customer_order_id.in_(customer_orders_ids)).all()
-    else:
-        raise HTTPException(status_code=403, detail="Not authorized to view customer order items")
+    items = crud.customer_order_items.get_customer_order_items(db)
+    
+    # Filter based on user permissions
+    if not permission_checker.is_super_admin(current_user):
+        # Users can only see items from orders placed by their organization
+        filtered_items = []
+        for item in items:
+            customer_order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == item.customer_order_id).first()
+            if customer_order and customer_order.customer_organization_id == current_user.organization_id:
+                filtered_items.append(item)
+        return filtered_items
+    
     return items
 
 @router.get("/{item_id}", response_model=schemas.CustomerOrderItemResponse)
-async def get_customer_order_item(
+def get_customer_order_item(
     item_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.READ))
 ):
     item = crud.customer_order_items.get_customer_order_item(db, item_id)
     if not item:
@@ -45,17 +50,18 @@ async def get_customer_order_item(
     if not customer_order:
         raise HTTPException(status_code=404, detail="Associated customer order not found for item")
 
-    if current_user.role in ["Oraseas Admin", "Oraseas Inventory Manager"] or \
-       (current_user.role in ["Customer Admin", "Customer User"] and customer_order.customer_organization_id == current_user.organization_id):
-        return item
-    else:
-        raise HTTPException(status_code=403, detail="Not authorized to view this customer order item")
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if customer_order.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Access denied to this order item")
+
+    return item
 
 @router.post("/", response_model=schemas.CustomerOrderItemResponse, status_code=status.HTTP_201_CREATED)
-async def create_customer_order_item(
+def create_customer_order_item(
     item: schemas.CustomerOrderItemCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager", "Customer Admin", "Customer User"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == item.customer_order_id).first()
     part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
@@ -64,9 +70,10 @@ async def create_customer_order_item(
     if not part:
         raise HTTPException(status_code=400, detail="Part ID not found")
 
-    # Authorization logic: Customers can only add items to their own orders
-    if current_user.role in ["Customer Admin", "Customer User"] and order.customer_organization_id != current_user.organization_id:
-        raise HTTPException(status_code=403, detail="Customers can only add items to their own orders.")
+    # Check permissions - users can only add items to orders from their organization
+    if not permission_checker.is_super_admin(current_user):
+        if order.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot add items to orders from other organizations")
 
     db_item = crud.customer_order_items.create_customer_order_item(db, item)
     if not db_item:
@@ -74,11 +81,11 @@ async def create_customer_order_item(
     return db_item
 
 @router.put("/{item_id}", response_model=schemas.CustomerOrderItemResponse)
-async def update_customer_order_item(
+def update_customer_order_item(
     item_id: uuid.UUID,
     item_update: schemas.CustomerOrderItemUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager", "Customer Admin"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     db_item = crud.customer_order_items.get_customer_order_item(db, item_id)
     if not db_item:
@@ -88,9 +95,10 @@ async def update_customer_order_item(
     if not customer_order:
         raise HTTPException(status_code=404, detail="Associated customer order not found")
 
-    # Authorization: Customers can only update items in their own orders
-    if current_user.role in ["Customer Admin"] and customer_order.customer_organization_id != current_user.organization_id:
-        raise HTTPException(status_code=403, detail="Customers can only update items in their own orders.")
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if customer_order.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot update order items from other organizations")
 
     # Prevent changing customer_order_id or part_id
     if item_update.customer_order_id is not None and item_update.customer_order_id != db_item.customer_order_id:
@@ -104,10 +112,10 @@ async def update_customer_order_item(
     return updated_item
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_customer_order_item(
+def delete_customer_order_item(
     item_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Customer Admin"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.DELETE))
 ):
     db_item = crud.customer_order_items.get_customer_order_item(db, item_id)
     if not db_item:
@@ -117,9 +125,10 @@ async def delete_customer_order_item(
     if not customer_order:
         raise HTTPException(status_code=404, detail="Associated customer order not found")
 
-    # Authorization: Customers can only delete items from their own orders
-    if current_user.role == "Customer Admin" and customer_order.customer_organization_id != current_user.organization_id:
-        raise HTTPException(status_code=403, detail="Customers can only delete items from their own orders.")
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if customer_order.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot delete order items from other organizations")
 
     result = crud.customer_order_items.delete_customer_order_item(db, item_id)
     if not result:

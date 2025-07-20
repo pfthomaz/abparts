@@ -8,52 +8,60 @@ from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, has_role, has_roles, TokenData # Import authentication dependencies
+from ..auth import get_current_user, TokenData # Import authentication dependencies
+from ..permissions import (
+    ResourceType, PermissionType, require_permission,
+    OrganizationScopedQueries, check_organization_access, permission_checker
+)
 
 router = APIRouter()
 
 # --- Supplier Order Items CRUD ---
 @router.get("/", response_model=List[schemas.SupplierOrderItemResponse])
-async def get_supplier_order_items(
+def get_supplier_order_items(
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.READ))
 ):
-    # Only Oraseas Admin/Inventory Manager can list all supplier order items.
-    # Supplier User access to items is handled by specific order lookup, not direct list.
-    if current_user.role not in ["Oraseas Admin", "Oraseas Inventory Manager"]:
-        raise HTTPException(status_code=403, detail="Not authorized to view all supplier order items.")
-    
     items = crud.supplier_order_items.get_supplier_order_items(db)
+    
+    # Filter based on user permissions
+    if not permission_checker.is_super_admin(current_user):
+        # Users can only see items from orders placed by their organization
+        filtered_items = []
+        for item in items:
+            supplier_order = db.query(models.SupplierOrder).filter(models.SupplierOrder.id == item.supplier_order_id).first()
+            if supplier_order and supplier_order.ordering_organization_id == current_user.organization_id:
+                filtered_items.append(item)
+        return filtered_items
+    
     return items
 
 @router.get("/{item_id}", response_model=schemas.SupplierOrderItemResponse)
-async def get_supplier_order_item(
+def get_supplier_order_item(
     item_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager", "Supplier User"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.READ))
 ):
     item = crud.supplier_order_items.get_supplier_order_item(db, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Supplier order item not found")
 
-    # Check if the user is authorized to view this item (it belongs to an Oraseas order)
+    # Check permissions
     supplier_order = db.query(models.SupplierOrder).filter(models.SupplierOrder.id == item.supplier_order_id).first()
     if not supplier_order:
         raise HTTPException(status_code=404, detail="Associated supplier order not found for item")
 
-    oraseas_org = db.query(models.Organization).filter(models.Organization.name == 'Oraseas EE').first()
+    if not permission_checker.is_super_admin(current_user):
+        if supplier_order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Access denied to this order item")
 
-    if current_user.role in ["Oraseas Admin", "Oraseas Inventory Manager"] or \
-       (current_user.role == "Supplier User" and supplier_order.ordering_organization_id == oraseas_org.id): # Simplified: Supplier can see if Oraseas ordered from them
-        return item
-    else:
-        raise HTTPException(status_code=403, detail="Not authorized to view this supplier order item")
+    return item
 
 @router.post("/", response_model=schemas.SupplierOrderItemResponse, status_code=status.HTTP_201_CREATED)
-async def create_supplier_order_item(
+def create_supplier_order_item(
     item: schemas.SupplierOrderItemCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     order = db.query(models.SupplierOrder).filter(models.SupplierOrder.id == item.supplier_order_id).first()
     part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
@@ -62,10 +70,10 @@ async def create_supplier_order_item(
     if not part:
         raise HTTPException(status_code=400, detail="Part ID not found")
     
-    # Ensure the order belongs to Oraseas EE
-    oraseas_org = db.query(models.Organization).filter(models.Organization.name == 'Oraseas EE').first()
-    if not oraseas_org or order.ordering_organization_id != oraseas_org.id:
-        raise HTTPException(status_code=403, detail="Cannot add items to supplier orders not placed by Oraseas EE.")
+    # Check permissions - users can only add items to orders from their organization
+    if not permission_checker.is_super_admin(current_user):
+        if order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot add items to orders from other organizations")
 
     db_item = crud.supplier_order_items.create_supplier_order_item(db, item)
     if not db_item:
@@ -73,11 +81,11 @@ async def create_supplier_order_item(
     return db_item
 
 @router.put("/{item_id}", response_model=schemas.SupplierOrderItemResponse)
-async def update_supplier_order_item(
+def update_supplier_order_item(
     item_id: uuid.UUID,
     item_update: schemas.SupplierOrderItemUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["Oraseas Admin", "Oraseas Inventory Manager"]))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     db_item = crud.supplier_order_items.get_supplier_order_item(db, item_id)
     if not db_item:
@@ -87,9 +95,10 @@ async def update_supplier_order_item(
     if not supplier_order:
         raise HTTPException(status_code=404, detail="Associated supplier order not found")
 
-    oraseas_org = db.query(models.Organization).filter(models.Organization.name == 'Oraseas EE').first()
-    if not oraseas_org or supplier_order.ordering_organization_id != oraseas_org.id:
-        raise HTTPException(status_code=403, detail="Cannot update supplier order items not belonging to Oraseas EE orders.")
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if supplier_order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot update order items from other organizations")
 
     # Prevent changing supplier_order_id or part_id
     if item_update.supplier_order_id is not None and item_update.supplier_order_id != db_item.supplier_order_id:
@@ -103,10 +112,10 @@ async def update_supplier_order_item(
     return updated_item
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_supplier_order_item(
+def delete_supplier_order_item(
     item_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_role("Oraseas Admin"))
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.DELETE))
 ):
     db_item = crud.supplier_order_items.get_supplier_order_item(db, item_id)
     if not db_item:
@@ -116,9 +125,10 @@ async def delete_supplier_order_item(
     if not supplier_order:
         raise HTTPException(status_code=404, detail="Associated supplier order not found")
 
-    oraseas_org = db.query(models.Organization).filter(models.Organization.name == 'Oraseas EE').first()
-    if not oraseas_org or supplier_order.ordering_organization_id != oraseas_org.id:
-        raise HTTPException(status_code=403, detail="Cannot delete supplier order items not belonging to Oraseas EE orders.")
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if supplier_order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot delete order items from other organizations")
 
     result = crud.supplier_order_items.delete_supplier_order_item(db, item_id)
     if not result:
