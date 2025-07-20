@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 
+// New role system aligned with business model
+const USER_ROLES = {
+  user: 'user',
+  admin: 'admin',
+  super_admin: 'super_admin'
+};
+
+const USER_STATUS = {
+  active: 'active',
+  inactive: 'inactive',
+  pending_invitation: 'pending_invitation',
+  locked: 'locked'
+};
+
 function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, editingSelf }) {
   const { user } = useAuth();
 
@@ -9,8 +23,9 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
     email: '',
     password: '',
     name: '',
-    role: 'Customer User',
+    role: USER_ROLES.user,
     organization_id: '',
+    user_status: USER_STATUS.active,
     is_active: true,
   });
 
@@ -23,8 +38,9 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       email: '',
       password: '',
       name: '',
-      role: 'Customer User',
-      organization_id: (user?.role === 'Customer Admin' && !initialData.id) ? user.organization_id : '',
+      role: USER_ROLES.user,
+      organization_id: (user?.role === 'admin' && !initialData.id) ? user.organization_id : '',
+      user_status: USER_STATUS.active,
       is_active: true,
     };
 
@@ -35,11 +51,12 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
         password: '',
         organization_id: initialData.organization_id || defaultState.organization_id,
         role: initialData.role || defaultState.role,
+        user_status: initialData.user_status || USER_STATUS.active,
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
       });
     } else {
       setFormData(defaultState);
-      if (user?.role === 'Customer Admin') {
+      if (user?.role === 'admin') {
         setFormData(prevState => ({ ...prevState, organization_id: user.organization_id }));
       }
     }
@@ -47,10 +64,10 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
 
   const isFieldDisabled = (fieldName) => {
     if (editingSelf) {
-      return ['role', 'organization_id', 'is_active'].includes(fieldName);
+      return ['role', 'organization_id', 'is_active', 'user_status'].includes(fieldName);
     }
-    if (user?.role === 'Customer Admin') {
-      return ['role', 'organization_id'].includes(fieldName);
+    if (user?.role === 'admin') {
+      return ['organization_id'].includes(fieldName); // Admins can change roles within their org
     }
     return false;
   };
@@ -85,15 +102,38 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
 
   const getAvailableRoles = () => {
     if (!user) return [];
-    if (user.role === "Oraseas Admin") {
-      return ["Oraseas Admin", "Oraseas Inventory Manager", "Customer Admin", "Customer User", "Supplier User"];
-    } else if (user.role === "Customer Admin") {
-      return ["Customer Admin", "Customer User"];
+
+    // Super admins can assign any role
+    if (user.role === "super_admin") {
+      return [
+        { value: USER_ROLES.user, label: "User" },
+        { value: USER_ROLES.admin, label: "Admin" },
+        { value: USER_ROLES.super_admin, label: "Super Admin" }
+      ];
     }
-    return [];
+    // Admins can assign user and admin roles within their organization
+    else if (user.role === "admin") {
+      return [
+        { value: USER_ROLES.user, label: "User" },
+        { value: USER_ROLES.admin, label: "Admin" }
+      ];
+    }
+    // Regular users cannot assign roles
+    return [{ value: USER_ROLES.user, label: "User" }];
   };
 
   const availableRoles = getAvailableRoles();
+
+  const getAvailableStatuses = () => {
+    return [
+      { value: USER_STATUS.active, label: "Active" },
+      { value: USER_STATUS.inactive, label: "Inactive" },
+      { value: USER_STATUS.pending_invitation, label: "Pending Invitation" },
+      { value: USER_STATUS.locked, label: "Locked" }
+    ];
+  };
+
+  const availableStatuses = getAvailableStatuses();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -176,7 +216,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           disabled={loading || isFieldDisabled('role')}
         >
           {availableRoles.map((role) => (
-            <option key={role} value={role}>{role}</option>
+            <option key={role.value} value={role.value}>{role.label}</option>
           ))}
         </select>
       </div>
@@ -196,6 +236,24 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           <option value="">Select organization</option>
           {organizations.map(org => (
             <option key={org.id} value={org.id}>{org.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label htmlFor="user_status" className="block text-sm font-medium text-gray-700 mb-1">
+          User Status
+        </label>
+        <select
+          id="user_status"
+          name="user_status"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          value={formData.user_status}
+          onChange={handleChange}
+          required
+          disabled={loading || isFieldDisabled('user_status')}
+        >
+          {availableStatuses.map((status) => (
+            <option key={status.value} value={status.value}>{status.label}</option>
           ))}
         </select>
       </div>
