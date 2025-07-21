@@ -14,4 +14,9 @@ python-jose # For actual JWT handling if you move beyond the stub
 passlib==1.7.4
 bcrypt==3.2.0
 python-multipart # For handling file uploads
-email-validator # For validating email addresses    
+email-validator # For validating email addresses
+pytest==7.3.1
+pytest-asyncio==0.21.0
+psutil==5.9.5 # For system monitoring
+prometheus-client==0.17.0 # For metrics collection
+locust==2.15.1 # For load testing

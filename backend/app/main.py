@@ -36,6 +36,7 @@ from .routers.dashboard import router as dashboard_router # New: Import dashboar
 from .routers.sessions import router as sessions_router # New: Import sessions router
 from .routers.transactions import router as transactions_router # New: Import transactions router
 from .routers.inventory_workflow import router as inventory_workflow_router # New: Import inventory workflow router
+from .routers.monitoring import router as monitoring_router # New: Import monitoring router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -81,6 +82,7 @@ from .middleware import (
     SecurityHeadersMiddleware, RequestLoggingMiddleware, ErrorHandlingMiddleware,
     PermissionEnforcementMiddleware, RateLimitingMiddleware, SessionManagementMiddleware
 )
+from .monitoring import get_monitoring_system, track_request_middleware
 import os
 import redis
 
@@ -104,6 +106,17 @@ app.add_middleware(PermissionEnforcementMiddleware)
 if redis_client:
     app.add_middleware(SessionManagementMiddleware, redis_client=redis_client)
     app.add_middleware(RateLimitingMiddleware, redis_client=redis_client)
+
+# Add request tracking middleware for monitoring
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    request.state.elapsed_time = process_time
+    track_request_middleware(request, response)
+    return response
 
 # --- Mount Static Files Directory ---
 # This makes files in the UPLOAD_DIRECTORY accessible via /static/images/your_image.jpg
@@ -138,6 +151,7 @@ app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
 app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
 app.include_router(inventory_workflow_router, tags=["Inventory Workflows"])
+app.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)
@@ -183,14 +197,19 @@ async def health_check(db: Session = Depends(get_db)):
 # --- Database Table Creation on Startup ---
 # Commented out to allow Alembic migrations to handle schema creation
 # @app.on_event("startup")
-# def startup_event():
-#     logger.info("Application startup event triggered.")
-#     logger.info("Attempting to create database tables if they don't exist...")
-#     try:
-#         Base.metadata.create_all(bind=engine)
-#         logger.info("Database tables checked/created successfully.")
-#     except Exception as e:
-#         logger.error(f"Error creating database tables on startup: {e}")
+def startup_event():
+    logger.info("Application startup event triggered.")
+    # Initialize monitoring system
+    from .database import SessionLocal
+    monitoring = get_monitoring_system(SessionLocal, redis_url)
+    logger.info("Monitoring system initialized.")
+    
+    # Uncomment to create tables on startup (not recommended for production)
+    # try:
+    #     Base.metadata.create_all(bind=engine)
+    #     logger.info("Database tables checked/created successfully.")
+    # except Exception as e:
+    #     logger.error(f"Error creating database tables on startup: {e}")
 # --- Custom Swagger UI and ReDoc routes ---
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
