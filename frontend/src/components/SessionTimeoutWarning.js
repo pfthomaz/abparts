@@ -15,8 +15,26 @@ const SessionTimeoutWarning = () => {
     // Mock session expiry check - in real implementation this would come from JWT token
     const checkSessionExpiry = () => {
       try {
-        // Decode JWT token to get expiry time (simplified mock)
-        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        // Validate token format before parsing
+        if (!token || typeof token !== 'string') {
+          return;
+        }
+
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          // Not a valid JWT format, skip session check
+          return;
+        }
+
+        // Decode JWT token to get expiry time
+        const tokenPayload = JSON.parse(atob(tokenParts[1]));
+
+        // Check if token has expiry claim
+        if (!tokenPayload.exp) {
+          // No expiry claim, skip session check
+          return;
+        }
+
         const expiryTime = tokenPayload.exp * 1000; // Convert to milliseconds
         const currentTime = Date.now();
         const timeUntilExpiry = expiryTime - currentTime;
@@ -33,8 +51,9 @@ const SessionTimeoutWarning = () => {
           setShowWarning(false);
         }
       } catch (error) {
-        // If token parsing fails, assume it's valid for now
-        console.error('Error parsing token for expiry check:', error);
+        // If token parsing fails, silently skip (don't log error to avoid console spam)
+        // In production, you might want to log this to a monitoring service instead
+        console.warn('Unable to parse token for session expiry check. Session timeout warning disabled.');
       }
     };
 
