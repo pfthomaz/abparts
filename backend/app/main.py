@@ -3,9 +3,13 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles # New: Import StaticFiles
+from fastapi.encoders import jsonable_encoder
 import os
 import logging
 import time
+import json
+import uuid
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import redis
@@ -47,6 +51,15 @@ logger = logging.getLogger(__name__)
 
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse
+
+# Custom JSON encoder for datetime and UUID objects
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, uuid.UUID):
+            return str(obj)
+        return super().default(obj)
 
 # --- FastAPI App Initialization ---
 app = FastAPI(

@@ -54,13 +54,43 @@ const STATUS_CODE_TO_ERROR_TYPE = {
 export const processError = (error) => {
   // Log the full error for debugging
   console.error('Processing error:', error);
+  console.log('Error type:', typeof error);
+  console.log('Error keys:', Object.keys(error || {}));
+
+  // Handle case where error is already a string
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  // Handle case where error is null or undefined
+  if (!error) {
+    return ERROR_MESSAGES.UNKNOWN_ERROR;
+  }
 
   if (error.response) {
     // Server responded with error status
     const status = error.response.status;
-    const serverMessage = error.response.data?.detail ||
+    console.log('Response status:', status);
+    console.log('Response data:', error.response.data);
+
+    let serverMessage = error.response.data?.detail ||
       error.response.data?.message ||
       error.response.data?.error;
+
+    // Handle case where detail is an array (Pydantic validation errors)
+    if (Array.isArray(serverMessage)) {
+      serverMessage = serverMessage[0];
+      // If the array element is still an object, try to extract a string from it
+      if (typeof serverMessage === 'object' && serverMessage !== null) {
+        // Handle Pydantic validation error format
+        serverMessage = serverMessage.msg || serverMessage.detail || serverMessage.message || serverMessage.error || 'Validation error';
+      }
+    }
+
+    // Handle case where serverMessage is still an object
+    if (typeof serverMessage === 'object' && serverMessage !== null) {
+      serverMessage = serverMessage.msg || serverMessage.detail || serverMessage.message || serverMessage.error || 'Server error';
+    }
 
     switch (status) {
       case 401:
@@ -79,6 +109,7 @@ export const processError = (error) => {
       case 503:
         return serverMessage || ERROR_MESSAGES.SERVER_ERROR;
       case 400:
+      case 422:
         return serverMessage || ERROR_MESSAGES.VALIDATION_ERROR;
       default:
         return serverMessage || ERROR_MESSAGES.UNKNOWN_ERROR;
@@ -90,8 +121,18 @@ export const processError = (error) => {
     // Request timeout
     return ERROR_MESSAGES.TIMEOUT_ERROR;
   } else {
-    // Other error
-    return error.message || ERROR_MESSAGES.UNKNOWN_ERROR;
+    // Other error - handle various error formats
+    if (error.message && typeof error.message === 'string') {
+      return error.message;
+    } else if (error.detail && typeof error.detail === 'string') {
+      return error.detail;
+    } else if (typeof error === 'object' && error.toString) {
+      const stringified = error.toString();
+      if (stringified !== '[object Object]') {
+        return stringified;
+      }
+    }
+    return ERROR_MESSAGES.UNKNOWN_ERROR;
   }
 };
 

@@ -14,6 +14,9 @@ class BaseSchema(BaseModel):
 
     class Config:
         from_attributes = True # Allow ORM models to be converted to Pydantic models
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
 
 
 # --- Organization Schemas ---

@@ -41,6 +41,9 @@ const Parts = () => {
       setRetryCount(0);
     } catch (err) {
       console.error('Error fetching parts:', err);
+
+      // The service layer processes the error and throws a new Error with a user-friendly message
+      // We need to format this for display
       const formattedError = formatErrorForDisplay(err, retryCount);
       setError(formattedError);
 
@@ -74,8 +77,25 @@ const Parts = () => {
   const ErrorDisplay = ({ error, onRetry, retryCount }) => {
     if (!error) return null;
 
-    const canRetry = error.isRetryable && retryCount < MAX_RETRY_ATTEMPTS;
-    const showGuidance = error.showRetryGuidance || retryCount > 2;
+    // Ensure we have a proper error message
+    let errorMessage = 'An unexpected error occurred';
+
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if (error.toString && typeof error.toString === 'function') {
+        const stringified = error.toString();
+        if (stringified !== '[object Object]') {
+          errorMessage = stringified;
+        }
+      }
+    }
+
+    const canRetry = error && error.isRetryable && retryCount < MAX_RETRY_ATTEMPTS;
+    const showGuidance = error && (error.showRetryGuidance || retryCount > 2);
+    const errorType = error && error.type;
 
     return (
       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -83,19 +103,19 @@ const Parts = () => {
           <div className="flex-1">
             <div className="flex items-center">
               <strong className="font-bold">Error: </strong>
-              <span className="ml-2">{error.message}</span>
+              <span className="ml-2">{errorMessage}</span>
             </div>
 
             {showGuidance && (
               <div className="mt-2 text-sm">
                 <p>{USER_GUIDANCE.MULTIPLE_FAILURES}</p>
-                {error.type === 'network' && (
+                {errorType === 'network' && (
                   <p className="mt-1">{USER_GUIDANCE.NETWORK_ISSUES}</p>
                 )}
-                {error.type === 'server' && (
+                {errorType === 'server' && (
                   <p className="mt-1">{USER_GUIDANCE.SERVER_ISSUES}</p>
                 )}
-                {(error.type === 'auth' || error.type === 'permission') && (
+                {(errorType === 'auth' || errorType === 'permission') && (
                   <p className="mt-1">{USER_GUIDANCE.PERMISSION_ISSUES}</p>
                 )}
               </div>

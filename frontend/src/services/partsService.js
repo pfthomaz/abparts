@@ -14,7 +14,7 @@ const getParts = async () => {
     return response;
   } catch (error) {
     logError(error, 'partsService.getParts');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -30,7 +30,7 @@ const createPart = async (partData) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.createPart');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -47,7 +47,7 @@ const updatePart = async (partId, partData) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.updatePart');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -63,7 +63,7 @@ const deletePart = async (partId) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.deletePart');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -80,7 +80,7 @@ const uploadImage = async (formData) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.uploadImage');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -113,7 +113,7 @@ const getPartsWithInventory = async (filters = {}) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.getPartsWithInventory');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -138,7 +138,7 @@ const getPartWithInventory = async (partId, organizationId = null) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.getPartWithInventory');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 
@@ -171,7 +171,7 @@ const searchPartsWithInventory = async (searchTerm, filters = {}) => {
     return response;
   } catch (error) {
     logError(error, 'partsService.searchPartsWithInventory');
-    throw new Error(processError(error));
+    throw error;
   }
 };
 

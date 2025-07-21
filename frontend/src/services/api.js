@@ -1,6 +1,6 @@
 // frontend/src/services/api.js
 
-import { processError } from '../utils/errorUtils';
+import { processError } from '../utils/errorHandling';
 
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -85,8 +85,8 @@ const request = async (endpoint, method = 'GET', body = null, timeout = 30000) =
     // Log the error for debugging
     console.error(`API Error (${endpoint}):`, error);
 
-    // Rethrow with processed message
-    throw new Error(processError(error));
+    // Rethrow the original error to preserve structure for proper error handling
+    throw error;
   }
 };
 

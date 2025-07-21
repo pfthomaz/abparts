@@ -42,11 +42,14 @@ class PartUpdate(BaseModel):
 
 class PartResponse(PartBase):
     id: uuid.UUID
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
 
 class ImageUploadResponse(BaseModel):
     url: str

@@ -86,6 +86,38 @@ async def search_parts(
     parts = crud.parts.search_parts(db, q, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit)
     return parts
 
+# --- Parts Inventory Integration Endpoints (must be before /{part_id}) ---
+
+@router.get("/with-inventory", response_model=List[schemas.PartWithInventoryResponse])
+async def get_parts_with_inventory(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Filter inventory by organization ID"),
+    part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
+    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get all parts with inventory information across all warehouses.
+    If organization_id is provided, only inventory from that organization's warehouses is included.
+    Otherwise, for regular users, only inventory from their organization's warehouses is shown.
+    Super admins see all inventory across all organizations if no organization_id is specified.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's inventory")
+    
+    parts = crud.parts.get_parts_with_inventory(
+        db, organization_id, part_type, is_proprietary, skip, limit
+    )
+    return parts
+
 @router.get("/{part_id}", response_model=schemas.PartResponse)
 async def get_part(
     part_id: uuid.UUID,
@@ -167,37 +199,6 @@ async def get_parts_by_type(
         raise HTTPException(status_code=400, detail=f"Invalid part type: {part_type}. Valid types are: {[t.value for t in models.PartType]}")
     
     parts = crud.parts.get_filtered_parts(db, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit)
-    return parts
-# --- Parts Inventory Integration Endpoints ---
-
-@router.get("/with-inventory", response_model=List[schemas.PartWithInventoryResponse])
-async def get_parts_with_inventory(
-    organization_id: Optional[uuid.UUID] = Query(None, description="Filter inventory by organization ID"),
-    part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
-    is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
-):
-    """
-    Get all parts with inventory information across all warehouses.
-    If organization_id is provided, only inventory from that organization's warehouses is included.
-    Otherwise, for regular users, only inventory from their organization's warehouses is shown.
-    Super admins see all inventory across all organizations if no organization_id is specified.
-    """
-    # If organization_id is not provided, use the current user's organization
-    # unless the user is a super_admin
-    if not organization_id and not permission_checker.is_super_admin(current_user):
-        organization_id = current_user.organization_id
-    
-    # Check organization access if organization_id is provided
-    if organization_id and not check_organization_access(current_user, organization_id, db):
-        raise HTTPException(status_code=403, detail="Not authorized to access this organization's inventory")
-    
-    parts = crud.parts.get_parts_with_inventory(
-        db, organization_id, part_type, is_proprietary, skip, limit
-    )
     return parts
 
 @router.get("/with-inventory/{part_id}", response_model=schemas.PartWithInventoryResponse)
