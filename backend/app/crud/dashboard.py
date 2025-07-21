@@ -26,9 +26,9 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
     if organization_id:
         # Inventory is warehouse-scoped, so we need to join through warehouses to get organization scope
         inventory_query = inventory_query.join(models.Warehouse).filter(models.Warehouse.organization_id == organization_id)
-        # Orders are organization-scoped
-        customer_orders_query = customer_orders_query.filter(models.CustomerOrder.organization_id == organization_id)
-        supplier_orders_query = supplier_orders_query.filter(models.SupplierOrder.organization_id == organization_id)
+        # Orders are organization-scoped - use correct field names
+        customer_orders_query = customer_orders_query.filter(models.CustomerOrder.customer_organization_id == organization_id)
+        supplier_orders_query = supplier_orders_query.filter(models.SupplierOrder.ordering_organization_id == organization_id)
         # Users are organization-scoped
         users_query = users_query.filter(models.User.organization_id == organization_id)
         # Organizations - if scoped, only show the specific organization
@@ -97,12 +97,14 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
         pending_customer_orders = customer_orders_query.filter(models.CustomerOrder.status == 'Pending').count()
     except Exception as e:
         # Handle database schema issues with customer orders
+        print(f"Error counting customer orders: {e}")
         pending_customer_orders = 0
     
     try:
         pending_supplier_orders = supplier_orders_query.filter(models.SupplierOrder.status == 'Pending').count()
     except Exception as e:
         # Handle database schema issues with supplier orders
+        print(f"Error counting supplier orders: {e}")
         pending_supplier_orders = 0
     
     # Orders completed this month (with error handling)
@@ -120,6 +122,7 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
         completed_orders_this_month = completed_customer_orders + completed_supplier_orders
     except Exception as e:
         # Handle database schema issues with completed orders
+        print(f"Error counting completed orders: {e}")
         completed_orders_this_month = 0
     
     # Recent activity (last 7 days)
