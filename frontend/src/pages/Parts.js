@@ -7,33 +7,120 @@ import Modal from '../components/Modal';
 import PartForm from '../components/PartForm';
 import PermissionGuard from '../components/PermissionGuard';
 import { PERMISSIONS } from '../utils/permissions';
+import {
+  formatErrorForDisplay,
+  isRetryableError,
+  getRetryDelay,
+  MAX_RETRY_ATTEMPTS,
+  USER_GUIDANCE,
+  DISPLAY_CONSTANTS
+} from '../utils';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editingPart, setEditingPart] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProprietary, setFilterProprietary] = useState('all');
   const [filterPartType, setFilterPartType] = useState('all');
 
-  const fetchParts = useCallback(async () => {
+  const fetchParts = useCallback(async (isRetry = false) => {
     setLoading(true);
-    setError(null);
+    if (!isRetry) {
+      setError(null);
+      setRetryCount(0);
+    }
+
     try {
       const data = await partsService.getPartsWithInventory();
       setParts(data);
+      setError(null);
+      setRetryCount(0);
     } catch (err) {
-      setError(err.message || 'Failed to fetch parts.');
+      console.error('Error fetching parts:', err);
+      const formattedError = formatErrorForDisplay(err, retryCount);
+      setError(formattedError);
+
+      if (isRetry) {
+        setRetryCount(prev => prev + 1);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [retryCount]);
 
   useEffect(() => {
     fetchParts();
   }, [fetchParts]);
+
+  const handleRetry = useCallback(async () => {
+    if (retryCount >= MAX_RETRY_ATTEMPTS) {
+      return;
+    }
+
+    // Add delay for retries to prevent overwhelming the server
+    if (retryCount > 0 && error && isRetryableError(error.originalError || error)) {
+      const delay = getRetryDelay(retryCount);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    await fetchParts(true);
+  }, [fetchParts, retryCount, error]);
+
+  // Enhanced error display component
+  const ErrorDisplay = ({ error, onRetry, retryCount }) => {
+    if (!error) return null;
+
+    const canRetry = error.isRetryable && retryCount < MAX_RETRY_ATTEMPTS;
+    const showGuidance = error.showRetryGuidance || retryCount > 2;
+
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center">
+              <strong className="font-bold">Error: </strong>
+              <span className="ml-2">{error.message}</span>
+            </div>
+
+            {showGuidance && (
+              <div className="mt-2 text-sm">
+                <p>{USER_GUIDANCE.MULTIPLE_FAILURES}</p>
+                {error.type === 'network' && (
+                  <p className="mt-1">{USER_GUIDANCE.NETWORK_ISSUES}</p>
+                )}
+                {error.type === 'server' && (
+                  <p className="mt-1">{USER_GUIDANCE.SERVER_ISSUES}</p>
+                )}
+                {(error.type === 'auth' || error.type === 'permission') && (
+                  <p className="mt-1">{USER_GUIDANCE.PERMISSION_ISSUES}</p>
+                )}
+              </div>
+            )}
+
+            {retryCount > 0 && (
+              <p className="text-sm mt-1 text-red-600">
+                Retry attempt {retryCount} of {MAX_RETRY_ATTEMPTS}
+              </p>
+            )}
+          </div>
+
+          {canRetry && (
+            <button
+              onClick={onRetry}
+              disabled={loading}
+              className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed ml-4"
+            >
+              {loading ? 'Retrying...' : 'Retry'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const filteredParts = useMemo(() => {
     return parts
@@ -77,12 +164,15 @@ const Parts = () => {
     if (!window.confirm("Are you sure you want to delete this part?")) {
       return;
     }
+
     setError(null);
     try {
       await partsService.deletePart(partId);
       await fetchParts();
     } catch (err) {
-      setError(err.message || 'Failed to delete part.');
+      console.error('Error deleting part:', err);
+      const formattedError = formatErrorForDisplay(err, 0);
+      setError(formattedError);
     }
   };
 
@@ -110,13 +200,20 @@ const Parts = () => {
         </PermissionGuard>
       </div>
 
-      {loading && <p className="text-gray-500">Loading parts...</p>}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-gray-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p>{DISPLAY_CONSTANTS.LOADING_MESSAGE}</p>
+          </div>
         </div>
       )}
+
+      <ErrorDisplay
+        error={error}
+        onRetry={handleRetry}
+        retryCount={retryCount}
+      />
 
       {/* Search and Filter Bar */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -161,7 +258,7 @@ const Parts = () => {
         </div>
       </div>
 
-      {!loading && filteredParts.length > 0 && (
+      {!loading && !error && filteredParts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {filteredParts.map((part) => (
             <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
@@ -256,12 +353,25 @@ const Parts = () => {
         </div>
       )}
 
-      {!loading && filteredParts.length === 0 && (
+      {!loading && !error && filteredParts.length === 0 && (
         <div className="text-center py-10 bg-white rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-700">No Parts Found</h3>
+          <h3 className="text-xl font-semibold text-gray-700">{DISPLAY_CONSTANTS.EMPTY_STATE_TITLE}</h3>
           <p className="text-gray-500 mt-2">
-            {parts.length > 0 ? 'Try adjusting your search or filter criteria.' : 'There are no parts in the system yet.'}
+            {parts.length > 0
+              ? 'Try adjusting your search or filter criteria.'
+              : DISPLAY_CONSTANTS.EMPTY_STATE_MESSAGE
+            }
           </p>
+          {parts.length === 0 && (
+            <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
+              <button
+                onClick={() => openModal()}
+                className="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+              >
+                {DISPLAY_CONSTANTS.ADD_PART_BUTTON_TEXT}
+              </button>
+            </PermissionGuard>
+          )}
         </div>
       )}
 
