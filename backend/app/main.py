@@ -1,10 +1,11 @@
 # backend/app/main.py
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles # New: Import StaticFiles
 import os
 import logging
+import time
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import redis

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, List, Any, Optional
 
 from ..database import get_db
-from ..auth import get_current_active_user, get_current_admin_user, get_current_super_admin_user
+from ..auth import get_current_user, has_role, has_roles
 from ..monitoring import get_monitoring_system
 
 router = APIRouter()
@@ -33,7 +33,7 @@ async def get_health():
 
 
 @router.get("/metrics", response_model=Dict[str, Any])
-async def get_metrics(current_user = Depends(get_current_admin_user)):
+async def get_metrics(current_user = Depends(has_roles(["admin", "super_admin"]))):
     """
     Get system metrics.
     
@@ -51,7 +51,7 @@ async def get_metrics(current_user = Depends(get_current_admin_user)):
 
 
 @router.get("/alerts", response_model=Dict[str, Any])
-async def get_alerts(current_user = Depends(get_current_admin_user)):
+async def get_alerts(current_user = Depends(has_roles(["admin", "super_admin"]))):
     """
     Get active alerts.
     
@@ -74,7 +74,7 @@ async def get_alerts(current_user = Depends(get_current_admin_user)):
 @router.get("/alert-history", response_model=List[Dict[str, Any]])
 async def get_alert_history(
     limit: int = 100,
-    current_user = Depends(get_current_admin_user)
+    current_user = Depends(has_roles(["admin", "super_admin"]))
 ):
     """
     Get alert history.
@@ -95,7 +95,7 @@ async def get_alert_history(
 @router.post("/alerts/{alert_id}/resolve", response_model=Dict[str, Any])
 async def resolve_alert(
     alert_id: str,
-    current_user = Depends(get_current_super_admin_user)
+    current_user = Depends(has_role("super_admin"))
 ):
     """
     Manually resolve an alert.
@@ -120,7 +120,7 @@ async def resolve_alert(
 
 
 @router.get("/system-info", response_model=Dict[str, Any])
-async def get_system_info(current_user = Depends(get_current_admin_user)):
+async def get_system_info(current_user = Depends(has_roles(["admin", "super_admin"]))):
     """
     Get system information.
     
