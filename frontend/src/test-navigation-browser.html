@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navigation Permission Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .test-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .test-result {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+    }
+
+    .pass {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .user-selector {
+      margin: 10px 0;
+    }
+
+    .user-selector select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .navigation-preview {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      background-color: #f8f9fa;
+    }
+
+    .nav-item {
+      display: inline-block;
+      margin: 5px;
+      padding: 8px 12px;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .nav-category {
+      font-weight: bold;
+      margin: 10px 0 5px 0;
+      color: #333;
+    }
+
+    .access-scope {
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-left: 5px;
+    }
+
+    .global {
+      background-color: #6f42c1;
+      color: white;
+    }
+
+    .organization {
+      background-color: #17a2b8;
+      color: white;
+    }
+
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🧪 Navigation Permission-Based Visibility Test</h1>
+
+  <div class="test-container">
+    <h2>User Selection</h2>
+    <div class="user-selector">
+      <label for="userSelect">Select User Role:</label>
+      <select id="userSelect" onchange="updateNavigation()">
+        <option value="super_admin">Super Admin</option>
+        <option value="admin">Admin</option>
+        <option value="user">Regular User</option>
+        <option value="no_permissions">No Permissions</option>
+        <option value="null">Null User</option>
+      </select>
+    </div>
+
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="updateNavigation()">Update Navigation Preview</button>
+  </div>
+
+  <div class="test-container">
+    <h2>Navigation Preview</h2>
+    <div id="navigationPreview" class="navigation-preview">
+      <!-- Navigation items will be displayed here -->
+    </div>
+  </div>
+
+  <div class="test-container">
+    <h2>Test Results</h2>
+    <div id="testResults">
+      <!-- Test results will be displayed here -->
+    </div>
+  </div>
+
+  <script type="module">
+    // Import the test functions
+    import { runPermissionVisibilityTests, testEdgeCases } from './test-permission-visibility.js';
+
+    // Mock users for browser testing
+    const mockUsers = {
+      super_admin: {
+        id: '1',
+        username: 'superadmin',
+        name: 'Super Admin',
+        email: 'super@example.com',
+        role: 'super_admin',
+        organization_id: '1',
+        organization: { name: 'Oraseas EE' }
+      },
+
+      admin: {
+        id: '2',
+        username: 'admin',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        role: 'admin',
+        organization_id: '2',
+        organization: { name: 'Customer Org' }
+      },
+
+      user: {
+        id: '3',
+        username: 'user',
+        name: 'Regular User',
+        email: 'user@example.com',
+        role: 'user',
+        organization_id: '2',
+        organization: { name: 'Customer Org' }
+      },
+
+      no_permissions: {
+        id: '4',
+        username: 'noperm',
+        name: 'No Permissions',
+        email: 'noperm@example.com',
+        role: 'invalid_role',
+        organization_id: '2',
+        organization: { name: 'Customer Org' }
+      },
+
+      null: null
+    };
+
+    // Import navigation functions
+    import { getNavigationItems, getUIConfiguration } from './utils/permissions.js';
+
+    // Make functions available globally
+    window.runAllTests = function () {
+      const resultsDiv = document.getElementById('testResults');
+      resultsDiv.innerHTML = '<p>Running tests...</p>';
+
+      try {
+        // Capture console output
+        const originalLog = console.log;
+        let testOutput = '';
+        console.log = function (...args) {
+          testOutput += args.join(' ') + '\n';
+          originalLog.apply(console, args);
+        };
+
+        // Run the tests
+        const mainResults = runPermissionVisibilityTests();
+        const edgeResults = testEdgeCases();
+
+        // Restore console.log
+        console.log = originalLog;
+
+        // Display results
+        const totalTests = mainResults.total + edgeResults.total;
+        const totalPassed = mainResults.passed + edgeResults.passed;
+        const totalFailed = mainResults.failed + edgeResults.failed;
+
+        resultsDiv.innerHTML = `
+                    <div class="test-result ${totalFailed === 0 ? 'pass' : 'fail'}">
+                        <h3>Overall Results</h3>
+                        <p>Total Tests: ${totalTests}</p>
+                        <p>Passed: ${totalPassed}</p>
+                        <p>Failed: ${totalFailed}</p>
+                        <p>Success Rate: ${((totalPassed / totalTests) * 100).toFixed(1)}%</p>
+                    </div>
+                    <details>
+                        <summary>Detailed Test Output</summary>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto;">${testOutput}</pre>
+                    </details>
+                `;
+
+      } catch (error) {
+        resultsDiv.innerHTML = `
+                    <div class="test-result fail">
+                        <h3>Test Error</h3>
+                        <p>Error running tests: ${error.message}</p>
+                    </div>
+                `;
+      }
+    };
+
+    window.updateNavigation = function () {
+      const userSelect = document.getElementById('userSelect');
+      const selectedUser = mockUsers[userSelect.value];
+      const previewDiv = document.getElementById('navigationPreview');
+
+      try {
+        const navigationItems = getNavigationItems(selectedUser);
+        const uiConfig = getUIConfiguration(selectedUser);
+
+        if (!selectedUser) {
+          previewDiv.innerHTML = '<p><em>No user selected - navigation should be empty</em></p>';
+          return;
+        }
+
+        // Group items by category
+        const itemsByCategory = navigationItems.reduce((acc, item) => {
+          const category = item.category || 'other';
+          if (!acc[category]) acc[category] = [];
+          acc[category].push(item);
+          return acc;
+        }, {});
+
+        let html = `
+                    <h4>User: ${selectedUser.name} (${selectedUser.role})</h4>
+                    <p><strong>Global Access:</strong> ${uiConfig.showGlobalFilters ? 'Yes' : 'No'}</p>
+                `;
+
+        const categoryOrder = ['core', 'inventory', 'operations', 'administration'];
+        const categoryLabels = {
+          core: 'Core',
+          inventory: 'Inventory',
+          operations: 'Operations',
+          administration: 'Administration'
+        };
+
+        categoryOrder.forEach(category => {
+          if (uiConfig.navigationCategories[category] && itemsByCategory[category]) {
+            html += `<div class="nav-category">${categoryLabels[category]}:</div>`;
+            itemsByCategory[category].forEach(item => {
+              if (item.path !== '/') { // Skip dashboard in dropdown preview
+                html += `
+                                    <span class="nav-item">
+                                        ${item.label}
+                                        ${item.accessScope ? `<span class="access-scope ${item.accessScope}">${item.accessScope}</span>` : ''}
+                                    </span>
+                                `;
+              }
+            });
+          }
+        });
+
+        if (navigationItems.length === 0) {
+          html += '<p><em>No navigation items available</em></p>';
+        } else if (navigationItems.length === 1 && navigationItems[0].label === 'Dashboard') {
+          html += '<p><em>Only Dashboard available</em></p>';
+        }
+
+        previewDiv.innerHTML = html;
+
+      } catch (error) {
+        previewDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+      }
+    };
+
+    // Initialize with default user
+    window.updateNavigation();
+  </script>
+</body>
+
+</html>

@@ -233,6 +233,11 @@ export const canViewOrganization = (user, organizationId) => {
 export const getNavigationItems = (user) => {
   const items = [];
 
+  // Return empty array for null/undefined users
+  if (!user) {
+    return items;
+  }
+
   // Dashboard - available to all authenticated users
   items.push({
     path: '/',

@@ -40,7 +40,13 @@
     - Ensure items appear in logical order
     - _Requirements: 1.1, 1.3, 3.1_
 
-  - [ ] 3.2 Test permission-based visibility
+  - [x] 3.2 Test permission-based visibility
+
+
+
+
+
+
     - Verify items are hidden when user lacks permission
     - Test with various permission combinations
     - _Requirements: 1.3, 3.1, 3.4_
