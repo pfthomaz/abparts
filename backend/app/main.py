@@ -81,6 +81,7 @@ app = FastAPI(
 origins = [
     "http://localhost",
     "http://localhost:3000", # Your React frontend development server
+    "http://192.168.1.67:3000", # Your network IP for mobile access
 ]
 
 app.add_middleware(

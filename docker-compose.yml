@@ -129,7 +129,7 @@ services:
       - /app/node_modules # Avoid overwriting node_modules inside the container with host's
     environment:
       # Point the React app to the backend API running in Docker
-      REACT_APP_API_BASE_URL: http://localhost:8000 # Use localhost when accessing from host browser
+      REACT_APP_API_BASE_URL: http://192.168.1.67:8000 # Use network IP for mobile access
       # If your mobile app runs on device, it might need the host IP, e.g., 192.168.1.X:8000
     depends_on:
       api:

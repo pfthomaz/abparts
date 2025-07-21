@@ -1,47 +1,51 @@
 // frontend/src/components/CustomerOrderForm.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 
 function CustomerOrderForm({ organizations = [], users = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth(); // Current logged-in user
-  const [formData, setFormData] = useState({
-    customer_organization_id: '',
-    oraseas_organization_id: '', // Should default to Oraseas EE's ID
-    order_date: new Date().toISOString().split('T')[0], // Default to today's date
-    expected_delivery_date: '',
-    actual_delivery_date: '',
-    status: 'Pending', // Default status
-    ordered_by_user_id: '',
-    notes: '',
-    ...initialData,
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Find Oraseas EE organization
-  const oraseasOrg = organizations.find(org => org.name === 'Oraseas EE' && org.type === 'Warehouse');
+  // Initialize form data with a function to avoid recreating the object
+  const [formData, setFormData] = useState(() => ({
+    customer_organization_id: '',
+    oraseas_organization_id: '',
+    order_date: new Date().toISOString().split('T')[0],
+    expected_delivery_date: '',
+    actual_delivery_date: '',
+    status: 'Pending',
+    ordered_by_user_id: '',
+    notes: '',
+    ...initialData,
+  }));
 
+  // Use useMemo to prevent recalculation on every render
+  const oraseasOrg = useMemo(() => {
+    return organizations.find(org => org.name === 'Oraseas EE' && org.organization_type === 'oraseas_ee');
+  }, [organizations]);
+
+  // Simple effect to update organization ID when oraseasOrg becomes available
   useEffect(() => {
-    const resetData = {
-      customer_organization_id: '',
-      oraseas_organization_id: oraseasOrg ? oraseasOrg.id : '', // Set Oraseas EE ID
-      order_date: new Date().toISOString().split('T')[0],
-      expected_delivery_date: '',
-      actual_delivery_date: '',
-      status: 'Pending',
-      ordered_by_user_id: '',
-      notes: '',
-    };
-
-    // Pre-fill customer_organization_id and ordered_by_user_id for Customer roles
-    if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
-      resetData.customer_organization_id = user.organization_id || '';
-      resetData.ordered_by_user_id = user.id || '';
+    if (oraseasOrg && formData.oraseas_organization_id === '') {
+      setFormData(prevData => ({
+        ...prevData,
+        oraseas_organization_id: oraseasOrg.id
+      }));
     }
+  }, [oraseasOrg, formData.oraseas_organization_id]);
 
-    setFormData({ ...resetData, ...initialData });
-  }, [initialData, user, oraseasOrg]);
+  // Effect to pre-fill customer data for customer users
+  useEffect(() => {
+    if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
+      setFormData(prevData => ({
+        ...prevData,
+        customer_organization_id: user.organization_id || '',
+        ordered_by_user_id: user.id || ''
+      }));
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,8 +80,10 @@ function CustomerOrderForm({ organizations = [], users = [], initialData = {}, o
     }
   };
 
-  // Filter organizations: only 'Customer' type can be selected as customer_organization_id
-  const customerOrganizations = organizations.filter(org => org.type === 'Customer');
+  // Filter organizations: only 'customer' type can be selected as customer_organization_id
+  const customerOrganizations = useMemo(() => {
+    return organizations.filter(org => org.organization_type === 'customer');
+  }, [organizations]);
 
   // Filter users based on the selected customer_organization_id
   const filteredUsers = users.filter(usr => usr.organization_id === formData.customer_organization_id);
@@ -133,7 +139,7 @@ function CustomerOrderForm({ organizations = [], users = [], initialData = {}, o
           {!oraseasOrg && <option value="">Loading Oraseas EE...</option>}
         </select>
         {(!oraseasOrg && !loading) && (
-            <p className="text-red-500 text-xs mt-1">Oraseas EE organization not found. Please ensure it exists.</p>
+          <p className="text-red-500 text-xs mt-1">Oraseas EE organization not found. Please ensure it exists.</p>
         )}
       </div>
 

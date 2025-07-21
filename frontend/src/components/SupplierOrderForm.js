@@ -1,46 +1,53 @@
 // frontend/src/components/SupplierOrderForm.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 
 function SupplierOrderForm({ organizations = [], initialData = {}, onSubmit, onClose }) {
+  console.log('SupplierOrderForm received organizations:', organizations);
   const { token, user } = useAuth();
-  const [formData, setFormData] = useState({
-    ordering_organization_id: '', // Should default to Oraseas EE's ID
-    supplier_name: '', // Will be selected from dropdown
-    order_date: new Date().toISOString().split('T')[0], // Default to today's date
-    expected_delivery_date: '',
-    actual_delivery_date: '',
-    status: 'Pending', // Default status
-    notes: '',
-    ...initialData,
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filter organizations to find Oraseas EE and Supplier organizations
-  const oraseasOrg = organizations.find(org => org.name === 'Oraseas EE' && org.type === 'Warehouse');
-  const supplierOrganizations = organizations.filter(org => org.type === 'Supplier');
 
+  // Initialize form data with a function to avoid recreating the object
+  const [formData, setFormData] = useState(() => ({
+    ordering_organization_id: '',
+    supplier_name: '',
+    order_date: new Date().toISOString().split('T')[0],
+    expected_delivery_date: '',
+    actual_delivery_date: '',
+    status: 'Pending',
+    notes: '',
+    ...initialData,
+  }));
 
-  useEffect(() => {
-    // Set initial form data
-    const resetData = {
-      ordering_organization_id: oraseasOrg ? oraseasOrg.id : '',
-      supplier_name: '', // Reset supplier_name for new forms
-      order_date: new Date().toISOString().split('T')[0],
-      expected_delivery_date: '',
-      actual_delivery_date: '',
-      status: 'Pending',
-      notes: '',
-    };
-    setFormData({
-      ...resetData,
-      ...initialData,
-      // If initialData has a supplier_name, keep it, otherwise set to empty
-      supplier_name: initialData.supplier_name || ''
+  // Use useMemo to prevent recalculation on every render
+  const oraseasOrg = useMemo(() => {
+    console.log('Organizations data:', organizations);
+    const found = organizations.find(org => {
+      console.log('Checking org:', org.name, org.organization_type);
+      return org.name === 'Oraseas EE' && org.organization_type === 'oraseas_ee';
     });
-  }, [initialData, oraseasOrg]);
+    console.log('Found Oraseas org:', found);
+    return found;
+  }, [organizations]);
+
+  const supplierOrganizations = useMemo(() => {
+    const suppliers = organizations.filter(org => org.organization_type === 'supplier');
+    console.log('Supplier organizations:', suppliers);
+    return suppliers;
+  }, [organizations]);
+
+  // Simple effect to update organization ID when oraseasOrg becomes available
+  useEffect(() => {
+    if (oraseasOrg && formData.ordering_organization_id === '') {
+      setFormData(prevData => ({
+        ...prevData,
+        ordering_organization_id: oraseasOrg.id
+      }));
+    }
+  }, [oraseasOrg, formData.ordering_organization_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,8 +104,12 @@ function SupplierOrderForm({ organizations = [], initialData = {}, onSubmit, onC
           {oraseasOrg && <option value={oraseasOrg.id}>{oraseasOrg.name}</option>}
           {!oraseasOrg && <option value="">Loading Oraseas EE...</option>}
         </select>
-        {(!oraseasOrg && !loading) && (
-            <p className="text-red-500 text-xs mt-1">Oraseas EE organization not found. Please ensure it exists.</p>
+        {(!oraseasOrg && organizations.length > 0) && (
+          <p className="text-red-500 text-xs mt-1">
+            Oraseas EE organization not found. Please ensure it exists.
+            <br />
+            <small>Available organizations: {organizations.map(org => `${org.name} (${org.organization_type})`).join(', ')}</small>
+          </p>
         )}
       </div>
 
