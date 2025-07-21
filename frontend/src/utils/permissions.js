@@ -265,7 +265,7 @@ export const getNavigationItems = (user) => {
       icon: 'parts',
       permission: PERMISSIONS.VIEW_PARTS,
       description: 'Browse and manage parts catalog',
-      category: 'inventory',
+      category: 'core',
       accessScope: isSuperAdmin(user) ? 'global' : 'organization'
     });
   }
@@ -278,7 +278,7 @@ export const getNavigationItems = (user) => {
       icon: 'inventory',
       permission: PERMISSIONS.VIEW_INVENTORY,
       description: 'View and manage inventory levels',
-      category: 'inventory',
+      category: 'core',
       accessScope: isSuperAdmin(user) ? 'global' : 'organization'
     });
   }
@@ -291,7 +291,7 @@ export const getNavigationItems = (user) => {
       icon: 'orders',
       permission: PERMISSIONS.ORDER_PARTS,
       description: 'Create and track part orders',
-      category: 'operations',
+      category: 'core',
       accessScope: isSuperAdmin(user) ? 'global' : 'organization'
     });
   }
@@ -346,7 +346,7 @@ export const getNavigationItems = (user) => {
       permission: PERMISSIONS.MANAGE_WAREHOUSES,
       description: 'Manage warehouse locations and settings',
       adminOnly: true,
-      category: 'inventory',
+      category: 'core',
       accessScope: isSuperAdmin(user) ? 'global' : 'organization'
     });
   }
