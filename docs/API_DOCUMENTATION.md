@@ -1,22 +1,42 @@
 # ABParts API Documentation
 
-**Version:** 0.1.0  
-**Last Updated:** January 18, 2025  
+**Version:** 2.0.0  
+**Last Updated:** January 2025  
 **Base URL:** `http://localhost:8000` (Development)  
+**Production URL:** `https://api.yourdomain.com`  
 
 ---
 
 ## 📋 **API Overview**
 
-The ABParts API is a comprehensive RESTful API built with FastAPI, providing complete inventory and order management capabilities. The API features automatic OpenAPI documentation, JWT authentication, and role-based access control.
+The ABParts API is a comprehensive RESTful API built with FastAPI, providing complete inventory and order management capabilities for the AutoBoss parts distribution ecosystem. The API has been fully aligned with the business model and features automatic OpenAPI documentation, JWT authentication, and role-based access control.
+
+### **Business Model Integration**
+The API now properly represents the AutoBoss parts ecosystem:
+- **Oraseas EE**: Primary distributor and app owner (singleton organization)
+- **BossAqua**: Manufacturer of AutoBoss machines and proprietary parts (singleton organization)
+- **Customers**: Organizations that purchase AutoBoss machines and need parts (max 100)
+- **Suppliers**: Third-party suppliers serving customers or Oraseas EE
 
 ### **Key Features**
 - **RESTful Design:** Standard HTTP methods and status codes
-- **JWT Authentication:** Secure token-based authentication
-- **Role-Based Access:** Three-tier permission system
-- **Organization Scoping:** Data access limited to user's organization
+- **JWT Authentication:** Secure token-based authentication with 8-hour expiration
+- **Role-Based Access:** Three-tier permission system (user, admin, super_admin)
+- **Organization Scoping:** Data access limited to user's organization (except super_admin)
+- **Warehouse-Based Inventory:** Multi-warehouse support with real-time tracking
+- **Transaction Audit Trail:** Complete tracking of all parts movements
+- **Business Rule Enforcement:** Automatic validation of business constraints
 - **Comprehensive Validation:** Pydantic schema validation
 - **Auto-Generated Docs:** OpenAPI/Swagger documentation at `/docs`
+
+### **Scale Requirements**
+The API is designed to efficiently handle:
+- Maximum 100 customer organizations
+- Maximum 200 total users across all organizations
+- Maximum 200 different parts in catalog
+- Maximum 150 AutoBoss machines deployed
+- Maximum 150 warehouses across all organizations
+- Maximum 7,500 transactions per year (50 per machine)
 
 ---
 
@@ -48,14 +68,31 @@ curl -X GET "http://localhost:8000/users/me/" \
 ## 👥 **User Roles & Permissions**
 
 ### **Role Hierarchy**
-1. **super_admin:** Full system access across all organizations
-2. **admin:** Full access within their organization
-3. **user:** Limited access within their organization
+1. **super_admin:** Full system access across all organizations (Oraseas EE only)
+2. **admin:** Full access within their organization (can manage users, warehouses, inventory)
+3. **user:** Limited access within their organization (can order parts, record usage, view inventory)
+
+### **Permission Matrix**
+| Permission | User | Admin | Super Admin |
+|------------|------|-------|-------------|
+| View own organization data | ✅ | ✅ | ✅ |
+| View all organizations data | ❌ | ❌ | ✅ |
+| Order parts | ✅ | ✅ | ✅ |
+| Record part usage | ✅ | ✅ | ✅ |
+| Check inventories | ✅ | ✅ | ✅ |
+| Create/edit warehouses | ❌ | ✅ | ✅ |
+| Manage suppliers | ❌ | ✅ | ✅ |
+| Adjust inventories | ❌ | ✅ | ✅ |
+| Register machines | ❌ | ❌ | ✅ |
+| Invite users | ❌ | ✅ | ✅ |
+| Manage users | ❌ | ✅ | ✅ |
+| View audit logs | ❌ | ✅ | ✅ |
 
 ### **Permission Scoping**
 - **Organization-Based:** Users can only access data from their organization
 - **Role-Based:** Different endpoints require different permission levels
 - **Super Admin Override:** Super admins can access cross-organization data
+- **Business Rule Enforcement:** System enforces singleton constraints for Oraseas EE and BossAqua
 
 ---
 
@@ -86,62 +123,109 @@ POST   /users/reset-password    # Request password reset
 
 #### **Organization Endpoints**
 ```
-GET    /organizations/          # List organizations
-POST   /organizations/          # Create organization
-GET    /organizations/{org_id}  # Get organization details
-PUT    /organizations/{org_id}  # Update organization
-DELETE /organizations/{org_id}  # Delete organization
-GET    /organizations/hierarchy # Get organization hierarchy
+GET    /organizations/                    # List organizations (organization-scoped)
+POST   /organizations/                    # Create organization (super_admin only)
+GET    /organizations/{org_id}            # Get organization details
+PUT    /organizations/{org_id}            # Update organization
+DELETE /organizations/{org_id}            # Delete organization (super_admin only)
+GET    /organizations/hierarchy           # Get organization hierarchy
+GET    /organizations/types               # Get available organization types
+POST   /organizations/{org_id}/activate   # Activate organization
+POST   /organizations/{org_id}/deactivate # Deactivate organization
 ```
 
-#### **Organization Types**
-- **oraseas_ee:** Primary distributor (singleton)
-- **bossaqua:** Manufacturer (singleton)
-- **customer:** Customer organizations
-- **supplier:** External suppliers
+#### **Organization Types & Business Rules**
+- **oraseas_ee:** Primary distributor and app owner (singleton - only one allowed)
+- **bossaqua:** Manufacturer of AutoBoss machines and proprietary parts (singleton - only one allowed)
+- **customer:** Customer organizations that purchase AutoBoss machines (max 100)
+- **supplier:** External suppliers that must have a parent organization (Oraseas EE or Customer)
+
+#### **Organization Hierarchy**
+```
+Oraseas EE (root)
+├── Customer Organization 1
+│   └── Supplier A (serves Customer 1)
+├── Customer Organization 2
+└── Supplier B (serves Oraseas EE)
+
+BossAqua (independent root)
+```
 
 ### **3. Warehouse Management**
 
 #### **Warehouse Endpoints**
 ```
-GET    /warehouses/             # List warehouses
-POST   /warehouses/             # Create warehouse
-GET    /warehouses/{warehouse_id} # Get warehouse details
-PUT    /warehouses/{warehouse_id} # Update warehouse
-DELETE /warehouses/{warehouse_id} # Delete warehouse
-POST   /warehouses/{warehouse_id}/activate   # Activate warehouse
-POST   /warehouses/{warehouse_id}/deactivate # Deactivate warehouse
+GET    /warehouses/                        # List warehouses (organization-scoped)
+POST   /warehouses/                        # Create warehouse (admin+ only)
+GET    /warehouses/{warehouse_id}          # Get warehouse details
+PUT    /warehouses/{warehouse_id}          # Update warehouse (admin+ only)
+DELETE /warehouses/{warehouse_id}          # Delete warehouse (admin+ only)
+POST   /warehouses/{warehouse_id}/activate # Activate warehouse (admin+ only)
+POST   /warehouses/{warehouse_id}/deactivate # Deactivate warehouse (admin+ only)
+GET    /warehouses/{warehouse_id}/inventory # Get warehouse inventory
+GET    /warehouses/{warehouse_id}/utilization # Get warehouse utilization metrics
 ```
+
+#### **Warehouse Business Rules**
+- Each organization can have multiple warehouses (except suppliers)
+- Warehouse names must be unique within an organization
+- Only active warehouses can receive inventory
+- Warehouse deletion requires empty inventory or admin override
 
 ### **4. Parts Management**
 
 #### **Parts Endpoints**
 ```
-GET    /parts/                  # List parts
-POST   /parts/                  # Create part
-GET    /parts/{part_id}         # Get part details
-PUT    /parts/{part_id}         # Update part
-DELETE /parts/{part_id}         # Delete part
-GET    /parts/search            # Search parts
-GET    /parts/{part_id}/inventory # Get part inventory across warehouses
+GET    /parts/                           # List parts with filtering
+POST   /parts/                           # Create part (super_admin only)
+GET    /parts/{part_id}                  # Get part details
+PUT    /parts/{part_id}                  # Update part (super_admin only)
+DELETE /parts/{part_id}                  # Delete part (super_admin only)
+GET    /parts/search                     # Advanced parts search
+GET    /parts/{part_id}/inventory        # Get part inventory across all warehouses
+GET    /parts/{part_id}/usage-history    # Get part usage history
+GET    /parts/{part_id}/compatibility    # Get machine compatibility
+GET    /parts/proprietary                # List proprietary (BossAqua) parts
+GET    /parts/low-stock                  # Get low stock parts
 ```
 
-#### **Part Types**
-- **consumable:** Standard consumable parts
-- **bulk_material:** Bulk materials with decimal quantities
+#### **Part Types & Classification**
+- **consumable:** Standard consumable parts (tracked in whole units)
+- **bulk_material:** Bulk materials with decimal quantities (e.g., 6.7 liters of oil)
+
+#### **Part Origin**
+- **proprietary:** Parts manufactured by BossAqua (is_proprietary = true)
+- **general:** Parts from other suppliers (is_proprietary = false)
+
+#### **Unit of Measure Support**
+- **Pieces:** Standard countable items (filters, belts, etc.)
+- **Liters:** Liquid measurements (oils, chemicals)
+- **Kilograms:** Weight measurements (bulk materials)
+- **Meters:** Length measurements (cables, hoses)
 
 ### **5. Inventory Management**
 
 #### **Inventory Endpoints**
 ```
-GET    /inventory/              # List inventory items
-POST   /inventory/              # Create inventory record
-GET    /inventory/{inventory_id} # Get inventory details
-PUT    /inventory/{inventory_id} # Update inventory
-DELETE /inventory/{inventory_id} # Delete inventory
-POST   /inventory/transfer      # Transfer between warehouses
-GET    /inventory/low-stock     # Get low stock alerts
+GET    /inventory/                       # List inventory items (warehouse-scoped)
+POST   /inventory/                       # Create inventory record (admin+ only)
+GET    /inventory/{inventory_id}         # Get inventory details
+PUT    /inventory/{inventory_id}         # Update inventory (admin+ only)
+DELETE /inventory/{inventory_id}         # Delete inventory (admin+ only)
+POST   /inventory/transfer               # Transfer between warehouses (admin+ only)
+GET    /inventory/low-stock              # Get low stock alerts
+GET    /inventory/valuation              # Get inventory valuation
+GET    /inventory/movements              # Get inventory movement history
+POST   /inventory/bulk-update            # Bulk inventory updates (admin+ only)
+GET    /inventory/reconciliation         # Get reconciliation reports
 ```
+
+#### **Inventory Business Rules**
+- Inventory is warehouse-specific (not organization-specific)
+- Stock levels calculated from transaction history
+- Negative inventory allowed with warnings (configurable)
+- Decimal quantities supported for bulk materials
+- Automatic reorder suggestions based on usage patterns
 
 ### **6. Inventory Workflows**
 
@@ -234,9 +318,65 @@ GET    /dashboard/inventory-value # Get inventory valuation
 
 #### **Session Endpoints**
 ```
-GET    /sessions/               # List active sessions
-DELETE /sessions/{session_id}   # Terminate session
-POST   /sessions/cleanup        # Cleanup expired sessions
+GET    /sessions/                    # List active sessions (own sessions or admin)
+DELETE /sessions/{session_id}        # Terminate session
+POST   /sessions/cleanup             # Cleanup expired sessions (admin+ only)
+GET    /sessions/security-events     # Get security events (admin+ only)
+POST   /sessions/terminate-all       # Terminate all user sessions (admin+ only)
+```
+
+### **12. Predictive Maintenance**
+
+#### **Predictive Maintenance Endpoints**
+```
+GET    /predictive-maintenance/predictions          # Get maintenance predictions
+POST   /predictive-maintenance/predictions          # Create prediction
+GET    /predictive-maintenance/recommendations      # Get maintenance recommendations
+POST   /predictive-maintenance/recommendations      # Create recommendation
+PUT    /predictive-maintenance/recommendations/{id} # Update recommendation
+```
+
+### **13. Monitoring & Health**
+
+#### **Monitoring Endpoints**
+```
+GET    /health                      # System health check
+GET    /monitoring/metrics          # System metrics
+GET    /monitoring/performance      # Performance metrics
+GET    /monitoring/database         # Database health
+GET    /monitoring/cache            # Cache status
+```
+
+### **14. Inventory Workflows**
+
+#### **Stocktake Management**
+```
+GET    /inventory-workflows/stocktakes/           # List stocktakes
+POST   /inventory-workflows/stocktakes/           # Create stocktake (admin+ only)
+GET    /inventory-workflows/stocktakes/{id}       # Get stocktake details
+PUT    /inventory-workflows/stocktakes/{id}       # Update stocktake (admin+ only)
+DELETE /inventory-workflows/stocktakes/{id}       # Delete stocktake (admin+ only)
+POST   /inventory-workflows/stocktakes/{id}/complete # Complete stocktake (admin+ only)
+GET    /inventory-workflows/stocktakes/{id}/items # Get stocktake items
+PUT    /inventory-workflows/stocktake-items/{id}  # Update item count
+PUT    /inventory-workflows/stocktakes/{id}/items/batch # Batch update items (admin+ only)
+```
+
+#### **Inventory Adjustments**
+```
+GET    /inventory-workflows/adjustments/         # List adjustments
+POST   /inventory-workflows/adjustments/         # Create adjustment (admin+ only)
+POST   /inventory-workflows/adjustments/batch    # Batch adjustments (admin+ only)
+GET    /inventory-workflows/adjustments/{id}     # Get adjustment details
+```
+
+#### **Inventory Alerts**
+```
+GET    /inventory-workflows/alerts/              # List alerts
+POST   /inventory-workflows/alerts/              # Create alert (admin+ only)
+PUT    /inventory-workflows/alerts/{id}          # Update alert (admin+ only)
+POST   /inventory-workflows/alerts/generate      # Generate alerts (system)
+DELETE /inventory-workflows/alerts/{id}          # Delete alert (admin+ only)
 ```
 
 ---
@@ -265,10 +405,9 @@ POST   /sessions/cleanup        # Cleanup expired sessions
 {
   "name": "Customer Corp",
   "organization_type": "customer",
-  "parent_organization_id": "uuid-of-parent",
-  "contact_email": "contact@customer.com",
-  "contact_phone": "+1-555-0123",
-  "address": "123 Business St, City, State 12345"
+  "parent_organization_id": "uuid-of-oraseas-ee",
+  "address": "123 Business St, City, State 12345",
+  "contact_info": "Contact: John Doe, Phone: +1-555-0123, Email: contact@customer.com"
 }
 
 // Response
@@ -276,13 +415,151 @@ POST   /sessions/cleanup        # Cleanup expired sessions
   "id": "uuid-generated",
   "name": "Customer Corp",
   "organization_type": "customer",
-  "parent_organization_id": "uuid-of-parent",
-  "contact_email": "contact@customer.com",
-  "contact_phone": "+1-555-0123",
+  "parent_organization_id": "uuid-of-oraseas-ee",
   "address": "123 Business St, City, State 12345",
+  "contact_info": "Contact: John Doe, Phone: +1-555-0123, Email: contact@customer.com",
   "is_active": true,
   "created_at": "2025-01-18T10:00:00Z",
-  "updated_at": "2025-01-18T10:00:00Z"
+  "updated_at": "2025-01-18T10:00:00Z",
+  "parent_organization": {
+    "id": "uuid-of-oraseas-ee",
+    "name": "Oraseas EE",
+    "organization_type": "oraseas_ee"
+  },
+  "child_organizations": [],
+  "warehouses_count": 0,
+  "users_count": 0,
+  "machines_count": 0
+}
+```
+
+### **Create User with Invitation**
+```json
+// POST /users/invite
+{
+  "email": "newuser@customer.com",
+  "name": "Jane Smith",
+  "role": "admin",
+  "organization_id": "uuid-of-customer-org"
+}
+
+// Response
+{
+  "id": "uuid-generated",
+  "email": "newuser@customer.com",
+  "name": "Jane Smith",
+  "role": "admin",
+  "user_status": "pending_invitation",
+  "organization_id": "uuid-of-customer-org",
+  "invitation_token": "secure-token-generated",
+  "invitation_expires_at": "2025-01-25T10:00:00Z",
+  "invited_by_user_id": "uuid-of-inviting-user",
+  "created_at": "2025-01-18T10:00:00Z"
+}
+```
+
+### **Create Warehouse**
+```json
+// POST /warehouses/
+{
+  "name": "Main Warehouse",
+  "location": "Building A, Floor 1",
+  "description": "Primary storage facility for consumable parts"
+}
+
+// Response
+{
+  "id": "uuid-generated",
+  "organization_id": "uuid-of-current-org",
+  "name": "Main Warehouse",
+  "location": "Building A, Floor 1", 
+  "description": "Primary storage facility for consumable parts",
+  "is_active": true,
+  "created_at": "2025-01-18T10:00:00Z",
+  "updated_at": "2025-01-18T10:00:00Z",
+  "organization": {
+    "id": "uuid-of-current-org",
+    "name": "Customer Corp",
+    "organization_type": "customer"
+  },
+  "inventory_items_count": 0
+}
+```
+
+### **Create Part**
+```json
+// POST /parts/
+{
+  "part_number": "AB-FILTER-001",
+  "name": "AutoBoss Air Filter",
+  "description": "High-efficiency air filter for AutoBoss V4.0 machines",
+  "part_type": "consumable",
+  "is_proprietary": true,
+  "unit_of_measure": "pieces",
+  "manufacturer_part_number": "BA-AF-4001",
+  "image_urls": ["https://example.com/images/filter001.jpg"]
+}
+
+// Response
+{
+  "id": "uuid-generated",
+  "part_number": "AB-FILTER-001",
+  "name": "AutoBoss Air Filter",
+  "description": "High-efficiency air filter for AutoBoss V4.0 machines",
+  "part_type": "consumable",
+  "is_proprietary": true,
+  "unit_of_measure": "pieces",
+  "manufacturer_part_number": "BA-AF-4001",
+  "manufacturer_delivery_time_days": null,
+  "local_supplier_delivery_time_days": null,
+  "image_urls": ["https://example.com/images/filter001.jpg"],
+  "created_at": "2025-01-18T10:00:00Z",
+  "updated_at": "2025-01-18T10:00:00Z",
+  "total_inventory": 0,
+  "low_stock_warehouses": []
+}
+```
+
+### **Record Transaction**
+```json
+// POST /transactions/
+{
+  "transaction_type": "consumption",
+  "part_id": "uuid-of-part",
+  "from_warehouse_id": "uuid-of-warehouse",
+  "machine_id": "uuid-of-machine",
+  "quantity": 2.5,
+  "unit_of_measure": "liters",
+  "transaction_date": "2025-01-18T14:30:00Z",
+  "notes": "Routine maintenance - oil change"
+}
+
+// Response
+{
+  "id": "uuid-generated",
+  "transaction_type": "consumption",
+  "part_id": "uuid-of-part",
+  "from_warehouse_id": "uuid-of-warehouse",
+  "to_warehouse_id": null,
+  "machine_id": "uuid-of-machine",
+  "quantity": 2.5,
+  "unit_of_measure": "liters",
+  "performed_by_user_id": "uuid-of-current-user",
+  "transaction_date": "2025-01-18T14:30:00Z",
+  "notes": "Routine maintenance - oil change",
+  "reference_number": "TXN-20250118-001",
+  "requires_approval": false,
+  "approval_status": null,
+  "created_at": "2025-01-18T14:30:00Z",
+  "part": {
+    "part_number": "AB-OIL-001",
+    "name": "AutoBoss Engine Oil",
+    "unit_of_measure": "liters"
+  },
+  "machine": {
+    "name": "Machine #001",
+    "serial_number": "AB-V40-001"
+  }
 }
 ```
 
@@ -311,6 +588,190 @@ POST   /sessions/cleanup        # Cleanup expired sessions
   "created_at": "2025-01-18T10:00:00Z"
 }
 ```
+
+---
+
+## 📊 **Data Models**
+
+### **Organization Model**
+```json
+{
+  "id": "uuid",
+  "name": "string (unique)",
+  "organization_type": "oraseas_ee | bossaqua | customer | supplier",
+  "parent_organization_id": "uuid | null",
+  "address": "string | null",
+  "contact_info": "string | null",
+  "is_active": "boolean",
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "parent_organization": "Organization | null",
+  "child_organizations": "Organization[]",
+  "warehouses_count": "integer",
+  "users_count": "integer",
+  "machines_count": "integer"
+}
+```
+
+### **User Model**
+```json
+{
+  "id": "uuid",
+  "organization_id": "uuid",
+  "username": "string (unique)",
+  "email": "string (unique)",
+  "name": "string",
+  "role": "user | admin | super_admin",
+  "user_status": "active | inactive | pending_invitation | locked",
+  "failed_login_attempts": "integer",
+  "locked_until": "datetime | null",
+  "last_login": "datetime | null",
+  "invitation_token": "string | null",
+  "invitation_expires_at": "datetime | null",
+  "invited_by_user_id": "uuid | null",
+  "is_active": "boolean",
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "organization": "Organization"
+}
+```
+
+### **Warehouse Model**
+```json
+{
+  "id": "uuid",
+  "organization_id": "uuid",
+  "name": "string",
+  "location": "string | null",
+  "description": "string | null",
+  "is_active": "boolean",
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "organization": "Organization",
+  "inventory_items_count": "integer"
+}
+```
+
+### **Part Model**
+```json
+{
+  "id": "uuid",
+  "part_number": "string (unique)",
+  "name": "string",
+  "description": "string | null",
+  "part_type": "consumable | bulk_material",
+  "is_proprietary": "boolean",
+  "unit_of_measure": "string",
+  "manufacturer_part_number": "string | null",
+  "manufacturer_delivery_time_days": "integer | null",
+  "local_supplier_delivery_time_days": "integer | null",
+  "image_urls": "string[]",
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "total_inventory": "decimal",
+  "low_stock_warehouses": "Warehouse[]"
+}
+```
+
+### **Inventory Model**
+```json
+{
+  "id": "uuid",
+  "warehouse_id": "uuid",
+  "part_id": "uuid",
+  "current_stock": "decimal",
+  "minimum_stock_recommendation": "decimal",
+  "unit_of_measure": "string",
+  "reorder_threshold_set_by": "string | null",
+  "last_recommendation_update": "datetime | null",
+  "last_updated": "datetime",
+  "created_at": "datetime",
+  "warehouse": "Warehouse",
+  "part": "Part"
+}
+```
+
+### **Machine Model**
+```json
+{
+  "id": "uuid",
+  "customer_organization_id": "uuid",
+  "model_type": "string",
+  "name": "string",
+  "serial_number": "string (unique)",
+  "purchase_date": "datetime | null",
+  "warranty_expiry_date": "datetime | null",
+  "status": "active | inactive | maintenance | decommissioned",
+  "last_maintenance_date": "datetime | null",
+  "next_maintenance_date": "datetime | null",
+  "location": "string | null",
+  "notes": "string | null",
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "customer_organization": "Organization"
+}
+```
+
+### **Transaction Model**
+```json
+{
+  "id": "uuid",
+  "transaction_type": "creation | transfer | consumption | adjustment",
+  "part_id": "uuid",
+  "from_warehouse_id": "uuid | null",
+  "to_warehouse_id": "uuid | null",
+  "machine_id": "uuid | null",
+  "quantity": "decimal",
+  "unit_of_measure": "string",
+  "performed_by_user_id": "uuid",
+  "transaction_date": "datetime",
+  "notes": "string | null",
+  "reference_number": "string | null",
+  "requires_approval": "boolean",
+  "approval_status": "pending | approved | rejected | null",
+  "created_at": "datetime",
+  "part": "Part",
+  "from_warehouse": "Warehouse | null",
+  "to_warehouse": "Warehouse | null",
+  "machine": "Machine | null",
+  "performed_by_user": "User"
+}
+```
+
+### **Business Rule Constraints**
+
+#### **Organization Constraints**
+- Only one Oraseas EE organization allowed (singleton)
+- Only one BossAqua organization allowed (singleton)
+- Supplier organizations must have a parent organization
+- Maximum 100 customer organizations
+
+#### **User Constraints**
+- Super admins must belong to Oraseas EE organization
+- Each organization must have at least one admin user
+- Maximum 200 total users across all organizations
+- Username and email must be unique across the system
+
+#### **Warehouse Constraints**
+- Warehouse names must be unique within an organization
+- Maximum 150 warehouses across all organizations
+- Only active warehouses can receive inventory
+
+#### **Part Constraints**
+- Part numbers must be unique across the system
+- Maximum 200 different parts in catalog
+- Proprietary parts can only be created by super_admin
+
+#### **Inventory Constraints**
+- One inventory record per warehouse-part combination
+- Negative inventory allowed with warnings (configurable)
+- Stock levels calculated from transaction history
+
+#### **Transaction Constraints**
+- All transactions must have a valid performed_by_user
+- Consumption transactions must specify from_warehouse
+- Transfer transactions must specify both from_warehouse and to_warehouse
+- Maximum 7,500 transactions per year (50 per machine)
 
 ---
 
@@ -351,6 +812,59 @@ GET /transactions/?start_date=2025-01-01&end_date=2025-01-31
   "error_code": "VALIDATION_ERROR",
   "field_errors": {
     "field_name": ["Field-specific error message"]
+  },
+  "context": {
+    "additional_info": "value"
+  }
+}
+```
+
+### **Business Rule Error Codes**
+- **ORGANIZATION_TYPE_VIOLATION:** Singleton organization constraint violated
+- **INSUFFICIENT_INVENTORY:** Not enough stock for requested operation
+- **PERMISSION_DENIED:** User lacks required permissions
+- **ORGANIZATION_SCOPE_VIOLATION:** Attempting to access data outside organization
+- **WAREHOUSE_INACTIVE:** Operation attempted on inactive warehouse
+- **INVALID_TRANSACTION_TYPE:** Transaction type not valid for operation
+- **USER_ACCOUNT_LOCKED:** User account is temporarily locked
+- **INVITATION_EXPIRED:** User invitation has expired
+- **DUPLICATE_PART_NUMBER:** Part number already exists
+- **MACHINE_NOT_OWNED:** Machine not owned by user's organization
+- **SUPPLIER_PARENT_REQUIRED:** Supplier must have parent organization
+
+### **Example Business Rule Errors**
+```json
+// Organization type violation
+{
+  "detail": "Only one Oraseas EE organization is allowed",
+  "error_code": "ORGANIZATION_TYPE_VIOLATION",
+  "field_errors": {
+    "organization_type": ["Singleton constraint violated"]
+  }
+}
+
+// Insufficient inventory
+{
+  "detail": "Cannot consume 5.5L - only 3.2L available",
+  "error_code": "INSUFFICIENT_INVENTORY",
+  "field_errors": {
+    "quantity": ["Exceeds available stock"]
+  },
+  "context": {
+    "available": 3.2,
+    "requested": 5.5,
+    "unit": "liters",
+    "warehouse_id": "uuid-of-warehouse"
+  }
+}
+
+// Permission denied
+{
+  "detail": "Admin role required for this operation",
+  "error_code": "PERMISSION_DENIED",
+  "context": {
+    "required_role": "admin",
+    "user_role": "user"
   }
 }
 ```
@@ -405,13 +919,53 @@ curl http://localhost:8000/openapi.json
 
 ## 📝 **Changelog**
 
-### **Version 0.1.0 (January 2025)**
-- ✅ Complete backend API implementation
-- ✅ Business model alignment
-- ✅ Comprehensive security system
-- ✅ Inventory workflow management
+### **Version 2.0.0 (January 2025) - Business Model Alignment**
+- ✅ **Complete Business Model Alignment**
+  - Organization types with proper hierarchy (Oraseas EE, BossAqua, Customer, Supplier)
+  - Singleton constraints for Oraseas EE and BossAqua
+  - Parent-child organization relationships
+- ✅ **Enhanced User Management System**
+  - User invitation and onboarding workflow
+  - Role-based permissions (user, admin, super_admin)
+  - Session management with 8-hour expiration
+  - Account security features (lockout, password reset)
+  - Comprehensive audit logging
+- ✅ **Warehouse-Based Inventory Management**
+  - Multi-warehouse support per organization
+  - Warehouse-specific inventory tracking
+  - Inventory transfer capabilities
+  - Real-time stock calculations
+- ✅ **Enhanced Parts Classification**
+  - Part types (consumable, bulk_material)
+  - Decimal quantity support for bulk materials
+  - Proprietary vs general parts classification
+  - Unit of measure validation
+- ✅ **Comprehensive Transaction Tracking**
+  - Complete audit trail for all parts movements
+  - Transaction types (creation, transfer, consumption, adjustment)
+  - Machine-specific usage tracking
+  - Approval workflow for high-value transactions
+- ✅ **Machine Registration and Management**
+  - Machine ownership tracking
+  - Usage history and maintenance records
+  - Machine-parts compatibility
+- ✅ **Advanced Inventory Workflows**
+  - Stocktake management system
+  - Inventory adjustment workflows
+  - Automated alert generation
+  - Low stock recommendations
+- ✅ **Analytics and Reporting**
+  - Real-time dashboard metrics
+  - Inventory valuation
+  - Performance analytics
+  - Predictive maintenance recommendations
+
+### **Version 1.0.0 (December 2024) - Initial Implementation**
+- ✅ Basic backend API implementation
+- ✅ User authentication and authorization
+- ✅ Basic inventory management
 - ✅ Order processing system
-- ✅ Analytics and reporting
+- ✅ Initial reporting capabilities
 
 ---
 
