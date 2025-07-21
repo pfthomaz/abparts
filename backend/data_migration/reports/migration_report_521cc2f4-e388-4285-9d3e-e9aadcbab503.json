@@ -1,0 +1,121 @@
+{
+  "migration_id": "521cc2f4-e388-4285-9d3e-e9aadcbab503",
+  "started_at": "2025-07-21T08:29:48.163708+00:00",
+  "completed_at": "2025-07-21T08:29:48.358914+00:00",
+  "status": "failed",
+  "total_records_migrated": 0,
+  "validation_errors": [],
+  "rollback_info": null,
+  "steps": [
+    {
+      "name": "validate_current_schema",
+      "description": "Validate current database schema and data integrity",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.165498+00:00",
+      "completed_at": "2025-07-21T08:29:48.221413+00:00",
+      "error_message": null,
+      "records_processed": 18,
+      "records_total": 18
+    },
+    {
+      "name": "backup_existing_data",
+      "description": "Create backup of existing data for rollback capability",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.222558+00:00",
+      "completed_at": "2025-07-21T08:29:48.223124+00:00",
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "migrate_organizations",
+      "description": "Migrate organizations to new business model structure",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.224068+00:00",
+      "completed_at": "2025-07-21T08:29:48.235756+00:00",
+      "error_message": null,
+      "records_processed": 6,
+      "records_total": 6
+    },
+    {
+      "name": "create_default_warehouses",
+      "description": "Create default warehouses for existing organizations",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.237323+00:00",
+      "completed_at": "2025-07-21T08:29:48.267341+00:00",
+      "error_message": null,
+      "records_processed": 6,
+      "records_total": 6
+    },
+    {
+      "name": "migrate_users",
+      "description": "Migrate users with new role and status structure",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.268777+00:00",
+      "completed_at": "2025-07-21T08:29:48.282634+00:00",
+      "error_message": null,
+      "records_processed": 7,
+      "records_total": 7
+    },
+    {
+      "name": "migrate_parts",
+      "description": "Migrate parts with new classification system",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.283993+00:00",
+      "completed_at": "2025-07-21T08:29:48.290807+00:00",
+      "error_message": null,
+      "records_processed": 5,
+      "records_total": 5
+    },
+    {
+      "name": "migrate_machines",
+      "description": "Migrate machines with proper customer relationships",
+      "status": "completed",
+      "started_at": "2025-07-21T08:29:48.292161+00:00",
+      "completed_at": "2025-07-21T08:29:48.301537+00:00",
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "migrate_inventory",
+      "description": "Migrate inventory to warehouse-based system",
+      "status": "failed",
+      "started_at": "2025-07-21T08:29:48.302971+00:00",
+      "completed_at": "2025-07-21T08:29:48.356160+00:00",
+      "error_message": "Failed step migrate_inventory: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: SELECT inventory.id AS inventory_id, inventory.warehouse_id AS inventory_warehouse_id, inventory.part_id AS inventory_part_id, inventory.current_stock AS inventory_current_stock, inventory.minimum_stock_recommendation AS inventory_minimum_stock_recommendation, inventory.unit_of_measure AS inventory_unit_of_measure, inventory.reorder_threshold_set_by AS inventory_reorder_threshold_set_by, inventory.last_recommendation_update AS inventory_last_recommendation_update, inventory.last_updated AS inventory_last_updated, inventory.created_at AS inventory_created_at \nFROM inventory]\n(Background on this error at: https://sqlalche.me/e/20/2j85)",
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "create_initial_transactions",
+      "description": "Create initial transaction records for existing inventory",
+      "status": "not_started",
+      "started_at": null,
+      "completed_at": null,
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "validate_migrated_data",
+      "description": "Validate all migrated data for integrity and business rules",
+      "status": "not_started",
+      "started_at": null,
+      "completed_at": null,
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "cleanup_old_data",
+      "description": "Clean up temporary migration data and optimize database",
+      "status": "not_started",
+      "started_at": null,
+      "completed_at": null,
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    }
+  ]
+}

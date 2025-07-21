@@ -1,0 +1,121 @@
+{
+  "migration_id": "9371fc7a-a508-4405-8eef-a581adaac142",
+  "started_at": "2025-07-21T08:35:29.037487+00:00",
+  "completed_at": "2025-07-21T08:35:29.195233+00:00",
+  "status": "completed",
+  "total_records_migrated": 0,
+  "validation_errors": [],
+  "rollback_info": null,
+  "steps": [
+    {
+      "name": "validate_current_schema",
+      "description": "Validate current database schema and data integrity",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.039515+00:00",
+      "completed_at": "2025-07-21T08:35:29.084466+00:00",
+      "error_message": null,
+      "records_processed": 18,
+      "records_total": 18
+    },
+    {
+      "name": "backup_existing_data",
+      "description": "Create backup of existing data for rollback capability",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.085760+00:00",
+      "completed_at": "2025-07-21T08:35:29.086090+00:00",
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "migrate_organizations",
+      "description": "Migrate organizations to new business model structure",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.087418+00:00",
+      "completed_at": "2025-07-21T08:35:29.099039+00:00",
+      "error_message": null,
+      "records_processed": 6,
+      "records_total": 6
+    },
+    {
+      "name": "create_default_warehouses",
+      "description": "Create default warehouses for existing organizations",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.100042+00:00",
+      "completed_at": "2025-07-21T08:35:29.128126+00:00",
+      "error_message": null,
+      "records_processed": 6,
+      "records_total": 6
+    },
+    {
+      "name": "migrate_users",
+      "description": "Migrate users with new role and status structure",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.129226+00:00",
+      "completed_at": "2025-07-21T08:35:29.135221+00:00",
+      "error_message": null,
+      "records_processed": 7,
+      "records_total": 7
+    },
+    {
+      "name": "migrate_parts",
+      "description": "Migrate parts with new classification system",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.136381+00:00",
+      "completed_at": "2025-07-21T08:35:29.144561+00:00",
+      "error_message": null,
+      "records_processed": 5,
+      "records_total": 5
+    },
+    {
+      "name": "migrate_machines",
+      "description": "Migrate machines with proper customer relationships",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.146038+00:00",
+      "completed_at": "2025-07-21T08:35:29.151020+00:00",
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "migrate_inventory",
+      "description": "Migrate inventory to warehouse-based system",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.152214+00:00",
+      "completed_at": "2025-07-21T08:35:29.162301+00:00",
+      "error_message": null,
+      "records_processed": 0,
+      "records_total": 0
+    },
+    {
+      "name": "create_initial_transactions",
+      "description": "Create initial transaction records for existing inventory",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.163576+00:00",
+      "completed_at": "2025-07-21T08:35:29.171745+00:00",
+      "error_message": null,
+      "records_processed": 14,
+      "records_total": 14
+    },
+    {
+      "name": "validate_migrated_data",
+      "description": "Validate all migrated data for integrity and business rules",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.173322+00:00",
+      "completed_at": "2025-07-21T08:35:29.187653+00:00",
+      "error_message": null,
+      "records_processed": 1,
+      "records_total": 1
+    },
+    {
+      "name": "cleanup_old_data",
+      "description": "Clean up temporary migration data and optimize database",
+      "status": "completed",
+      "started_at": "2025-07-21T08:35:29.189246+00:00",
+      "completed_at": "2025-07-21T08:35:29.190103+00:00",
+      "error_message": null,
+      "records_processed": 1,
+      "records_total": 1
+    }
+  ]
+}
