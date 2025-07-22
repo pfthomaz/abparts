@@ -3,6 +3,7 @@
 import uuid
 import logging
 from typing import List, Optional
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, or_
@@ -126,11 +127,38 @@ def get_stocktake_worksheet_items(db: Session, organization_id: uuid.UUID) -> Li
 
 # --- Warehouse-specific inventory functions ---
 
-def get_inventory_by_warehouse(db: Session, warehouse_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[models.Inventory]:
-    """Get all inventory items for a specific warehouse."""
-    return db.query(models.Inventory).filter(
+def get_inventory_by_warehouse(db: Session, warehouse_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[dict]:
+    """Get all inventory items for a specific warehouse with part details."""
+    # Join with Part to get part details
+    results = db.query(
+        models.Inventory,
+        models.Part
+    ).join(
+        models.Part, models.Inventory.part_id == models.Part.id
+    ).filter(
         models.Inventory.warehouse_id == warehouse_id
     ).offset(skip).limit(limit).all()
+    
+    # Convert to response format
+    inventory_items = []
+    for inventory, part in results:
+        item_dict = {
+            "id": inventory.id,
+            "warehouse_id": inventory.warehouse_id,
+            "part_id": inventory.part_id,
+            "current_stock": float(inventory.current_stock),
+            "minimum_stock_recommendation": float(inventory.minimum_stock_recommendation),
+            "unit_of_measure": inventory.unit_of_measure,
+            "reorder_threshold_set_by": inventory.reorder_threshold_set_by,
+            "last_recommendation_update": inventory.last_recommendation_update,
+            "last_updated": inventory.last_updated,
+            "created_at": inventory.created_at,
+            "part_number": part.part_number,
+            "part_name": part.name
+        }
+        inventory_items.append(item_dict)
+    
+    return inventory_items
 
 
 def get_inventory_by_organization(db: Session, organization_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[models.Inventory]:
@@ -181,37 +209,72 @@ def get_inventory_aggregation_by_organization(db: Session, organization_id: uuid
 
 def transfer_inventory_between_warehouses(db: Session, from_warehouse_id: uuid.UUID, 
                                         to_warehouse_id: uuid.UUID, part_id: uuid.UUID, 
-                                        quantity: float, performed_by_user_id: uuid.UUID) -> bool:
-    """Transfer inventory between warehouses."""
+                                        quantity: Decimal, performed_by_user_id: uuid.UUID) -> dict:
+    """Transfer inventory between warehouses with enhanced error handling and type safety."""
     try:
+        # Ensure quantity is Decimal type and validate
+        if not isinstance(quantity, Decimal):
+            try:
+                quantity = Decimal(str(quantity))
+            except (InvalidOperation, ValueError) as e:
+                logger.error(f"Invalid quantity format: {quantity}")
+                raise HTTPException(status_code=400, detail=f"Invalid quantity format: {str(e)}")
+        
+        # Validate quantity precision (3 decimal places max)
+        if quantity.as_tuple().exponent < -3:
+            raise HTTPException(status_code=400, detail="Quantity precision cannot exceed 3 decimal places")
+        
+        # Validate quantity is positive
+        if quantity <= 0:
+            raise HTTPException(status_code=400, detail="Quantity must be positive")
+        
         # Validate warehouses exist
         from_warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == from_warehouse_id).first()
         to_warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == to_warehouse_id).first()
         
-        if not from_warehouse or not to_warehouse:
-            raise HTTPException(status_code=400, detail="One or both warehouses not found")
+        if not from_warehouse:
+            raise HTTPException(status_code=404, detail="Source warehouse not found")
+        if not to_warehouse:
+            raise HTTPException(status_code=404, detail="Destination warehouse not found")
         
-        # Get or create inventory items
+        # Validate warehouses are different
+        if from_warehouse_id == to_warehouse_id:
+            raise HTTPException(status_code=400, detail="Source and destination warehouses must be different")
+        
+        # Get part for validation and unit of measure
+        part = db.query(models.Part).filter(models.Part.id == part_id).first()
+        if not part:
+            raise HTTPException(status_code=404, detail="Part not found")
+        
+        # Get source inventory
         from_inventory = db.query(models.Inventory).filter(
             models.Inventory.warehouse_id == from_warehouse_id,
             models.Inventory.part_id == part_id
         ).first()
         
-        if not from_inventory or from_inventory.current_stock < quantity:
-            raise HTTPException(status_code=400, detail="Insufficient stock in source warehouse")
+        if not from_inventory:
+            raise HTTPException(status_code=400, detail="Part not found in source warehouse")
         
+        # Check sufficient stock
+        if from_inventory.current_stock < quantity:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient stock. Available: {from_inventory.current_stock}, Requested: {quantity}"
+            )
+        
+        # Get or create destination inventory
         to_inventory = db.query(models.Inventory).filter(
             models.Inventory.warehouse_id == to_warehouse_id,
             models.Inventory.part_id == part_id
         ).first()
         
-        # Get part for unit of measure
-        part = db.query(models.Part).filter(models.Part.id == part_id).first()
-        if not part:
-            raise HTTPException(status_code=400, detail="Part not found")
+        # Store before values for audit
+        before_stock_source = from_inventory.current_stock
+        before_stock_destination = to_inventory.current_stock if to_inventory else Decimal('0')
         
         # Update source inventory
         from_inventory.current_stock -= quantity
+        from_inventory.last_updated = func.now()
         
         # Create or update destination inventory
         if not to_inventory:
@@ -220,33 +283,64 @@ def transfer_inventory_between_warehouses(db: Session, from_warehouse_id: uuid.U
                 part_id=part_id,
                 current_stock=quantity,
                 unit_of_measure=part.unit_of_measure,
-                minimum_stock_recommendation=0
+                minimum_stock_recommendation=Decimal('0')
             )
             db.add(to_inventory)
         else:
             to_inventory.current_stock += quantity
+            to_inventory.last_updated = func.now()
         
-        # Create transaction record
+        # Create comprehensive transaction record (only using fields that exist in database)
         transaction = models.Transaction(
-            transaction_type=models.TransactionType.TRANSFER,
+            transaction_type="transfer",  # Use string value directly
             part_id=part_id,
             from_warehouse_id=from_warehouse_id,
             to_warehouse_id=to_warehouse_id,
             quantity=quantity,
             unit_of_measure=part.unit_of_measure,
             performed_by_user_id=performed_by_user_id,
-            transaction_date=db.query(func.now()).scalar(),
-            notes=f"Transfer from {from_warehouse.name} to {to_warehouse.name}"
+            transaction_date=func.now(),
+            notes=f"Transfer from {from_warehouse.name} to {to_warehouse.name}",
+            reference_number=None
         )
         db.add(transaction)
         
+        # Commit all changes atomically
         db.commit()
-        return True
+        db.refresh(from_inventory)
+        db.refresh(to_inventory)
+        db.refresh(transaction)
         
+        # Return detailed transfer result
+        return {
+            "success": True,
+            "transaction_id": str(transaction.id),
+            "part_number": part.part_number,
+            "part_name": part.name,
+            "quantity_transferred": float(quantity),
+            "unit_of_measure": part.unit_of_measure,
+            "source_warehouse": {
+                "id": str(from_warehouse_id),
+                "name": from_warehouse.name,
+                "stock_before": float(before_stock_source),
+                "stock_after": float(from_inventory.current_stock)
+            },
+            "destination_warehouse": {
+                "id": str(to_warehouse_id),
+                "name": to_warehouse.name,
+                "stock_before": float(before_stock_destination),
+                "stock_after": float(to_inventory.current_stock)
+            },
+            "transfer_date": transaction.transaction_date.isoformat()
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
         db.rollback()
-        logger.error(f"Error transferring inventory: {e}")
-        raise HTTPException(status_code=400, detail=f"Error transferring inventory: {str(e)}")
+        logger.error(f"Unexpected error transferring inventory: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during inventory transfer")
 
 
 def get_inventory_balance_calculations(db: Session, warehouse_id: uuid.UUID) -> List[dict]:

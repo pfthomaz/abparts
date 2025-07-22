@@ -28,7 +28,6 @@ const getInventory = (filters = {}) => {
  */
 const getWarehouseInventory = (warehouseId, filters = {}) => {
   const queryParams = new URLSearchParams();
-  queryParams.append('warehouse_id', warehouseId);
 
   Object.keys(filters).forEach(key => {
     if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
@@ -36,7 +35,10 @@ const getWarehouseInventory = (warehouseId, filters = {}) => {
     }
   });
 
-  return api.get(`/inventory?${queryParams.toString()}`);
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/inventory/warehouse/${warehouseId}?${queryString}` : `/inventory/warehouse/${warehouseId}`;
+
+  return api.get(endpoint);
 };
 
 /**

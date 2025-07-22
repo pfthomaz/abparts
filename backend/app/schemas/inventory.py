@@ -43,5 +43,10 @@ class InventoryTransferRequest(BaseModel):
     from_warehouse_id: uuid.UUID
     to_warehouse_id: uuid.UUID
     part_id: uuid.UUID
-    quantity: float = Field(..., gt=0, description="Quantity to transfer (must be positive)")
+    quantity: Decimal = Field(..., gt=0, description="Quantity to transfer (must be positive)")
     notes: Optional[str] = Field(None, max_length=500, description="Optional notes for the transfer")
+    
+    class Config:
+        json_encoders = {
+            Decimal: lambda v: float(v)  # For JSON serialization
+        }

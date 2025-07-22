@@ -468,7 +468,7 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_type = Column(Enum(TransactionType), nullable=False)
+    transaction_type = Column(String(50), nullable=False)
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
     from_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
     to_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
@@ -480,8 +480,6 @@ class Transaction(Base):
     notes = Column(Text, nullable=True)
     reference_number = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    requires_approval = Column(Boolean, nullable=False, server_default='false')
-    approval_status = Column(String(50), nullable=True)  # 'pending', 'approved', 'rejected'
 
     # Relationships
     part = relationship("Part")

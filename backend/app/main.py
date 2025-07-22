@@ -17,6 +17,9 @@ import redis
 # Import database configuration
 from .database import engine, Base, get_db
 
+# Import CORS configuration
+from .cors_config import get_cors_origins, get_cors_settings
+
 # Import models and schemas for type hinting in auth endpoints if needed directly in main.py
 from . import models, schemas
 
@@ -78,19 +81,18 @@ app = FastAPI(
 )
 
 # --- CORS Configuration ---
-origins = [
-    "http://localhost",
-    "http://localhost:3000", # Your React frontend development server
-    "http://192.168.1.67:3000", # Your network IP for mobile access
-]
+# Get dynamic CORS configuration from environment-aware module
+cors_origins = get_cors_origins()
+cors_settings = get_cors_settings()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Log CORS configuration on startup
+logger.info(f"CORS configuration loaded:")
+logger.info(f"  Allowed origins: {cors_origins}")
+logger.info(f"  Allow credentials: {cors_settings.get('allow_credentials', False)}")
+logger.info(f"  Allowed methods: {cors_settings.get('allow_methods', [])}")
+logger.info(f"  Allowed headers: {cors_settings.get('allow_headers', [])}")
+
+# CORS middleware will be added after other middleware to ensure it runs first
 
 # --- Add Security and Permission Middleware ---
 from .middleware import (
@@ -121,6 +123,16 @@ app.add_middleware(PermissionEnforcementMiddleware)
 if redis_client:
     app.add_middleware(SessionManagementMiddleware, redis_client=redis_client)
     app.add_middleware(RateLimitingMiddleware, redis_client=redis_client)
+
+# Add CORS middleware LAST so it executes FIRST (middleware runs in reverse order)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=cors_settings.get("allow_credentials", True),
+    allow_methods=cors_settings.get("allow_methods", ["*"]),
+    allow_headers=cors_settings.get("allow_headers", ["*"]),
+    max_age=cors_settings.get("max_age", 600),
+)
 
 # Add request tracking middleware for monitoring
 @app.middleware("http")

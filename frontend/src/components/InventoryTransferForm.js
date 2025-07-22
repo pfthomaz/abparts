@@ -55,32 +55,69 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
     }
   };
 
+  const validateQuantity = (value, availableStock) => {
+    const quantity = parseFloat(value);
+    if (isNaN(quantity) || quantity <= 0) {
+      return { valid: false, error: 'Quantity must be a positive number' };
+    }
+
+    // Check decimal precision (max 3 decimal places)
+    const decimalPlaces = (value.toString().split('.')[1] || '').length;
+    if (decimalPlaces > 3) {
+      return { valid: false, error: 'Quantity precision cannot exceed 3 decimal places' };
+    }
+
+    if (quantity > availableStock) {
+      return { valid: false, error: `Insufficient stock. Available: ${availableStock}` };
+    }
+    return { valid: true };
+  };
+
+  const handleTransferError = (error) => {
+    // Handle different types of errors
+    if (error.response?.data?.detail) {
+      return error.response.data.detail;
+    }
+    if (error.response?.data?.message) {
+      return error.response.data.message;
+    }
+    if (error.message) {
+      return error.message;
+    }
+    return 'Failed to transfer inventory. Please try again.';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Validation
+    // Enhanced validation
     if (formData.from_warehouse_id === formData.to_warehouse_id) {
       setError('Source and destination warehouses must be different');
       setLoading(false);
       return;
     }
 
-    const quantity = parseFloat(formData.quantity);
-    if (isNaN(quantity) || quantity <= 0) {
-      setError('Quantity must be a positive number');
+    if (!formData.from_warehouse_id || !formData.to_warehouse_id || !formData.part_id) {
+      setError('Please select all required fields');
       setLoading(false);
       return;
     }
 
-    // Check available stock
+    // Get available stock for validation
     const inventoryItem = fromWarehouseInventory.find(item => item.part_id === formData.part_id);
-    if (!inventoryItem || parseFloat(inventoryItem.current_stock) < quantity) {
-      setError(`Insufficient stock. Available: ${inventoryItem ? inventoryItem.current_stock : 0}`);
+    const availableStock = inventoryItem ? parseFloat(inventoryItem.current_stock) : 0;
+
+    // Validate quantity with enhanced checks
+    const quantityValidation = validateQuantity(formData.quantity, availableStock);
+    if (!quantityValidation.valid) {
+      setError(quantityValidation.error);
       setLoading(false);
       return;
     }
+
+    const quantity = parseFloat(formData.quantity);
 
     try {
       const submitData = {
@@ -90,7 +127,9 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
 
       await onSubmit(submitData);
     } catch (err) {
-      setError(err.message || 'Failed to create transfer');
+      const errorMessage = handleTransferError(err);
+      setError(errorMessage);
+      console.error('Transfer error:', err);
     } finally {
       setLoading(false);
     }

@@ -29,7 +29,7 @@ def get_metrics(
         # For non-super admins, pass organization context to limit metrics
         return dashboard_fixed.get_dashboard_metrics(db=db, organization_id=current_user.organization_id)
 
-@router.get("/low-stock-by-org", response_model=List[schemas.LowStockByOrgResponse], tags=["Dashboard"])
+@router.get("/low-stock-by-org", tags=["Dashboard"])
 def get_low_stock_chart_data(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(require_permission(ResourceType.DASHBOARD, PermissionType.READ))
@@ -43,3 +43,11 @@ def get_low_stock_chart_data(
     else:
         # For non-super admins, filter to their organization only
         return dashboard_fixed.get_low_stock_by_organization(db=db, organization_id=current_user.organization_id)
+
+# Add OPTIONS method handler for CORS preflight requests
+@router.options("/low-stock-by-org", tags=["Dashboard"])
+def options_low_stock_chart_data():
+    """
+    Handle OPTIONS requests for CORS preflight.
+    """
+    return {"detail": "OK"}

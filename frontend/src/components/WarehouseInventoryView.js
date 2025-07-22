@@ -23,9 +23,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
     setLoading(true);
     setError('');
     try {
-      const data = await inventoryService.getInventory({
-        warehouse_id: warehouseId
-      });
+      const data = await inventoryService.getWarehouseInventory(warehouseId);
       setInventoryItems(data);
     } catch (err) {
       setError('Failed to fetch warehouse inventory');

@@ -1,6 +1,7 @@
 # backend/app/routers/inventory.py
 
 import uuid
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -15,6 +16,7 @@ from ..permissions import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # --- Helper Functions ---
 def check_warehouse_access(user: TokenData, warehouse_id: uuid.UUID, db: Session) -> bool:
@@ -153,7 +155,7 @@ async def get_stocktake_worksheet(
 
 # --- Warehouse-based inventory endpoints ---
 
-@router.get("/warehouse/{warehouse_id}", response_model=List[schemas.InventoryResponse])
+@router.get("/warehouse/{warehouse_id}")
 async def get_warehouse_inventory(
     warehouse_id: uuid.UUID,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -215,16 +217,17 @@ async def transfer_inventory_between_warehouses(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.WRITE))
 ):
-    """Transfer inventory between warehouses."""
-    # Check if user can access both warehouses
-    if not check_warehouse_access(current_user, transfer_request.from_warehouse_id, db):
-        raise HTTPException(status_code=403, detail="Not authorized to transfer from this warehouse")
-    
-    if not check_warehouse_access(current_user, transfer_request.to_warehouse_id, db):
-        raise HTTPException(status_code=403, detail="Not authorized to transfer to this warehouse")
-    
+    """Transfer inventory between warehouses with comprehensive error handling."""
     try:
-        success = crud.inventory.transfer_inventory_between_warehouses(
+        # Validate warehouse access
+        if not check_warehouse_access(current_user, transfer_request.from_warehouse_id, db):
+            raise HTTPException(status_code=403, detail="Access denied to source warehouse")
+        
+        if not check_warehouse_access(current_user, transfer_request.to_warehouse_id, db):
+            raise HTTPException(status_code=403, detail="Access denied to destination warehouse")
+        
+        # Perform transfer with enhanced error handling
+        result = crud.inventory.transfer_inventory_between_warehouses(
             db=db,
             from_warehouse_id=transfer_request.from_warehouse_id,
             to_warehouse_id=transfer_request.to_warehouse_id,
@@ -233,19 +236,17 @@ async def transfer_inventory_between_warehouses(
             performed_by_user_id=current_user.user_id
         )
         
-        if success:
-            return {
-                "message": "Inventory transfer completed successfully",
-                "from_warehouse_id": str(transfer_request.from_warehouse_id),
-                "to_warehouse_id": str(transfer_request.to_warehouse_id),
-                "part_id": str(transfer_request.part_id),
-                "quantity": transfer_request.quantity
-            }
-        else:
-            raise HTTPException(status_code=400, detail="Failed to transfer inventory")
-            
+        return {
+            "success": True,
+            "message": "Inventory transferred successfully",
+            "transfer_details": result
+        }
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Unexpected error in inventory transfer endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during transfer")
 
 
 @router.get("/warehouse/{warehouse_id}/balance-calculations")
