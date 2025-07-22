@@ -3,14 +3,114 @@ CORS Configuration Module
 
 Provides environment-aware CORS configuration for the FastAPI application.
 Supports both development and production environments with appropriate defaults.
+Includes comprehensive error handling and logging for CORS-related issues.
 """
 
 import os
 import socket
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
+import re
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+
+
+class CORSConfigurationError(Exception):
+    """Custom exception for CORS configuration errors"""
+    pass
+
+
+def validate_origin(origin: str) -> bool:
+    """
+    Validate that an origin string is properly formatted.
+    
+    Args:
+        origin: The origin string to validate
+        
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    try:
+        if origin == "*":
+            return True
+            
+        parsed = urlparse(origin)
+        
+        # Must have scheme and netloc
+        if not parsed.scheme or not parsed.netloc:
+            return False
+            
+        # Scheme must be http or https
+        if parsed.scheme not in ["http", "https"]:
+            return False
+            
+        # No path, query, or fragment allowed
+        if parsed.path and parsed.path != "/":
+            return False
+        if parsed.query or parsed.fragment:
+            return False
+            
+        return True
+    except Exception:
+        return False
+
+
+def log_cors_violation(origin: str, allowed_origins: List[str], endpoint: str = None):
+    """
+    Log CORS violation attempts for security monitoring.
+    
+    Args:
+        origin: The origin that was rejected
+        allowed_origins: List of allowed origins
+        endpoint: The endpoint that was accessed (optional)
+    """
+    endpoint_info = f" for endpoint {endpoint}" if endpoint else ""
+    logger.warning(
+        f"CORS violation: Origin '{origin}' not allowed{endpoint_info}. "
+        f"Allowed origins: {allowed_origins}"
+    )
+
+
+def log_cors_configuration_error(error: str, context: str = None):
+    """
+    Log CORS configuration errors.
+    
+    Args:
+        error: The error message
+        context: Additional context about where the error occurred
+    """
+    context_info = f" in {context}" if context else ""
+    logger.error(f"CORS configuration error{context_info}: {error}")
+
+
+def sanitize_origins(origins: List[str]) -> List[str]:
+    """
+    Sanitize and validate a list of origins, removing invalid ones.
+    
+    Args:
+        origins: List of origin strings to sanitize
+        
+    Returns:
+        List[str]: List of valid origins
+    """
+    valid_origins = []
+    
+    for origin in origins:
+        origin = origin.strip()
+        if not origin:
+            continue
+            
+        if validate_origin(origin):
+            valid_origins.append(origin)
+            logger.debug(f"Valid CORS origin added: {origin}")
+        else:
+            log_cors_configuration_error(
+                f"Invalid origin format: '{origin}'", 
+                "origin sanitization"
+            )
+    
+    return valid_origins
 
 
 def get_network_ip() -> str:
@@ -26,11 +126,27 @@ def get_network_ip() -> str:
             # Connect to a remote address (doesn't actually send data)
             s.connect(("8.8.8.8", 80))
             network_ip = s.getsockname()[0]
-            logger.info(f"Detected network IP: {network_ip}")
+            
+            # Validate the detected IP
+            if not network_ip or network_ip == "127.0.0.1":
+                logger.warning("Detected network IP is localhost, skipping")
+                return ""
+                
+            logger.info(f"Successfully detected network IP: {network_ip}")
             return network_ip
+            
+    except socket.error as e:
+        log_cors_configuration_error(
+            f"Socket error while detecting network IP: {e}",
+            "network IP detection"
+        )
     except Exception as e:
-        logger.warning(f"Could not detect network IP: {e}")
-        return ""
+        log_cors_configuration_error(
+            f"Unexpected error while detecting network IP: {e}",
+            "network IP detection"
+        )
+    
+    return ""
 
 
 def get_development_origins() -> List[str]:

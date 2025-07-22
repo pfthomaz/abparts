@@ -467,3 +467,68 @@ def get_active_sessions(user_id: uuid.UUID, redis_client: redis.Redis) -> List[D
     except Exception as e:
         logger.error(f"Error getting active sessions for user {user_id}: {e}")
         return []
+# --- CORS Violation Handler Middleware ---
+
+class CORSViolationHandlerMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware that checks for CORS violations before other middleware.
+    
+    This ensures that CORS errors are properly handled and logged,
+    even before authentication middleware runs.
+    """
+    
+    def __init__(
+        self, 
+        app,
+        exclude_paths: List[str] = None,
+        exclude_prefixes: List[str] = None
+    ):
+        """Initialize the middleware"""
+        super().__init__(app)
+        self.exclude_paths = exclude_paths or []
+        self.exclude_prefixes = exclude_prefixes or []
+        
+        # Log initialization
+        logger.info("CORSViolationHandlerMiddleware initialized")
+        if self.exclude_paths:
+            logger.info(f"  - Excluded paths: {self.exclude_paths}")
+        if self.exclude_prefixes:
+            logger.info(f"  - Excluded prefixes: {self.exclude_prefixes}")
+    
+    async def dispatch(self, request: Request, call_next):
+        """Process the request and check for CORS violations"""
+        # Import here to avoid circular imports
+        from .cors_config import get_cors_origins
+        from .cors_error_handler import create_cors_error_response, CORS_ERROR_ORIGIN_NOT_ALLOWED
+        
+        # Skip CORS checks for excluded paths
+        path = request.url.path
+        if path in self.exclude_paths:
+            return await call_next(request)
+        
+        # Skip CORS checks for excluded prefixes
+        for prefix in self.exclude_prefixes:
+            if path.startswith(prefix):
+                return await call_next(request)
+        
+        # Check for CORS violations
+        origin = request.headers.get("Origin")
+        if origin:
+            # Get allowed origins
+            allowed_origins = get_cors_origins()
+            
+            # Check if origin is allowed
+            if origin not in allowed_origins and "*" not in allowed_origins:
+                # Log the violation
+                logger.warning(f"CORS violation detected: Origin '{origin}' not allowed for {request.method} {path}")
+                
+                # Return CORS error response
+                return create_cors_error_response(
+                    CORS_ERROR_ORIGIN_NOT_ALLOWED,
+                    origin=origin,
+                    allowed_origins=allowed_origins,
+                    status_code=403
+                )
+        
+        # No CORS violation, continue processing
+        return await call_next(request)

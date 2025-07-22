@@ -1,6 +1,6 @@
 # backend/app/routers/dashboard.py
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from typing import List
 from .. import schemas, crud
@@ -44,10 +44,60 @@ def get_low_stock_chart_data(
         # For non-super admins, filter to their organization only
         return dashboard_fixed.get_low_stock_by_organization(db=db, organization_id=current_user.organization_id)
 
-# Add OPTIONS method handler for CORS preflight requests
+# Import CORS error handling
+from ..cors_error_handler import create_cors_error_response, CORS_ERROR_ORIGIN_NOT_ALLOWED
+from ..cors_config import get_cors_origins
+
+# Add OPTIONS method handler for CORS preflight requests with enhanced error handling
 @router.options("/low-stock-by-org", tags=["Dashboard"])
-def options_low_stock_chart_data():
+def options_low_stock_chart_data(request: Request):
     """
-    Handle OPTIONS requests for CORS preflight.
+    Handle OPTIONS requests for CORS preflight with comprehensive error handling.
     """
+    # Get the origin from the request
+    origin = request.headers.get("Origin")
+    
+    # If no origin, return a basic response
+    if not origin:
+        return {"detail": "OK"}
+    
+    # Check if the origin is allowed
+    allowed_origins = get_cors_origins()
+    if origin not in allowed_origins and "*" not in allowed_origins:
+        # Return a detailed error response for disallowed origins
+        return create_cors_error_response(
+            CORS_ERROR_ORIGIN_NOT_ALLOWED,
+            origin=origin,
+            allowed_origins=allowed_origins,
+            status_code=403
+        )
+    
+    # Origin is allowed, return success response
+    return {"detail": "OK"}
+
+# Add OPTIONS method handler for metrics endpoint
+@router.options("/metrics", tags=["Dashboard"])
+def options_metrics(request: Request):
+    """
+    Handle OPTIONS requests for metrics endpoint with comprehensive error handling.
+    """
+    # Get the origin from the request
+    origin = request.headers.get("Origin")
+    
+    # If no origin, return a basic response
+    if not origin:
+        return {"detail": "OK"}
+    
+    # Check if the origin is allowed
+    allowed_origins = get_cors_origins()
+    if origin not in allowed_origins and "*" not in allowed_origins:
+        # Return a detailed error response for disallowed origins
+        return create_cors_error_response(
+            CORS_ERROR_ORIGIN_NOT_ALLOWED,
+            origin=origin,
+            allowed_origins=allowed_origins,
+            status_code=403
+        )
+    
+    # Origin is allowed, return success response
     return {"detail": "OK"}

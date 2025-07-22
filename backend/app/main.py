@@ -85,6 +85,9 @@ app = FastAPI(
 cors_origins = get_cors_origins()
 cors_settings = get_cors_settings()
 
+# Import CORS error handling
+from .cors_error_handler import CORSLoggingMiddleware, log_cors_request, log_cors_response
+
 # Log CORS configuration on startup
 logger.info(f"CORS configuration loaded:")
 logger.info(f"  Allowed origins: {cors_origins}")
@@ -94,10 +97,41 @@ logger.info(f"  Allowed headers: {cors_settings.get('allow_headers', [])}")
 
 # CORS middleware will be added after other middleware to ensure it runs first
 
+# Set up CORS violation monitoring
+cors_violations = 0
+cors_requests = 0
+
+# Add CORS monitoring middleware
+@app.middleware("http")
+async def cors_monitoring_middleware(request: Request, call_next):
+    """Monitor and log CORS requests and violations"""
+    global cors_requests, cors_violations
+    
+    # Track CORS requests
+    origin = request.headers.get("Origin")
+    if origin:
+        cors_requests += 1
+        log_cors_request(request, origin)
+        
+        # Check if origin is allowed
+        if origin not in cors_origins and "*" not in cors_origins:
+            cors_violations += 1
+            logger.warning(f"CORS violation detected: Origin '{origin}' not in allowed origins")
+    
+    # Process the request
+    response = await call_next(request)
+    
+    # Log CORS response if applicable
+    if origin:
+        log_cors_response(response, origin)
+    
+    return response
+
 # --- Add Security and Permission Middleware ---
 from .middleware import (
     SecurityHeadersMiddleware, RequestLoggingMiddleware, ErrorHandlingMiddleware,
-    PermissionEnforcementMiddleware, RateLimitingMiddleware, SessionManagementMiddleware
+    PermissionEnforcementMiddleware, RateLimitingMiddleware, SessionManagementMiddleware,
+    CORSViolationHandlerMiddleware
 )
 from .monitoring import get_monitoring_system, track_request_middleware
 import os
@@ -119,18 +153,26 @@ if redis_url:
 app.add_middleware(ErrorHandlingMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+# Add CORS violation handler before permission middleware
+app.add_middleware(
+    CORSViolationHandlerMiddleware,
+    exclude_paths=["/health", "/", "/docs", "/redoc", "/openapi.json"],
+    exclude_prefixes=["/static/"]
+)
 app.add_middleware(PermissionEnforcementMiddleware)
 if redis_client:
     app.add_middleware(SessionManagementMiddleware, redis_client=redis_client)
     app.add_middleware(RateLimitingMiddleware, redis_client=redis_client)
 
 # Add CORS middleware LAST so it executes FIRST (middleware runs in reverse order)
+# Use enhanced CORS logging middleware instead of standard CORSMiddleware
 app.add_middleware(
-    CORSMiddleware,
+    CORSLoggingMiddleware,
     allow_origins=cors_origins,
     allow_credentials=cors_settings.get("allow_credentials", True),
     allow_methods=cors_settings.get("allow_methods", ["*"]),
     allow_headers=cors_settings.get("allow_headers", ["*"]),
+    expose_headers=["X-Process-Time", "X-Request-ID"],
     max_age=cors_settings.get("max_age", 600),
 )
 
