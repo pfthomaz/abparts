@@ -18,23 +18,23 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from app.main import app
+from app.main import app as fastapi_app
 from app.database import get_db, Base
 from app.models import (
     Organization, User, Part, Warehouse, Inventory, Machine, Transaction,
     OrganizationType, UserRole, UserStatus, PartType, TransactionType, MachineStatus
 )
-from app.auth import create_access_token, get_password_hash
+# Import all models to ensure they're registered with SQLAlchemy
+import app.models
+from app.auth import get_password_hash
+from app.session_manager import session_manager
 
 
 # Test database configuration
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_abparts.db"
+# Use PostgreSQL for testing to match production environment
+SQLALCHEMY_DATABASE_URL = "postgresql://abparts_user:abparts_pass@db:5432/abparts_test"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -42,8 +42,15 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 @pytest.fixture(scope="session")
 def db_engine():
     """Create test database engine."""
+    # Drop all tables first to ensure clean state
+    Base.metadata.drop_all(bind=engine)
+    
+    # Create all tables
     Base.metadata.create_all(bind=engine)
+    
     yield engine
+    
+    # Clean up after tests
     Base.metadata.drop_all(bind=engine)
 
 
@@ -70,12 +77,12 @@ def client(db_session: Session) -> TestClient:
         finally:
             pass
     
-    app.dependency_overrides[get_db] = override_get_db
+    fastapi_app.dependency_overrides[get_db] = override_get_db
     
-    with TestClient(app) as test_client:
+    with TestClient(fastapi_app) as test_client:
         yield test_client
     
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.clear()
 
 
 @pytest.fixture(scope="function")
@@ -455,13 +462,19 @@ def test_inventory(
 
 
 @pytest.fixture(scope="function")
-def auth_headers(test_users: Dict[str, User]) -> Dict[str, Dict[str, str]]:
+def auth_headers(test_users: Dict[str, User], db_session: Session) -> Dict[str, Dict[str, str]]:
     """Create authentication headers for different user types."""
     headers = {}
     
     for user_type, user in test_users.items():
-        token = create_access_token(data={"sub": user.username})
-        headers[user_type] = {"Authorization": f"Bearer {token}"}
+        # Create a session token instead of JWT token
+        session_token = session_manager.create_session(
+            user=user,
+            ip_address="127.0.0.1",
+            user_agent="pytest-test-client",
+            db=db_session
+        )
+        headers[user_type] = {"Authorization": f"Bearer {session_token}"}
     
     return headers
 

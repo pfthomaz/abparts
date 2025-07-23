@@ -140,6 +140,49 @@ async def get_child_organizations(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.get("/potential-parents", response_model=List[schemas.OrganizationResponse])
+async def get_potential_parent_organizations(
+    organization_type: schemas.OrganizationTypeEnum = Query(..., description="Organization type to get potential parents for"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
+):
+    """Get organizations that can serve as parents for the given organization type."""
+    try:
+        # Convert schema enum to model enum
+        model_type = OrganizationType(organization_type.value)
+        
+        # Get potential parents using CRUD function
+        potential_parents = crud.organizations.get_potential_parent_organizations(db, model_type)
+        
+        # Apply organization-scoped filtering to ensure user can only see organizations they have access to
+        filtered_parents = []
+        for org in potential_parents:
+            if check_organization_access(current_user, org.id, db):
+                filtered_parents.append(org)
+        
+        return filtered_parents
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/validate", response_model=schemas.OrganizationValidationResponse)
+async def validate_organization(
+    validation_request: schemas.OrganizationValidationRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
+):
+    """Validate organization data without persisting it."""
+    try:
+        # Call the CRUD validation function
+        validation_result = crud.organizations.validate_organization_data(
+            db, 
+            validation_request.dict(exclude={'id'}), 
+            validation_request.id
+        )
+        
+        return validation_result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/search", response_model=List[schemas.OrganizationResponse])
 async def search_organizations(
     q: str = Query(..., min_length=1, description="Search query"),

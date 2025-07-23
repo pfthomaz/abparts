@@ -61,5 +61,25 @@ class OrganizationHierarchyResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class OrganizationValidationRequest(BaseModel):
+    """Schema for organization validation requests"""
+    name: str
+    organization_type: OrganizationTypeEnum
+    parent_organization_id: Optional[uuid.UUID] = None
+    address: Optional[str] = None
+    contact_info: Optional[str] = None
+    is_active: bool = True
+    id: Optional[uuid.UUID] = None  # For update validation
+
+class ValidationError(BaseModel):
+    """Schema for individual validation errors"""
+    field: str
+    message: str
+
+class OrganizationValidationResponse(BaseModel):
+    """Schema for organization validation responses"""
+    valid: bool
+    errors: List[ValidationError] = []
+
 # Enable forward references for self-referencing model
 OrganizationHierarchyResponse.model_rebuild()
