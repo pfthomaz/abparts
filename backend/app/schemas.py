@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field, VERSION
+from pydantic import BaseModel, EmailStr, Field, VERSION, validator
 
 # --- Base Schemas with common fields ---
 class BaseSchema(BaseModel):
@@ -62,6 +62,38 @@ class OrganizationTypeFilterResponse(BaseModel):
     organization_type: OrganizationTypeEnum
     organizations: List[OrganizationResponse]
     count: int
+
+class OrganizationValidationRequest(BaseModel):
+    """Request schema for organization validation endpoint"""
+    name: str = Field(..., max_length=255)
+    organization_type: OrganizationTypeEnum
+    parent_organization_id: Optional[uuid.UUID] = None
+    address: Optional[str] = None
+    contact_info: Optional[str] = None
+    is_active: bool = True
+    id: Optional[uuid.UUID] = None  # For update validation
+    
+    @validator('parent_organization_id', pre=True)
+    def empty_string_to_none(cls, v):
+        if v == '':
+            return None
+        return v
+    
+    @validator('address', 'contact_info', pre=True)
+    def empty_string_to_none_str(cls, v):
+        if v == '':
+            return None
+        return v
+
+class OrganizationValidationError(BaseModel):
+    """Individual validation error"""
+    field: str
+    message: str
+
+class OrganizationValidationResponse(BaseModel):
+    """Response schema for organization validation endpoint"""
+    valid: bool
+    errors: List[OrganizationValidationError] = []
 
 
 # --- User Schemas ---

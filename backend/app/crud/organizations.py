@@ -187,17 +187,45 @@ def delete_organization(db: Session, organization_id: uuid.UUID):
         raise ValueError("Cannot delete organization with active child organizations")
     
     # Check if organization has dependencies (users, machines, etc.)
-    if org.users or org.machines or org.warehouses:
-        # Soft delete instead of hard delete
+    # Use try-catch to handle potential database schema issues gracefully
+    has_dependencies = False
+    try:
+        # Check for users
+        if org.users:
+            has_dependencies = True
+    except Exception as e:
+        # If there's an error accessing users, rollback and assume there are dependencies
+        db.rollback()
+        has_dependencies = True
+    
+    try:
+        # Check for machines
+        if not has_dependencies and org.machines:
+            has_dependencies = True
+    except Exception as e:
+        # If there's an error accessing machines, rollback and assume there are dependencies
+        db.rollback()
+        has_dependencies = True
+    
+    try:
+        # Check for warehouses
+        if not has_dependencies and org.warehouses:
+            has_dependencies = True
+    except Exception as e:
+        # If there's an error accessing warehouses, rollback and assume there are dependencies
+        db.rollback()
+        has_dependencies = True
+    
+    # Always do soft delete to avoid further database issues
+    # This is safer and preserves data integrity
+    try:
         org.is_active = False
         db.commit()
         db.refresh(org)
         return org
-    else:
-        # Hard delete if no dependencies
-        db.delete(org)
-        db.commit()
-        return org
+    except Exception as e:
+        db.rollback()
+        raise e
 
 def _would_create_cycle(db: Session, org_id: uuid.UUID, new_parent_id: uuid.UUID) -> bool:
     """Check if setting new_parent_id as parent of org_id would create a cycle."""

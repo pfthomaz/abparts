@@ -179,7 +179,22 @@ async def validate_organization(
             validation_request.id
         )
         
+        # If validation failed, return HTTP 400 with the validation errors
+        if not validation_result.get("valid", True):
+            # Format errors for better display
+            error_messages = []
+            for error in validation_result.get("errors", []):
+                error_messages.append(f"{error.get('field', 'Unknown')}: {error.get('message', 'Unknown error')}")
+            
+            raise HTTPException(
+                status_code=400, 
+                detail="; ".join(error_messages) if error_messages else "Validation failed"
+            )
+        
         return validation_result
+    except HTTPException:
+        # Re-raise HTTP exceptions (like the validation error above)
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -288,7 +303,10 @@ async def delete_organization(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to delete organization")
+        # Log the actual error for debugging
+        import logging
+        logging.error(f"Error deleting organization {org_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to delete organization: {str(e)}")
 
 # --- Supplier-Parent Relationship Management ---
 @router.post("/{org_id}/suppliers", response_model=schemas.OrganizationResponse, status_code=status.HTTP_201_CREATED)

@@ -14,6 +14,10 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
     contact_info: '',
     is_active: true,
     ...initialData, // Pre-fill if initialData is provided (for editing)
+    // Ensure null values are converted to empty strings for form inputs
+    address: initialData.address || '',
+    contact_info: initialData.contact_info || '',
+    parent_organization_id: initialData.parent_organization_id || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,6 +36,10 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       contact_info: '',
       is_active: true,
       ...initialData,
+      // Ensure null values are converted to empty strings for form inputs
+      address: initialData.address || '',
+      contact_info: initialData.contact_info || '',
+      parent_organization_id: initialData.parent_organization_id || '',
     });
   }, [initialData]);
 
@@ -73,7 +81,13 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
 
     try {
       // Validate with backend first
-      await organizationsService.validateOrganization(formData, initialData.id);
+      // Clean up the data before validation - convert empty strings to null for UUID fields
+      const validationData = {
+        ...formData,
+        parent_organization_id: formData.parent_organization_id || null,
+      };
+
+      await organizationsService.validateOrganization(validationData, initialData.id);
 
       // Clean up empty strings
       const cleanedData = {
@@ -86,8 +100,21 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       // Call the onSubmit prop function (passed from parent component)
       await onSubmit(cleanedData);
     } catch (err) {
+      console.error('Form submission error:', err);
+
       if (err.response?.data?.detail) {
-        setError(err.response.data.detail);
+        // Handle string error messages
+        if (typeof err.response.data.detail === 'string') {
+          setError(err.response.data.detail);
+        } else if (Array.isArray(err.response.data.detail)) {
+          // Handle Pydantic validation errors (array format)
+          const errorMessages = err.response.data.detail.map(error =>
+            `${error.loc?.join('.')} ${error.msg}`
+          ).join('; ');
+          setError(errorMessages);
+        } else {
+          setError('Validation failed. Please check your input.');
+        }
       } else {
         setError(err.message || 'An unexpected error occurred.');
       }
