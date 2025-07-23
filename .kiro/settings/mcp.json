@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "website-scraper": {
+      "command": "uvx",
+      "args": [
+        "website-scraper-mcp@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "INFO"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "extract_logo",
+        "extract_colors",
+        "extract_ui_styles"
+      ]
+    },
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-16d6051adf5f4cd783c9173d06c57f42"
+      }
+    }
+  }
+}
