@@ -26,7 +26,8 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
         password_hash=hashed_password,
         organization_id=user.organization_id,
         name=user.name,
-        role=user.role
+        role=user.role,
+        user_status=models.UserStatus.active  # Set default status to active
     )
     db.add(db_user)
     db.commit()
@@ -61,14 +62,44 @@ def delete_user(db: Session, user_id: uuid.UUID) -> bool:
     return True
 
 def set_user_active_status(db: Session, user_id: uuid.UUID, is_active: bool) -> models.User | None:
+    """
+    Set user active status and synchronize both is_active and user_status fields.
+    
+    Args:
+        db: Database session
+        user_id: UUID of the user to update
+        is_active: Boolean indicating if user should be active
+        
+    Returns:
+        Updated User object or None if user not found
+        
+    Requirements: 1.1, 2.1, 2.2, 2.3
+    """
     db_user = get_user(db, user_id)
     if not db_user:
         return None
     
-    db_user.is_active = is_active
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        # Update both status fields synchronously
+        db_user.is_active = is_active
+        
+        # Synchronize user_status with is_active
+        if is_active:
+            db_user.user_status = models.UserStatus.active
+        else:
+            db_user.user_status = models.UserStatus.inactive
+        
+        # Update timestamp
+        db_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+        
+    except Exception as e:
+        # Rollback transaction on any error
+        db.rollback()
+        raise e
 
 
 # --- User Invitation Functions ---

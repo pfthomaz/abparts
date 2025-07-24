@@ -2,7 +2,7 @@
 
 import { processError } from '../utils/errorHandling';
 
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://your-render-backend-url.onrender.com';
 
 /**
  * A generic request handler that abstracts the fetch API.
@@ -95,5 +95,6 @@ export const api = {
   get: (endpoint) => request(endpoint, 'GET'),
   post: (endpoint, body) => request(endpoint, 'POST', body),
   put: (endpoint, body) => request(endpoint, 'PUT', body),
+  patch: (endpoint, body) => request(endpoint, 'PATCH', body),
   delete: (endpoint) => request(endpoint, 'DELETE'),
 };

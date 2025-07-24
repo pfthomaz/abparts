@@ -39,14 +39,14 @@ const updateUser = (userId, userData) => {
  * Deactivates a user (soft delete)
  */
 const deactivateUser = (userId) => {
-  return api.delete(`/users/${userId}`);
+  return api.patch(`/users/${userId}/deactivate`);
 };
 
 /**
  * Reactivates a user
  */
 const reactivateUser = (userId) => {
-  return api.post(`/users/${userId}/reactivate`);
+  return api.patch(`/users/${userId}/reactivate`);
 };
 
 // --- Advanced User Administration ---
