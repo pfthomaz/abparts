@@ -369,7 +369,7 @@ def test_machines(db_session: Session, test_organizations: Dict[str, Organizatio
         customer_organization_id=test_organizations["customer1"].id,
         purchase_date=datetime.utcnow() - timedelta(days=365),
         warranty_expiry_date=datetime.utcnow() + timedelta(days=365),
-        status=MachineStatus.ACTIVE,
+        status=MachineStatus.active,
         location="Bay 1"
     )
     db_session.add(machine1)
@@ -383,7 +383,7 @@ def test_machines(db_session: Session, test_organizations: Dict[str, Organizatio
         customer_organization_id=test_organizations["customer1"].id,
         purchase_date=datetime.utcnow() - timedelta(days=730),
         warranty_expiry_date=datetime.utcnow() - timedelta(days=365),
-        status=MachineStatus.ACTIVE,
+        status=MachineStatus.active,
         location="Bay 2"
     )
     db_session.add(machine2)
@@ -398,7 +398,7 @@ def test_machines(db_session: Session, test_organizations: Dict[str, Organizatio
         customer_organization_id=test_organizations["customer2"].id,
         purchase_date=datetime.utcnow() - timedelta(days=180),
         warranty_expiry_date=datetime.utcnow() + timedelta(days=545),
-        status=MachineStatus.ACTIVE,
+        status=MachineStatus.active,
         location="Service Bay"
     )
     db_session.add(machine3)

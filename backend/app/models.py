@@ -189,10 +189,10 @@ class User(Base):
 
 
 class MachineStatus(enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    MAINTENANCE = "maintenance"
-    DECOMMISSIONED = "decommissioned"
+    active = "active"
+    inactive = "inactive"
+    maintenance = "maintenance"
+    decommissioned = "decommissioned"
 
 class Machine(Base):
     """
@@ -208,7 +208,7 @@ class Machine(Base):
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
     purchase_date = Column(DateTime(timezone=True), nullable=True)
     warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)
-    status = Column(Enum(MachineStatus, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
+    status = Column(ENUM(MachineStatus, name='machinestatus'), nullable=False, server_default='active')
     last_maintenance_date = Column(DateTime(timezone=True), nullable=True)
     next_maintenance_date = Column(DateTime(timezone=True), nullable=True)
     location = Column(String(255), nullable=True)
@@ -647,13 +647,13 @@ class UserSession(Base):
         return f"<UserSession(id={self.id}, user_id={self.user_id}, is_active={self.is_active})>"
 
 class MaintenanceType(enum.Enum):
-    SCHEDULED = "scheduled"
-    UNSCHEDULED = "unscheduled"
-    REPAIR = "repair"
-    INSPECTION = "inspection"
-    CLEANING = "cleaning"
-    CALIBRATION = "calibration"
-    OTHER = "other"
+    scheduled = "scheduled"
+    unscheduled = "unscheduled"
+    repair = "repair"
+    inspection = "inspection"
+    cleaning = "cleaning"
+    calibration = "calibration"
+    other = "other"
 
 class MachineMaintenance(Base):
     """
@@ -665,7 +665,7 @@ class MachineMaintenance(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
     maintenance_date = Column(DateTime(timezone=True), nullable=False)
-    maintenance_type = Column(Enum(MaintenanceType), nullable=False)
+    maintenance_type = Column(Enum(MaintenanceType, name='maintenancetype'), nullable=False)
     performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     description = Column(Text, nullable=False)
     hours_spent = Column(DECIMAL(precision=5, scale=2), nullable=True)

@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field, VERSION, validator
+from enum import Enum
 
 # --- Base Schemas with common fields ---
 class BaseSchema(BaseModel):
@@ -295,11 +296,24 @@ class LowStockByOrgResponse(BaseModel):
 
 
 # --- Machine Schemas (New!) ---
+class MachineStatusEnum(str, Enum):
+    active = "active"
+    inactive = "inactive"
+    maintenance = "maintenance"
+    decommissioned = "decommissioned"
+
 class MachineBase(BaseModel):
     customer_organization_id: uuid.UUID
     model_type: str = Field(..., max_length=100) # e.g., 'V3.1B', 'V4.0'
     name: str = Field(..., max_length=255)
     serial_number: str = Field(..., max_length=255)
+    purchase_date: Optional[datetime] = None
+    warranty_expiry_date: Optional[datetime] = None
+    status: MachineStatusEnum = MachineStatusEnum.active
+    last_maintenance_date: Optional[datetime] = None
+    next_maintenance_date: Optional[datetime] = None
+    location: Optional[str] = Field(None, max_length=255)
+    notes: Optional[str] = None
 
 class MachineCreate(MachineBase):
     pass
@@ -309,9 +323,112 @@ class MachineUpdate(BaseModel):
     model_type: Optional[str] = Field(None, max_length=100)
     name: Optional[str] = Field(None, max_length=255)
     serial_number: Optional[str] = Field(None, max_length=255)
+    purchase_date: Optional[datetime] = None
+    warranty_expiry_date: Optional[datetime] = None
+    status: Optional[MachineStatusEnum] = None
+    last_maintenance_date: Optional[datetime] = None
+    next_maintenance_date: Optional[datetime] = None
+    location: Optional[str] = Field(None, max_length=255)
+    notes: Optional[str] = None
 
 class MachineResponse(MachineBase, BaseSchema):
+    customer_organization_name: Optional[str] = None
+
+
+# --- Machine Transfer Schemas ---
+class MachineTransferRequest(BaseModel):
+    machine_id: uuid.UUID
+    new_customer_organization_id: uuid.UUID
+    transfer_reason: Optional[str] = None
+    notes: Optional[str] = None
+
+
+# --- Maintenance Schemas ---
+class MaintenanceTypeEnum(str, Enum):
+    scheduled = "scheduled"
+    unscheduled = "unscheduled"
+    repair = "repair"
+    inspection = "inspection"
+    cleaning = "cleaning"
+    calibration = "calibration"
+    other = "other"
+
+class MaintenanceBase(BaseModel):
+    machine_id: uuid.UUID
+    maintenance_date: datetime
+    maintenance_type: MaintenanceTypeEnum
+    performed_by_user_id: uuid.UUID
+    description: str
+    hours_spent: Optional[Decimal] = Field(None, decimal_places=2)
+    cost: Optional[Decimal] = Field(None, decimal_places=2)
+    next_maintenance_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class MaintenanceCreate(MaintenanceBase):
     pass
+
+class MaintenanceUpdate(BaseModel):
+    machine_id: Optional[uuid.UUID] = None
+    maintenance_date: Optional[datetime] = None
+    maintenance_type: Optional[MaintenanceTypeEnum] = None
+    performed_by_user_id: Optional[uuid.UUID] = None
+    description: Optional[str] = None
+    hours_spent: Optional[Decimal] = Field(None, decimal_places=2)
+    cost: Optional[Decimal] = Field(None, decimal_places=2)
+    next_maintenance_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class MaintenanceResponse(MaintenanceBase, BaseSchema):
+    class Config:
+        from_attributes = True
+
+
+# --- Maintenance Part Usage Schemas ---
+class MaintenancePartUsageBase(BaseModel):
+    maintenance_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity_used: Decimal = Field(default=1, decimal_places=3)
+    unit_cost: Optional[Decimal] = Field(None, decimal_places=2)
+    notes: Optional[str] = None
+
+class MaintenancePartUsageCreate(MaintenancePartUsageBase):
+    pass
+
+class MaintenancePartUsageUpdate(BaseModel):
+    maintenance_id: Optional[uuid.UUID] = None
+    part_id: Optional[uuid.UUID] = None
+    quantity_used: Optional[Decimal] = Field(None, decimal_places=3)
+    unit_cost: Optional[Decimal] = Field(None, decimal_places=2)
+    notes: Optional[str] = None
+
+class MaintenancePartUsageResponse(MaintenancePartUsageBase, BaseSchema):
+    part: Optional[PartResponse] = None
+    
+    class Config:
+        from_attributes = True
+
+
+# --- Machine Part Compatibility Schemas ---
+class MachinePartCompatibilityBase(BaseModel):
+    machine_id: uuid.UUID
+    part_id: uuid.UUID
+    is_compatible: bool = True
+    compatibility_notes: Optional[str] = None
+
+class MachinePartCompatibilityCreate(MachinePartCompatibilityBase):
+    pass
+
+class MachinePartCompatibilityUpdate(BaseModel):
+    machine_id: Optional[uuid.UUID] = None
+    part_id: Optional[uuid.UUID] = None
+    is_compatible: Optional[bool] = None
+    compatibility_notes: Optional[str] = None
+
+class MachinePartCompatibilityResponse(MachinePartCompatibilityBase, BaseSchema):
+    part: Optional[PartResponse] = None
+    
+    class Config:
+        from_attributes = True
 
 
 # --- Part Schemas ---
