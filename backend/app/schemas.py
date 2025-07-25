@@ -96,6 +96,23 @@ class OrganizationValidationResponse(BaseModel):
     errors: List[OrganizationValidationError] = []
 
 
+class OrganizationHierarchyNode(BaseModel):
+    """Response schema for organization hierarchy tree structure"""
+    id: uuid.UUID
+    name: str
+    organization_type: OrganizationTypeEnum
+    parent_organization_id: Optional[uuid.UUID] = None
+    address: Optional[str] = None
+    contact_info: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    children: List['OrganizationHierarchyNode'] = []
+    
+    class Config:
+        from_attributes = True
+
+
 # --- User Schemas ---
 class UserRoleEnum(str, Enum):
     USER = "user"
@@ -503,9 +520,11 @@ class CustomerOrderItemResponse(CustomerOrderItemBase, BaseSchema):
 if VERSION.startswith('1.'):
     SupplierOrderResponse.update_forward_refs()
     CustomerOrderResponse.update_forward_refs()
+    OrganizationHierarchyNode.update_forward_refs()
 else:
     SupplierOrderResponse.model_rebuild()
     CustomerOrderResponse.model_rebuild()
+    OrganizationHierarchyNode.model_rebuild()
 
 # --- Part Usage Schemas ---
 class PartUsageBase(BaseModel):

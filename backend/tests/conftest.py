@@ -32,7 +32,14 @@ from app.session_manager import session_manager
 
 # Test database configuration
 # Use PostgreSQL for testing to match production environment
-SQLALCHEMY_DATABASE_URL = "postgresql://abparts_user:abparts_pass@db:5432/abparts_test"
+# Check if we're running in Docker test environment or local development
+import os
+if os.getenv("ENVIRONMENT") == "testing":
+    # Running in Docker test service
+    SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://abparts_test_user:abparts_test_pass@test_db:5432/abparts_test")
+else:
+    # Running locally or in development container
+    SQLALCHEMY_DATABASE_URL = "postgresql://abparts_user:abparts_pass@db:5432/abparts_test"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 

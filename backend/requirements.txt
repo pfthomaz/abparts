@@ -17,6 +17,9 @@ python-multipart # For handling file uploads
 email-validator # For validating email addresses
 pytest==7.3.1
 pytest-asyncio==0.21.0
+pytest-cov==4.1.0
+pytest-mock==3.11.1
+pytest-xdist==3.3.1
 psutil==5.9.5 # For system monitoring
 prometheus-client==0.17.0 # For metrics collection
 locust==2.15.1 # For load testing

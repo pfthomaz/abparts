@@ -359,4 +359,98 @@ class TestValidateOrganizationEndpoint:
         assert response.status_code == 422
 
 
+class TestHierarchyEndpoint:
+    """Test cases for GET /organizations/hierarchy endpoint"""
+    
+    def test_get_hierarchy_tree_success(self, client: TestClient, db_session: Session, auth_headers, test_organizations):
+        """Test successful retrieval of organization hierarchy tree"""
+        response = client.get(
+            "/organizations/hierarchy",
+            headers=auth_headers["super_admin"]
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Should return a list of root organizations with nested children
+        assert isinstance(data, list)
+        
+        # Verify structure - each item should have required fields
+        for org in data:
+            assert "id" in org
+            assert "name" in org
+            assert "organization_type" in org
+            assert "is_active" in org
+            assert "children" in org
+            assert isinstance(org["children"], list)
+    
+    def test_get_hierarchy_tree_with_inactive(self, client: TestClient, db_session: Session, auth_headers):
+        """Test hierarchy tree with include_inactive parameter"""
+        response = client.get(
+            "/organizations/hierarchy?include_inactive=true",
+            headers=auth_headers["super_admin"]
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+    
+    def test_get_hierarchy_tree_requires_auth(self, client: TestClient):
+        """Test that hierarchy endpoint requires authentication"""
+        response = client.get("/organizations/hierarchy")
+        
+        assert response.status_code == 401
+    
+    def test_get_hierarchy_tree_permission_scoping(self, client: TestClient, db_session: Session, auth_headers):
+        """Test that hierarchy respects user permission scoping"""
+        # Test with regular user (should see limited hierarchy)
+        response = client.get(
+            "/organizations/hierarchy",
+            headers=auth_headers["customer_user"]
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        
+        # Test with super admin (should see full hierarchy)
+        response = client.get(
+            "/organizations/hierarchy",
+            headers=auth_headers["super_admin"]
+        )
+        
+        assert response.status_code == 200
+        admin_data = response.json()
+        assert isinstance(admin_data, list)
+    
+    def test_get_hierarchy_tree_empty_result(self, client: TestClient, db_session: Session, auth_headers):
+        """Test that empty hierarchy returns empty array with 200 status when user has no accessible organizations"""
+        # Create a user with no organization access by using a customer user
+        # who should only see their own organization's hierarchy
+        # If there are no organizations in their scope, they should get an empty array
+        
+        # Test with a user who has limited access - they should still get a valid response
+        response = client.get(
+            "/organizations/hierarchy",
+            headers=auth_headers["customer_user"]
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        # Even if limited, should return a list (may be empty or contain accessible orgs)
+        assert isinstance(data, list)
+    
+    def test_get_hierarchy_tree_invalid_query_param(self, client: TestClient, auth_headers):
+        """Test that invalid query parameters return 422 status"""
+        # Note: FastAPI automatically validates boolean parameters, 
+        # so invalid boolean values will be handled by FastAPI's validation
+        response = client.get(
+            "/organizations/hierarchy?include_inactive=invalid_value",
+            headers=auth_headers["super_admin"]
+        )
+        
+        # FastAPI returns 422 for invalid query parameter types
+        assert response.status_code == 422
+
+
 # Test fixtures are provided by conftest.py

@@ -1,6 +1,7 @@
 # backend/app/routers/organizations.py
 
 import uuid
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -74,6 +75,65 @@ async def get_organizations_by_types(
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/hierarchy", response_model=List[schemas.OrganizationHierarchyNode])
+async def get_organization_hierarchy_tree(
+    include_inactive: bool = Query(False, description="Include inactive organizations"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
+):
+    """Get the complete organization hierarchy as a nested tree structure."""
+    try:
+        # Validate query parameters
+        if not isinstance(include_inactive, bool):
+            raise HTTPException(
+                status_code=422, 
+                detail="Invalid value for include_inactive parameter. Must be true or false."
+            )
+        
+        # Build base query for organizations
+        query = db.query(models.Organization)
+        
+        # Apply organization-scoped filtering
+        query = OrganizationScopedQueries.filter_organizations(query, current_user)
+        
+        # Apply inactive filter
+        if not include_inactive:
+            query = query.filter(models.Organization.is_active == True)
+        
+        # Get all accessible organizations
+        accessible_orgs = query.all()
+        
+        # Extract IDs for the CRUD function
+        accessible_org_ids = {org.id for org in accessible_orgs}
+        
+        # Get the hierarchy tree using the CRUD function
+        hierarchy_tree = crud.organizations.get_organization_hierarchy_tree(
+            db=db,
+            include_inactive=include_inactive,
+            accessible_org_ids=accessible_org_ids
+        )
+        
+        # Return empty array with 200 status when no organizations exist
+        return hierarchy_tree if hierarchy_tree else []
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (validation errors, permission errors)
+        raise
+    except PermissionError as e:
+        # Handle permission-related errors
+        raise HTTPException(status_code=403, detail=f"Permission denied: {str(e)}")
+    except ValueError as e:
+        # Handle validation errors from CRUD functions
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
+    except Exception as e:
+        # Handle database errors and other unexpected errors
+        db.rollback()
+        logging.error(f"Error retrieving organization hierarchy: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail="Internal server error occurred while retrieving organization hierarchy"
+        )
 
 @router.get("/hierarchy/roots", response_model=List[schemas.OrganizationResponse])
 async def get_root_organizations(

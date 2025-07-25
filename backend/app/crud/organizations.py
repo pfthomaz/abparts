@@ -1,10 +1,11 @@
 # backend/app/crud/organizations.py
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Set
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 from .. import models
 from ..models import OrganizationType
+from ..schemas import OrganizationHierarchyNode
 
 def get_organization(db: Session, organization_id: uuid.UUID):
     """Retrieves a single organization by its ID with parent and children."""
@@ -428,3 +429,85 @@ def search_organizations(db: Session, query: str, organization_type: Optional[Or
         search_query = search_query.filter(models.Organization.is_active == True)
     
     return search_query.all()
+
+def get_organization_hierarchy_tree(
+    db: Session, 
+    include_inactive: bool = False,
+    accessible_org_ids: Optional[Set[uuid.UUID]] = None
+) -> List[OrganizationHierarchyNode]:
+    """
+    Build complete organization hierarchy tree with nested children.
+    
+    Args:
+        db: Database session
+        include_inactive: Include inactive organizations
+        accessible_org_ids: Set of organization IDs user can access (for scoping)
+    
+    Returns:
+        List of root organization nodes with nested children
+    """
+    # Build base query for all organizations
+    query = db.query(models.Organization)
+    
+    # Apply active status filter
+    if not include_inactive:
+        query = query.filter(models.Organization.is_active == True)
+    
+    # Apply organization scoping if provided
+    if accessible_org_ids is not None:
+        query = query.filter(models.Organization.id.in_(accessible_org_ids))
+    
+    # Fetch all organizations in a single query
+    all_orgs = query.order_by(models.Organization.name).all()
+    
+    # Build parent-child mapping
+    org_dict = {org.id: org for org in all_orgs}
+    children_map = {}
+    
+    # Initialize children map
+    for org in all_orgs:
+        children_map[org.id] = []
+    
+    # Populate children map and identify roots
+    root_orgs = []
+    for org in all_orgs:
+        if org.parent_organization_id is None:
+            # This is a root organization
+            root_orgs.append(org)
+        elif org.parent_organization_id in org_dict:
+            # Add to parent's children list
+            children_map[org.parent_organization_id].append(org)
+    
+    def build_hierarchy_node(org: models.Organization) -> OrganizationHierarchyNode:
+        """Recursively build hierarchy node with children."""
+        # Get children for this organization
+        children = []
+        for child_org in children_map.get(org.id, []):
+            child_node = build_hierarchy_node(child_org)
+            children.append(child_node)
+        
+        # Sort children by name for consistent ordering
+        children.sort(key=lambda x: x.name)
+        
+        # Create hierarchy node
+        return OrganizationHierarchyNode(
+            id=org.id,
+            name=org.name,
+            organization_type=org.organization_type,
+            is_active=org.is_active,
+            parent_organization_id=org.parent_organization_id,
+            created_at=org.created_at,
+            updated_at=org.updated_at,
+            children=children
+        )
+    
+    # Build hierarchy tree starting from root organizations
+    hierarchy_tree = []
+    for root_org in root_orgs:
+        root_node = build_hierarchy_node(root_org)
+        hierarchy_tree.append(root_node)
+    
+    # Sort root organizations by name for consistent ordering
+    hierarchy_tree.sort(key=lambda x: x.name)
+    
+    return hierarchy_tree

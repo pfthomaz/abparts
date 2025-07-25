@@ -81,5 +81,22 @@ class OrganizationValidationResponse(BaseModel):
     valid: bool
     errors: List[ValidationError] = []
 
-# Enable forward references for self-referencing model
+class OrganizationHierarchyNode(BaseModel):
+    """Response schema for organization hierarchy tree structure with complete organization data"""
+    id: uuid.UUID
+    name: str
+    organization_type: OrganizationTypeEnum
+    parent_organization_id: Optional[uuid.UUID] = None
+    address: Optional[str] = None
+    contact_info: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    children: List['OrganizationHierarchyNode'] = []
+    
+    class Config:
+        from_attributes = True
+
+# Enable forward references for self-referencing models
 OrganizationHierarchyResponse.model_rebuild()
+OrganizationHierarchyNode.model_rebuild()

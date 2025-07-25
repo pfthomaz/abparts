@@ -141,9 +141,52 @@ services:
     # Command to start the React development server
     command: sh -c "npm install && npm start"
 
+  # Test Database Service (separate from development database)
+  test_db:
+    image: postgres:15
+    container_name: abparts_test_db
+    ports:
+      - "5433:5432" # Different port to avoid conflicts with main db
+    environment:
+      POSTGRES_DB: ${TEST_POSTGRES_DB:-abparts_test}
+      POSTGRES_USER: ${TEST_POSTGRES_USER:-abparts_test_user}
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:-abparts_test_pass}
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - testing
+
+  # Test Service for running tests in isolated environment
+  test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_test
+    environment:
+      DATABASE_URL: postgresql://${TEST_POSTGRES_USER:-abparts_test_user}:${TEST_POSTGRES_PASSWORD:-abparts_test_pass}@test_db:5432/${TEST_POSTGRES_DB:-abparts_test}
+      REDIS_URL: redis://redis:6379/1  # Use different Redis database for tests
+      ENVIRONMENT: testing
+      PYTHONPATH: /app
+    volumes:
+      - ./backend:/app
+    depends_on:
+      test_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - testing
+    command: pytest
+
 # Docker Volumes for data persistence
 volumes:
   db_data: # For PostgreSQL data
   redis_data: # For Redis data
   pgadmin_data: # For PgAdmin configuration
   api_static_images: # New: Declared the volume for API static images
+  test_db_data: # For test database data

@@ -1,19 +1,16 @@
 {
   "mcpServers": {
-    "website-scraper": {
-      "command": "uvx",
+    "fetch": {
+      "command": "cmd",
       "args": [
-        "website-scraper-mcp@latest"
+        "/c",
+        "C:\\abparts\\.venv\\Scripts\\activate.bat && python -m mcp_server_fetch"
       ],
       "env": {
         "FASTMCP_LOG_LEVEL": "INFO"
       },
       "disabled": false,
-      "autoApprove": [
-        "extract_logo",
-        "extract_colors",
-        "extract_ui_styles"
-      ]
+      "autoApprove": []
     },
     "firecrawl-mcp": {
       "command": "npx",
