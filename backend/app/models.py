@@ -208,7 +208,7 @@ class Machine(Base):
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
     purchase_date = Column(DateTime(timezone=True), nullable=True)
     warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)
-    status = Column(Enum(MachineStatus), nullable=False)
+    status = Column(Enum(MachineStatus, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     last_maintenance_date = Column(DateTime(timezone=True), nullable=True)
     next_maintenance_date = Column(DateTime(timezone=True), nullable=True)
     location = Column(String(255), nullable=True)
