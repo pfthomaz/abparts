@@ -153,6 +153,9 @@ if redis_url:
 app.add_middleware(ErrorHandlingMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+# Add HTTPS redirect middleware
+from .middleware import HTTPSRedirectMiddleware
+app.add_middleware(HTTPSRedirectMiddleware)
 # Add CORS violation handler before permission middleware
 app.add_middleware(
     CORSViolationHandlerMiddleware,

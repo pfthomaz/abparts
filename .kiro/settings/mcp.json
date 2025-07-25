@@ -7,7 +7,7 @@
         "C:\\abparts\\.venv\\Scripts\\activate.bat && python -m mcp_server_fetch"
       ],
       "env": {
-        "FASTMCP_LOG_LEVEL": "INFO"
+        "FASTMCP_LOG_LEVEL": "ERROR"
       },
       "disabled": false,
       "autoApprove": []

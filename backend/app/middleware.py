@@ -25,6 +25,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app: ASGIApp):
         super().__init__(app)
+        import os
+        self.is_production = os.getenv("ENVIRONMENT", "development") == "production"
+        self.is_https = os.getenv("FORCE_HTTPS", "false").lower() == "true"
     
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -35,11 +38,27 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
-        # More permissive CSP for Swagger UI
-        if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
-            response.headers["Content-Security-Policy"] = "default-src 'self' cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net"
+        # Add HTTPS-specific security headers for production
+        if self.is_production or self.is_https:
+            # Force HTTPS for 1 year (31536000 seconds)
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+            
+            # Prevent mixed content
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+                "img-src 'self' data: cdn.jsdelivr.net; "
+                "font-src 'self' cdn.jsdelivr.net; "
+                "connect-src 'self'; "
+                "upgrade-insecure-requests"
+            )
         else:
-            response.headers["Content-Security-Policy"] = "default-src 'self'"
+            # More permissive CSP for development
+            if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
+                response.headers["Content-Security-Policy"] = "default-src 'self' cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net"
+            else:
+                response.headers["Content-Security-Policy"] = "default-src 'self'"
         
         # Remove server header for security
         if "server" in response.headers:
@@ -467,6 +486,29 @@ def get_active_sessions(user_id: uuid.UUID, redis_client: redis.Redis) -> List[D
     except Exception as e:
         logger.error(f"Error getting active sessions for user {user_id}: {e}")
         return []
+# --- HTTPS Redirect Middleware ---
+
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    """Middleware to redirect HTTP requests to HTTPS in production."""
+    
+    def __init__(self, app: ASGIApp):
+        super().__init__(app)
+        import os
+        self.force_https = os.getenv("FORCE_HTTPS", "false").lower() == "true"
+        self.is_production = os.getenv("ENVIRONMENT", "development") == "production"
+    
+    async def dispatch(self, request: Request, call_next):
+        # Only redirect in production or when FORCE_HTTPS is enabled
+        if (self.force_https or self.is_production) and request.url.scheme == "http":
+            # Build HTTPS URL
+            https_url = request.url.replace(scheme="https")
+            
+            # Return redirect response
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url=str(https_url), status_code=301)
+        
+        return await call_next(request)
+
 # --- CORS Violation Handler Middleware ---
 
 class CORSViolationHandlerMiddleware(BaseHTTPMiddleware):
