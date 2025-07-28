@@ -6,6 +6,7 @@ import { warehouseService } from '../services/warehouseService';
 import { partsService } from '../services/partsService';
 import { inventoryService } from '../services/inventoryService';
 import WarehouseSelector from './WarehouseSelector';
+import { safeFilter } from '../utils/inventoryValidation';
 
 const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
   const { user } = useAuth();
@@ -167,16 +168,28 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
     return parts.find(p => p.id === partId);
   };
 
-  const filteredParts = parts.filter(part =>
-    part.part_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    part.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredParts = safeFilter(parts, part => {
+    try {
+      return part &&
+        (part.part_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          part.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    } catch (error) {
+      console.error('Error filtering parts:', error, part);
+      return false;
+    }
+  }, []);
 
   // Only show parts that have inventory in the selected from warehouse
-  const availableParts = filteredParts.filter(part => {
-    const stock = getAvailableStock(part.id);
-    return stock > 0;
-  });
+  const availableParts = safeFilter(filteredParts, part => {
+    try {
+      if (!part) return false;
+      const stock = getAvailableStock(part.id);
+      return stock > 0;
+    } catch (error) {
+      console.error('Error checking available parts:', error, part);
+      return false;
+    }
+  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

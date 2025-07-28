@@ -5,6 +5,7 @@ import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
 import { partsService } from '../services/partsService';
 import { useAuth } from '../AuthContext';
+import { safeFilter } from '../utils/inventoryValidation';
 
 const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
   const { user } = useAuth();
@@ -61,15 +62,33 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
     return parts.find(p => p.id === partId) || {};
   };
 
-  const filteredTransfers = transfers.filter(transfer => {
-    const part = getPartDetails(transfer.part_id);
-    const matchesSearch = !searchTerm ||
-      part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.part_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transfer.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredTransfers = safeFilter(transfers, (transfer) => {
+    if (!transfer) return false;
 
-    return matchesSearch;
-  });
+    try {
+      const part = getPartDetails(transfer.part_id);
+      const matchesSearch = !searchTerm ||
+        part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        part.part_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transfer.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesDirection = filters.direction === 'all' ||
+        (filters.direction === 'in' && transfer.to_warehouse_id === warehouseId) ||
+        (filters.direction === 'out' && transfer.from_warehouse_id === warehouseId);
+
+      const matchesPart = !filters.part_id || transfer.part_id === filters.part_id;
+
+      const transferDate = new Date(transfer.created_at);
+      const startDate = new Date(filters.start_date);
+      const endDate = new Date(filters.end_date);
+      const matchesDate = transferDate >= startDate && transferDate <= endDate;
+
+      return matchesSearch && matchesDirection && matchesPart && matchesDate;
+    } catch (error) {
+      console.error('Error filtering transfer:', error, transfer);
+      return false;
+    }
+  }, []);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
@@ -243,14 +262,14 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Inbound Transfers</div>
           <div className="text-2xl font-bold text-green-600">
-            {formatNumber(filteredTransfers.filter(t => t.to_warehouse_id === warehouseId).length)}
+            {formatNumber(safeFilter(filteredTransfers, t => t && t.to_warehouse_id === warehouseId, []).length)}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Outbound Transfers</div>
           <div className="text-2xl font-bold text-red-600">
-            {formatNumber(filteredTransfers.filter(t => t.from_warehouse_id === warehouseId).length)}
+            {formatNumber(safeFilter(filteredTransfers, t => t && t.from_warehouse_id === warehouseId, []).length)}
           </div>
         </div>
       </div>

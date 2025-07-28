@@ -28,3 +28,20 @@ export {
 
 // Export existing permissions utility
 export * from './permissions';
+
+// Export inventory validation utilities
+export {
+  validateInventoryData,
+  extractInventoryMetadata,
+  isValidArray,
+  isArray,
+  safeFilter,
+  safeMap,
+  safeReduce,
+  safeFind,
+  safeSort,
+  validateInventoryItem,
+  sanitizeInventoryItems,
+  createSafeInventoryResult,
+  logInventoryValidation
+} from './inventoryValidation';

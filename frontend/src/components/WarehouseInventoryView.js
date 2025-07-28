@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
+import { validateInventoryData, safeFilter } from '../utils/inventoryValidation';
 
 const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -24,10 +25,14 @@ const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
     setError('');
     try {
       const data = await inventoryService.getWarehouseInventory(warehouseId);
-      setInventoryItems(data);
+      // Use the validation utility to ensure we have a proper array
+      const validatedData = validateInventoryData(data);
+      setInventoryItems(validatedData);
     } catch (err) {
       setError('Failed to fetch warehouse inventory');
       console.error('Failed to fetch warehouse inventory:', err);
+      // Set empty array as fallback
+      setInventoryItems([]);
     } finally {
       setLoading(false);
     }
@@ -46,18 +51,26 @@ const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
     return parts.find(p => p.id === partId) || {};
   };
 
-  const filteredInventory = inventoryItems.filter(item => {
-    const part = getPartDetails(item.part_id);
-    const matchesSearch = !searchTerm ||
-      part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.part_number?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Safe filtering with validation using utility function
+  const filteredInventory = safeFilter(inventoryItems, item => {
+    try {
+      if (!item) return false;
 
-    const matchesFilter = filterType === 'all' ||
-      (filterType === 'low_stock' && parseFloat(item.current_stock) <= parseFloat(item.minimum_stock_recommendation)) ||
-      (filterType === 'out_of_stock' && parseFloat(item.current_stock) === 0);
+      const part = getPartDetails(item.part_id);
+      const matchesSearch = !searchTerm ||
+        part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        part.part_number?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch && matchesFilter;
-  });
+      const matchesFilter = filterType === 'all' ||
+        (filterType === 'low_stock' && parseFloat(item.current_stock) <= parseFloat(item.minimum_stock_recommendation)) ||
+        (filterType === 'out_of_stock' && parseFloat(item.current_stock) === 0);
+
+      return matchesSearch && matchesFilter;
+    } catch (error) {
+      console.error('Error filtering inventory item:', error, item);
+      return false;
+    }
+  }, []);
 
   const getStockStatus = (currentStock, minStock) => {
     const current = parseFloat(currentStock);
@@ -221,24 +234,37 @@ const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Total Items</div>
           <div className="text-2xl font-bold text-gray-900">
-            {inventoryItems.length}
+            {Array.isArray(inventoryItems) ? inventoryItems.length : 0}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Low Stock Items</div>
           <div className="text-2xl font-bold text-orange-600">
-            {inventoryItems.filter(item =>
-              parseFloat(item.current_stock) <= parseFloat(item.minimum_stock_recommendation) &&
-              parseFloat(item.current_stock) > 0
-            ).length}
+            {safeFilter(inventoryItems, item => {
+              try {
+                return item &&
+                  parseFloat(item.current_stock) <= parseFloat(item.minimum_stock_recommendation) &&
+                  parseFloat(item.current_stock) > 0;
+              } catch (error) {
+                console.error('Error calculating low stock:', error, item);
+                return false;
+              }
+            }, []).length}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Out of Stock</div>
           <div className="text-2xl font-bold text-red-600">
-            {inventoryItems.filter(item => parseFloat(item.current_stock) === 0).length}
+            {safeFilter(inventoryItems, item => {
+              try {
+                return item && parseFloat(item.current_stock) === 0;
+              } catch (error) {
+                console.error('Error calculating out of stock:', error, item);
+                return false;
+              }
+            }, []).length}
           </div>
         </div>
       </div>
