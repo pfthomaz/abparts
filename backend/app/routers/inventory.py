@@ -2,10 +2,13 @@
 
 import uuid
 import logging
-from typing import List
+from typing import List, Optional
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from pydantic import ValidationError
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
@@ -14,6 +17,8 @@ from ..permissions import (
     ResourceType, PermissionType, require_permission, require_admin,
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
+from ..cache import get_analytics_cache_stats, invalidate_warehouse_analytics_cache
+from ..cache import get_analytics_cache_stats, invalidate_warehouse_analytics_cache
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -21,7 +26,7 @@ logger = logging.getLogger(__name__)
 # --- Helper Functions ---
 def check_warehouse_access(user: TokenData, warehouse_id: uuid.UUID, db: Session) -> bool:
     """Check if user can access a specific warehouse."""
-    if permission_checker.is_super_admin(user):
+    if user.role == "super_admin":
         return True
     
     warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == warehouse_id).first()
@@ -29,6 +34,25 @@ def check_warehouse_access(user: TokenData, warehouse_id: uuid.UUID, db: Session
         return False
     
     return warehouse.organization_id == user.organization_id
+
+def create_error_response(error_type: str, message: str, details: Optional[List[dict]] = None) -> dict:
+    """Create a standardized error response."""
+    return {
+        "error": error_type,
+        "message": message,
+        "details": details or [],
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+def validate_uuid_parameter(param_value: str, param_name: str) -> uuid.UUID:
+    """Validate and convert a string parameter to UUID with proper error handling."""
+    try:
+        return uuid.UUID(param_value)
+    except (ValueError, TypeError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid {param_name} format. Must be a valid UUID."
+        )
 
 # --- Inventory CRUD ---
 @router.get("/", response_model=List[schemas.InventoryResponse])
@@ -266,3 +290,336 @@ async def get_warehouse_inventory_balance_calculations(
         "balance_calculations": balance_calculations,
         "total_parts": len(balance_calculations)
     }
+
+
+@router.get("/warehouse/{warehouse_id}/analytics", response_model=schemas.WarehouseAnalyticsResponse)
+async def get_warehouse_analytics(
+    warehouse_id: uuid.UUID,
+    start_date: Optional[date] = Query(None, description="Start date for analytics period (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="End date for analytics period (YYYY-MM-DD)"),
+    days: int = Query(30, ge=1, le=365, description="Number of days to include in analytics (default: 30)"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get comprehensive analytics for a specific warehouse including inventory summary,
+    top parts by value, stock movements, and turnover metrics.
+    """
+    try:
+        # Validate warehouse_id format
+        if not isinstance(warehouse_id, uuid.UUID):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid warehouse ID format. Must be a valid UUID."
+            )
+        
+        # Validate days parameter
+        if days < 1 or days > 365:
+            raise HTTPException(
+                status_code=400,
+                detail="Days parameter must be between 1 and 365"
+            )
+        
+        # Check if user can access this warehouse
+        try:
+            if not check_warehouse_access(current_user, warehouse_id, db):
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Not authorized to view analytics for this warehouse"
+                )
+        except Exception as e:
+            logger.error(f"Error checking warehouse access for user {current_user.user_id}: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Error validating warehouse access permissions"
+            )
+        
+        # Convert date objects to datetime objects if provided with validation
+        start_datetime = None
+        end_datetime = None
+        
+        try:
+            if start_date:
+                start_datetime = datetime.combine(start_date, datetime.min.time())
+                # Validate start date is not in the future (allow current day)
+                current_date = datetime.utcnow().date()
+                if start_date > current_date:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Start date cannot be in the future"
+                    )
+            
+            if end_date:
+                end_datetime = datetime.combine(end_date, datetime.max.time())
+                # Validate end date is not in the future (allow current day)
+                current_date = datetime.utcnow().date()
+                if end_date > current_date:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="End date cannot be in the future"
+                    )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid date format: {str(e)}"
+            )
+        
+        # Validate date range
+        if start_datetime and end_datetime:
+            if start_datetime > end_datetime:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Start date must be before or equal to end date"
+                )
+            
+            # Check if date range is reasonable (not more than 2 years)
+            if (end_datetime - start_datetime).days > 730:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Date range cannot exceed 2 years (730 days)"
+                )
+        
+        # Get analytics data from CRUD function
+        analytics_data = crud.inventory.get_warehouse_analytics(
+            db=db,
+            warehouse_id=warehouse_id,
+            start_date=start_datetime,
+            end_date=end_datetime,
+            days=days
+        )
+        
+        return analytics_data
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except ValueError as e:
+        logger.error(f"Value error in warehouse analytics endpoint: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input data: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in warehouse analytics endpoint: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Internal server error while fetching warehouse analytics"
+        )
+
+
+@router.get("/warehouse/{warehouse_id}/analytics/trends", response_model=schemas.WarehouseAnalyticsTrendsResponse)
+async def get_warehouse_analytics_trends(
+    warehouse_id: uuid.UUID,
+    period: str = Query("daily", regex="^(daily|weekly|monthly)$", description="Aggregation period: daily, weekly, or monthly"),
+    days: int = Query(30, ge=1, le=365, description="Number of days to include in trends (default: 30)"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get trend data for warehouse analytics with daily, weekly, and monthly aggregation options.
+    Returns time-series data for inventory values, quantities, and transaction counts.
+    """
+    try:
+        # Validate warehouse_id format
+        if not isinstance(warehouse_id, uuid.UUID):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid warehouse ID format. Must be a valid UUID."
+            )
+        
+        # Validate period parameter with detailed error message
+        valid_periods = ["daily", "weekly", "monthly"]
+        if period not in valid_periods:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid period '{period}'. Must be one of: {', '.join(valid_periods)}"
+            )
+        
+        # Validate days parameter with detailed error message
+        if days < 1 or days > 365:
+            raise HTTPException(
+                status_code=400,
+                detail="Days parameter must be between 1 and 365"
+            )
+        
+        # Additional validation for period/days combination
+        if period == "monthly" and days < 30:
+            raise HTTPException(
+                status_code=400,
+                detail="For monthly period, days parameter should be at least 30 to show meaningful data"
+            )
+        
+        if period == "weekly" and days < 7:
+            raise HTTPException(
+                status_code=400,
+                detail="For weekly period, days parameter should be at least 7 to show meaningful data"
+            )
+        
+        # Check if user can access this warehouse
+        try:
+            if not check_warehouse_access(current_user, warehouse_id, db):
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Not authorized to view analytics trends for this warehouse"
+                )
+        except Exception as e:
+            logger.error(f"Error checking warehouse access for user {current_user.user_id}: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Error validating warehouse access permissions"
+            )
+        
+        # Get trends data from CRUD function
+        trends_data = crud.inventory.get_warehouse_analytics_trends(
+            db=db,
+            warehouse_id=warehouse_id,
+            period=period,
+            days=days
+        )
+        
+        return trends_data
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except ValueError as e:
+        logger.error(f"Value error in warehouse analytics trends endpoint: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input data: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in warehouse analytics trends endpoint: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Internal server error while fetching warehouse analytics trends"
+        )
+
+
+@router.get("/cache/stats")
+async def get_analytics_cache_statistics(
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Get analytics cache statistics and performance metrics.
+    Only available to admin users.
+    """
+    try:
+        cache_stats = get_analytics_cache_stats()
+        return {
+            "cache_statistics": cache_stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting cache statistics: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while fetching cache statistics"
+        )
+
+
+# --- Cache Management Endpoints ---
+
+@router.get("/cache/stats")
+async def get_cache_statistics(
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Get analytics cache statistics.
+    Only available to admin users.
+    """
+    try:
+        cache_stats = get_analytics_cache_stats()
+        return {
+            "success": True,
+            "cache_statistics": cache_stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving cache statistics: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error retrieving cache statistics"
+        )
+
+
+@router.delete("/cache/warehouse/{warehouse_id}")
+async def invalidate_warehouse_cache(
+    warehouse_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Invalidate all cached analytics data for a specific warehouse.
+    Useful for forcing cache refresh after data changes.
+    """
+    try:
+        # Check if user can access this warehouse
+        if current_user.role != "super_admin":
+            warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == warehouse_id).first()
+            if not warehouse or warehouse.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Not authorized to manage cache for this warehouse"
+                )
+        
+        deleted_count = invalidate_warehouse_analytics_cache(str(warehouse_id))
+        
+        return {
+            "success": True,
+            "message": f"Cache invalidated for warehouse {warehouse_id}",
+            "deleted_entries": deleted_count,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Error invalidating warehouse cache for {warehouse_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error invalidating warehouse cache"
+        )
+
+
+@router.post("/cache/clear-all")
+async def clear_all_analytics_cache(
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Clear all analytics cache entries.
+    Only available to super admin users.
+    Use with caution as this will force all analytics queries to recalculate.
+    """
+    try:
+        if current_user.role != "super_admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Only super admin users can clear all cache entries"
+            )
+        
+        from ..cache import cache_manager
+        
+        # Clear analytics and trends cache
+        analytics_deleted = cache_manager.delete_pattern(f"{cache_manager.analytics_prefix}*")
+        trends_deleted = cache_manager.delete_pattern(f"{cache_manager.trends_prefix}*")
+        
+        total_deleted = analytics_deleted + trends_deleted
+        
+        return {
+            "success": True,
+            "message": "All analytics cache entries cleared",
+            "deleted_entries": {
+                "analytics": analytics_deleted,
+                "trends": trends_deleted,
+                "total": total_deleted
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Error clearing all analytics cache: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error clearing analytics cache"
+        )

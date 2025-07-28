@@ -708,6 +708,86 @@ class StocktakeLocation(BaseModel):
     name: str
 
 
+# --- Warehouse Analytics Schemas ---
+class WarehouseAnalyticsRequest(BaseModel):
+    """Request schema for warehouse analytics with validation"""
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    days: int = Field(default=30, ge=1, le=365, description="Number of days to include (1-365)")
+    
+    @validator('days')
+    def validate_days(cls, v):
+        if v < 1 or v > 365:
+            raise ValueError('Days must be between 1 and 365')
+        return v
+    
+    @validator('end_date')
+    def validate_end_date(cls, v, values):
+        if v and 'start_date' in values and values['start_date']:
+            if v < values['start_date']:
+                raise ValueError('End date must be after start date')
+        return v
+
+class WarehouseAnalyticsResponse(BaseModel):
+    """Response schema for warehouse analytics"""
+    warehouse_id: uuid.UUID
+    warehouse_name: str
+    analytics_period: dict
+    inventory_summary: dict
+    top_parts_by_value: List[dict]
+    stock_movements: dict
+    turnover_metrics: dict
+    
+    class Config:
+        from_attributes = True
+
+class WarehouseAnalyticsTrendsRequest(BaseModel):
+    """Request schema for warehouse analytics trends with validation"""
+    period: str = Field(default="daily", regex="^(daily|weekly|monthly)$", description="Aggregation period")
+    days: int = Field(default=30, ge=1, le=365, description="Number of days to include (1-365)")
+    
+    @validator('period')
+    def validate_period(cls, v):
+        valid_periods = ["daily", "weekly", "monthly"]
+        if v not in valid_periods:
+            raise ValueError(f'Period must be one of: {", ".join(valid_periods)}')
+        return v
+    
+    @validator('days')
+    def validate_days(cls, v):
+        if v < 1 or v > 365:
+            raise ValueError('Days must be between 1 and 365')
+        return v
+
+class WarehouseAnalyticsTrendsResponse(BaseModel):
+    """Response schema for warehouse analytics trends"""
+    warehouse_id: uuid.UUID
+    period: str
+    date_range: dict
+    trends: List[dict]
+    
+    class Config:
+        from_attributes = True
+
+# --- Error Response Schemas ---
+class ValidationErrorDetail(BaseModel):
+    """Individual validation error detail"""
+    field: str
+    message: str
+    invalid_value: Optional[str] = None
+
+class ErrorResponse(BaseModel):
+    """Standardized error response schema"""
+    error: str
+    message: str
+    details: Optional[List[ValidationErrorDetail]] = None
+    timestamp: datetime = Field(default_factory=datetime.now)
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
+
 # --- Session Schemas (New!) ---
 class UserSessionBase(BaseModel):
     ip_address: str

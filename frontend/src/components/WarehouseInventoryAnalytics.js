@@ -114,9 +114,9 @@ const WarehouseInventoryAnalytics = ({ warehouseId, warehouse }) => {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Total Items</div>
+          <div className="text-sm font-medium text-gray-500">Total Parts</div>
           <div className="text-2xl font-bold text-gray-900">
-            {formatNumber(analytics.total_items)}
+            {formatNumber(analytics.inventory_summary?.total_parts)}
           </div>
           <div className="text-xs text-gray-500 mt-1">
             Unique parts in warehouse
@@ -126,7 +126,7 @@ const WarehouseInventoryAnalytics = ({ warehouseId, warehouse }) => {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Total Stock Value</div>
           <div className="text-2xl font-bold text-green-600">
-            {formatCurrency(analytics.total_stock_value)}
+            {formatCurrency(analytics.inventory_summary?.total_value)}
           </div>
           <div className="text-xs text-gray-500 mt-1">
             Estimated inventory value
@@ -134,22 +134,22 @@ const WarehouseInventoryAnalytics = ({ warehouseId, warehouse }) => {
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Turnover Rate</div>
+          <div className="text-sm font-medium text-gray-500">Average Turnover</div>
           <div className="text-2xl font-bold text-blue-600">
-            {formatPercentage(analytics.turnover_rate)}
+            {formatNumber(analytics.turnover_metrics?.average_turnover_days)} days
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Inventory turnover
+            Average days between transactions
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Stock Accuracy</div>
-          <div className="text-2xl font-bold text-purple-600">
-            {formatPercentage(analytics.stock_accuracy)}
+          <div className="text-sm font-medium text-gray-500">Net Stock Change</div>
+          <div className={`text-2xl font-bold ${parseFloat(analytics.stock_movements?.net_change || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {formatNumber(analytics.stock_movements?.net_change)}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Based on recent adjustments
+            Net inventory movement
           </div>
         </div>
       </div>
@@ -160,31 +160,40 @@ const WarehouseInventoryAnalytics = ({ warehouseId, warehouse }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-3xl font-bold text-green-600">
-              {formatNumber(analytics.in_stock_items)}
+              {formatNumber((analytics.inventory_summary?.total_parts || 0) - (analytics.inventory_summary?.low_stock_parts || 0) - (analytics.inventory_summary?.out_of_stock_parts || 0))}
             </div>
             <div className="text-sm text-gray-500">In Stock</div>
             <div className="text-xs text-gray-400">
-              {formatPercentage((analytics.in_stock_items / analytics.total_items) * 100)}
+              {analytics.inventory_summary?.total_parts > 0 ?
+                formatPercentage(((analytics.inventory_summary.total_parts - analytics.inventory_summary.low_stock_parts - analytics.inventory_summary.out_of_stock_parts) / analytics.inventory_summary.total_parts) * 100) :
+                '0%'
+              }
             </div>
           </div>
 
           <div className="text-center">
             <div className="text-3xl font-bold text-orange-600">
-              {formatNumber(analytics.low_stock_items)}
+              {formatNumber(analytics.inventory_summary?.low_stock_parts)}
             </div>
             <div className="text-sm text-gray-500">Low Stock</div>
             <div className="text-xs text-gray-400">
-              {formatPercentage((analytics.low_stock_items / analytics.total_items) * 100)}
+              {analytics.inventory_summary?.total_parts > 0 ?
+                formatPercentage((analytics.inventory_summary.low_stock_parts / analytics.inventory_summary.total_parts) * 100) :
+                '0%'
+              }
             </div>
           </div>
 
           <div className="text-center">
             <div className="text-3xl font-bold text-red-600">
-              {formatNumber(analytics.out_of_stock_items)}
+              {formatNumber(analytics.inventory_summary?.out_of_stock_parts)}
             </div>
             <div className="text-sm text-gray-500">Out of Stock</div>
             <div className="text-xs text-gray-400">
-              {formatPercentage((analytics.out_of_stock_items / analytics.total_items) * 100)}
+              {analytics.inventory_summary?.total_parts > 0 ?
+                formatPercentage((analytics.inventory_summary.out_of_stock_parts / analytics.inventory_summary.total_parts) * 100) :
+                '0%'
+              }
             </div>
           </div>
         </div>
@@ -193,75 +202,89 @@ const WarehouseInventoryAnalytics = ({ warehouseId, warehouse }) => {
       {/* Activity Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h4 className="text-md font-medium text-gray-900 mb-4">Recent Activity</h4>
+          <h4 className="text-md font-medium text-gray-900 mb-4">Stock Movements</h4>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Adjustments</span>
-              <span className="text-sm font-medium text-gray-900">
-                {formatNumber(analytics.recent_adjustments)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Transfers In</span>
+              <span className="text-sm text-gray-600">Total Inbound</span>
               <span className="text-sm font-medium text-green-600">
-                {formatNumber(analytics.transfers_in)}
+                {formatNumber(analytics.stock_movements?.total_inbound)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Transfers Out</span>
+              <span className="text-sm text-gray-600">Total Outbound</span>
               <span className="text-sm font-medium text-red-600">
-                {formatNumber(analytics.transfers_out)}
+                {formatNumber(analytics.stock_movements?.total_outbound)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Usage Records</span>
-              <span className="text-sm font-medium text-gray-900">
-                {formatNumber(analytics.usage_records)}
+              <span className="text-sm text-gray-600">Net Change</span>
+              <span className={`text-sm font-medium ${parseFloat(analytics.stock_movements?.net_change || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatNumber(analytics.stock_movements?.net_change)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Fast Moving Parts</span>
+              <span className="text-sm font-medium text-blue-600">
+                {formatNumber(analytics.turnover_metrics?.fast_moving_parts)}
               </span>
             </div>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h4 className="text-md font-medium text-gray-900 mb-4">Top Moving Parts</h4>
-          {analytics.top_moving_parts && analytics.top_moving_parts.length > 0 ? (
+          <h4 className="text-md font-medium text-gray-900 mb-4">Top Parts by Value</h4>
+          {analytics.top_parts_by_value && analytics.top_parts_by_value.length > 0 ? (
             <div className="space-y-3">
-              {analytics.top_moving_parts.slice(0, 5).map((part, index) => (
+              {analytics.top_parts_by_value.slice(0, 5).map((part, index) => (
                 <div key={index} className="flex justify-between items-center">
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900">
                       {part.part_name}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {part.part_number}
+                      Qty: {formatNumber(part.quantity)}
                     </div>
                   </div>
                   <div className="text-sm font-medium text-blue-600">
-                    {formatNumber(part.movement_count)} moves
+                    {formatCurrency(part.total_value)}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-sm text-gray-500">No movement data available</div>
+            <div className="text-sm text-gray-500">No parts data available</div>
           )}
         </div>
       </div>
 
-      {/* Recommendations */}
-      {analytics.recommendations && analytics.recommendations.length > 0 && (
-        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-          <h4 className="text-md font-medium text-blue-900 mb-4">Recommendations</h4>
-          <div className="space-y-2">
-            {analytics.recommendations.map((recommendation, index) => (
-              <div key={index} className="flex items-start space-x-2">
-                <div className="flex-shrink-0 w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
-                <div className="text-sm text-blue-800">{recommendation}</div>
-              </div>
-            ))}
+      {/* Analytics Period Info */}
+      <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+        <h4 className="text-md font-medium text-blue-900 mb-4">Analytics Period</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-blue-700 font-medium">Period:</span>
+            <div className="text-blue-800">{analytics.analytics_period?.days} days</div>
+          </div>
+          <div>
+            <span className="text-blue-700 font-medium">From:</span>
+            <div className="text-blue-800">
+              {analytics.analytics_period?.start_date ?
+                new Date(analytics.analytics_period.start_date).toLocaleDateString() :
+                'N/A'
+              }
+            </div>
+          </div>
+          <div>
+            <span className="text-blue-700 font-medium">To:</span>
+            <div className="text-blue-800">
+              {analytics.analytics_period?.end_date ?
+                new Date(analytics.analytics_period.end_date).toLocaleDateString() :
+                'N/A'
+              }
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
