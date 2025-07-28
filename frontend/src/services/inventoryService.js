@@ -174,7 +174,27 @@ const getInventoryReport = (reportParams) => {
     });
   }
 
-  return api.get(`/inventory/reports?${queryParams.toString()}`);
+  // Map report_type to the correct endpoint
+  const reportType = reportParams?.report_type || 'summary';
+  let endpoint;
+
+  switch (reportType) {
+    case 'movement':
+      endpoint = `/inventory-reports/movement?${queryParams.toString()}`;
+      break;
+    case 'valuation':
+      endpoint = `/inventory-reports/valuation?${queryParams.toString()}`;
+      break;
+    case 'detailed':
+    case 'summary':
+    default:
+      // For summary and detailed reports, we'll use the valuation endpoint
+      // and format the data appropriately
+      endpoint = `/inventory-reports/valuation?${queryParams.toString()}`;
+      break;
+  }
+
+  return api.get(endpoint);
 };
 
 export const inventoryService = {

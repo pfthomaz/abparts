@@ -54,6 +54,126 @@ def validate_uuid_parameter(param_value: str, param_name: str) -> uuid.UUID:
             detail=f"Invalid {param_name} format. Must be a valid UUID."
         )
 
+# --- Temporary Compatibility Endpoint (must be before /{inventory_id}) ---
+@router.get("/reports")
+async def get_inventory_reports_compatibility(
+    warehouse_ids: List[uuid.UUID] = Query(..., description="List of warehouse IDs"),
+    report_type: str = Query("summary", description="Type of report"),
+    start_date: Optional[date] = Query(None, description="Start date"),
+    end_date: Optional[date] = Query(None, description="End date"),
+    stock_status: str = Query("all", description="Stock status filter"),
+    part_type: str = Query("all", description="Part type filter"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Temporary compatibility endpoint for old frontend calls.
+    This redirects to the proper inventory-reports endpoints.
+    """
+    try:
+        # For now, just use the first warehouse ID and call the valuation endpoint
+        if not warehouse_ids:
+            raise HTTPException(status_code=400, detail="At least one warehouse ID is required")
+        
+        warehouse_id = warehouse_ids[0]
+        
+        # Check if user can access this warehouse
+        if not check_warehouse_access(current_user, warehouse_id, db):
+            raise HTTPException(status_code=403, detail="Not authorized to view this warehouse's reports")
+        
+        # Get valuation data directly from the database
+        # Get all inventory items in the specified warehouse
+        inventory_query = db.query(
+            models.Inventory,
+            models.Part,
+            models.Warehouse.name.label("warehouse_name")
+        ).join(
+            models.Part, models.Inventory.part_id == models.Part.id
+        ).join(
+            models.Warehouse, models.Inventory.warehouse_id == models.Warehouse.id
+        ).filter(
+            models.Inventory.warehouse_id == warehouse_id
+        )
+        
+        inventory_results = inventory_query.all()
+        valuation_data = []
+        
+        for inventory, part, warehouse_name in inventory_results:
+            # Get the most recent supplier order item for this part to estimate value
+            supplier_order_item = db.query(
+                models.SupplierOrderItem
+            ).join(
+                models.SupplierOrder, models.SupplierOrderItem.supplier_order_id == models.SupplierOrder.id
+            ).filter(
+                models.SupplierOrderItem.part_id == part.id
+            ).order_by(
+                models.SupplierOrder.order_date.desc()
+            ).first()
+            
+            # Estimate unit value
+            unit_value = None
+            if supplier_order_item and supplier_order_item.unit_price:
+                unit_value = supplier_order_item.unit_price
+            
+            # Calculate total value
+            total_value = None
+            if unit_value is not None:
+                total_value = unit_value * inventory.current_stock
+            
+            valuation_data.append({
+                "inventory_id": inventory.id,
+                "part_id": part.id,
+                "part_number": part.part_number,
+                "part_name": part.name,
+                "warehouse_id": inventory.warehouse_id,
+                "warehouse_name": warehouse_name,
+                "current_stock": inventory.current_stock,
+                "unit_of_measure": inventory.unit_of_measure,
+                "unit_value": unit_value,
+                "total_value": total_value,
+                "last_updated": inventory.last_updated
+            })
+        
+        # Transform to expected format
+        items = []
+        for item in valuation_data:
+            items.append({
+                "warehouse_name": item.get("warehouse_name", "Unknown"),
+                "part_number": item.get("part_number", ""),
+                "part_name": item.get("part_name", ""),
+                "current_stock": float(item.get("current_stock", 0)),
+                "unit_of_measure": item.get("unit_of_measure", ""),
+                "minimum_stock_recommendation": 0,
+                "stock_status": "in_stock" if float(item.get("current_stock", 0)) > 0 else "out_of_stock",
+                "estimated_value": float(item.get("total_value", 0)) if item.get("total_value") else 0
+            })
+        
+        # Calculate summary
+        total_items = len(items)
+        total_value = sum(item["estimated_value"] for item in items)
+        low_stock_items = sum(1 for item in items if item["stock_status"] == "low_stock")
+        out_of_stock_items = sum(1 for item in items if item["stock_status"] == "out_of_stock")
+        
+        return {
+            "items": items,
+            "summary": {
+                "total_items": total_items,
+                "total_value": total_value,
+                "low_stock_items": low_stock_items,
+                "out_of_stock_items": out_of_stock_items
+            },
+            "warehouse_breakdown": []
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in compatibility reports endpoint: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while generating report"
+        )
+
 # --- Inventory CRUD ---
 @router.get("/", response_model=List[schemas.InventoryResponse])
 async def get_inventory_items(
@@ -623,3 +743,4 @@ async def clear_all_analytics_cache(
             status_code=500,
             detail="Error clearing analytics cache"
         )
+

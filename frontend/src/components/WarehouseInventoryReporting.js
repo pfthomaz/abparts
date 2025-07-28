@@ -4,6 +4,109 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
 
+// Helper functions moved outside component to avoid dependency issues
+const getStockStatus = (currentStock) => {
+  if (!currentStock || currentStock <= 0) return 'out_of_stock';
+  if (currentStock <= 5) return 'low_stock'; // Arbitrary threshold
+  return 'in_stock';
+};
+
+const transformValuationData = (rawData) => {
+  const items = rawData.map(item => ({
+    warehouse_name: item.warehouse_name,
+    part_number: item.part_number,
+    part_name: item.part_name,
+    current_stock: item.current_stock,
+    unit_of_measure: item.unit_of_measure,
+    minimum_stock_recommendation: 0, // Not available in valuation data
+    stock_status: getStockStatus(item.current_stock),
+    estimated_value: item.total_value || 0
+  }));
+
+  // Calculate summary
+  const totalItems = items.length;
+  const totalValue = items.reduce((sum, item) => sum + (item.estimated_value || 0), 0);
+  const lowStockItems = items.filter(item => item.stock_status === 'low_stock').length;
+  const outOfStockItems = items.filter(item => item.stock_status === 'out_of_stock').length;
+
+  // Group by warehouse for breakdown
+  const warehouseGroups = {};
+  items.forEach(item => {
+    if (!warehouseGroups[item.warehouse_name]) {
+      warehouseGroups[item.warehouse_name] = {
+        warehouse_name: item.warehouse_name,
+        total_items: 0,
+        total_value: 0,
+        low_stock_items: 0,
+        out_of_stock_items: 0
+      };
+    }
+    const group = warehouseGroups[item.warehouse_name];
+    group.total_items++;
+    group.total_value += item.estimated_value || 0;
+    if (item.stock_status === 'low_stock') group.low_stock_items++;
+    if (item.stock_status === 'out_of_stock') group.out_of_stock_items++;
+  });
+
+  return {
+    items,
+    summary: {
+      total_items: totalItems,
+      total_value: totalValue,
+      low_stock_items: lowStockItems,
+      out_of_stock_items: outOfStockItems
+    },
+    warehouse_breakdown: Object.values(warehouseGroups)
+  };
+};
+
+const transformMovementData = (rawData) => {
+  const items = rawData.map(item => ({
+    warehouse_name: 'Multiple', // Movement data is aggregated
+    part_number: item.part_number,
+    part_name: item.part_name,
+    current_stock: item.current_inventory,
+    unit_of_measure: item.unit_of_measure,
+    minimum_stock_recommendation: 0,
+    stock_status: getStockStatus(item.current_inventory),
+    estimated_value: 0, // Not available in movement data
+    beginning_balance: item.beginning_balance,
+    received: item.received,
+    issued: item.issued,
+    adjusted: item.adjusted,
+    ending_balance: item.ending_balance
+  }));
+
+  return {
+    items,
+    summary: {
+      total_items: items.length,
+      total_value: 0,
+      low_stock_items: items.filter(item => item.stock_status === 'low_stock').length,
+      out_of_stock_items: items.filter(item => item.stock_status === 'out_of_stock').length
+    },
+    warehouse_breakdown: []
+  };
+};
+
+const transformReportData = (rawData, reportType) => {
+  if (!rawData || !Array.isArray(rawData)) {
+    return { items: [], summary: {}, warehouse_breakdown: [] };
+  }
+
+  // Transform based on report type
+  switch (reportType) {
+    case 'valuation':
+    case 'detailed':
+    case 'summary':
+      return transformValuationData(rawData);
+    case 'movement':
+      return transformMovementData(rawData);
+    default:
+      return transformValuationData(rawData);
+  }
+};
+
 const WarehouseInventoryReporting = ({ organizationId }) => {
   const [reportData, setReportData] = useState(null);
   const [warehouses, setWarehouses] = useState([]);
@@ -46,8 +149,16 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
         ...filters
       };
 
-      const data = await inventoryService.getInventoryReport(reportParams);
-      setReportData(data);
+      // Filter warehouse_ids to only include selected warehouses
+      if (selectedWarehouses.length > 0) {
+        reportParams.warehouse_id = selectedWarehouses[0]; // Backend expects single warehouse_id
+      }
+
+      const rawData = await inventoryService.getInventoryReport(reportParams);
+
+      // Transform the backend response to match frontend expectations
+      const transformedData = transformReportData(rawData, reportType);
+      setReportData(transformedData);
     } catch (err) {
       setError('Failed to generate report');
       console.error('Failed to generate report:', err);
@@ -161,6 +272,8 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       default: return 'Unknown';
     }
   };
+
+
 
   return (
     <div className="space-y-6">
