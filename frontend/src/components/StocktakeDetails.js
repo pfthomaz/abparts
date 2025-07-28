@@ -198,7 +198,7 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
       </div>
 
       {/* Action Buttons */}
-      {canEdit && Object.keys(editingItems).length > 0 && (
+      {canEdit && editingItems && Object.keys(editingItems).length > 0 && (
         <div className="flex justify-end space-x-3">
           <button
             onClick={() => setEditingItems({})}

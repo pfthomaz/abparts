@@ -8,11 +8,13 @@ import { api } from './api';
  */
 const getTransactions = (filters = {}) => {
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/transactions?${queryString}` : '/transactions';

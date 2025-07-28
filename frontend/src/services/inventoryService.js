@@ -9,11 +9,13 @@ import { api } from './api';
 const getInventory = (filters = {}) => {
   // Build query string from filters
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/inventory?${queryString}` : '/inventory';
@@ -29,11 +31,13 @@ const getInventory = (filters = {}) => {
 const getWarehouseInventory = (warehouseId, filters = {}) => {
   const queryParams = new URLSearchParams();
 
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/inventory/warehouse/${warehouseId}?${queryString}` : `/inventory/warehouse/${warehouseId}`;
@@ -81,11 +85,13 @@ const transferInventory = (transferData) => {
  */
 const getInventoryTransfers = (filters = {}) => {
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/inventory/transfers?${queryString}` : '/inventory/transfers';
@@ -109,11 +115,13 @@ const createWarehouseStockAdjustment = (warehouseId, adjustmentData) => {
  */
 const getWarehouseStockAdjustments = (warehouseId, filters = {}) => {
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString
@@ -154,15 +162,17 @@ const deleteInventoryItem = (inventoryId) => {
  */
 const getInventoryReport = (reportParams) => {
   const queryParams = new URLSearchParams();
-  Object.keys(reportParams).forEach(key => {
-    if (reportParams[key] !== undefined && reportParams[key] !== null && reportParams[key] !== '') {
-      if (Array.isArray(reportParams[key])) {
-        reportParams[key].forEach(value => queryParams.append(key, value));
-      } else {
-        queryParams.append(key, reportParams[key]);
+  if (reportParams && typeof reportParams === 'object') {
+    Object.keys(reportParams).forEach(key => {
+      if (reportParams[key] !== undefined && reportParams[key] !== null && reportParams[key] !== '') {
+        if (Array.isArray(reportParams[key])) {
+          reportParams[key].forEach(value => queryParams.append(key, value));
+        } else {
+          queryParams.append(key, reportParams[key]);
+        }
       }
-    }
-  });
+    });
+  }
 
   return api.get(`/inventory/reports?${queryParams.toString()}`);
 };

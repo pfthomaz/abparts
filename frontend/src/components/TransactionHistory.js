@@ -58,11 +58,13 @@ const TransactionHistory = () => {
       };
 
       // Remove empty filters
-      Object.keys(searchFilters).forEach(key => {
-        if (!searchFilters[key]) {
-          delete searchFilters[key];
-        }
-      });
+      if (searchFilters && typeof searchFilters === 'object') {
+        Object.keys(searchFilters).forEach(key => {
+          if (!searchFilters[key]) {
+            delete searchFilters[key];
+          }
+        });
+      }
 
       const data = await transactionService.searchTransactions(
         searchFilters,

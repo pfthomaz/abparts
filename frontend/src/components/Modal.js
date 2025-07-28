@@ -2,15 +2,17 @@
 
 import React from 'react';
 
-function Modal({ show, onClose, title, children, size = 'medium' }) {
-  if (!show) {
+function Modal({ isOpen, onClose, title, children, size = 'medium' }) {
+  if (!isOpen) {
     return null;
   }
 
   const sizeClasses = {
     small: 'max-w-md',
     medium: 'max-w-lg',
+    lg: 'max-w-4xl',
     large: 'max-w-4xl',
+    xl: 'max-w-6xl',
     xlarge: 'max-w-6xl'
   };
 

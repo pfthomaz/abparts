@@ -93,11 +93,13 @@ const uploadImage = async (formData) => {
 const getPartsWithInventory = async (filters = {}) => {
   try {
     const queryParams = new URLSearchParams();
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-        queryParams.append(key, filters[key]);
-      }
-    });
+    if (filters && typeof filters === 'object') {
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+          queryParams.append(key, filters[key]);
+        }
+      });
+    }
 
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/parts/with-inventory?${queryString}` : '/parts/with-inventory';
@@ -154,11 +156,13 @@ const searchPartsWithInventory = async (searchTerm, filters = {}) => {
     const queryParams = new URLSearchParams();
     queryParams.append('q', searchTerm);
 
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-        queryParams.append(key, filters[key]);
-      }
-    });
+    if (filters && typeof filters === 'object') {
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+          queryParams.append(key, filters[key]);
+        }
+      });
+    }
 
     const response = await api.get(`/parts/search-with-inventory?${queryParams.toString()}`);
 

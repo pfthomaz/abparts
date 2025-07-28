@@ -53,14 +53,16 @@ export const ORGANIZATION_TYPE_CONFIG = {
 const getOrganizations = (filters = {}) => {
   // Build query string from filters
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
-  const endpoint = queryString ? `/organizations?${queryString}` : '/organizations';
+  const endpoint = queryString ? `/organizations/?${queryString}` : '/organizations/';
 
   return api.get(endpoint);
 };

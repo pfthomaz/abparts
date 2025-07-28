@@ -9,14 +9,16 @@ import { api } from './api';
 const getWarehouses = (filters = {}) => {
   // Build query string from filters
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
-  const endpoint = queryString ? `/warehouses?${queryString}` : '/warehouses';
+  const endpoint = queryString ? `/warehouses/?${queryString}` : '/warehouses/';
 
   return api.get(endpoint);
 };
@@ -30,13 +32,15 @@ const searchWarehouses = (query, filters = {}) => {
   const queryParams = new URLSearchParams();
   queryParams.append('q', query);
 
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
-  return api.get(`/warehouses/search?${queryParams.toString()}`);
+  return api.get(`/warehouses/search/?${queryParams.toString()}`);
 };
 
 /**
@@ -60,7 +64,7 @@ const getWarehouseSummary = (id) => {
  * @param {object} warehouseData The data for the new warehouse.
  */
 const createWarehouse = (warehouseData) => {
-  return api.post('/warehouses', warehouseData);
+  return api.post('/warehouses/', warehouseData);
 };
 
 /**
@@ -103,11 +107,13 @@ const deleteWarehouse = (warehouseId) => {
  */
 const getOrganizationWarehouses = (organizationId, filters = {}) => {
   const queryParams = new URLSearchParams();
-  Object.keys(filters).forEach(key => {
-    if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-      queryParams.append(key, filters[key]);
-    }
-  });
+  if (filters && typeof filters === 'object') {
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString
