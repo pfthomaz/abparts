@@ -324,7 +324,7 @@ const Inventory = () => {
       )}
 
       <Modal
-        show={showModal}
+        isOpen={showModal}
         onClose={closeModal}
         title={getModalTitle()}
       >

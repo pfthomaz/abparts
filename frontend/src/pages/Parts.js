@@ -396,7 +396,7 @@ const Parts = () => {
       )}
 
       <Modal
-        show={showModal}
+        isOpen={showModal}
         onClose={closeModal}
         title={editingPart ? "Edit Part" : "Add New Part"}
       >

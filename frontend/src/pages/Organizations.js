@@ -355,7 +355,7 @@ const Organizations = () => {
 
       {/* Modal */}
       <Modal
-        show={showModal}
+        isOpen={showModal}
         onClose={closeModal}
         title={editingOrganization ? "Edit Organization" : "Add New Organization"}
       >

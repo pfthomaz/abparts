@@ -342,7 +342,7 @@ const MachineDetails = ({ machineId, onClose }) => {
 
       {/* Maintenance Modal */}
       <Modal
-        show={showMaintenanceModal}
+        isOpen={showMaintenanceModal}
         onClose={() => setShowMaintenanceModal(false)}
         title="Add Maintenance Record"
       >

@@ -535,15 +535,15 @@ const Orders = () => {
         </div>
       )}
 
-      <Modal show={showSupplierOrderModal} onClose={() => setShowSupplierOrderModal(false)} title="Add Supplier Order">
+      <Modal isOpen={showSupplierOrderModal} onClose={() => setShowSupplierOrderModal(false)} title="Add Supplier Order">
         <SupplierOrderForm onSubmit={handleCreateSupplierOrder} onClose={() => setShowSupplierOrderModal(false)} organizations={organizations} parts={parts} />
       </Modal>
 
-      <Modal show={showCustomerOrderModal} onClose={() => setShowCustomerOrderModal(false)} title="Add Customer Order">
+      <Modal isOpen={showCustomerOrderModal} onClose={() => setShowCustomerOrderModal(false)} title="Add Customer Order">
         <CustomerOrderForm onSubmit={handleCreateCustomerOrder} onClose={() => setShowCustomerOrderModal(false)} organizations={organizations} parts={parts} />
       </Modal>
 
-      <Modal show={showEnhancedOrderModal} onClose={() => setShowEnhancedOrderModal(false)} title="Create Part Order">
+      <Modal isOpen={showEnhancedOrderModal} onClose={() => setShowEnhancedOrderModal(false)} title="Create Part Order">
         <EnhancedPartOrderForm
           onSubmit={handleCreateEnhancedOrder}
           onClose={() => setShowEnhancedOrderModal(false)}
@@ -555,7 +555,7 @@ const Orders = () => {
 
       {/* Order Fulfillment Modal */}
       <Modal
-        show={showFulfillmentModal}
+        isOpen={showFulfillmentModal}
         onClose={() => {
           setShowFulfillmentModal(false);
           setSelectedOrderForFulfillment(null);
@@ -577,7 +577,7 @@ const Orders = () => {
 
       {/* Order History Modal */}
       <Modal
-        show={showOrderHistoryModal}
+        isOpen={showOrderHistoryModal}
         onClose={() => setShowOrderHistoryModal(false)}
         title="Order History & Analytics"
       >

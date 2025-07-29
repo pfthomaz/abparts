@@ -265,7 +265,7 @@ const Machines = () => {
       )}
 
       {/* Machine Form Modal */}
-      <Modal show={showModal} onClose={closeModal} title={editingMachine ? "Edit Machine" : "Register New Machine"}>
+      <Modal isOpen={showModal} onClose={closeModal} title={editingMachine ? "Edit Machine" : "Register New Machine"}>
         <MachineForm
           initialData={editingMachine || {}}
           organizations={organizations.filter(org => org.organization_type === 'customer')}
@@ -276,7 +276,7 @@ const Machines = () => {
 
       {/* Machine Details Modal */}
       <Modal
-        show={showDetailsModal}
+        isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
         title="Machine Details"
         size="large"
@@ -291,7 +291,7 @@ const Machines = () => {
 
       {/* Machine Transfer Modal */}
       <Modal
-        show={showTransferModal}
+        isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}
         title="Transfer Machine"
       >
