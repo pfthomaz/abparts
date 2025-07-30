@@ -117,6 +117,34 @@ const getUsageHistory = (machineId, skip = 0, limit = 100) => {
   return api.get(`/machines/${machineId}/usage-history?skip=${skip}&limit=${limit}`);
 };
 
+/**
+ * Records machine hours for a specific machine.
+ * @param {string} machineId The ID of the machine.
+ * @param {object} hoursData The hours data to record.
+ */
+const recordMachineHours = (machineId, hoursData) => {
+  return api.post(`/machines/${machineId}/hours`, hoursData);
+};
+
+/**
+ * Gets machine hours history for a specific machine.
+ * @param {string} machineId The ID of the machine.
+ * @param {number} skip Number of records to skip.
+ * @param {number} limit Maximum number of records to return.
+ */
+const getMachineHours = (machineId, skip = 0, limit = 100) => {
+  return api.get(`/machines/${machineId}/hours?skip=${skip}&limit=${limit}`);
+};
+
+/**
+ * Updates machine name (admin only).
+ * @param {string} machineId The ID of the machine.
+ * @param {string} name The new machine name.
+ */
+const updateMachineName = (machineId, name) => {
+  return api.put(`/machines/${machineId}/name`, { name });
+};
+
 export const machinesService = {
   getMachines,
   getMachine,
@@ -131,4 +159,7 @@ export const machinesService = {
   addCompatiblePart,
   removeCompatiblePart,
   getUsageHistory,
+  recordMachineHours,
+  getMachineHours,
+  updateMachineName,
 };

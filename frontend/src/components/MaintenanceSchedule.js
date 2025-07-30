@@ -11,6 +11,17 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
   const { user } = useAuth();
   const permissions = getContextualPermissions(user, 'machines');
 
+  // Helper function to get maintenance descriptions
+  const getMaintenanceDescription = (type) => {
+    const descriptions = {
+      routine: 'Basic cleaning, lubrication, and visual inspection',
+      preventive: 'Comprehensive system check, filter replacement, calibration',
+      inspection: 'Detailed safety and performance inspection',
+      deep_clean: 'Complete disassembly, deep cleaning, and component replacement'
+    };
+    return descriptions[type] || 'Standard maintenance procedure';
+  };
+
   // Calculate maintenance recommendations based on history and machine type
   const maintenanceRecommendations = useMemo(() => {
     const recommendations = [];
@@ -58,16 +69,6 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
 
     return recommendations.sort((a, b) => a.daysDiff - b.daysDiff);
   }, [machine, maintenanceHistory]);
-
-  const getMaintenanceDescription = (type) => {
-    const descriptions = {
-      routine: 'Basic cleaning, lubrication, and visual inspection',
-      preventive: 'Comprehensive system check, filter replacement, calibration',
-      inspection: 'Detailed safety and performance inspection',
-      deep_clean: 'Complete disassembly, deep cleaning, and component replacement'
-    };
-    return descriptions[type] || 'Standard maintenance procedure';
-  };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
