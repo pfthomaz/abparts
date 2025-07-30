@@ -111,44 +111,48 @@ validate_ip() {
 # Function to update environment configuration
 update_env_config() {
     local host_ip=$1
-    local env_file=".env.local"
     
     print_info "Updating environment configuration..."
     
-    # Create backup if file exists
-    if [ -f "$env_file" ]; then
-        cp "$env_file" "${env_file}.backup.$(date +%Y%m%d_%H%M%S)"
-        print_info "Created backup of existing $env_file"
-    fi
+    # Update both .env and .env.local files
+    local env_files=(".env" ".env.local")
     
-    # Update or add HOST_IP
-    if [ -f "$env_file" ] && grep -q "^HOST_IP=" "$env_file"; then
-        sed -i.tmp "s/^HOST_IP=.*/HOST_IP=$host_ip/" "$env_file" && rm -f "${env_file}.tmp"
-        print_success "Updated HOST_IP in $env_file"
-    else
-        echo "HOST_IP=$host_ip" >> "$env_file"
-        print_success "Added HOST_IP to $env_file"
-    fi
-    
-    # Update CORS configuration to include the new IP
-    local cors_origins="http://localhost:3000,http://127.0.0.1:3000,http://${host_ip}:3000,http://${host_ip}:8000"
-    if grep -q "^CORS_ALLOWED_ORIGINS=" "$env_file"; then
-        sed -i.tmp "s|^CORS_ALLOWED_ORIGINS=.*|CORS_ALLOWED_ORIGINS=$cors_origins|" "$env_file" && rm -f "${env_file}.tmp"
-        print_success "Updated CORS_ALLOWED_ORIGINS in $env_file"
-    else
-        echo "CORS_ALLOWED_ORIGINS=$cors_origins" >> "$env_file"
-        print_success "Added CORS_ALLOWED_ORIGINS to $env_file"
-    fi
-    
-    # Update BASE_URL for mobile access
-    local base_url="http://${host_ip}:8000"
-    if grep -q "^BASE_URL=" "$env_file"; then
-        sed -i.tmp "s|^BASE_URL=.*|BASE_URL=$base_url|" "$env_file" && rm -f "${env_file}.tmp"
-        print_success "Updated BASE_URL in $env_file"
-    else
-        echo "BASE_URL=$base_url" >> "$env_file"
-        print_success "Added BASE_URL to $env_file"
-    fi
+    for env_file in "${env_files[@]}"; do
+        if [ -f "$env_file" ]; then
+            # Create backup if file exists
+            cp "$env_file" "${env_file}.backup.$(date +%Y%m%d_%H%M%S)"
+            print_info "Created backup of existing $env_file"
+            
+            # Update or add HOST_IP
+            if grep -q "^HOST_IP=" "$env_file"; then
+                sed -i.tmp "s/^HOST_IP=.*/HOST_IP=$host_ip/" "$env_file" && rm -f "${env_file}.tmp"
+                print_success "Updated HOST_IP in $env_file"
+            else
+                echo "HOST_IP=$host_ip" >> "$env_file"
+                print_success "Added HOST_IP to $env_file"
+            fi
+            
+            # Update CORS configuration to include the new IP (preserve existing origins)
+            local cors_origins="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000,http://${host_ip}:3000,http://${host_ip}:8000"
+            if grep -q "^CORS_ALLOWED_ORIGINS=" "$env_file"; then
+                sed -i.tmp "s|^CORS_ALLOWED_ORIGINS=.*|CORS_ALLOWED_ORIGINS=$cors_origins|" "$env_file" && rm -f "${env_file}.tmp"
+                print_success "Updated CORS_ALLOWED_ORIGINS in $env_file"
+            else
+                echo "CORS_ALLOWED_ORIGINS=$cors_origins" >> "$env_file"
+                print_success "Added CORS_ALLOWED_ORIGINS to $env_file"
+            fi
+            
+            # Update REACT_APP_API_BASE_URL for mobile access
+            local react_api_url="http://${host_ip}:8000"
+            if grep -q "^REACT_APP_API_BASE_URL=" "$env_file"; then
+                sed -i.tmp "s|^REACT_APP_API_BASE_URL=.*|REACT_APP_API_BASE_URL=$react_api_url|" "$env_file" && rm -f "${env_file}.tmp"
+                print_success "Updated REACT_APP_API_BASE_URL in $env_file"
+            else
+                echo "REACT_APP_API_BASE_URL=$react_api_url" >> "$env_file"
+                print_success "Added REACT_APP_API_BASE_URL to $env_file"
+            fi
+        fi
+    done
 }
 
 # Function to display mobile access information

@@ -132,9 +132,8 @@ services:
       - ./frontend:/app # Mount frontend code for live reloading
       - /app/node_modules # Avoid overwriting node_modules inside the container with host's
     environment:
-      # Point the React app to the backend API running in Docker
-      REACT_APP_API_BASE_URL: http://localhost:8000 # Use localhost for local development
-      # For mobile access, you may need to use your host machine's IP address
+      # Point the React app to the backend API - uses environment variable for mobile access
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-http://localhost:8000}
     depends_on:
       api:
         condition: service_started # Web depends on API being started (not necessarily healthy for dev)

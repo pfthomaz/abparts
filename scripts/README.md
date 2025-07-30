@@ -87,6 +87,20 @@ PowerShell script for advanced firewall management.
 .\scripts\configure-windows-firewall.ps1 -Help
 ```
 
+### `test-mobile-access.sh`
+Comprehensive test suite to verify mobile access is working correctly.
+
+**Usage:**
+```bash
+bash scripts/test-mobile-access.sh
+```
+
+**What it tests:**
+- API accessibility from network IP
+- CORS configuration for mobile origins
+- Frontend accessibility
+- Admin interface accessibility
+
 ## Quick Start
 
 1. **Test IP detection:**
