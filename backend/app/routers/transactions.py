@@ -14,6 +14,10 @@ from ..permissions import (
     ResourceType, PermissionType, require_permission, require_super_admin,
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
+from ..schemas.machine_sale import MachineSaleRequest, MachineSaleResponse
+from ..schemas.part_order_transaction import PartOrderRequest, PartOrderReceiptRequest, PartOrderResponse
+from ..schemas.part_usage import PartUsageRequest, PartUsageResponse
+from ..crud import machine_sale, part_order_transaction, part_usage
 
 router = APIRouter()
 
@@ -443,3 +447,205 @@ async def get_pending_approval_transactions(
         results.append(result)
     
     return results
+
+# --- New Transaction Management API Extensions ---
+
+@router.post("/machine-sale", response_model=MachineSaleResponse, status_code=status.HTTP_201_CREATED)
+async def create_machine_sale(
+    machine_sale_request: MachineSaleRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Record machine ownership transfer from one organization to another.
+    Typically used for sales from Oraseas EE to customers.
+    Only super_admin and admins can create machine sales.
+    """
+    # Check if user has permission to perform machine sales
+    if not (permission_checker.is_super_admin(current_user) or permission_checker.is_admin(current_user)):
+        raise HTTPException(status_code=403, detail="Only admins can record machine sales")
+    
+    # Validate organizational access
+    if not permission_checker.is_super_admin(current_user):
+        # Admin users can only sell machines from their own organization
+        if machine_sale_request.from_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Not authorized to sell machines from this organization")
+    
+    # Set performed_by_user_id to current user if not provided
+    if not machine_sale_request.performed_by_user_id:
+        machine_sale_request.performed_by_user_id = current_user.user_id
+    
+    try:
+        db_machine_sale = machine_sale.create_machine_sale(db, machine_sale_request)
+        
+        # Get the response with related data
+        result = machine_sale.get_machine_sale(db, db_machine_sale.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/part-order", response_model=PartOrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_part_order(
+    part_order_request: PartOrderRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Create a part order request (phase 1 of two-phase recording).
+    Users can only create orders from their own organization.
+    """
+    # Validate organizational access
+    if not permission_checker.is_super_admin(current_user):
+        # Users can only create orders from their own organization
+        if part_order_request.from_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Not authorized to create orders from this organization")
+        
+        # Validate warehouse access if provided
+        if part_order_request.from_warehouse_id:
+            warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == part_order_request.from_warehouse_id).first()
+            if not warehouse or warehouse.organization_id != current_user.organization_id:
+                raise HTTPException(status_code=403, detail="Not authorized to use this warehouse")
+    
+    # Set performed_by_user_id to current user if not provided
+    if not part_order_request.performed_by_user_id:
+        part_order_request.performed_by_user_id = current_user.user_id
+    
+    try:
+        db_part_order = part_order_transaction.create_part_order(db, part_order_request)
+        
+        # Get the response with related data
+        result = part_order_transaction.get_part_order(db, db_part_order.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/part-order/{order_id}/receipt", response_model=PartOrderResponse)
+async def receive_part_order(
+    order_id: uuid.UUID,
+    receipt_request: PartOrderReceiptRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Process part order receipt (phase 2 of two-phase recording).
+    Creates inventory transactions and updates stock levels.
+    """
+    # Validate that the order exists and user has access
+    order = db.query(models.PartOrderRequest).filter(models.PartOrderRequest.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Check organizational access
+    if not permission_checker.is_super_admin(current_user):
+        if order.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Not authorized to receive this order")
+    
+    # Set the order_id and performed_by_user_id
+    receipt_request.order_id = order_id
+    if not receipt_request.performed_by_user_id:
+        receipt_request.performed_by_user_id = current_user.user_id
+    
+    try:
+        db_part_order = part_order_transaction.receive_part_order(db, receipt_request)
+        
+        # Get the response with related data
+        result = part_order_transaction.get_part_order(db, db_part_order.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/part-usage", response_model=PartUsageResponse, status_code=status.HTTP_201_CREATED)
+async def create_part_usage(
+    part_usage_request: PartUsageRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Record part usage in machines (machine part consumption).
+    Creates consumption transactions and updates inventory levels.
+    Users can only record usage for machines and warehouses in their organization.
+    """
+    # Validate organizational access
+    if not permission_checker.is_super_admin(current_user):
+        # Check machine access
+        machine = db.query(models.Machine).filter(models.Machine.id == part_usage_request.machine_id).first()
+        if not machine or machine.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Not authorized to record usage for this machine")
+        
+        # Check warehouse access
+        warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == part_usage_request.from_warehouse_id).first()
+        if not warehouse or warehouse.organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Not authorized to use parts from this warehouse")
+    
+    # Set performed_by_user_id to current user if not provided
+    if not part_usage_request.performed_by_user_id:
+        part_usage_request.performed_by_user_id = current_user.user_id
+    
+    try:
+        db_part_usage = part_usage.create_part_usage(db, part_usage_request)
+        
+        # Get the response with related data
+        result = part_usage.get_part_usage(db, db_part_usage.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# --- Additional endpoints for the new transaction types ---
+
+@router.get("/machine-sales", response_model=List[MachineSaleResponse])
+async def get_machine_sales(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.READ))
+):
+    """
+    Get machine sales with pagination.
+    Users see only sales involving their organization.
+    """
+    organization_id = None if permission_checker.is_super_admin(current_user) else current_user.organization_id
+    
+    try:
+        sales = machine_sale.get_machine_sales(db, skip=skip, limit=limit, organization_id=organization_id)
+        return sales
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/part-orders", response_model=List[PartOrderResponse])
+async def get_part_orders(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.READ))
+):
+    """
+    Get part orders with pagination.
+    Users see only orders involving their organization.
+    """
+    organization_id = None if permission_checker.is_super_admin(current_user) else current_user.organization_id
+    
+    try:
+        orders = part_order_transaction.get_part_orders(db, skip=skip, limit=limit, organization_id=organization_id)
+        return orders
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/part-usages", response_model=List[PartUsageResponse])
+async def get_part_usages(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    machine_id: Optional[uuid.UUID] = Query(None, description="Filter by machine ID"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.READ))
+):
+    """
+    Get part usage records with pagination.
+    Users see only usage records involving their organization.
+    """
+    organization_id = None if permission_checker.is_super_admin(current_user) else current_user.organization_id
+    
+    try:
+        usages = part_usage.get_part_usages(db, skip=skip, limit=limit, organization_id=organization_id, machine_id=machine_id)
+        return usages
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

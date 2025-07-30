@@ -195,3 +195,43 @@ class MachineTransferRequest(BaseModel):
     new_customer_organization_id: uuid.UUID
     transfer_date: datetime = Field(default_factory=datetime.now)
     transfer_notes: Optional[str] = None
+
+# Machine Hours Schemas
+class MachineHoursBase(BaseModel):
+    machine_id: uuid.UUID
+    hours_value: Decimal = Field(..., decimal_places=2, description="Machine hours value")
+    recorded_date: datetime = Field(default_factory=datetime.now)
+    notes: Optional[str] = None
+
+class MachineHoursCreate(BaseModel):
+    hours_value: Decimal = Field(..., decimal_places=2, gt=0, description="Machine hours value (must be positive)")
+    recorded_date: Optional[datetime] = Field(default_factory=datetime.now)
+    notes: Optional[str] = None
+
+class MachineHoursUpdate(BaseModel):
+    hours_value: Optional[Decimal] = Field(None, decimal_places=2, gt=0)
+    recorded_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class MachineHoursResponse(MachineHoursBase):
+    id: uuid.UUID
+    recorded_by_user_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    
+    # Include related data for easier display
+    recorded_by_username: Optional[str] = None
+    machine_name: Optional[str] = None
+    machine_serial_number: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+# Machine Name Update Schema
+class MachineNameUpdateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="New machine name")
+
+# Machine Model Type Validation Schema
+class MachineModelTypeEnum(str, Enum):
+    V3_1B = "V3.1B"
+    V4_0 = "V4.0"

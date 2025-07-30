@@ -146,6 +146,233 @@ def search_parts(db: Session, search_term: str, part_type: Optional[str] = None,
     
     # Apply pagination
     return query.offset(skip).limit(limit).all()
+
+def validate_multilingual_name(name: str) -> bool:
+    """
+    Validate multilingual name format.
+    
+    Supports formats like:
+    - "English Name" (single language)
+    - "English Name|Greek Name GR" (two languages)
+    - "English Name|Greek Name GR|Spanish Name ES" (multiple languages)
+    
+    Args:
+        name: The multilingual name string to validate
+        
+    Returns:
+        bool: True if format is valid, False otherwise
+    """
+    if not name or not name.strip():
+        return False
+    
+    # Single language names are always valid
+    if '|' not in name:
+        return len(name.strip()) > 0
+    
+    # Split by pipe and validate each part
+    parts = name.split('|')
+    for part in parts:
+        part = part.strip()
+        if not part:
+            return False
+        # Each part should have at least some text
+        if len(part) < 1:
+            return False
+    
+    return True
+
+def search_parts_multilingual(db: Session, search_term: str, part_type: Optional[str] = None, 
+                             is_proprietary: Optional[bool] = None, skip: int = 0, limit: int = 100):
+    """
+    Enhanced search for parts with multilingual name support.
+    
+    Searches across:
+    - All parts of multilingual names (split by |)
+    - Part numbers
+    - Descriptions
+    - Manufacturer names
+    - Part codes
+    
+    Args:
+        db: Database session
+        search_term: Search term for multilingual names, part numbers, etc.
+        part_type: Filter by part type (consumable or bulk_material)
+        is_proprietary: Filter by proprietary status
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        
+    Returns:
+        List of parts matching the search criteria
+    """
+    from sqlalchemy import or_, func
+    
+    # Create search conditions for multilingual names
+    # This will search in the full name field which may contain pipe-separated values
+    search_conditions = [
+        models.Part.name.ilike(f"%{search_term}%"),
+        models.Part.part_number.ilike(f"%{search_term}%"),
+        models.Part.description.ilike(f"%{search_term}%")
+    ]
+    
+    # Add search in new fields
+    if hasattr(models.Part, 'manufacturer') and models.Part.manufacturer is not None:
+        search_conditions.append(models.Part.manufacturer.ilike(f"%{search_term}%"))
+    
+    if hasattr(models.Part, 'part_code') and models.Part.part_code is not None:
+        search_conditions.append(models.Part.part_code.ilike(f"%{search_term}%"))
+    
+    if hasattr(models.Part, 'serial_number') and models.Part.serial_number is not None:
+        search_conditions.append(models.Part.serial_number.ilike(f"%{search_term}%"))
+    
+    # Start with base query
+    query = db.query(models.Part).filter(or_(*search_conditions))
+    
+    # Apply additional filters if provided
+    if part_type:
+        try:
+            enum_part_type = models.PartType(part_type)
+            query = query.filter(models.Part.part_type == enum_part_type)
+        except ValueError:
+            logger.warning(f"Invalid part_type filter: {part_type}")
+    
+    if is_proprietary is not None:
+        query = query.filter(models.Part.is_proprietary == is_proprietary)
+    
+    # Apply pagination and return results
+    return query.offset(skip).limit(limit).all()
+
+def create_part_enhanced(db: Session, part: schemas.PartCreate):
+    """
+    Enhanced part creation with multilingual name support and new field validation.
+    
+    Args:
+        db: Database session
+        part: Part creation schema with enhanced fields
+        
+    Returns:
+        Created part model or None if creation failed
+    """
+    try:
+        # Validate multilingual name format
+        if not validate_multilingual_name(part.name):
+            logger.error(f"Invalid multilingual name format: {part.name}")
+            raise HTTPException(status_code=400, detail="Invalid multilingual name format")
+        
+        # Create part with all fields
+        db_part = models.Part(**part.dict())
+        
+        db.add(db_part)
+        db.commit()
+        db.refresh(db_part)
+        
+        logger.info(f"Created part with enhanced fields: {db_part.id}")
+        return db_part
+        
+    except Exception as e:
+        db.rollback()
+        if "duplicate key value violates unique constraint" in str(e):
+            raise HTTPException(status_code=409, detail="Part with this part number already exists")
+        logger.error(f"Error creating enhanced part: {e}")
+        raise HTTPException(status_code=400, detail="Error creating part")
+
+def update_part_enhanced(db: Session, part_id: uuid.UUID, part_update: schemas.PartUpdate):
+    """
+    Enhanced part update with multilingual name support and new field validation.
+    
+    Args:
+        db: Database session
+        part_id: ID of part to update
+        part_update: Part update schema with enhanced fields
+        
+    Returns:
+        Updated part model or None if not found
+    """
+    db_part = db.query(models.Part).filter(models.Part.id == part_id).first()
+    if not db_part:
+        return None
+    
+    try:
+        # Validate multilingual name format if name is being updated
+        if part_update.name and not validate_multilingual_name(part_update.name):
+            logger.error(f"Invalid multilingual name format: {part_update.name}")
+            raise HTTPException(status_code=400, detail="Invalid multilingual name format")
+        
+        # Apply updates
+        update_data = part_update.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_part, key, value)
+        
+        db.add(db_part)
+        db.commit()
+        db.refresh(db_part)
+        
+        logger.info(f"Updated part with enhanced fields: {db_part.id}")
+        return db_part
+        
+    except Exception as e:
+        db.rollback()
+        if "duplicate key value violates unique constraint" in str(e):
+            raise HTTPException(status_code=409, detail="Part with this part number already exists")
+        logger.error(f"Error updating enhanced part: {e}")
+        raise HTTPException(status_code=400, detail="Error updating part")
+
+def delete_part_enhanced(db: Session, part_id: uuid.UUID):
+    """
+    Enhanced part deletion with proper validation.
+    
+    Args:
+        db: Database session
+        part_id: ID of part to delete
+        
+    Returns:
+        Success message or None if not found
+    """
+    db_part = db.query(models.Part).filter(models.Part.id == part_id).first()
+    if not db_part:
+        return None
+    
+    try:
+        # Check for dependent records before deletion
+        # Check inventory items
+        inventory_count = db.query(models.Inventory).filter(models.Inventory.part_id == part_id).count()
+        if inventory_count > 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot delete part: {inventory_count} inventory records exist. Remove inventory first."
+            )
+        
+        # Check order items
+        supplier_order_items = db.query(models.SupplierOrderItem).filter(models.SupplierOrderItem.part_id == part_id).count()
+        customer_order_items = db.query(models.CustomerOrderItem).filter(models.CustomerOrderItem.part_id == part_id).count()
+        
+        if supplier_order_items > 0 or customer_order_items > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete part: {supplier_order_items + customer_order_items} order records exist."
+            )
+        
+        # Check part usage records
+        usage_count = db.query(models.PartUsage).filter(models.PartUsage.part_id == part_id).count()
+        if usage_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete part: {usage_count} usage records exist."
+            )
+        
+        # If no dependent records, proceed with deletion
+        db.delete(db_part)
+        db.commit()
+        
+        logger.info(f"Deleted part: {part_id}")
+        return {"message": "Part deleted successfully"}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting enhanced part: {e}")
+        raise HTTPException(status_code=400, detail="Error deleting part")
 def get_part_with_inventory(db: Session, part_id: uuid.UUID, organization_id: Optional[uuid.UUID] = None):
     """
     Retrieve a single part by ID with inventory information across all warehouses.

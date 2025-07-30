@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class OrganizationTypeEnum(str, Enum):
     oraseas_ee = "oraseas_ee"
@@ -12,10 +12,18 @@ class OrganizationTypeEnum(str, Enum):
     customer = "customer"
     supplier = "supplier"
 
+class CountryEnum(str, Enum):
+    GR = "GR"
+    KSA = "KSA"
+    ES = "ES"
+    CY = "CY"
+    OM = "OM"
+
 class OrganizationBase(BaseModel):
-    name: str
+    name: str = Field(..., max_length=255)
     organization_type: OrganizationTypeEnum
     parent_organization_id: Optional[uuid.UUID] = None
+    country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
     is_active: bool = True
@@ -24,9 +32,10 @@ class OrganizationCreate(OrganizationBase):
     pass
 
 class OrganizationUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, max_length=255)
     organization_type: Optional[OrganizationTypeEnum] = None
     parent_organization_id: Optional[uuid.UUID] = None
+    country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
     is_active: Optional[bool] = None
@@ -37,7 +46,7 @@ class OrganizationResponse(OrganizationBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrganizationTypeFilterResponse(BaseModel):
     organization_type: OrganizationTypeEnum
@@ -46,7 +55,7 @@ class OrganizationTypeFilterResponse(BaseModel):
     count: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrganizationHierarchyResponse(BaseModel):
     id: uuid.UUID
@@ -59,7 +68,7 @@ class OrganizationHierarchyResponse(BaseModel):
     is_active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OrganizationValidationRequest(BaseModel):
     """Schema for organization validation requests"""

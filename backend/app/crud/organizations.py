@@ -123,6 +123,11 @@ def create_organization(db: Session, org_data):
     db.add(org)
     db.commit()
     db.refresh(org)
+    
+    # Auto-create default warehouse for customer organizations
+    if org.organization_type == OrganizationType.customer:
+        _create_default_warehouse_for_organization(db, org)
+    
     return org
 
 def update_organization(db: Session, organization_id: uuid.UUID, org_data):
@@ -413,6 +418,38 @@ def validate_organization_data(db: Session, org_data, org_id: Optional[uuid.UUID
         "errors": errors
     }
 
+def get_organization_suppliers(db: Session, organization_id: uuid.UUID, include_inactive: bool = False):
+    """Get all suppliers belonging to a specific organization."""
+    query = db.query(models.Organization)\
+        .options(
+            joinedload(models.Organization.parent_organization),
+            joinedload(models.Organization.child_organizations)
+        )\
+        .filter(
+            and_(
+                models.Organization.organization_type == OrganizationType.supplier,
+                models.Organization.parent_organization_id == organization_id
+            )
+        )
+    
+    if not include_inactive:
+        query = query.filter(models.Organization.is_active == True)
+    
+    return query.all()
+
+def get_active_suppliers_for_organization(db: Session, organization_id: uuid.UUID):
+    """Get only active suppliers for a specific organization (for dropdowns)."""
+    return db.query(models.Organization)\
+        .filter(
+            and_(
+                models.Organization.organization_type == OrganizationType.supplier,
+                models.Organization.parent_organization_id == organization_id,
+                models.Organization.is_active == True
+            )
+        )\
+        .order_by(models.Organization.name)\
+        .all()
+
 def search_organizations(db: Session, query: str, organization_type: Optional[OrganizationType] = None, include_inactive: bool = False):
     """Search organizations by name with optional type filtering."""
     search_query = db.query(models.Organization)\
@@ -511,3 +548,134 @@ def get_organization_hierarchy_tree(
     hierarchy_tree.sort(key=lambda x: x.name)
     
     return hierarchy_tree
+
+def seed_default_organizations(db: Session):
+    """
+    Create default organizations (Oraseas EE and BossAqua) if they don't exist.
+    Returns a dict with the created/existing organizations.
+    """
+    result = {
+        "oraseas_ee": None,
+        "bossaqua": None,
+        "created": [],
+        "existing": []
+    }
+    
+    # Check if Oraseas EE exists
+    oraseas_ee = db.query(models.Organization)\
+        .filter(models.Organization.organization_type == OrganizationType.oraseas_ee)\
+        .first()
+    
+    if not oraseas_ee:
+        # Create Oraseas EE
+        oraseas_ee = models.Organization(
+            name="Oraseas EE",
+            organization_type=OrganizationType.oraseas_ee,
+            country="GR",  # Default to Greece
+            address="Greece",
+            contact_info="Default Oraseas EE contact",
+            is_active=True
+        )
+        db.add(oraseas_ee)
+        db.flush()  # Flush to get the ID
+        result["created"].append("Oraseas EE")
+    else:
+        result["existing"].append("Oraseas EE")
+    
+    result["oraseas_ee"] = oraseas_ee
+    
+    # Check if BossAqua exists
+    bossaqua = db.query(models.Organization)\
+        .filter(models.Organization.organization_type == OrganizationType.bossaqua)\
+        .first()
+    
+    if not bossaqua:
+        # Create BossAqua
+        bossaqua = models.Organization(
+            name="BossAqua",
+            organization_type=OrganizationType.bossaqua,
+            country="GR",  # Default to Greece
+            address="Greece",
+            contact_info="Default BossAqua contact",
+            is_active=True
+        )
+        db.add(bossaqua)
+        db.flush()  # Flush to get the ID
+        result["created"].append("BossAqua")
+    else:
+        result["existing"].append("BossAqua")
+    
+    result["bossaqua"] = bossaqua
+    
+    # Commit all changes
+    db.commit()
+    
+    # Refresh objects to get updated data
+    db.refresh(oraseas_ee)
+    db.refresh(bossaqua)
+    
+    return result
+
+def _create_default_warehouse_for_organization(db: Session, organization: models.Organization):
+    """
+    Create a default warehouse for an organization with the same name.
+    This is called automatically when customer organizations are created.
+    """
+    try:
+        # Check if a warehouse with the organization name already exists
+        existing_warehouse = db.query(models.Warehouse).filter(
+            and_(
+                models.Warehouse.organization_id == organization.id,
+                models.Warehouse.name == organization.name
+            )
+        ).first()
+        
+        if not existing_warehouse:
+            # Create default warehouse
+            default_warehouse = models.Warehouse(
+                organization_id=organization.id,
+                name=organization.name,  # Use organization name as warehouse name
+                location=organization.address or "Default Location",
+                description=f"Default warehouse for {organization.name}",
+                is_active=True
+            )
+            
+            db.add(default_warehouse)
+            db.commit()
+            db.refresh(default_warehouse)
+            
+            return default_warehouse
+        
+        return existing_warehouse
+        
+    except Exception as e:
+        db.rollback()
+        raise ValueError(f"Failed to create default warehouse for organization {organization.name}: {str(e)}")
+
+def initialize_default_organizations(db: Session):
+    """
+    Initialize default organizations and return status.
+    This is the main function to be called from API endpoints.
+    """
+    try:
+        result = seed_default_organizations(db)
+        
+        return {
+            "success": True,
+            "message": f"Default organizations initialized. Created: {result['created']}, Existing: {result['existing']}",
+            "organizations": {
+                "oraseas_ee": {
+                    "id": str(result["oraseas_ee"].id),
+                    "name": result["oraseas_ee"].name,
+                    "created": "Oraseas EE" in result["created"]
+                },
+                "bossaqua": {
+                    "id": str(result["bossaqua"].id),
+                    "name": result["bossaqua"].name,
+                    "created": "BossAqua" in result["created"]
+                }
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        raise ValueError(f"Failed to initialize default organizations: {str(e)}")

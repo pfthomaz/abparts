@@ -44,7 +44,7 @@ class UserResponse(UserBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserAccountStatusUpdate(BaseModel):
     user_status: UserStatusEnum
@@ -68,7 +68,7 @@ class UserInvitationResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserInvitationAcceptance(BaseModel):
     invitation_token: str
@@ -97,7 +97,7 @@ class UserProfileResponse(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserPasswordChange(BaseModel):
     current_password: str

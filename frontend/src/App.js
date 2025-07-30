@@ -27,6 +27,7 @@ import UserProfile from './pages/UserProfile'; // New: Import UserProfile page
 import Security from './pages/Security'; // New: Import Security page
 import Warehouses from './pages/Warehouses'; // New: Import Warehouses page
 import Transactions from './pages/Transactions'; // New: Import Transactions page
+import OrganizationManagement from './pages/OrganizationManagement'; // New: Import OrganizationManagement page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 
 function App() {
@@ -235,6 +236,24 @@ function App() {
                   feature="Transaction Management"
                 >
                   <Transactions />
+                </ProtectedRoute>
+              </PermissionErrorBoundary>
+            }
+          />
+          <Route
+            path="organization-management"
+            element={
+              <PermissionErrorBoundary
+                feature="Organization Management"
+                requiredPermission={PERMISSIONS.VIEW_ALL_ORGANIZATIONS}
+                requiredRole="admin"
+              >
+                <ProtectedRoute
+                  permissions={[PERMISSIONS.VIEW_ALL_ORGANIZATIONS, PERMISSIONS.MANAGE_ORG_USERS]}
+                  requiredRole="admin"
+                  feature="Organization Management"
+                >
+                  <OrganizationManagement />
                 </ProtectedRoute>
               </PermissionErrorBoundary>
             }

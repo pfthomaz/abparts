@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, OperationalError, TimeoutError
 from pydantic import BaseModel
 
-from .. import schemas # Import schemas
+from .. import schemas, models # Import schemas and models
 from ..crud import machines # Corrected: Import machines directly from crud
 from ..database import get_db # Import DB session dependency
 from ..auth import get_current_user, TokenData # Import authentication dependencies
@@ -89,7 +89,7 @@ def handle_machine_errors(operation_name: str):
                         "detail": e.detail,
                         "error_code": getattr(e, 'error_code', None),
                         "request_id": request_id,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "resource": "machine",
                         "operation": operation_name
                     }
@@ -119,7 +119,7 @@ def handle_machine_errors(operation_name: str):
                         "detail": error_detail,
                         "error_code": "INTEGRITY_ERROR",
                         "request_id": request_id,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "resource": "machine",
                         "operation": operation_name
                     }
@@ -134,7 +134,7 @@ def handle_machine_errors(operation_name: str):
                         "detail": "Database service temporarily unavailable. Please try again later.",
                         "error_code": "DATABASE_UNAVAILABLE",
                         "request_id": request_id,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "resource": "machine",
                         "operation": operation_name
                     }
@@ -149,7 +149,7 @@ def handle_machine_errors(operation_name: str):
                         "detail": "Invalid data format provided",
                         "error_code": "INVALID_DATA_FORMAT",
                         "request_id": request_id,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "resource": "machine",
                         "operation": operation_name
                     }
@@ -164,7 +164,7 @@ def handle_machine_errors(operation_name: str):
                         "detail": f"Database error occurred during {operation_name}",
                         "error_code": "DATABASE_ERROR",
                         "request_id": request_id,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "resource": "machine",
                         "operation": operation_name
                     }
@@ -179,7 +179,7 @@ def handle_machine_errors(operation_name: str):
                         "detail": f"An unexpected error occurred during {operation_name}",
                         "error_code": "UNEXPECTED_ERROR",
                         "request_id": request_id,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "resource": "machine",
                         "operation": operation_name
                     }
@@ -203,7 +203,7 @@ def handle_auth_errors(func):
                 e.detail = {
                     "detail": "Authentication required. Please provide a valid token.",
                     "error_code": "AUTHENTICATION_REQUIRED",
-                    "timestamp": datetime.utcnow(),
+                    "timestamp": datetime.utcnow().isoformat(),
                     "resource": "machine"
                 }
             elif e.status_code == status.HTTP_403_FORBIDDEN:
@@ -211,7 +211,7 @@ def handle_auth_errors(func):
                 e.detail = {
                     "detail": "Insufficient permissions for this machine operation.",
                     "error_code": "INSUFFICIENT_PERMISSIONS",
-                    "timestamp": datetime.utcnow(),
+                    "timestamp": datetime.utcnow().isoformat(),
                     "resource": "machine"
                 }
             raise e
@@ -242,6 +242,43 @@ async def log_machine_response(request: Request, response_data, endpoint_name: s
         logger.debug(f"Response summary - Request ID {request_id}: Returned machine with ID {response_data.get('id')}")
     else:
         logger.debug(f"Response summary - Request ID {request_id}: Operation completed successfully")
+
+# --- Machine Model Validation (must come before /{machine_id} routes) ---
+@router.get("/supported-model-types", response_model=List[str])
+@handle_auth_errors
+@handle_machine_errors("get_supported_model_types")
+async def get_supported_model_types(
+    request: Request,
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
+):
+    """
+    Get list of supported machine model types.
+    Available to all authenticated users.
+    """
+    model_types = [models.MachineModelType.V3_1B.value, models.MachineModelType.V4_0.value]
+    return model_types
+
+@router.post("/validate-model-type", response_model=dict)
+@handle_auth_errors
+@handle_machine_errors("validate_model_type")
+async def validate_model_type(
+    request: Request,
+    model_type_request: dict,
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
+):
+    """
+    Validate if a machine model type is supported.
+    Available to all authenticated users.
+    """
+    model_type = model_type_request.get("model_type", "")
+    is_valid = machines.validate_machine_model_type(model_type)
+    result = {
+        "model_type": model_type,
+        "is_valid": is_valid,
+        "supported_types": [models.MachineModelType.V3_1B.value, models.MachineModelType.V4_0.value]
+    }
+    
+    return result
 
 # --- Machines CRUD ---
 @router.get("/", response_model=List[schemas.MachineResponse])
@@ -946,3 +983,152 @@ async def get_machine_usage_history(
     
     await log_machine_response(request, usage_history, "get_machine_usage_history")
     return usage_history
+
+# --- Machine Hours Management ---
+@router.post("/{machine_id}/hours", response_model=schemas.MachineHoursResponse, status_code=status.HTTP_201_CREATED)
+@handle_auth_errors
+@handle_machine_errors("record_machine_hours")
+async def record_machine_hours(
+    machine_id: uuid.UUID,
+    hours: schemas.MachineHoursCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.WRITE))
+):
+    """
+    Record machine hours for a specific machine.
+    Users can only record hours for machines owned by their organization.
+    Superadmins can record hours for any machine.
+    """
+    await log_machine_request(request, f"record_machine_hours/{machine_id}")
+    
+    # Validate parameters
+    if not machine_id:
+        logger.error("record_machine_hours called with invalid machine_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid machine ID provided"
+        )
+    
+    # Check if machine exists and user has access to it
+    machine = machines.get_machine(db, machine_id)
+    if not machine:
+        logger.info(f"Machine not found for hours recording: {machine_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found"
+        )
+    
+    # Check if user can access this machine's organization
+    if not check_organization_access(current_user, machine.customer_organization_id, db):
+        logger.warning(f"User {current_user.user_id} attempted to record hours for machine {machine_id} without proper organization access")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to record hours for this machine"
+        )
+    
+    # Create machine hours record
+    hours_record = machines.create_machine_hours(db, machine_id, hours, current_user.user_id)
+    if not hours_record:
+        logger.error(f"Machine hours recording failed - create_machine_hours returned None for machine {machine_id}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to record machine hours"
+        )
+    
+    await log_machine_response(request, hours_record.__dict__, "record_machine_hours", status.HTTP_201_CREATED)
+    return hours_record
+
+@router.get("/{machine_id}/hours", response_model=List[schemas.MachineHoursResponse])
+@handle_auth_errors
+@handle_machine_errors("get_machine_hours_history")
+async def get_machine_hours_history(
+    machine_id: uuid.UUID,
+    request: Request,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
+):
+    """
+    Get machine hours history for a specific machine.
+    Users can only view hours history for machines owned by their organization.
+    """
+    await log_machine_request(request, f"get_machine_hours_history/{machine_id}")
+    
+    # Validate parameters
+    if not machine_id:
+        logger.error("get_machine_hours_history called with invalid machine_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid machine ID provided"
+        )
+    
+    if skip < 0:
+        logger.warning(f"Invalid skip parameter: {skip}, setting to 0")
+        skip = 0
+    if limit <= 0 or limit > 1000:
+        logger.warning(f"Invalid limit parameter: {limit}, setting to 100")
+        limit = 100
+    
+    # Check if machine exists and user has access to it
+    machine = machines.get_machine(db, machine_id)
+    if not machine:
+        logger.info(f"Machine not found for hours history: {machine_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found"
+        )
+    
+    # Check if user can access this machine's organization
+    if not check_organization_access(current_user, machine.customer_organization_id, db):
+        logger.warning(f"User {current_user.user_id} attempted to access hours history for machine {machine_id} without proper organization access")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view this machine's hours history"
+        )
+    
+    # Get machine hours history
+    hours_history = machines.get_machine_hours(db, machine_id, skip, limit)
+    
+    await log_machine_response(request, hours_history, "get_machine_hours_history")
+    return hours_history
+
+# --- Machine Name Management ---
+@router.put("/{machine_id}/name", response_model=schemas.MachineResponse)
+@handle_auth_errors
+@handle_machine_errors("update_machine_name")
+async def update_machine_name(
+    machine_id: uuid.UUID,
+    name_update: schemas.MachineNameUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.WRITE))
+):
+    """
+    Update machine name with proper authorization checks.
+    Superadmins can edit any machine name.
+    Admins can only edit machine names within their own organization.
+    """
+    await log_machine_request(request, f"update_machine_name/{machine_id}")
+    
+    # Validate parameters
+    if not machine_id:
+        logger.error("update_machine_name called with invalid machine_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid machine ID provided"
+        )
+    
+    # Update machine name
+    updated_machine = machines.update_machine_name(db, machine_id, name_update.name, current_user.user_id)
+    if not updated_machine:
+        logger.error(f"Machine name update failed - update_machine_name returned None for machine {machine_id}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update machine name"
+        )
+    
+    await log_machine_response(request, updated_machine.__dict__, "update_machine_name")
+    return updated_machine
+

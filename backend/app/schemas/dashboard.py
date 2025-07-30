@@ -46,7 +46,7 @@ class DashboardMetricsResponse(BaseModel):
     generated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DashboardChartData(BaseModel):
     labels: List[str]
@@ -78,4 +78,4 @@ class LowStockByOrgResponse(BaseModel):
     critical_parts: List[DashboardInventoryAlert] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True

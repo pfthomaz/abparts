@@ -11,6 +11,7 @@ from fastapi import Request, Response, HTTPException, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+from sqlalchemy.orm import Session
 import redis
 
 from .auth import get_current_user_from_token, TokenData
@@ -192,10 +193,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             logger.error(f"Request {request_id} failed after {process_time:.3f}s: {str(e)}")
             raise
 
-# --- Permission Enforcement Middleware ---
+# --- Enhanced Permission Enforcement Middleware ---
 
 class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
-    """Middleware for automatic permission enforcement and audit logging."""
+    """Enhanced middleware for automatic permission enforcement and organizational isolation."""
     
     def __init__(self, app: ASGIApp):
         super().__init__(app)
@@ -213,6 +214,18 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
             "/users/me/",
             "/users/profile",
             "/users/change-password"
+        }
+        # Define endpoints that require enhanced organizational validation
+        self.organizational_endpoints = {
+            "/organizations",
+            "/users",
+            "/warehouses", 
+            "/inventory",
+            "/machines",
+            "/transactions",
+            "/supplier_orders",
+            "/customer_orders",
+            "/part_usage"
         }
     
     def _should_check_permissions(self, path: str) -> bool:
@@ -295,17 +308,53 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
             token = auth_header.split(" ")[1]
             user = await get_current_user_from_token(token)
             
+            # Add user context to request state early
+            request.state.current_user = user
+            
             # Extract resource and permission from request
             resource = self._extract_resource_from_path(path, method)
             permission = self._extract_permission_from_method(method)
+            
+            # Enhanced organizational validation for specific endpoints
+            if self._requires_organizational_validation(path):
+                from .database import SessionLocal
+                db = SessionLocal()
+                try:
+                    validation_result = await self._validate_organizational_access(
+                        request, user, db, path, method
+                    )
+                    if not validation_result["allowed"]:
+                        audit_logger.log_permission_denied(
+                            user, resource or ResourceType.ORGANIZATION, permission, 
+                            validation_result.get("context", {}), request
+                        )
+                        return JSONResponse(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            content={
+                                "detail": validation_result.get("reason", "Access denied"),
+                                "resource": resource.value if resource else "unknown",
+                                "permission": permission.value
+                            }
+                        )
+                finally:
+                    db.close()
             
             # If we can't determine resource type, allow the request to proceed
             # (the endpoint will handle its own permission checking)
             if not resource:
                 return await call_next(request)
             
-            # Check permissions
-            context = {"path": path, "method": method}
+            # Check permissions with enhanced context
+            context = {
+                "path": path, 
+                "method": method,
+                "user_organization_id": str(user.organization_id)
+            }
+            
+            # Extract additional context from request
+            if hasattr(request, "path_params"):
+                context.update(request.path_params)
+            
             has_permission = permission_checker.check_permission(user, resource, permission, context)
             
             if not has_permission:
@@ -325,9 +374,6 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
             if resource in [ResourceType.USER, ResourceType.ORGANIZATION] and permission in [PermissionType.WRITE, PermissionType.DELETE]:
                 audit_logger.log_permission_granted(user, resource, permission, context)
             
-            # Add user context to request state
-            request.state.current_user = user
-            
             return await call_next(request)
             
         except HTTPException:
@@ -338,6 +384,66 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={"detail": "Internal server error during permission check"}
             )
+    
+    def _requires_organizational_validation(self, path: str) -> bool:
+        """Check if endpoint requires enhanced organizational validation."""
+        return any(path.startswith(endpoint) for endpoint in self.organizational_endpoints)
+    
+    async def _validate_organizational_access(self, request: Request, user: TokenData, 
+                                            db: Session, path: str, method: str) -> Dict[str, Any]:
+        """
+        Perform enhanced organizational access validation using the new isolation middleware.
+        
+        Returns:
+            Dictionary with validation result and context
+        """
+        from .organizational_isolation import organizational_data_isolation_middleware
+        
+        try:
+            # Extract organizational context from request
+            context = organizational_data_isolation_middleware.extract_organization_context(
+                request, path, method
+            )
+            
+            # Validate organizational access using enhanced middleware
+            validation_result = organizational_data_isolation_middleware.validate_organizational_access(
+                user, context, db
+            )
+            
+            if not validation_result["allowed"]:
+                return {
+                    "allowed": False,
+                    "reason": validation_result["reason"],
+                    "context": validation_result.get("context", {})
+                }
+            
+            # Apply automatic filtering information
+            filtering_info = organizational_data_isolation_middleware.apply_automatic_filtering(
+                user, db, self._extract_resource_type_from_path(path)
+            )
+            
+            return {
+                "allowed": True,
+                "context": {
+                    "validation_reason": validation_result["reason"],
+                    "accessible_organizations": [str(org_id) for org_id in filtering_info["accessible_organizations"]],
+                    "filter_applied": filtering_info["filter_applied"]
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in enhanced organizational validation: {e}")
+            return {
+                "allowed": True,  # Allow on error, let endpoint handle validation
+                "context": {"error": str(e)}
+            }
+    
+    def _extract_resource_type_from_path(self, path: str) -> str:
+        """Extract resource type from request path for filtering."""
+        path_parts = path.strip("/").split("/")
+        if path_parts and path_parts[0]:
+            return path_parts[0]
+        return "unknown"
 
 # --- Session Management Middleware ---
 

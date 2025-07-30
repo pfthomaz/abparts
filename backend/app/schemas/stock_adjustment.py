@@ -34,4 +34,4 @@ class StockAdjustmentResponse(StockAdjustmentBase):
     user_username: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

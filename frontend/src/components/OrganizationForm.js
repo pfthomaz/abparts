@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { OrganizationType, ORGANIZATION_TYPE_CONFIG, organizationsService } from '../services/organizationsService';
+import { getSupportedCountries, getCountryDisplay } from '../utils/countryFlags';
 
 function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
   const { user } = useAuth();
@@ -10,14 +11,11 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
     name: '',
     organization_type: OrganizationType.CUSTOMER, // Default type
     parent_organization_id: '',
+    country: '',
     address: '',
     contact_info: '',
     is_active: true,
     ...initialData, // Pre-fill if initialData is provided (for editing)
-    // Ensure null values are converted to empty strings for form inputs
-    address: initialData.address || '',
-    contact_info: initialData.contact_info || '',
-    parent_organization_id: initialData.parent_organization_id || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,14 +30,11 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       name: '',
       organization_type: OrganizationType.CUSTOMER,
       parent_organization_id: '',
+      country: '',
       address: '',
       contact_info: '',
       is_active: true,
       ...initialData,
-      // Ensure null values are converted to empty strings for form inputs
-      address: initialData.address || '',
-      contact_info: initialData.contact_info || '',
-      parent_organization_id: initialData.parent_organization_id || '',
     });
   }, [initialData]);
 
@@ -85,6 +80,9 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       const validationData = {
         ...formData,
         parent_organization_id: formData.parent_organization_id || null,
+        country: formData.country || null,
+        address: formData.address || null,
+        contact_info: formData.contact_info || null,
       };
 
       await organizationsService.validateOrganization(validationData, initialData.id);
@@ -93,6 +91,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       const cleanedData = {
         ...formData,
         parent_organization_id: formData.parent_organization_id || undefined,
+        country: formData.country || undefined,
         address: formData.address || undefined,
         contact_info: formData.contact_info || undefined
       };
@@ -184,6 +183,28 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
             ⚠️ Only one {getOrganizationTypeInfo(formData.organization_type).label} organization is allowed
           </p>
         )}
+      </div>
+
+      {/* Country Selection */}
+      <div>
+        <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+          Country
+        </label>
+        <select
+          id="country"
+          name="country"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+          value={formData.country || ''}
+          onChange={handleChange}
+          disabled={loading}
+        >
+          <option value="">Select country...</option>
+          {getSupportedCountries().map((country) => (
+            <option key={country.code} value={country.code}>
+              {getCountryDisplay(country.code)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Parent Organization (for suppliers) */}

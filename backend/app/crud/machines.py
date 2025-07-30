@@ -501,9 +501,13 @@ def transfer_machine(db: Session, transfer: schemas.MachineTransferRequest):
         db_machine.customer_organization_id = transfer.new_customer_organization_id
         
         # Add a note about the transfer, handling null notes gracefully
-        transfer_note = f"Transferred from {old_org_name} to {new_organization.name} on {transfer.transfer_date.strftime('%Y-%m-%d')}"
-        if transfer.transfer_notes and transfer.transfer_notes.strip():
-            transfer_note += f": {transfer.transfer_notes.strip()}"
+        transfer_date = datetime.now()
+        transfer_note = f"Transferred from {old_org_name} to {new_organization.name} on {transfer_date.strftime('%Y-%m-%d')}"
+        
+        # Safely access notes field
+        transfer_notes = getattr(transfer, 'notes', None)
+        if transfer_notes and transfer_notes.strip():
+            transfer_note += f": {transfer_notes.strip()}"
         
         if db_machine.notes and db_machine.notes.strip():
             db_machine.notes += f"\n\n{transfer_note}"
@@ -643,6 +647,276 @@ def create_machine_maintenance(db: Session, maintenance: schemas.MaintenanceCrea
         machine.last_maintenance_date = maintenance.maintenance_date
         if maintenance.next_maintenance_date:
             machine.next_maintenance_date = maintenance.next_maintenance_date
+        
+        db.add(machine)
+        db.commit()
+        db.refresh(db_maintenance)
+        
+        logger.info(f"Successfully created maintenance record: {db_maintenance.id} for machine {maintenance.machine_id}")
+        return db_maintenance
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        db.rollback()
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Integrity error creating maintenance record: {str(e)}")
+        
+        # Handle specific constraint violations
+        if isinstance(e.orig, ForeignKeyViolation):
+            if "machine_id" in str(e.orig):
+                raise HTTPException(status_code=400, detail="Machine not found")
+            elif "performed_by_user_id" in str(e.orig):
+                raise HTTPException(status_code=400, detail="User not found")
+            else:
+                raise HTTPException(status_code=400, detail="Referenced record does not exist")
+        else:
+            raise HTTPException(status_code=400, detail="Data integrity constraint violation")
+            
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error creating maintenance record: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred while creating maintenance record"
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error creating maintenance record: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while creating maintenance record"
+        )
+
+# --- Machine Hours CRUD Operations ---
+
+def get_machine_hours(db: Session, machine_id: uuid.UUID, skip: int = 0, limit: int = 100):
+    """Get machine hours history for a specific machine."""
+    try:
+        # Validate input parameters
+        if not machine_id:
+            logger.error("get_machine_hours called with missing machine_id")
+            raise HTTPException(status_code=400, detail="Machine ID is required")
+            
+        if skip < 0:
+            logger.warning(f"Invalid skip parameter: {skip}, setting to 0")
+            skip = 0
+        if limit <= 0 or limit > 1000:
+            logger.warning(f"Invalid limit parameter: {limit}, setting to 100")
+            limit = 100
+        
+        # Check if machine exists
+        machine = db.query(models.Machine).filter(models.Machine.id == machine_id).first()
+        if not machine:
+            logger.warning(f"Machine not found for hours history: {machine_id}")
+            raise HTTPException(status_code=404, detail="Machine not found")
+        
+        # Get machine hours records ordered by recorded_date descending
+        hours_records = db.query(models.MachineHours).filter(
+            models.MachineHours.machine_id == machine_id
+        ).order_by(
+            desc(models.MachineHours.recorded_date)
+        ).offset(skip).limit(limit).all()
+        
+        logger.debug(f"Successfully retrieved {len(hours_records)} hours records for machine {machine_id}")
+        return hours_records
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except SQLAlchemyError as e:
+        logger.error(f"Database error retrieving machine hours for machine {machine_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred while retrieving machine hours"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error retrieving machine hours for machine {machine_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving machine hours"
+        )
+
+def create_machine_hours(db: Session, machine_id: uuid.UUID, hours: schemas.MachineHoursCreate, user_id: uuid.UUID):
+    """Create a new machine hours record."""
+    try:
+        # Validate input parameters
+        if not machine_id:
+            logger.error("create_machine_hours called with missing machine_id")
+            raise HTTPException(status_code=400, detail="Machine ID is required")
+            
+        if not user_id:
+            logger.error("create_machine_hours called with missing user_id")
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
+        # Check if machine exists
+        machine = db.query(models.Machine).filter(models.Machine.id == machine_id).first()
+        if not machine:
+            logger.warning(f"Machine not found for hours recording: {machine_id}")
+            raise HTTPException(status_code=404, detail="Machine not found")
+        
+        # Check if user exists
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if not user:
+            logger.warning(f"User not found for hours recording: {user_id}")
+            raise HTTPException(status_code=400, detail="User not found")
+        
+        # Validate hours value
+        if hours.hours_value <= 0:
+            logger.error(f"Invalid hours value: {hours.hours_value}")
+            raise HTTPException(status_code=400, detail="Hours value must be positive")
+        
+        if hours.hours_value > 99999:
+            logger.error(f"Hours value too high: {hours.hours_value}")
+            raise HTTPException(status_code=400, detail="Hours value seems unreasonably high (max 99,999)")
+        
+        # Validate recorded date is not in the future
+        if hours.recorded_date and hours.recorded_date > datetime.now():
+            logger.error(f"Future recorded date: {hours.recorded_date}")
+            raise HTTPException(status_code=400, detail="Recorded date cannot be in the future")
+        
+        # Create the machine hours record
+        hours_data = hours.dict()
+        hours_data['machine_id'] = machine_id
+        hours_data['recorded_by_user_id'] = user_id
+        
+        db_hours = models.MachineHours(**hours_data)
+        db.add(db_hours)
+        db.commit()
+        db.refresh(db_hours)
+        
+        logger.info(f"Successfully created machine hours record: {db_hours.id} for machine {machine_id}")
+        return db_hours
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        db.rollback()
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Integrity error creating machine hours record: {str(e)}")
+        
+        # Handle specific constraint violations
+        if isinstance(e.orig, ForeignKeyViolation):
+            if "machine_id" in str(e.orig):
+                raise HTTPException(status_code=400, detail="Machine not found")
+            elif "recorded_by_user_id" in str(e.orig):
+                raise HTTPException(status_code=400, detail="User not found")
+            else:
+                raise HTTPException(status_code=400, detail="Referenced record does not exist")
+        else:
+            raise HTTPException(status_code=400, detail="Data integrity constraint violation")
+            
+    except DataError as e:
+        db.rollback()
+        logger.error(f"Data error creating machine hours record: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid data format provided")
+        
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error creating machine hours record: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred while creating machine hours record"
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error creating machine hours record: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while creating machine hours record"
+        )
+
+def update_machine_name(db: Session, machine_id: uuid.UUID, new_name: str, user_id: uuid.UUID):
+    """Update machine name with proper authorization checks."""
+    try:
+        # Validate input parameters
+        if not machine_id:
+            logger.error("update_machine_name called with missing machine_id")
+            raise HTTPException(status_code=400, detail="Machine ID is required")
+            
+        if not user_id:
+            logger.error("update_machine_name called with missing user_id")
+            raise HTTPException(status_code=400, detail="User ID is required")
+            
+        if not new_name or not new_name.strip():
+            logger.error("update_machine_name called with empty name")
+            raise HTTPException(status_code=400, detail="Machine name cannot be empty")
+        
+        # Get the machine
+        machine = db.query(models.Machine).filter(models.Machine.id == machine_id).first()
+        if not machine:
+            logger.warning(f"Machine not found for name update: {machine_id}")
+            raise HTTPException(status_code=404, detail="Machine not found")
+        
+        # Get the user
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if not user:
+            logger.warning(f"User not found for name update: {user_id}")
+            raise HTTPException(status_code=400, detail="User not found")
+        
+        # Get the user's organization
+        user_org = db.query(models.Organization).filter(models.Organization.id == user.organization_id).first()
+        if not user_org:
+            logger.warning(f"User organization not found: {user.organization_id}")
+            raise HTTPException(status_code=400, detail="User organization not found")
+        
+        # Check authorization: superadmins can edit any machine name, admins can only edit machines in their org
+        if user.role != models.UserRole.super_admin:
+            if user.role != models.UserRole.admin:
+                logger.warning(f"User {user_id} with role {user.role} attempted to update machine name")
+                raise HTTPException(status_code=403, detail="Only admins and superadmins can update machine names")
+            
+            if machine.customer_organization_id != user.organization_id:
+                logger.warning(f"Admin user {user_id} attempted to update machine {machine_id} outside their organization")
+                raise HTTPException(status_code=403, detail="Admins can only update machine names within their own organization")
+        
+        # Update the machine name
+        old_name = machine.name
+        machine.name = new_name.strip()
+        
+        # Add a note about the name change
+        name_change_note = f"Name changed from '{old_name}' to '{new_name}' by {user.username} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        if machine.notes:
+            machine.notes += f"\n{name_change_note}"
+        else:
+            machine.notes = name_change_note
+        
+        db.add(machine)
+        db.commit()
+        db.refresh(machine)
+        
+        logger.info(f"Successfully updated machine name: {machine_id} from '{old_name}' to '{new_name}' by user {user_id}")
+        return machine
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        db.rollback()
+        raise
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error updating machine name {machine_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred while updating machine name"
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error updating machine name {machine_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while updating machine name"
+        )
+
+def validate_machine_model_type(model_type: str) -> bool:
+    """Validate that the machine model type is supported."""
+    try:
+        valid_types = [models.MachineModelType.V3_1B.value, models.MachineModelType.V4_0.value]
+        return model_type in valid_types
+    except Exception as e:
+        logger.error(f"Error validating machine model type {model_type}: {str(e)}")
+        return False
         
         db.commit()
         db.refresh(db_maintenance)

@@ -288,6 +288,33 @@ async def search_organizations(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# --- Country Support ---
+@router.get("/countries", response_model=List[str])
+async def get_supported_countries(
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
+):
+    """Get list of supported countries for organization creation."""
+    try:
+        # Return the supported countries from the CountryEnum
+        return [country.value for country in schemas.CountryEnum]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve supported countries")
+
+# --- Default Organization Management ---
+@router.post("/initialize-defaults", response_model=dict)
+async def initialize_default_organizations(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_super_admin())
+):
+    """Initialize default organizations (Oraseas EE and BossAqua) if they don't exist."""
+    try:
+        result = crud.organizations.initialize_default_organizations(db)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to initialize default organizations")
+
 @router.get("/{org_id}", response_model=schemas.OrganizationResponse)
 async def get_organization(
     org_id: uuid.UUID,
@@ -367,6 +394,69 @@ async def delete_organization(
         import logging
         logging.error(f"Error deleting organization {org_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to delete organization: {str(e)}")
+
+
+
+# --- Organization-Specific Supplier Management ---
+@router.get("/{org_id}/suppliers", response_model=List[schemas.OrganizationResponse])
+async def get_organization_suppliers(
+    org_id: uuid.UUID,
+    include_inactive: bool = Query(False, description="Include inactive suppliers"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
+):
+    """Get all suppliers belonging to a specific organization."""
+    try:
+        # Check if parent organization exists
+        parent_org = crud.organizations.get_organization(db, org_id)
+        if not parent_org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Check if user can access this organization
+        if not check_organization_access(current_user, org_id, db):
+            raise HTTPException(status_code=403, detail="Not authorized to view this organization's suppliers")
+        
+        suppliers = crud.organizations.get_organization_suppliers(db, org_id, include_inactive)
+        return suppliers
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/{org_id}/activate", response_model=schemas.OrganizationResponse)
+async def toggle_organization_active_status(
+    org_id: uuid.UUID,
+    activate: bool = Query(..., description="True to activate, False to deactivate"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.WRITE))
+):
+    """Toggle the active status of an organization (primarily for suppliers)."""
+    try:
+        # Check if organization exists
+        organization = crud.organizations.get_organization(db, org_id)
+        if not organization:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        # Check permissions - super admin can activate/deactivate any org, 
+        # admin can only activate/deactivate suppliers under their organization
+        if permission_checker.is_super_admin(current_user):
+            # Super admin can activate/deactivate any organization
+            pass
+        elif permission_checker.is_admin(current_user):
+            # Admin can only activate/deactivate suppliers under their organization
+            if organization.organization_type != OrganizationType.supplier:
+                raise HTTPException(status_code=403, detail="Admins can only activate/deactivate supplier organizations")
+            if organization.parent_organization_id != current_user.organization_id:
+                raise HTTPException(status_code=403, detail="Not authorized to modify this supplier organization")
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to modify organization status")
+        
+        # Update the active status
+        update_data = schemas.OrganizationUpdate(is_active=activate)
+        updated_org = crud.organizations.update_organization(db, org_id, update_data)
+        return updated_org
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to update organization status")
 
 # --- Supplier-Parent Relationship Management ---
 @router.post("/{org_id}/suppliers", response_model=schemas.OrganizationResponse, status_code=status.HTTP_201_CREATED)

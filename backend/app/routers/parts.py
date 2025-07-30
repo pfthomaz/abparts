@@ -59,19 +59,32 @@ async def upload_image(
 async def get_parts(
     part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
     is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
+    search: Optional[str] = Query(None, description="Search in multilingual part names, part numbers, and descriptions"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
 ):
     """
-    Get all parts with optional filtering by type and origin.
+    Get all parts with optional filtering by type, origin, and multilingual name search.
     All authenticated users can view parts.
+    Enhanced with multilingual name search capabilities.
     """
-    parts = crud.parts.get_filtered_parts(db, part_type=part_type, is_proprietary=is_proprietary)
+    if search:
+        # Use search functionality if search term provided
+        parts = crud.parts.search_parts_multilingual(
+            db, search_term=search, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit
+        )
+    else:
+        # Use regular filtering if no search term
+        parts = crud.parts.get_filtered_parts(
+            db, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit
+        )
     return parts
 
 @router.get("/search", response_model=List[schemas.PartResponse])
 async def search_parts(
-    q: str = Query(..., min_length=1, description="Search query for part name or part number"),
+    q: str = Query(..., min_length=1, description="Search query for multilingual part names, part numbers, descriptions, manufacturers, and part codes"),
     part_type: Optional[str] = Query(None, description="Filter by part type (consumable or bulk_material)"),
     is_proprietary: Optional[bool] = Query(None, description="Filter by proprietary status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -80,10 +93,13 @@ async def search_parts(
     current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
 ):
     """
-    Search parts by name or part number with optional filtering by type and origin.
+    Enhanced search for parts with multilingual name support.
+    Searches across multilingual names, part numbers, descriptions, manufacturers, and part codes.
     All authenticated users can search parts.
     """
-    parts = crud.parts.search_parts(db, q, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit)
+    parts = crud.parts.search_parts_multilingual(
+        db, search_term=q, part_type=part_type, is_proprietary=is_proprietary, skip=skip, limit=limit
+    )
     return parts
 
 # --- Parts Inventory Integration Endpoints (must be before /{part_id}) ---
@@ -134,10 +150,24 @@ async def get_part(
 async def create_part(
     part: schemas.PartCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.WRITE))
+    current_user: TokenData = Depends(require_super_admin())
 ):
-    """Create a new part. Only super admins can create parts."""
-    db_part = crud.parts.create_part(db, part)
+    """
+    Create a new part with enhanced validation for multilingual names and new fields.
+    Only super admins can create parts.
+    Enhanced with multilingual name validation and new field support.
+    """
+    # Validate multilingual name format
+    if not crud.parts.validate_multilingual_name(part.name):
+        raise HTTPException(
+            status_code=400, 
+            detail="Invalid multilingual name format. Use format: 'English Name|Greek Name GR|Spanish Name ES' or single language."
+        )
+    
+    # Note: Image URL limit validation is handled by Pydantic schema (max_items=4)
+    # This provides automatic validation with 422 status code
+    
+    db_part = crud.parts.create_part_enhanced(db, part)
     if not db_part:
         raise HTTPException(status_code=400, detail="Failed to create part")
     return db_part
@@ -147,10 +177,24 @@ async def update_part(
     part_id: uuid.UUID,
     part_update: schemas.PartUpdate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.WRITE))
+    current_user: TokenData = Depends(require_super_admin())
 ):
-    """Update an existing part. Only super admins can update parts."""
-    updated_part = crud.parts.update_part(db, part_id, part_update)
+    """
+    Update an existing part with enhanced validation for multilingual names and new fields.
+    Only super admins can update parts.
+    Enhanced with multilingual name validation and new field support.
+    """
+    # Validate multilingual name format if name is being updated
+    if part_update.name and not crud.parts.validate_multilingual_name(part_update.name):
+        raise HTTPException(
+            status_code=400, 
+            detail="Invalid multilingual name format. Use format: 'English Name|Greek Name GR|Spanish Name ES' or single language."
+        )
+    
+    # Note: Image URL limit validation is handled by Pydantic schema (max_items=4)
+    # This provides automatic validation with 422 status code
+    
+    updated_part = crud.parts.update_part_enhanced(db, part_id, part_update)
     if not updated_part:
         raise HTTPException(status_code=404, detail="Part not found")
     return updated_part
@@ -159,10 +203,14 @@ async def update_part(
 async def delete_part(
     part_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.DELETE))
+    current_user: TokenData = Depends(require_super_admin())
 ):
-    """Delete a part. Only super admins can delete parts."""
-    result = crud.parts.delete_part(db, part_id)
+    """
+    Delete a part (soft delete/inactivate).
+    Only super admins can delete parts.
+    Enhanced with proper superadmin-only access control.
+    """
+    result = crud.parts.delete_part_enhanced(db, part_id)
     if not result:
         raise HTTPException(status_code=404, detail="Part not found or could not be deleted")
     return result

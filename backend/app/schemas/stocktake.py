@@ -15,7 +15,7 @@ class StocktakeLocation(BaseModel):
     last_stocktake: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class StocktakeWorksheetItemBase(BaseModel):
     warehouse_id: uuid.UUID
@@ -44,7 +44,7 @@ class StocktakeWorksheetItemResponse(StocktakeWorksheetItemBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class StocktakeSessionBase(BaseModel):
     organization_id: uuid.UUID
@@ -74,4 +74,4 @@ class StocktakeSessionResponse(StocktakeSessionBase):
     variance_count: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -14,7 +14,7 @@ class InvitationAuditLogResponse(BaseModel):
     details: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserManagementAuditLogResponse(BaseModel):
     id: uuid.UUID
@@ -29,4 +29,4 @@ class UserManagementAuditLogResponse(BaseModel):
     performed_by_username: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

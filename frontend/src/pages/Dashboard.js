@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { dashboardService } from '../services/dashboardService';
-import { isSuperAdmin, hasPermission, PERMISSIONS } from '../utils/permissions';
+import { isSuperAdmin, hasPermission, PERMISSIONS, getContextualPermissions } from '../utils/permissions';
 import PermissionGuard from '../components/PermissionGuard';
+import OrganizationSelector from '../components/OrganizationSelector';
 import {
   BarChart,
   Bar,
@@ -17,8 +18,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// Modern metric card component with better visual design
-const MetricCard = ({
+// Enhanced Dashboard box component for three-column layout
+const DashboardBox = ({
   title,
   value,
   linkTo,
@@ -27,30 +28,198 @@ const MetricCard = ({
   textColor = 'text-gray-900',
   accentColor = 'text-blue-600',
   borderColor = 'border-gray-200',
-  subtitle = null
-}) => (
-  <Link
-    to={linkTo}
-    className={`group block ${bgColor} ${borderColor} border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-300`}
-  >
-    <div className="flex items-center justify-between mb-4">
-      <div className={`p-3 rounded-xl ${accentColor.replace('text-', 'bg-').replace('-600', '-100')} group-hover:scale-110 transition-transform duration-300`}>
-        {icon}
-      </div>
-      <div className="text-right">
-        <div className={`text-3xl font-bold ${textColor} group-hover:text-blue-600 transition-colors duration-300`}>
-          {value}
+  subtitle = null,
+  onClick = null,
+  alertLevel = null, // 'warning', 'error', 'success'
+  showBadge = false,
+  badgeText = null
+}) => {
+  // Alert styling based on level
+  const getAlertStyling = () => {
+    switch (alertLevel) {
+      case 'error':
+        return {
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
+          accentColor: 'text-red-600',
+          textColor: 'text-red-900'
+        };
+      case 'warning':
+        return {
+          bgColor: 'bg-yellow-50',
+          borderColor: 'border-yellow-200',
+          accentColor: 'text-yellow-600',
+          textColor: 'text-yellow-900'
+        };
+      case 'success':
+        return {
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200',
+          accentColor: 'text-green-600',
+          textColor: 'text-green-900'
+        };
+      default:
+        return { bgColor, borderColor, accentColor, textColor };
+    }
+  };
+
+  const styling = getAlertStyling();
+
+  const content = (
+    <div className={`group block ${styling.bgColor} ${styling.borderColor} border rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-300 cursor-pointer relative`}>
+      {/* Badge for notifications */}
+      {showBadge && badgeText && (
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+          {badgeText}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-2 rounded-lg ${styling.accentColor.replace('text-', 'bg-').replace('-600', '-100')} group-hover:scale-110 transition-transform duration-300`}>
+          {icon}
+        </div>
+        <div className="text-right">
+          <div className={`text-2xl font-bold ${styling.textColor} group-hover:text-blue-600 transition-colors duration-300`}>
+            {value}
+          </div>
         </div>
       </div>
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">{title}</h3>
+        {subtitle && (
+          <p className="text-xs text-gray-500">{subtitle}</p>
+        )}
+      </div>
     </div>
-    <div>
-      <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-1">{title}</h3>
-      {subtitle && (
-        <p className="text-xs text-gray-500">{subtitle}</p>
+  );
+
+  if (onClick) {
+    return <div onClick={onClick}>{content}</div>;
+  }
+
+  return linkTo ? <Link to={linkTo}>{content}</Link> : content;
+};
+
+// Enhanced Action button component
+const ActionButton = ({
+  title,
+  description,
+  linkTo,
+  icon,
+  color = 'blue',
+  onClick = null,
+  disabled = false,
+  shortcut = null,
+  priority = 'normal' // 'high', 'normal', 'low'
+}) => {
+  const colorClasses = {
+    blue: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200',
+    green: 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200',
+    purple: 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200',
+    orange: 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200',
+    red: 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200',
+    teal: 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200',
+  };
+
+  const priorityClasses = {
+    high: 'ring-2 ring-blue-300 shadow-lg',
+    normal: '',
+    low: 'opacity-75'
+  };
+
+  const content = (
+    <div className={`group block border rounded-xl p-4 transition-all duration-300 hover:scale-105 cursor-pointer relative ${colorClasses[color]} ${priorityClasses[priority]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+      {/* Shortcut indicator */}
+      {shortcut && (
+        <div className="absolute top-2 right-2 text-xs bg-white/80 px-2 py-1 rounded-md font-mono text-gray-500">
+          {shortcut}
+        </div>
+      )}
+
+      <div className="flex items-center space-x-3 mb-2">
+        <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform duration-300">
+          {icon}
+        </div>
+        <h3 className="font-semibold">{title}</h3>
+      </div>
+      <p className="text-sm opacity-80">{description}</p>
+    </div>
+  );
+
+  if (disabled) {
+    return <div className="cursor-not-allowed">{content}</div>;
+  }
+
+  if (onClick) {
+    return <div onClick={onClick}>{content}</div>;
+  }
+
+  return linkTo ? <Link to={linkTo}>{content}</Link> : content;
+};
+
+// Enhanced Report card component
+const ReportCard = ({
+  title,
+  description,
+  linkTo,
+  icon,
+  color = 'indigo',
+  onClick = null,
+  dataValue = null,
+  trend = null, // 'up', 'down', 'stable'
+  lastUpdated = null
+}) => {
+  const colorClasses = {
+    indigo: 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200',
+    teal: 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200',
+    pink: 'bg-pink-50 hover:bg-pink-100 text-pink-700 border-pink-200',
+    amber: 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200',
+    emerald: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200',
+    violet: 'bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200',
+  };
+
+  const getTrendIcon = () => {
+    switch (trend) {
+      case 'up':
+        return <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>;
+      case 'down':
+        return <svg className="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
+      case 'stable':
+        return <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
+      default:
+        return null;
+    }
+  };
+
+  const content = (
+    <div className={`group block border rounded-xl p-4 transition-all duration-300 hover:scale-105 cursor-pointer ${colorClasses[color]}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform duration-300">
+            {icon}
+          </div>
+          <h3 className="font-semibold">{title}</h3>
+        </div>
+        {dataValue && (
+          <div className="flex items-center space-x-1">
+            <span className="text-lg font-bold">{dataValue}</span>
+            {getTrendIcon()}
+          </div>
+        )}
+      </div>
+      <p className="text-sm opacity-80 mb-2">{description}</p>
+      {lastUpdated && (
+        <p className="text-xs text-gray-500">Updated {lastUpdated}</p>
       )}
     </div>
-  </Link>
-);
+  );
+
+  if (onClick) {
+    return <div onClick={onClick}>{content}</div>;
+  }
+
+  return linkTo ? <Link to={linkTo}>{content}</Link> : content;
+};
 
 // Icon components
 const PartIcon = () => (
@@ -84,26 +253,42 @@ const Dashboard = () => {
   const [lowStockData, setLowStockData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchMetrics = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError('');
+      const [metricsData, lowStockChartData] = await Promise.all([
+        dashboardService.getMetrics(),
+        dashboardService.getLowStockByOrg(),
+      ]);
+      setMetrics(metricsData);
+      setLowStockData(lowStockChartData);
+    } catch (err) {
+      setError(err.message || 'Failed to load dashboard metrics.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const [metricsData, lowStockChartData] = await Promise.all([
-          dashboardService.getMetrics(),
-          dashboardService.getLowStockByOrg(),
-        ]);
-        setMetrics(metricsData);
-        setLowStockData(lowStockChartData);
-      } catch (err) {
-        setError(err.message || 'Failed to load dashboard metrics.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMetrics();
+  }, [selectedOrganization]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchMetrics(true);
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const pendingOrdersData = useMemo(() => {
@@ -178,15 +363,44 @@ const Dashboard = () => {
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}!
-              </h1>
-              <p className="text-lg text-gray-600">Welcome back, {user.name || user.username}</p>
+            <div className="flex-1">
+              <div className="flex items-center space-x-4">
+                <div>
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                    Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}!
+                  </h1>
+                  <p className="text-lg text-gray-600">Welcome back, {user.name || user.username}</p>
+                  {metrics && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {isSuperAdmin(user)
+                        ? `Managing ${metrics.total_organizations} organizations with ${metrics.total_users} users`
+                        : `${user.organization?.name || 'Your organization'} - ${metrics.total_inventory_items || 0} parts in inventory`
+                      }
+                    </p>
+                  )}
+                </div>
+
+                {/* Refresh Button */}
+                <button
+                  onClick={() => fetchMetrics(true)}
+                  disabled={refreshing}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  title="Refresh dashboard data"
+                >
+                  <svg
+                    className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/20">
-              <div className="text-right space-y-1">
+              <div className="text-right space-y-2">
                 <div className="flex items-center justify-end space-x-2">
                   <span className="text-sm font-semibold text-gray-900">
                     {user.role === 'super_admin' ? 'Super Administrator' :
@@ -204,271 +418,548 @@ const Dashboard = () => {
                 <p className="text-xs text-gray-500">
                   Scope: {isSuperAdmin(user) ? 'All Organizations' : 'Organization Only'}
                 </p>
+                {/* Organization Selector for Superadmin */}
+                <OrganizationSelector
+                  selectedOrganization={selectedOrganization}
+                  onOrganizationChange={setSelectedOrganization}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Metrics Cards */}
-        {metrics && (
-          <div className="mb-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              <PermissionGuard permission={PERMISSIONS.VIEW_PARTS} hideIfNoPermission={true}>
-                <MetricCard
-                  title="Total Parts"
-                  value={metrics.total_parts}
-                  linkTo="/parts"
-                  icon={<PartIcon />}
-                  accentColor="text-blue-600"
-                  subtitle="Active catalog items"
-                />
-              </PermissionGuard>
-
-              <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
-                <MetricCard
-                  title="Inventory Items"
-                  value={metrics.total_inventory_items}
-                  linkTo="/inventory"
-                  icon={<InventoryIcon />}
-                  accentColor="text-green-600"
-                  subtitle="Items in stock"
-                />
-              </PermissionGuard>
-
-              <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
-                <MetricCard
-                  title="Low Stock Items"
-                  value={metrics.low_stock_items}
-                  linkTo="/inventory"
-                  icon={<WarningIcon />}
-                  bgColor={metrics.low_stock_items > 0 ? 'bg-gradient-to-br from-amber-50 to-orange-50' : 'bg-white'}
-                  textColor={metrics.low_stock_items > 0 ? 'text-amber-900' : 'text-gray-900'}
-                  accentColor={metrics.low_stock_items > 0 ? 'text-amber-600' : 'text-gray-600'}
-                  borderColor={metrics.low_stock_items > 0 ? 'border-amber-200' : 'border-gray-200'}
-                  subtitle={metrics.low_stock_items > 0 ? 'Requires attention' : 'All items stocked'}
-                />
-              </PermissionGuard>
-
-              <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
-                <MetricCard
-                  title="Customer Orders"
-                  value={metrics.pending_customer_orders}
-                  linkTo="/orders"
-                  icon={<OrderIcon />}
-                  bgColor={metrics.pending_customer_orders > 0 ? 'bg-gradient-to-br from-blue-50 to-cyan-50' : 'bg-white'}
-                  textColor={metrics.pending_customer_orders > 0 ? 'text-blue-900' : 'text-gray-900'}
-                  accentColor={metrics.pending_customer_orders > 0 ? 'text-blue-600' : 'text-gray-600'}
-                  borderColor={metrics.pending_customer_orders > 0 ? 'border-blue-200' : 'border-gray-200'}
-                  subtitle={metrics.pending_customer_orders > 0 ? 'Pending processing' : 'All processed'}
-                />
-              </PermissionGuard>
-
-              <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
-                <MetricCard
-                  title="Supplier Orders"
-                  value={metrics.pending_supplier_orders}
-                  linkTo="/orders"
-                  icon={<OrderIcon />}
-                  bgColor={metrics.pending_supplier_orders > 0 ? 'bg-gradient-to-br from-red-50 to-pink-50' : 'bg-white'}
-                  textColor={metrics.pending_supplier_orders > 0 ? 'text-red-900' : 'text-gray-900'}
-                  accentColor={metrics.pending_supplier_orders > 0 ? 'text-red-600' : 'text-gray-600'}
-                  borderColor={metrics.pending_supplier_orders > 0 ? 'border-red-200' : 'border-gray-200'}
-                  subtitle={metrics.pending_supplier_orders > 0 ? 'Awaiting delivery' : 'All delivered'}
-                />
-              </PermissionGuard>
-
-              {/* Always show user info card for users who might not have other permissions */}
-              {(!hasPermission(user, PERMISSIONS.VIEW_PARTS) &&
-                !hasPermission(user, PERMISSIONS.VIEW_INVENTORY) &&
-                !hasPermission(user, PERMISSIONS.ORDER_PARTS)) && (
-                  <div className="col-span-full">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20 text-center">
-                      <div className="flex items-center justify-center mb-4">
-                        <div className="p-3 bg-blue-100 rounded-xl">
-                          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Welcome to ABParts</h3>
-                      <p className="text-gray-600 mb-4">
-                        You're successfully logged in as {user.role === 'admin' ? 'an Administrator' : 'a User'}.
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Contact your administrator if you need access to additional features.
-                      </p>
-                    </div>
+        {/* Enhanced Three-Column Dashboard Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Column 1: Entities */}
+          <div className="space-y-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
                   </div>
-                )}
+                  <h2 className="text-xl font-bold text-gray-900">Entities</h2>
+                </div>
+                {/* Context indicator */}
+                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  {isSuperAdmin(user) ? (selectedOrganization ? 'Filtered' : 'Global') : 'Organization'}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Organizations - Superadmin only */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_ALL_ORGANIZATIONS} hideIfNoPermission={true}>
+                  <DashboardBox
+                    title="Organizations"
+                    value={metrics?.total_organizations || '0'}
+                    linkTo="/organizations"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                    accentColor="text-purple-600"
+                    subtitle={`${metrics?.customer_organizations || 0} customers, ${metrics?.supplier_organizations || 0} suppliers`}
+                  />
+                </PermissionGuard>
+
+                {/* Users */}
+                <PermissionGuard permission={PERMISSIONS.MANAGE_ORG_USERS} hideIfNoPermission={true}>
+                  <DashboardBox
+                    title="Users"
+                    value={metrics?.total_users || '0'}
+                    linkTo="/users"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>}
+                    accentColor="text-green-600"
+                    subtitle={`${metrics?.active_users || 0} active, ${metrics?.pending_invitations || 0} pending invitations`}
+                    showBadge={metrics?.pending_invitations > 0}
+                    badgeText={metrics?.pending_invitations > 0 ? metrics.pending_invitations.toString() : null}
+                  />
+                </PermissionGuard>
+
+                {/* Warehouses */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_WAREHOUSES} hideIfNoPermission={true}>
+                  <DashboardBox
+                    title="Warehouses"
+                    value={metrics?.total_warehouses || '0'}
+                    linkTo="/warehouses"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clipRule="evenodd" /></svg>}
+                    accentColor="text-indigo-600"
+                    subtitle={metrics ? `${metrics.total_inventory_items} parts in stock` : 'Storage locations'}
+                  />
+                </PermissionGuard>
+
+                {/* Machines */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_ORG_MACHINES} hideIfNoPermission={true}>
+                  <DashboardBox
+                    title="Machines"
+                    value={metrics?.total_machines || '0'}
+                    linkTo="/machines"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>}
+                    accentColor="text-orange-600"
+                    subtitle={`${metrics?.active_machines || 0} active AutoBoss machines`}
+                  />
+                </PermissionGuard>
+
+                {/* Parts */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_PARTS} hideIfNoPermission={true}>
+                  <DashboardBox
+                    title="Parts"
+                    value={metrics?.total_parts || '0'}
+                    linkTo="/parts"
+                    icon={<PartIcon />}
+                    accentColor="text-blue-600"
+                    subtitle={metrics?.low_stock_items > 0 ? `${metrics.low_stock_items} low stock alerts` : 'All parts in stock'}
+                    alertLevel={metrics?.low_stock_items > 0 ? 'warning' : null}
+                    showBadge={metrics?.low_stock_items > 0}
+                    badgeText={metrics?.low_stock_items > 0 ? metrics.low_stock_items.toString() : null}
+                  />
+                </PermissionGuard>
+              </div>
             </div>
+          </div>
+
+          {/* Column 2: Actions */}
+          <div className="space-y-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
+                </div>
+                {/* Role indicator */}
+                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  {user.role === 'super_admin' ? 'All Actions' : user.role === 'admin' ? 'Admin Actions' : 'User Actions'}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Order Parts - High priority for all users */}
+                <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Order Parts"
+                    description="Create new part orders from suppliers"
+                    linkTo="/orders"
+                    icon={<OrderIcon />}
+                    color="blue"
+                    priority="high"
+                    shortcut="Ctrl+O"
+                  />
+                </PermissionGuard>
+
+                {/* Use Parts - High priority for field operations */}
+                <PermissionGuard permission={PERMISSIONS.RECORD_PART_USAGE} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Use Parts"
+                    description="Record part consumption in machines"
+                    linkTo="/transactions"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg>}
+                    color="green"
+                    priority="high"
+                    shortcut="Ctrl+U"
+                  />
+                </PermissionGuard>
+
+                {/* Record Hours - Important for service tracking */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_ORG_MACHINES} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Record Hours"
+                    description="Log machine operating hours for service tracking"
+                    linkTo="/machines"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>}
+                    color="purple"
+                    shortcut="Ctrl+H"
+                  />
+                </PermissionGuard>
+
+                {/* Adjust Inventory - Admin action */}
+                <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Adjust Inventory"
+                    description="Perform stock adjustments and stocktakes"
+                    linkTo="/stocktake"
+                    icon={<InventoryIcon />}
+                    color="orange"
+                    shortcut="Ctrl+I"
+                  />
+                </PermissionGuard>
+
+                {/* Register Machine - Superadmin only */}
+                <PermissionGuard permission={PERMISSIONS.REGISTER_MACHINES} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Register Machine"
+                    description="Add new AutoBoss machines to system"
+                    linkTo="/machines"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>}
+                    color="red"
+                    priority="low"
+                  />
+                </PermissionGuard>
+
+                {/* Create Organization - Superadmin only */}
+                <PermissionGuard permission={PERMISSIONS.MANAGE_ORGANIZATIONS} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Create Organization"
+                    description="Add new customer or supplier organization"
+                    linkTo="/organizations"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>}
+                    color="teal"
+                    priority="low"
+                  />
+                </PermissionGuard>
+
+                {/* Invite Users - Admin action */}
+                <PermissionGuard permission={PERMISSIONS.INVITE_USERS} hideIfNoPermission={true}>
+                  <ActionButton
+                    title="Invite Users"
+                    description="Send invitations to new team members"
+                    linkTo="/users"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" /></svg>}
+                    color="purple"
+                  />
+                </PermissionGuard>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Reports & Analytics */}
+          <div className="space-y-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Reports & Analytics</h2>
+                </div>
+                {/* Data freshness indicator */}
+                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  Live Data
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Inventory Reports */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
+                  <ReportCard
+                    title="Inventory Reports"
+                    description={`Stock levels and movement analysis`}
+                    linkTo="/inventory"
+                    icon={<InventoryIcon />}
+                    color="indigo"
+                    dataValue={`${metrics?.total_inventory_items || 0}`}
+                    trend={metrics?.low_stock_items > 0 ? 'down' : 'stable'}
+                    lastUpdated="just now"
+                  />
+                </PermissionGuard>
+
+                {/* Machine Reports */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_ORG_MACHINES} hideIfNoPermission={true}>
+                  <ReportCard
+                    title="Machine Reports"
+                    description={`Service tracking and performance metrics`}
+                    linkTo="/machines"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" /></svg>}
+                    color="teal"
+                    dataValue={`${metrics?.total_machines || 0}`}
+                    trend="stable"
+                    lastUpdated="5 min ago"
+                  />
+                </PermissionGuard>
+
+                {/* Transaction Reports */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_ORG_TRANSACTIONS} hideIfNoPermission={true}>
+                  <ReportCard
+                    title="Transaction Reports"
+                    description={`Order history and usage patterns`}
+                    linkTo="/transactions"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>}
+                    color="pink"
+                    dataValue={`${metrics?.recent_transactions || 0}`}
+                    trend="stable"
+                    lastUpdated="2 min ago"
+                  />
+                </PermissionGuard>
+
+                {/* Order Reports */}
+                <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
+                  <ReportCard
+                    title="Order Reports"
+                    description={`Purchase orders and supplier performance`}
+                    linkTo="/orders"
+                    icon={<OrderIcon />}
+                    color="violet"
+                    dataValue={`${(metrics?.pending_customer_orders || 0) + (metrics?.pending_supplier_orders || 0)}`}
+                    trend={((metrics?.pending_customer_orders || 0) + (metrics?.pending_supplier_orders || 0)) > 0 ? 'up' : 'stable'}
+                    lastUpdated="1 min ago"
+                  />
+                </PermissionGuard>
+
+                {/* Organization Reports - Superadmin only */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_GLOBAL_REPORTS} hideIfNoPermission={true}>
+                  <ReportCard
+                    title="Organization Reports"
+                    description={`Multi-organization analytics and insights`}
+                    linkTo="/organizations"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                    color="amber"
+                    dataValue={`${metrics?.total_organizations || 0}`}
+                    trend="stable"
+                    lastUpdated="just now"
+                  />
+                </PermissionGuard>
+
+                {/* Warehouse Analytics */}
+                <PermissionGuard permission={PERMISSIONS.VIEW_WAREHOUSES} hideIfNoPermission={true}>
+                  <ReportCard
+                    title="Warehouse Analytics"
+                    description={`Storage efficiency and capacity planning`}
+                    linkTo="/warehouses"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clipRule="evenodd" /></svg>}
+                    color="emerald"
+                    dataValue={`${metrics?.total_warehouses || 0}`}
+                    trend="stable"
+                    lastUpdated="3 min ago"
+                  />
+                </PermissionGuard>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced System Status & Alerts Section */}
+        {metrics && (
+          <div className="mt-8 space-y-6">
+            {/* System Status Overview */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-600">All systems operational</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {/* Active Users */}
+                <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-2xl font-bold text-green-600">{metrics.active_users}</div>
+                  <div className="text-xs text-gray-600 font-medium">Active Users</div>
+                  <div className="text-xs text-green-600 mt-1">Online now</div>
+                </div>
+
+                {/* Low Stock Items */}
+                <div className={`text-center p-3 rounded-lg border ${metrics.low_stock_items > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
+                  <div className={`text-2xl font-bold ${metrics.low_stock_items > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {metrics.low_stock_items}
+                  </div>
+                  <div className="text-xs text-gray-600 font-medium">Low Stock</div>
+                  <div className={`text-xs mt-1 ${metrics.low_stock_items > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {metrics.low_stock_items > 0 ? 'Needs attention' : 'All good'}
+                  </div>
+                </div>
+
+                {/* Out of Stock */}
+                <div className={`text-center p-3 rounded-lg border ${metrics.out_of_stock_items > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                  <div className={`text-2xl font-bold ${metrics.out_of_stock_items > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {metrics.out_of_stock_items}
+                  </div>
+                  <div className="text-xs text-gray-600 font-medium">Out of Stock</div>
+                  <div className={`text-xs mt-1 ${metrics.out_of_stock_items > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {metrics.out_of_stock_items > 0 ? 'Critical' : 'All stocked'}
+                  </div>
+                </div>
+
+                {/* Pending Orders */}
+                <div className={`text-center p-3 rounded-lg border ${(metrics.pending_customer_orders + metrics.pending_supplier_orders) > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className={`text-2xl font-bold ${(metrics.pending_customer_orders + metrics.pending_supplier_orders) > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                    {metrics.pending_customer_orders + metrics.pending_supplier_orders}
+                  </div>
+                  <div className="text-xs text-gray-600 font-medium">Pending Orders</div>
+                  <div className={`text-xs mt-1 ${(metrics.pending_customer_orders + metrics.pending_supplier_orders) > 0 ? 'text-blue-600' : 'text-gray-500'}`}>
+                    {(metrics.pending_customer_orders + metrics.pending_supplier_orders) > 0 ? 'In progress' : 'No pending'}
+                  </div>
+                </div>
+
+                {/* Recent Transactions */}
+                <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="text-2xl font-bold text-purple-600">{metrics.recent_transactions}</div>
+                  <div className="text-xs text-gray-600 font-medium">Recent Activity</div>
+                  <div className="text-xs text-purple-600 mt-1">Last 24h</div>
+                </div>
+
+                {/* Total Warehouses */}
+                <div className="text-center p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  <div className="text-2xl font-bold text-indigo-600">{metrics.total_warehouses}</div>
+                  <div className="text-xs text-gray-600 font-medium">Warehouses</div>
+                  <div className="text-xs text-indigo-600 mt-1">Active locations</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Alerts & Notifications */}
+            {(metrics.low_stock_items > 0 || metrics.out_of_stock_items > 0 || metrics.pending_invitations > 0) && (
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 shadow-lg border border-yellow-200">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2 bg-yellow-500 rounded-xl">
+                    <WarningIcon />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Attention Required</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {metrics.out_of_stock_items > 0 && (
+                    <div className="bg-white rounded-lg p-4 border border-red-200">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span className="font-semibold text-red-700">Critical Stock Alert</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{metrics.out_of_stock_items} parts are completely out of stock</p>
+                      <Link to="/inventory" className="text-sm text-red-600 hover:text-red-800 font-medium mt-2 inline-block">
+                        View Details →
+                      </Link>
+                    </div>
+                  )}
+
+                  {metrics.low_stock_items > 0 && (
+                    <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span className="font-semibold text-yellow-700">Low Stock Warning</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{metrics.low_stock_items} parts are running low</p>
+                      <Link to="/inventory" className="text-sm text-yellow-600 hover:text-yellow-800 font-medium mt-2 inline-block">
+                        Reorder Now →
+                      </Link>
+                    </div>
+                  )}
+
+                  {metrics.pending_invitations > 0 && (
+                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="font-semibold text-blue-700">Pending Invitations</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{metrics.pending_invitations} user invitations awaiting response</p>
+                      <Link to="/users" className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-block">
+                        Manage Users →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Charts Section */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-white">Pending Orders Overview</h3>
-                    <div className="flex items-center space-x-2 text-blue-100">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm font-medium">Real-time</span>
+        {/* Charts Section - Below the three columns */}
+        {(hasPermission(user, PERMISSIONS.ORDER_PARTS) || hasPermission(user, PERMISSIONS.VIEW_INVENTORY)) && (
+          <div className="mt-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-white">Pending Orders Overview</h3>
+                      <div className="flex items-center space-x-2 text-blue-100">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">Real-time</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="p-6">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={pendingOrdersData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 12, fill: '#64748b' }}
-                        axisLine={{ stroke: '#cbd5e1' }}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tick={{ fontSize: 12, fill: '#64748b' }}
-                        axisLine={{ stroke: '#cbd5e1' }}
-                      />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                        contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '12px',
-                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                          backdropFilter: 'blur(10px)'
-                        }}
-                      />
-                      <Bar dataKey="Pending" radius={[6, 6, 0, 0]}>
-                        {pendingOrdersData.map((entry, index) => (
-                          <Bar key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </PermissionGuard>
-
-            <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-                <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-white">Low Stock by Organization</h3>
-                    <div className="flex items-center space-x-2 text-amber-100">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-sm font-medium">Current status</span>
-                    </div>
+                  <div className="p-6">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={pendingOrdersData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                          contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                            backdropFilter: 'blur(10px)'
+                          }}
+                        />
+                        <Bar dataKey="Pending" radius={[6, 6, 0, 0]}>
+                          {pendingOrdersData.map((entry, index) => (
+                            <Bar key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="p-6">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={lowStockData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis
-                        dataKey="organization_name"
-                        tick={{ fontSize: 12, fill: '#64748b' }}
-                        axisLine={{ stroke: '#cbd5e1' }}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tick={{ fontSize: 12, fill: '#64748b' }}
-                        axisLine={{ stroke: '#cbd5e1' }}
-                      />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(245, 158, 11, 0.1)' }}
-                        contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '12px',
-                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                          backdropFilter: 'blur(10px)'
-                        }}
-                      />
-                      <Legend />
-                      <Bar
-                        dataKey="low_stock_count"
-                        name="Low Stock Count"
-                        fill="#f59e0b"
-                        radius={[6, 6, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </PermissionGuard>
-          </div>
-        </div>
+              </PermissionGuard>
 
-        {/* Quick Actions Section */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/20">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+              <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-white">Low Stock by Organization</h3>
+                      <div className="flex items-center space-x-2 text-amber-100">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">Current status</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={lowStockData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="organization_name"
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'rgba(245, 158, 11, 0.1)' }}
+                          contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                            backdropFilter: 'blur(10px)'
+                          }}
+                        />
+                        <Legend />
+                        <Bar
+                          dataKey="low_stock_count"
+                          name="Low Stock Count"
+                          fill="#f59e0b"
+                          radius={[6, 6, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </PermissionGuard>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Quick Actions</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <PermissionGuard permission={PERMISSIONS.VIEW_PARTS} hideIfNoPermission={true}>
-              <Link
-                to="/parts"
-                className="group flex items-center space-x-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-white/20 hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
-                  <PartIcon />
-                </div>
-                <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">Manage Parts</span>
-              </Link>
-            </PermissionGuard>
-
-            <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
-              <Link
-                to="/inventory"
-                className="group flex items-center space-x-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-white/20 hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-300">
-                  <InventoryIcon />
-                </div>
-                <span className="font-semibold text-gray-900 group-hover:text-green-600 transition-colors duration-300">Check Inventory</span>
-              </Link>
-            </PermissionGuard>
-
-            <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
-              <Link
-                to="/orders"
-                className="group flex items-center space-x-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-white/20 hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors duration-300">
-                  <OrderIcon />
-                </div>
-                <span className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors duration-300">View Orders</span>
-              </Link>
-            </PermissionGuard>
-
-            <PermissionGuard permission={PERMISSIONS.VIEW_WAREHOUSES} hideIfNoPermission={true}>
-              <Link
-                to="/warehouses"
-                className="group flex items-center space-x-4 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-white/20 hover:shadow-lg hover:scale-105 transition-all duration-300"
-              >
-                <div className="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors duration-300">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300">Warehouses</span>
-              </Link>
-            </PermissionGuard>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

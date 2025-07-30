@@ -36,7 +36,7 @@ class InventoryResponse(InventoryBase):
     warehouse_name: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class InventoryTransferRequest(BaseModel):
     """Schema for inventory transfer requests between warehouses."""

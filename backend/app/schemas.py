@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field, VERSION, validator
+from pydantic import BaseModel, EmailStr, Field, VERSION, validator, field_validator
 from enum import Enum
 
 # --- Base Schemas with common fields ---
@@ -29,10 +29,18 @@ class OrganizationTypeEnum(str, Enum):
     customer = "customer"
     supplier = "supplier"
 
+class CountryEnum(str, Enum):
+    GR = "GR"
+    KSA = "KSA"
+    ES = "ES"
+    CY = "CY"
+    OM = "OM"
+
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)
     organization_type: OrganizationTypeEnum
     parent_organization_id: Optional[uuid.UUID] = None
+    country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
     is_active: bool = True
@@ -44,6 +52,7 @@ class OrganizationUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
     organization_type: Optional[OrganizationTypeEnum] = None
     parent_organization_id: Optional[uuid.UUID] = None
+    country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
     is_active: Optional[bool] = None
@@ -69,6 +78,7 @@ class OrganizationValidationRequest(BaseModel):
     name: str = Field(..., max_length=255)
     organization_type: OrganizationTypeEnum
     parent_organization_id: Optional[uuid.UUID] = None
+    country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
     is_active: bool = True
@@ -402,7 +412,7 @@ class MaintenancePartUsageUpdate(BaseModel):
     notes: Optional[str] = None
 
 class MaintenancePartUsageResponse(MaintenancePartUsageBase, BaseSchema):
-    part: Optional[PartResponse] = None
+    part: Optional['PartResponse'] = None
     
     class Config:
         from_attributes = True
@@ -425,7 +435,7 @@ class MachinePartCompatibilityUpdate(BaseModel):
     compatibility_notes: Optional[str] = None
 
 class MachinePartCompatibilityResponse(MachinePartCompatibilityBase, BaseSchema):
-    part: Optional[PartResponse] = None
+    part: Optional['PartResponse'] = None
     
     class Config:
         from_attributes = True
@@ -438,33 +448,105 @@ class PartTypeEnum(str, Enum):
 
 class PartBase(BaseModel):
     part_number: str = Field(..., max_length=255)
-    name: str = Field(..., max_length=255)
+    name: str = Field(..., min_length=1, description="Multilingual part name (supports compound strings)")
     description: Optional[str] = None
     part_type: PartTypeEnum = PartTypeEnum.CONSUMABLE
     is_proprietary: bool = False
     unit_of_measure: str = Field(default="pieces", max_length=50)
+    manufacturer: Optional[str] = Field(None, max_length=255, description="Part manufacturer name")
+    part_code: Optional[str] = Field(None, max_length=100, description="AutoBoss-specific part code")
+    serial_number: Optional[str] = Field(None, max_length=255, description="Part serial number if available")
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = None
+    image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
+    
+    # Validators temporarily removed to test field definitions
 
 class PartCreate(PartBase):
     pass
 
 class PartUpdate(BaseModel):
     part_number: Optional[str] = Field(None, max_length=255)
-    name: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, min_length=1, description="Multilingual part name (supports compound strings)")
     description: Optional[str] = None
     part_type: Optional[PartTypeEnum] = None
     is_proprietary: Optional[bool] = None
     unit_of_measure: Optional[str] = Field(None, max_length=50)
+    manufacturer: Optional[str] = Field(None, max_length=255, description="Part manufacturer name")
+    part_code: Optional[str] = Field(None, max_length=100, description="AutoBoss-specific part code")
+    serial_number: Optional[str] = Field(None, max_length=255, description="Part serial number if available")
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = None
+    image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
+    
+    # Validators temporarily removed to test field definitions
 
 class PartResponse(PartBase, BaseSchema):
     pass
+
+# --- Enhanced Part Response Schemas ---
+class WarehouseInventoryItem(BaseModel):
+    """Individual warehouse inventory item for parts"""
+    warehouse_id: uuid.UUID
+    warehouse_name: str
+    current_stock: Decimal
+    minimum_stock_recommendation: Decimal
+    is_low_stock: bool
+    unit_of_measure: str
+
+class PartWithInventoryResponse(BaseModel):
+    """Part response with inventory information across warehouses"""
+    id: uuid.UUID
+    part_number: str
+    name: str
+    description: Optional[str] = None
+    part_type: PartTypeEnum
+    is_proprietary: bool
+    unit_of_measure: str
+    manufacturer: Optional[str] = None
+    part_code: Optional[str] = None
+    serial_number: Optional[str] = None
+    manufacturer_part_number: Optional[str] = None
+    manufacturer_delivery_time_days: Optional[int] = None
+    local_supplier_delivery_time_days: Optional[int] = None
+    image_urls: Optional[List[str]] = None
+    created_at: datetime
+    updated_at: datetime
+    total_stock: Decimal
+    warehouse_inventory: List[WarehouseInventoryItem]
+    is_low_stock: bool
+    
+    class Config:
+        from_attributes = True
+
+class PartUsageHistoryItem(BaseModel):
+    """Individual part usage history item"""
+    usage_date: datetime
+    quantity: Decimal
+    machine_id: Optional[uuid.UUID] = None
+    machine_serial: Optional[str] = None
+    warehouse_id: uuid.UUID
+    warehouse_name: str
+
+class PartWithUsageResponse(PartWithInventoryResponse):
+    """Part response with inventory and usage history"""
+    usage_history: List[PartUsageHistoryItem]
+    avg_monthly_usage: Decimal
+    estimated_depletion_days: Optional[int] = None
+
+class PartReorderSuggestion(BaseModel):
+    """Part reorder suggestion based on usage patterns"""
+    part_id: uuid.UUID
+    part_number: str
+    part_name: str
+    current_total_stock: Decimal
+    avg_monthly_usage: Decimal
+    estimated_depletion_days: int
+    suggested_reorder_quantity: Decimal
+    unit_of_measure: str
+    is_proprietary: bool
 
 # --- New: Image Upload Response Schema ---
 class ImageUploadResponse(BaseModel):
@@ -743,7 +825,7 @@ class WarehouseAnalyticsResponse(BaseModel):
 
 class WarehouseAnalyticsTrendsRequest(BaseModel):
     """Request schema for warehouse analytics trends with validation"""
-    period: str = Field(default="daily", regex="^(daily|weekly|monthly)$", description="Aggregation period")
+    period: str = Field(default="daily", pattern="^(daily|weekly|monthly)$", description="Aggregation period")
     days: int = Field(default=30, ge=1, le=365, description="Number of days to include (1-365)")
     
     @validator('period')
@@ -768,6 +850,43 @@ class WarehouseAnalyticsTrendsResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# --- Machine Hours Schemas ---
+class MachineHoursBase(BaseModel):
+    machine_id: uuid.UUID
+    hours_value: Decimal = Field(..., decimal_places=2, description="Machine hours value")
+    recorded_date: datetime = Field(default_factory=datetime.now)
+    notes: Optional[str] = None
+
+class MachineHoursCreate(BaseModel):
+    hours_value: Decimal = Field(..., decimal_places=2, gt=0, description="Machine hours value (must be positive)")
+    recorded_date: Optional[datetime] = Field(default_factory=datetime.now)
+    notes: Optional[str] = None
+
+class MachineHoursUpdate(BaseModel):
+    hours_value: Optional[Decimal] = Field(None, decimal_places=2, gt=0)
+    recorded_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class MachineHoursResponse(MachineHoursBase, BaseSchema):
+    recorded_by_user_id: uuid.UUID
+    
+    # Include related data for easier display
+    recorded_by_username: Optional[str] = None
+    machine_name: Optional[str] = None
+    machine_serial_number: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Machine Name Update Schema ---
+class MachineNameUpdateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="New machine name")
+
+# --- Machine Model Type Validation Schema ---
+class MachineModelTypeEnum(str, Enum):
+    V3_1B = "V3.1B"
+    V4_0 = "V4.0"
 
 # --- Error Response Schemas ---
 class ValidationErrorDetail(BaseModel):

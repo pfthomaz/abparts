@@ -34,7 +34,7 @@ class SupplierOrderResponse(SupplierOrderBase):
     ordering_organization_name: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class SupplierOrderItemBase(BaseModel):
     supplier_order_id: uuid.UUID
@@ -60,4 +60,4 @@ class SupplierOrderItemResponse(SupplierOrderItemBase):
     unit_of_measure: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -262,6 +262,20 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Organization Management - admin and above
+  if (hasPermission(user, PERMISSIONS.MANAGE_ORG_USERS) || hasPermission(user, PERMISSIONS.VIEW_ALL_ORGANIZATIONS)) {
+    items.push({
+      path: '/organization-management',
+      label: 'Organization Management',
+      icon: 'organization-management',
+      permission: PERMISSIONS.MANAGE_ORG_USERS,
+      description: 'Enhanced organization, supplier, and warehouse management',
+      adminOnly: true,
+      category: 'administration',
+      accessScope: hasPermission(user, PERMISSIONS.VIEW_ALL_ORGANIZATIONS) ? 'global' : 'organization'
+    });
+  }
+
   // Parts - all users can view
   if (hasPermission(user, PERMISSIONS.VIEW_PARTS)) {
     items.push({

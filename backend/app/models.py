@@ -66,6 +66,7 @@ class Organization(Base):
     name = Column(String(255), unique=True, nullable=False, index=True)
     organization_type = Column(Enum(OrganizationType), nullable=False)
     parent_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
+    country = Column(String(3), nullable=True)  # Added country field with enum constraint
     address = Column(Text)
     contact_info = Column(Text)
     is_active = Column(Boolean, nullable=False, server_default='true')
@@ -124,6 +125,42 @@ class Organization(Base):
         # Additional validation can be added here
         return True
 
+    def get_active_suppliers(self, db_session):
+        """Get all active suppliers belonging to this organization."""
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        return db_session.query(Organization)\
+            .filter(
+                Organization.organization_type == OrganizationType.supplier,
+                Organization.parent_organization_id == self.id,
+                Organization.is_active == True
+            )\
+            .order_by(Organization.name)\
+            .all()
+
+    def can_have_suppliers(self):
+        """Check if this organization type can have supplier organizations."""
+        return self.organization_type in [OrganizationType.customer, OrganizationType.oraseas_ee]
+
+    def get_supplier_count(self, db_session, include_inactive=False):
+        """Get count of suppliers belonging to this organization."""
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        query = db_session.query(Organization)\
+            .filter(
+                Organization.organization_type == OrganizationType.supplier,
+                Organization.parent_organization_id == self.id
+            )
+        
+        if not include_inactive:
+            query = query.filter(Organization.is_active == True)
+        
+        return query.count()
+
     def __repr__(self):
         return f"<Organization(id={self.id}, name='{self.name}', type='{self.organization_type.value}')>"
 
@@ -166,6 +203,7 @@ class User(Base):
     transactions_performed = relationship("Transaction", back_populates="performed_by_user")
     invitation_audit_logs = relationship("InvitationAuditLog", foreign_keys="[InvitationAuditLog.user_id]", back_populates="user")
     invited_by_user = relationship("User", remote_side=[id])
+    machine_hours_recorded = relationship("MachineHours", back_populates="recorded_by_user")
 
     @hybrid_property
     def is_super_admin(self):
@@ -194,16 +232,22 @@ class MachineStatus(enum.Enum):
     maintenance = "maintenance"
     decommissioned = "decommissioned"
 
+
+class MachineModelType(enum.Enum):
+    V3_1B = "V3.1B"
+    V4_0 = "V4.0"
+
 class Machine(Base):
     """
     SQLAlchemy model for the 'machines' table.
     Represents AutoBoss machines owned by customer organizations.
+    Enhanced with model type validation and ownership transfer capabilities.
     """
     __tablename__ = "machines"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
-    model_type = Column(String(100), nullable=False) # e.g., 'V3.1B', 'V4.0'
+    model_type = Column(ENUM(MachineModelType, name='machinemodeltype'), nullable=False)
     name = Column(String(255), nullable=False)
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
     purchase_date = Column(DateTime(timezone=True), nullable=True)
@@ -223,9 +267,270 @@ class Machine(Base):
     compatible_parts = relationship("MachinePartCompatibility", back_populates="machine", cascade="all, delete-orphan")
     predictions = relationship("MachinePrediction", back_populates="machine", cascade="all, delete-orphan")
     maintenance_recommendations = relationship("MaintenanceRecommendation", back_populates="machine", cascade="all, delete-orphan")
+    machine_hours = relationship("MachineHours", back_populates="machine", cascade="all, delete-orphan")
+
+    def validate_model_type(self):
+        """Validate that the machine model type is supported."""
+        if self.model_type not in [MachineModelType.V3_1B, MachineModelType.V4_0]:
+            raise ValueError(f"Unsupported machine model type: {self.model_type}")
+        return True
+
+    def can_transfer_ownership(self, from_org, to_org):
+        """
+        Validate if machine ownership can be transferred between organizations.
+        Machines can only be transferred from Oraseas EE to customer organizations.
+        """
+        if not from_org or not to_org:
+            raise ValueError("Both source and destination organizations must be specified")
+        
+        # Check if transfer is from Oraseas EE to customer
+        if from_org.organization_type != OrganizationType.oraseas_ee:
+            raise ValueError("Machines can only be transferred from Oraseas EE")
+        
+        if to_org.organization_type != OrganizationType.customer:
+            raise ValueError("Machines can only be transferred to customer organizations")
+        
+        # Check if machine currently belongs to the source organization
+        if self.customer_organization_id != from_org.id:
+            raise ValueError("Machine does not belong to the source organization")
+        
+        return True
+
+    def transfer_ownership(self, to_organization_id, performed_by_user_id, db_session):
+        """
+        Transfer machine ownership to another organization.
+        This creates a transaction record and updates the machine's organization.
+        """
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        # Get the current and target organizations
+        current_org = db_session.query(Organization).filter(Organization.id == self.customer_organization_id).first()
+        target_org = db_session.query(Organization).filter(Organization.id == to_organization_id).first()
+        
+        if not current_org or not target_org:
+            raise ValueError("Invalid organization IDs provided")
+        
+        # Validate the transfer
+        self.can_transfer_ownership(current_org, target_org)
+        
+        # Update the machine's organization
+        old_org_id = self.customer_organization_id
+        self.customer_organization_id = to_organization_id
+        self.updated_at = func.now()
+        
+        # Create a transaction record for the ownership transfer
+        # Note: This would typically create a MachineTransfer record, but since we don't have that model yet,
+        # we'll add a note to the machine for now
+        transfer_note = f"Ownership transferred from {current_org.name} to {target_org.name} on {datetime.now().isoformat()}"
+        if self.notes:
+            self.notes += f"\n{transfer_note}"
+        else:
+            self.notes = transfer_note
+        
+        return True
+
+    def can_edit_name(self, user, requesting_org):
+        """
+        Check if a user can edit the machine name.
+        Superadmins can edit any machine name.
+        Admins can only edit machine names within their own organization.
+        """
+        if not user or not requesting_org:
+            raise ValueError("User and organization must be specified")
+        
+        # Superadmins can edit any machine name
+        if user.role == UserRole.super_admin:
+            return True
+        
+        # Admins can only edit machines in their own organization
+        if user.role == UserRole.admin and self.customer_organization_id == requesting_org.id:
+            return True
+        
+        return False
+
+    def update_name(self, new_name, user, requesting_org):
+        """
+        Update the machine name with proper authorization checks.
+        """
+        if not self.can_edit_name(user, requesting_org):
+            raise ValueError("User does not have permission to edit this machine name")
+        
+        if not new_name or not new_name.strip():
+            raise ValueError("Machine name cannot be empty")
+        
+        old_name = self.name
+        self.name = new_name.strip()
+        self.updated_at = func.now()
+        
+        # Add a note about the name change
+        name_change_note = f"Name changed from '{old_name}' to '{new_name}' by {user.username} on {datetime.now().isoformat()}"
+        if self.notes:
+            self.notes += f"\n{name_change_note}"
+        else:
+            self.notes = name_change_note
+        
+        return True
+
+    def get_latest_hours(self, db_session):
+        """Get the latest recorded hours for this machine."""
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        latest_record = db_session.query(MachineHours)\
+            .filter(MachineHours.machine_id == self.id)\
+            .order_by(MachineHours.recorded_date.desc())\
+            .first()
+        
+        return latest_record.hours_value if latest_record else 0
+
+    def get_total_hours_recorded(self, db_session):
+        """Get the total number of hours records for this machine."""
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        return db_session.query(MachineHours)\
+            .filter(MachineHours.machine_id == self.id)\
+            .count()
 
     def __repr__(self):
-        return f"<Machine(id={self.id}, name='{self.name}', model_type='{self.model_type}', serial_number='{self.serial_number}')>"
+        return f"<Machine(id={self.id}, name='{self.name}', model_type='{self.model_type.value}', serial_number='{self.serial_number}')>"
+
+
+class MachineHours(Base):
+    """
+    SQLAlchemy model for the 'machine_hours' table.
+    Records machine hours for service timing calculations.
+    Enhanced with user tracking and validation.
+    """
+    __tablename__ = "machine_hours"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    recorded_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    hours_value = Column(DECIMAL(precision=10, scale=2), nullable=False)
+    recorded_date = Column(DateTime(timezone=True), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    machine = relationship("Machine", back_populates="machine_hours")
+    recorded_by_user = relationship("User", back_populates="machine_hours_recorded")
+
+    def validate_hours_value(self):
+        """Validate that the hours value is positive and reasonable."""
+        if self.hours_value is None:
+            raise ValueError("Hours value cannot be None")
+        
+        if self.hours_value < 0:
+            raise ValueError("Hours value cannot be negative")
+        
+        if self.hours_value > 99999:  # Reasonable upper limit
+            raise ValueError("Hours value seems unreasonably high (max 99,999)")
+        
+        return True
+
+    def validate_recorded_date(self):
+        """Validate that the recorded date is not in the future."""
+        if self.recorded_date is None:
+            raise ValueError("Recorded date cannot be None")
+        
+        if self.recorded_date > datetime.now():
+            raise ValueError("Recorded date cannot be in the future")
+        
+        return True
+
+    def can_record_hours(self, user, machine, db_session):
+        """
+        Check if a user can record hours for a specific machine.
+        Users can only record hours for machines in their own organization.
+        Superadmins can record hours for any machine.
+        """
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        if not user or not machine:
+            raise ValueError("User and machine must be specified")
+        
+        # Superadmins can record hours for any machine
+        if user.role == UserRole.super_admin:
+            return True
+        
+        # Regular users and admins can only record hours for machines in their organization
+        if user.organization_id == machine.customer_organization_id:
+            return True
+        
+        return False
+
+    def validate_against_previous_records(self, db_session):
+        """
+        Validate that this hours record is logical compared to previous records.
+        Hours should generally increase over time.
+        """
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        # Get the most recent hours record for this machine before this date
+        previous_record = db_session.query(MachineHours)\
+            .filter(
+                MachineHours.machine_id == self.machine_id,
+                MachineHours.recorded_date < self.recorded_date,
+                MachineHours.id != self.id  # Exclude this record if it's an update
+            )\
+            .order_by(MachineHours.recorded_date.desc())\
+            .first()
+        
+        if previous_record:
+            if self.hours_value < previous_record.hours_value:
+                # Allow for reasonable decreases (e.g., machine reset, maintenance)
+                decrease = previous_record.hours_value - self.hours_value
+                if decrease > 100:  # More than 100 hours decrease might be suspicious
+                    raise ValueError(f"Hours value ({self.hours_value}) is significantly lower than previous record ({previous_record.hours_value}). Please add a note explaining the decrease.")
+        
+        return True
+
+    def get_hours_since_last_service(self, db_session):
+        """Calculate hours accumulated since the last maintenance."""
+        from sqlalchemy.orm import Session
+        if not isinstance(db_session, Session):
+            raise ValueError("db_session must be a SQLAlchemy Session")
+        
+        machine = db_session.query(Machine).filter(Machine.id == self.machine_id).first()
+        if not machine or not machine.last_maintenance_date:
+            return self.hours_value  # No maintenance recorded, return total hours
+        
+        # Get hours recorded at or after last maintenance
+        hours_since_maintenance = db_session.query(MachineHours)\
+            .filter(
+                MachineHours.machine_id == self.machine_id,
+                MachineHours.recorded_date >= machine.last_maintenance_date
+            )\
+            .order_by(MachineHours.recorded_date.desc())\
+            .first()
+        
+        if hours_since_maintenance:
+            # Get hours at maintenance time
+            maintenance_hours = db_session.query(MachineHours)\
+                .filter(
+                    MachineHours.machine_id == self.machine_id,
+                    MachineHours.recorded_date <= machine.last_maintenance_date
+                )\
+                .order_by(MachineHours.recorded_date.desc())\
+                .first()
+            
+            if maintenance_hours:
+                return hours_since_maintenance.hours_value - maintenance_hours.hours_value
+        
+        return 0
+
+    def __repr__(self):
+        return f"<MachineHours(id={self.id}, machine_id={self.machine_id}, hours={self.hours_value}, date={self.recorded_date})>"
 
 
 class Part(Base):
@@ -236,11 +541,14 @@ class Part(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     part_number = Column(String(255), unique=True, nullable=False, index=True)
-    name = Column(String(255), nullable=False)
+    name = Column(Text, nullable=False)  # Updated to support longer multilingual strings
     description = Column(Text)
     part_type = Column(Enum(PartType, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     is_proprietary = Column(Boolean, nullable=False, server_default='false')
     unit_of_measure = Column(String(50), nullable=False, server_default='pieces')
+    manufacturer = Column(String(255), nullable=True)  # Added manufacturer field
+    part_code = Column(String(100), nullable=True)  # Added part_code field
+    serial_number = Column(String(255), nullable=True)  # Added serial_number field
     manufacturer_part_number = Column(String(255), nullable=True)
     manufacturer_delivery_time_days = Column(Integer)
     local_supplier_delivery_time_days = Column(Integer)
@@ -912,3 +1220,86 @@ class PartOrderItem(Base):
 
     def __repr__(self):
         return f"<PartOrderItem(id={self.id}, order_request_id={self.order_request_id}, part_id={self.part_id}, quantity={self.quantity})>"
+
+
+# Machine Sale Models
+class MachineSale(Base):
+    """
+    SQLAlchemy model for the 'machine_sales' table.
+    Records machine ownership transfers from Oraseas EE to customers.
+    """
+    __tablename__ = "machine_sales"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    from_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    to_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    sale_price = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    sale_date = Column(DateTime(timezone=True), nullable=False)
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    notes = Column(Text, nullable=True)
+    reference_number = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    machine = relationship("Machine")
+    from_organization = relationship("Organization", foreign_keys=[from_organization_id])
+    to_organization = relationship("Organization", foreign_keys=[to_organization_id])
+    performed_by_user = relationship("User")
+
+    def __repr__(self):
+        return f"<MachineSale(id={self.id}, machine_id={self.machine_id}, from_org={self.from_organization_id}, to_org={self.to_organization_id})>"
+
+
+# Enhanced Part Usage Models
+class PartUsageRecord(Base):
+    """
+    SQLAlchemy model for the 'part_usage_records' table.
+    Records part usage in machines with detailed tracking.
+    """
+    __tablename__ = "part_usage_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=False)
+    from_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    usage_date = Column(DateTime(timezone=True), nullable=False)
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    service_type = Column(String(50), nullable=True)  # e.g., '50h', '250h', 'repair'
+    machine_hours = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    notes = Column(Text, nullable=True)
+    reference_number = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    machine = relationship("Machine")
+    from_warehouse = relationship("Warehouse")
+    performed_by_user = relationship("User")
+    usage_items = relationship("PartUsageItem", back_populates="usage_record", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<PartUsageRecord(id={self.id}, machine_id={self.machine_id}, usage_date={self.usage_date})>"
+
+
+class PartUsageItem(Base):
+    """
+    SQLAlchemy model for the 'part_usage_items' table.
+    Individual parts used in a part usage record.
+    """
+    __tablename__ = "part_usage_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    usage_record_id = Column(UUID(as_uuid=True), ForeignKey("part_usage_records.id"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    usage_record = relationship("PartUsageRecord", back_populates="usage_items")
+    part = relationship("Part")
+
+    def __repr__(self):
+        return f"<PartUsageItem(id={self.id}, usage_record_id={self.usage_record_id}, part_id={self.part_id}, quantity={self.quantity})>"

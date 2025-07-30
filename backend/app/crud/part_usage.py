@@ -1,282 +1,254 @@
 # backend/app/crud/part_usage.py
 
 import uuid
-import logging
 from typing import List, Optional
-
+from datetime import datetime
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from sqlalchemy import and_
 
-from .. import models, schemas # Import models and schemas
+from .. import models, schemas
+from ..schemas.part_usage import PartUsageRequest, PartUsageResponse
 
-logger = logging.getLogger(__name__)
-
-def get_part_usage(db: Session, usage_id: uuid.UUID):
-    """Retrieve a single part usage record by ID."""
-    return db.query(models.PartUsage).filter(models.PartUsage.id == usage_id).first()
-
-def get_part_usages(db: Session, skip: int = 0, limit: int = 100):
-    """Retrieve a list of part usage records."""
-    return db.query(models.PartUsage).offset(skip).limit(limit).all()
-
-def create_part_usage(db: Session, usage: schemas.PartUsageCreate):
-    """Create a new part usage record."""
-    # Validate FKs - these checks should ideally be in the router or a service layer
-    customer_org = db.query(models.Organization).filter(models.Organization.id == usage.customer_organization_id).first()
-    part = db.query(models.Part).filter(models.Part.id == usage.part_id).first()
-    warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == usage.warehouse_id).first()
-    if not customer_org:
-        raise HTTPException(status_code=400, detail="Customer Organization ID not found")
-    if not part:
-        raise HTTPException(status_code=400, detail="Part ID not found")
+def create_part_usage(db: Session, part_usage: PartUsageRequest) -> models.PartUsageRecord:
+    """Create a new part usage record (machine part consumption)"""
+    
+    # Validate machine exists
+    machine = db.query(models.Machine).filter(models.Machine.id == part_usage.machine_id).first()
+    if not machine:
+        raise ValueError(f"Machine {part_usage.machine_id} not found")
+    
+    # Validate warehouse exists and belongs to the same organization as the machine
+    warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == part_usage.from_warehouse_id).first()
     if not warehouse:
-        raise HTTPException(status_code=400, detail="Warehouse ID not found")
-    if usage.recorded_by_user_id:
-        user = db.query(models.User).filter(models.User.id == usage.recorded_by_user_id).first()
-        if not user: raise HTTPException(status_code=400, detail="Recorded by User ID not found")
-
-    db_usage = models.PartUsage(**usage.dict())
-    try:
-        db.add(db_usage)
-        db.commit()
-        db.refresh(db_usage)
-        return db_usage
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating part usage record: {e}")
-        raise HTTPException(status_code=400, detail="Error creating part usage record")
-
-def update_part_usage(db: Session, usage_id: uuid.UUID, usage_update: schemas.PartUsageUpdate):
-    """Update an existing part usage record."""
-    db_usage = db.query(models.PartUsage).filter(models.PartUsage.id == usage_id).first()
-    if not db_usage:
-        return None # Indicate not found
-
-    update_data = usage_update.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_usage, key, value)
-    try:
-        # Re-validate FKs if IDs are updated
-        if "customer_organization_id" in update_data:
-            customer_org = db.query(models.Organization).filter(models.Organization.id == db_usage.customer_organization_id).first()
-            if not customer_org: raise HTTPException(status_code=400, detail="Customer Organization ID not found")
-        if "part_id" in update_data:
-            part = db.query(models.Part).filter(models.Part.id == db_usage.part_id).first()
-            if not part: raise HTTPException(status_code=400, detail="Part ID not found")
-        if "recorded_by_user_id" in update_data and db_usage.recorded_by_user_id:
-            user = db.query(models.User).filter(models.User.id == db_usage.recorded_by_user_id).first()
-            if not user: raise HTTPException(status_code=400, detail="Recorded by User ID not found")
-
-        db.add(db_usage)
-        db.commit()
-        db.refresh(db_usage)
-        return db_usage
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error updating part usage record: {e}")
-        raise HTTPException(status_code=400, detail="Error updating part usage record")
-
-def delete_part_usage(db: Session, usage_id: uuid.UUID):
-    """Delete a part usage record by ID."""
-    db_usage = db.query(models.PartUsage).filter(models.PartUsage.id == usage_id).first()
-    if not db_usage:
-        return None # Indicate not found
-    try:
-        db.delete(db_usage)
-        db.commit()
-        return {"message": "Part usage record deleted successfully"}
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error deleting part usage record: {e}")
-        raise HTTPException(status_code=400, detail="Error deleting part usage record. Check for dependent records.")
-def get_part_usage_history(db: Session, part_id: uuid.UUID, organization_id: Optional[uuid.UUID] = None, days: int = 90):
-    """
-    Get usage history for a specific part.
+        raise ValueError(f"Warehouse {part_usage.from_warehouse_id} not found")
     
-    Args:
-        db: Database session
-        part_id: Part ID to get usage history for
-        organization_id: Optional organization ID to filter usage
-        days: Number of days to look back for usage history
+    if warehouse.organization_id != machine.customer_organization_id:
+        raise ValueError(f"Warehouse {part_usage.from_warehouse_id} does not belong to the same organization as machine {part_usage.machine_id}")
+    
+    # Validate user exists
+    user = db.query(models.User).filter(models.User.id == part_usage.performed_by_user_id).first()
+    if not user:
+        raise ValueError(f"User {part_usage.performed_by_user_id} not found")
+    
+    # Validate all parts exist and have sufficient inventory
+    for item in part_usage.usage_items:
+        part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
+        if not part:
+            raise ValueError(f"Part {item.part_id} not found")
         
-    Returns:
-        List of usage history items
-    """
-    from datetime import datetime, timedelta
-    from sqlalchemy import desc
+        # Check inventory availability
+        inventory_item = db.query(models.Inventory).filter(
+            and_(
+                models.Inventory.warehouse_id == part_usage.from_warehouse_id,
+                models.Inventory.part_id == item.part_id
+            )
+        ).first()
+        
+        if not inventory_item or inventory_item.current_stock < item.quantity:
+            available_stock = inventory_item.current_stock if inventory_item else 0
+            raise ValueError(f"Insufficient stock for part {item.part_id}. Available: {available_stock}, Required: {item.quantity}")
     
-    # Calculate the start date for the history period
-    start_date = datetime.now() - timedelta(days=days)
-    
-    # Query for part usage records
-    usage_query = db.query(
-        models.PartUsage,
-        models.Machine.serial_number.label("machine_serial"),
-        models.Warehouse.name.label("warehouse_name")
-    ).join(
-        models.Warehouse, models.PartUsage.warehouse_id == models.Warehouse.id
-    ).outerjoin(  # Use outer join since machine might be null for some usage records
-        models.Machine, models.PartUsage.machine_id == models.Machine.id
-    ).filter(
-        models.PartUsage.part_id == part_id,
-        models.PartUsage.usage_date >= start_date
+    # Create the part usage record
+    db_part_usage = models.PartUsageRecord(
+        machine_id=part_usage.machine_id,
+        from_warehouse_id=part_usage.from_warehouse_id,
+        usage_date=part_usage.usage_date,
+        performed_by_user_id=part_usage.performed_by_user_id,
+        service_type=part_usage.service_type,
+        machine_hours=part_usage.machine_hours,
+        notes=part_usage.notes,
+        reference_number=part_usage.reference_number
     )
+    
+    db.add(db_part_usage)
+    db.flush()  # Get the ID
+    
+    # Create usage items and corresponding transactions
+    for item in part_usage.usage_items:
+        # Create usage item
+        db_usage_item = models.PartUsageItem(
+            usage_record_id=db_part_usage.id,
+            part_id=item.part_id,
+            quantity=item.quantity,
+            notes=item.notes
+        )
+        db.add(db_usage_item)
+        
+        # Create consumption transaction
+        part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
+        
+        transaction = models.Transaction(
+            transaction_type=models.TransactionType.CONSUMPTION.value,
+            part_id=item.part_id,
+            from_warehouse_id=part_usage.from_warehouse_id,
+            machine_id=part_usage.machine_id,
+            quantity=item.quantity,
+            unit_of_measure=part.unit_of_measure,
+            performed_by_user_id=part_usage.performed_by_user_id,
+            transaction_date=part_usage.usage_date,
+            notes=f"Part usage in machine - Service: {part_usage.service_type or 'General'}",
+            reference_number=part_usage.reference_number
+        )
+        db.add(transaction)
+        
+        # Update inventory
+        inventory_item = db.query(models.Inventory).filter(
+            and_(
+                models.Inventory.warehouse_id == part_usage.from_warehouse_id,
+                models.Inventory.part_id == item.part_id
+            )
+        ).first()
+        
+        if inventory_item:
+            inventory_item.current_stock -= item.quantity
+            inventory_item.last_updated = part_usage.usage_date
+    
+    # Record machine hours if provided
+    if part_usage.machine_hours is not None:
+        machine_hours_record = models.MachineHours(
+            machine_id=part_usage.machine_id,
+            recorded_by_user_id=part_usage.performed_by_user_id,
+            hours_value=part_usage.machine_hours,
+            recorded_date=part_usage.usage_date,
+            notes=f"Recorded during part usage - Service: {part_usage.service_type or 'General'}"
+        )
+        db.add(machine_hours_record)
+    
+    db.commit()
+    db.refresh(db_part_usage)
+    
+    return db_part_usage
+
+def get_part_usage(db: Session, usage_id: uuid.UUID) -> Optional[dict]:
+    """Get a part usage record by ID with related data"""
+    
+    usage = db.query(models.PartUsageRecord).filter(models.PartUsageRecord.id == usage_id).first()
+    if not usage:
+        return None
+    
+    # Get related data
+    machine = db.query(models.Machine).filter(models.Machine.id == usage.machine_id).first()
+    warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == usage.from_warehouse_id).first()
+    user = db.query(models.User).filter(models.User.id == usage.performed_by_user_id).first()
+    
+    # Get usage items
+    usage_items = db.query(models.PartUsageItem).filter(models.PartUsageItem.usage_record_id == usage.id).all()
+    
+    items_data = []
+    for item in usage_items:
+        part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
+        item_data = {
+            **item.__dict__,
+            "part_name": part.name if part else None,
+            "part_number": part.part_number if part else None,
+            "unit_of_measure": part.unit_of_measure if part else None
+        }
+        items_data.append(item_data)
+    
+    # Build response
+    result = {
+        **usage.__dict__,
+        "machine_serial": machine.serial_number if machine else None,
+        "machine_name": machine.name if machine else None,
+        "from_warehouse_name": warehouse.name if warehouse else None,
+        "performed_by_username": user.username if user else None,
+        "usage_items": items_data,
+        "total_items": len(items_data)
+    }
+    
+    return result
+
+def get_part_usages(db: Session, skip: int = 0, limit: int = 100, organization_id: Optional[uuid.UUID] = None, machine_id: Optional[uuid.UUID] = None) -> List[dict]:
+    """Get part usage records with optional filtering"""
+    
+    query = db.query(models.PartUsageRecord)
+    
+    # Filter by machine if provided
+    if machine_id:
+        query = query.filter(models.PartUsageRecord.machine_id == machine_id)
     
     # Filter by organization if provided
     if organization_id:
-        usage_query = usage_query.filter(models.PartUsage.customer_organization_id == organization_id)
-    
-    # Order by usage date descending (most recent first)
-    usage_records = usage_query.order_by(desc(models.PartUsage.usage_date)).all()
-    
-    # Format the results
-    usage_history = []
-    for usage, machine_serial, warehouse_name in usage_records:
-        usage_history.append({
-            "id": usage.id,
-            "usage_date": usage.usage_date,
-            "quantity": usage.quantity,
-            "machine_id": usage.machine_id,
-            "machine_serial": machine_serial,
-            "warehouse_id": usage.warehouse_id,
-            "warehouse_name": warehouse_name,
-            "notes": usage.notes
-        })
-    
-    return usage_history
-
-def get_part_usage_statistics(db: Session, part_id: uuid.UUID, organization_id: Optional[uuid.UUID] = None, days: int = 90):
-    """
-    Get usage statistics for a specific part.
-    
-    Args:
-        db: Database session
-        part_id: Part ID to get usage statistics for
-        organization_id: Optional organization ID to filter usage
-        days: Number of days to look back for usage statistics
+        # Get all machines and warehouses for the organization
+        machines = db.query(models.Machine).filter(models.Machine.customer_organization_id == organization_id).all()
+        machine_ids = [m.id for m in machines]
         
-    Returns:
-        Dictionary with usage statistics
-    """
-    from datetime import datetime, timedelta
+        warehouses = db.query(models.Warehouse).filter(models.Warehouse.organization_id == organization_id).all()
+        warehouse_ids = [w.id for w in warehouses]
+        
+        query = query.filter(
+            (models.PartUsageRecord.machine_id.in_(machine_ids)) |
+            (models.PartUsageRecord.from_warehouse_id.in_(warehouse_ids))
+        )
+    
+    usages = query.order_by(models.PartUsageRecord.usage_date.desc()).offset(skip).limit(limit).all()
+    
+    results = []
+    for usage in usages:
+        # Get related data
+        machine = db.query(models.Machine).filter(models.Machine.id == usage.machine_id).first()
+        warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == usage.from_warehouse_id).first()
+        user = db.query(models.User).filter(models.User.id == usage.performed_by_user_id).first()
+        
+        # Get usage items count
+        usage_items_count = db.query(models.PartUsageItem).filter(models.PartUsageItem.usage_record_id == usage.id).count()
+        
+        # Build response
+        result = {
+            **usage.__dict__,
+            "machine_serial": machine.serial_number if machine else None,
+            "machine_name": machine.name if machine else None,
+            "from_warehouse_name": warehouse.name if warehouse else None,
+            "performed_by_username": user.username if user else None,
+            "total_items": usage_items_count
+        }
+        
+        results.append(result)
+    
+    return results
+
+def get_part_usages_by_machine(db: Session, machine_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[dict]:
+    """Get all part usage records for a specific machine"""
+    
+    return get_part_usages(db, skip=skip, limit=limit, machine_id=machine_id)
+
+def get_part_usage_summary(db: Session, days: int = 30, organization_id: Optional[uuid.UUID] = None) -> dict:
+    """Get part usage summary statistics"""
+    
+    from datetime import timedelta
     from sqlalchemy import func
-    from decimal import Decimal
     
-    # Calculate the start date for the history period
+    # Calculate the start date for the summary period
     start_date = datetime.now() - timedelta(days=days)
     
-    # Base query for part usage records
-    usage_query = db.query(
-        func.sum(models.PartUsage.quantity).label("total_quantity"),
-        func.count(models.PartUsage.id).label("usage_count")
-    ).filter(
-        models.PartUsage.part_id == part_id,
-        models.PartUsage.usage_date >= start_date
-    )
+    query = db.query(models.PartUsageRecord).filter(models.PartUsageRecord.usage_date >= start_date)
     
     # Filter by organization if provided
     if organization_id:
-        usage_query = usage_query.filter(models.PartUsage.customer_organization_id == organization_id)
+        machines = db.query(models.Machine).filter(models.Machine.customer_organization_id == organization_id).all()
+        machine_ids = [m.id for m in machines]
+        query = query.filter(models.PartUsageRecord.machine_id.in_(machine_ids))
     
-    # Execute query
-    result = usage_query.first()
+    total_usage_records = query.count()
     
-    # Calculate average monthly usage
-    total_quantity = result.total_quantity or Decimal('0')
-    usage_count = result.usage_count or 0
-    
-    # Convert days to months (approximate)
-    months = days / 30.0
-    
-    # Calculate average monthly usage
-    avg_monthly_usage = total_quantity / Decimal(months) if months > 0 else Decimal('0')
-    
-    # Get part details
-    part = db.query(models.Part).filter(models.Part.id == part_id).first()
-    
-    # Get current inventory levels
-    inventory_query = db.query(func.sum(models.Inventory.current_stock).label("total_stock"))
-    inventory_query = inventory_query.filter(models.Inventory.part_id == part_id)
+    # Get service type breakdown
+    service_type_counts = db.query(
+        models.PartUsageRecord.service_type,
+        func.count(models.PartUsageRecord.id).label("count")
+    ).filter(
+        models.PartUsageRecord.usage_date >= start_date
+    ).group_by(
+        models.PartUsageRecord.service_type
+    )
     
     if organization_id:
-        inventory_query = inventory_query.join(
-            models.Warehouse, models.Inventory.warehouse_id == models.Warehouse.id
-        ).filter(models.Warehouse.organization_id == organization_id)
+        service_type_counts = service_type_counts.filter(models.PartUsageRecord.machine_id.in_(machine_ids))
     
-    inventory_result = inventory_query.first()
-    total_stock = inventory_result.total_stock or Decimal('0')
-    
-    # Calculate estimated depletion days
-    estimated_depletion_days = None
-    if avg_monthly_usage > Decimal('0'):
-        # Convert monthly usage to daily usage
-        daily_usage = avg_monthly_usage / Decimal('30')
-        
-        # Calculate days until depletion
-        if daily_usage > Decimal('0'):
-            estimated_depletion_days = int(total_stock / daily_usage)
+    service_breakdown = {st.service_type or 'General': st.count for st in service_type_counts.all()}
     
     return {
-        "part_id": part_id,
-        "part_number": part.part_number if part else None,
-        "part_name": part.name if part else None,
-        "total_usage_quantity": total_quantity,
-        "usage_count": usage_count,
-        "avg_monthly_usage": avg_monthly_usage,
-        "current_total_stock": total_stock,
-        "estimated_depletion_days": estimated_depletion_days,
-        "days_analyzed": days
+        "period_days": days,
+        "total_usage_records": total_usage_records,
+        "daily_average": total_usage_records / days if days > 0 else 0,
+        "service_type_breakdown": service_breakdown
     }
-
-def get_parts_with_low_stock(db: Session, organization_id: Optional[uuid.UUID] = None, threshold_days: int = 30, limit: int = 10):
-    """
-    Get parts with low stock based on usage patterns.
-    
-    Args:
-        db: Database session
-        organization_id: Optional organization ID to filter warehouses
-        threshold_days: Threshold for days of stock remaining to trigger suggestion
-        limit: Maximum number of parts to return
-        
-    Returns:
-        List of parts with low stock
-    """
-    from sqlalchemy import desc
-    
-    # Get all parts
-    parts_query = db.query(models.Part)
-    parts = parts_query.all()
-    
-    # Calculate reorder suggestions
-    low_stock_parts = []
-    
-    for part in parts:
-        # Get usage statistics
-        stats = get_part_usage_statistics(db, part.id, organization_id, days=90)
-        
-        # Skip parts with no usage history or no inventory
-        if not stats["avg_monthly_usage"] or stats["avg_monthly_usage"] <= 0:
-            continue
-        
-        # Check if estimated depletion days is below threshold
-        if stats["estimated_depletion_days"] and stats["estimated_depletion_days"] <= threshold_days:
-            # Calculate suggested reorder quantity (2 months of usage)
-            suggested_reorder_quantity = stats["avg_monthly_usage"] * 2
-            
-            low_stock_parts.append({
-                "part_id": part.id,
-                "part_number": part.part_number,
-                "part_name": part.name,
-                "current_total_stock": stats["current_total_stock"],
-                "avg_monthly_usage": stats["avg_monthly_usage"],
-                "estimated_depletion_days": stats["estimated_depletion_days"],
-                "suggested_reorder_quantity": suggested_reorder_quantity,
-                "unit_of_measure": part.unit_of_measure,
-                "is_proprietary": part.is_proprietary
-            })
-    
-    # Sort by estimated depletion days (ascending)
-    low_stock_parts.sort(key=lambda x: x["estimated_depletion_days"])
-    
-    # Limit the number of results
-    return low_stock_parts[:limit]

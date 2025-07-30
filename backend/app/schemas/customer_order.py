@@ -36,7 +36,7 @@ class CustomerOrderResponse(CustomerOrderBase):
     ordered_by_username: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CustomerOrderItemBase(BaseModel):
     customer_order_id: uuid.UUID
@@ -62,4 +62,4 @@ class CustomerOrderItemResponse(CustomerOrderItemBase):
     unit_of_measure: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
