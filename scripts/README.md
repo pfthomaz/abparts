@@ -52,6 +52,41 @@ bash scripts/test-ip-detection.sh
 - Main script functionality
 - Environment configuration validity
 
+### `troubleshoot-mobile-access.sh`
+Comprehensive troubleshooting script for mobile access issues.
+
+**Usage:**
+```bash
+bash scripts/troubleshoot-mobile-access.sh
+```
+
+**What it checks:**
+- Docker services status and port bindings
+- Local and network connectivity
+- Windows Firewall configuration
+- Provides specific fix commands
+
+### `fix-firewall.bat`
+Windows batch file to quickly fix firewall issues (run as Administrator).
+
+**Usage:**
+- Right-click the file and select "Run as administrator"
+
+### `configure-windows-firewall.ps1`
+PowerShell script for advanced firewall management.
+
+**Usage:**
+```powershell
+# Add firewall rules (run as Administrator)
+.\scripts\configure-windows-firewall.ps1
+
+# Remove firewall rules
+.\scripts\configure-windows-firewall.ps1 -Remove
+
+# Show help
+.\scripts\configure-windows-firewall.ps1 -Help
+```
+
 ## Quick Start
 
 1. **Test IP detection:**
@@ -113,10 +148,27 @@ echo "HOST_IP=192.168.1.100" >> .env.local
 ```
 
 ### Mobile Access Not Working
-1. **Check firewall settings** - Ensure ports 3000, 8000, 8080 are allowed
-2. **Verify network connection** - Mobile device must be on same WiFi
-3. **Test API first** - Try `http://YOUR_IP:8000/docs` in mobile browser
-4. **Check Docker services** - Run `docker-compose ps` to verify services are running
+
+**Quick Diagnosis:**
+```bash
+bash scripts/troubleshoot-mobile-access.sh
+```
+
+**Common Fixes:**
+
+1. **Windows Firewall (Most Common Issue):**
+   - **Easy Fix:** Right-click `scripts/fix-firewall.bat` and "Run as administrator"
+   - **PowerShell:** Run `.\scripts\configure-windows-firewall.ps1` as Administrator
+   - **Manual:** Add firewall rules for ports 3000, 8000, 8080
+
+2. **Network Issues:**
+   - Verify mobile device is on same WiFi network
+   - Test API docs first: `http://YOUR_IP:8000/docs`
+   - Check if IP address changed: `ipconfig`
+
+3. **Docker Issues:**
+   - Restart services: `docker-compose down && docker-compose up -d`
+   - Verify services running: `docker-compose ps`
 
 ### CORS Errors
 - Verify `CORS_ALLOWED_ORIGINS` includes your IP address
