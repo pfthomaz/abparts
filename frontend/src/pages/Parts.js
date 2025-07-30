@@ -6,7 +6,12 @@ import { API_BASE_URL } from '../services/api';
 import Modal from '../components/Modal';
 import PartForm from '../components/PartForm';
 import PermissionGuard from '../components/PermissionGuard';
-import { PERMISSIONS } from '../utils/permissions';
+import { PERMISSIONS, isSuperAdmin } from '../utils/permissions';
+import { useAuth } from '../AuthContext';
+import MultilingualPartName from '../components/MultilingualPartName';
+import PartPhotoGallery from '../components/PartPhotoGallery';
+import PartCategoryBadge, { PartCategoryFilter } from '../components/PartCategoryBadge';
+import SuperAdminPartsManager from '../components/SuperAdminPartsManager';
 import {
   formatErrorForDisplay,
   isRetryableError,
@@ -17,6 +22,12 @@ import {
 } from '../utils';
 
 const Parts = () => {
+  const { user } = useAuth();
+
+  // Check if user is superadmin first
+  const isUserSuperAdmin = isSuperAdmin(user);
+
+  // All hooks must be called unconditionally
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,6 +39,8 @@ const Parts = () => {
   const [filterPartType, setFilterPartType] = useState('all');
 
   const fetchParts = useCallback(async (isRetry = false) => {
+    if (isUserSuperAdmin) return; // Don't fetch if superadmin (they use different component)
+
     setLoading(true);
     if (!isRetry) {
       setError(null);
@@ -53,14 +66,16 @@ const Parts = () => {
     } finally {
       setLoading(false);
     }
-  }, [retryCount]);
+  }, [retryCount, isUserSuperAdmin]);
 
   useEffect(() => {
-    fetchParts();
-  }, [fetchParts]);
+    if (!isUserSuperAdmin) {
+      fetchParts();
+    }
+  }, [fetchParts, isUserSuperAdmin]);
 
   const handleRetry = useCallback(async () => {
-    if (retryCount >= MAX_RETRY_ATTEMPTS) {
+    if (retryCount >= MAX_RETRY_ATTEMPTS || isUserSuperAdmin) {
       return;
     }
 
@@ -71,7 +86,7 @@ const Parts = () => {
     }
 
     await fetchParts(true);
-  }, [fetchParts, retryCount, error]);
+  }, [fetchParts, retryCount, error, isUserSuperAdmin]);
 
   // Enhanced error display component
   const ErrorDisplay = ({ error, onRetry, retryCount }) => {
@@ -143,6 +158,8 @@ const Parts = () => {
   };
 
   const filteredParts = useMemo(() => {
+    if (isUserSuperAdmin) return [];
+
     return parts
       .filter(part => {
         if (!searchTerm) return true;
@@ -160,7 +177,7 @@ const Parts = () => {
         if (filterPartType === 'all') return true;
         return part.part_type === filterPartType;
       });
-  }, [parts, searchTerm, filterProprietary, filterPartType]);
+  }, [parts, searchTerm, filterProprietary, filterPartType, isUserSuperAdmin]);
 
   const handleCreateOrUpdate = async (partData) => {
     try {
@@ -205,6 +222,11 @@ const Parts = () => {
     setShowModal(false);
     setEditingPart(null);
   };
+
+  // Show SuperAdminPartsManager for superadmin users after all hooks have been called
+  if (isUserSuperAdmin) {
+    return <SuperAdminPartsManager />;
+  }
 
   return (
     <div>
@@ -263,17 +285,12 @@ const Parts = () => {
             </select>
           </div>
           <div>
-            <label htmlFor="filterPartType" className="block text-sm font-medium text-gray-700">Part Type</label>
-            <select
-              id="filterPartType"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            <label className="block text-sm font-medium text-gray-700 mb-2">Part Category</label>
+            <PartCategoryFilter
               value={filterPartType}
-              onChange={(e) => setFilterPartType(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              <option value="consumable">Consumable</option>
-              <option value="bulk_material">Bulk Material</option>
-            </select>
+              onChange={setFilterPartType}
+              showAll={true}
+            />
           </div>
         </div>
       </div>
@@ -281,19 +298,43 @@ const Parts = () => {
       {!loading && !error && filteredParts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {filteredParts.map((part) => (
-            <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-              <h3 className="text-2xl font-semibold text-purple-700 mb-2">{part.name}</h3>
+            <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200 group">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <MultilingualPartName
+                    value={part.name}
+                    isEditing={false}
+                    preferredLanguage="en"
+                    className="text-2xl font-semibold text-purple-700 mb-2"
+                  />
+                </div>
+                <PartCategoryBadge
+                  partType={part.part_type}
+                  isProprietaryPart={part.is_proprietary}
+                  size="medium"
+                />
+              </div>
+
               <p className="text-gray-600 mb-1"><span className="font-medium">Part #:</span> {part.part_number}</p>
               {part.description && <p className="text-gray-600 mb-1"><span className="font-medium">Description:</span> {part.description}</p>}
               <p className="text-gray-600 mb-1">
-                <span className="font-medium">Type:</span> {part.part_type === 'consumable' ? 'Consumable' : 'Bulk Material'}
-              </p>
-              <p className="text-gray-600 mb-1">
                 <span className="font-medium">Unit:</span> {part.unit_of_measure}
               </p>
-              <p className="text-gray-600 mb-1">
-                <span className="font-medium">Proprietary:</span> {part.is_proprietary ? 'Yes' : 'No'}
-              </p>
+              {part.manufacturer && (
+                <p className="text-gray-600 mb-1">
+                  <span className="font-medium">Manufacturer:</span> {part.manufacturer}
+                </p>
+              )}
+              {part.part_code && (
+                <p className="text-gray-600 mb-1">
+                  <span className="font-medium">Part Code:</span> {part.part_code}
+                </p>
+              )}
+              {part.serial_number && (
+                <p className="text-gray-600 mb-1">
+                  <span className="font-medium">Serial #:</span> {part.serial_number}
+                </p>
+              )}
               {part.manufacturer_part_number && (
                 <p className="text-gray-600 mb-1">
                   <span className="font-medium">Mfg Part #:</span> {part.manufacturer_part_number}
@@ -332,21 +373,12 @@ const Parts = () => {
 
               {part.image_urls && part.image_urls.length > 0 && (
                 <div className="mt-3">
-                  <span className="font-medium text-gray-600">Images:</span>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
-                    {part.image_urls.map((imageUrl, imgIndex) => (
-                      <img
-                        key={imgIndex}
-                        src={`${API_BASE_URL}${imageUrl}`}
-                        alt={`Part Image ${imgIndex + 1}`}
-                        className="w-full h-24 object-cover rounded-md shadow-sm"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "https://placehold.co/100x100?text=Image+Error";
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <span className="font-medium text-gray-600 block mb-2">Images:</span>
+                  <PartPhotoGallery
+                    images={part.image_urls}
+                    isEditing={false}
+                    className="part-images-display"
+                  />
                 </div>
               )}
               <p className="text-sm text-gray-400 mt-3">ID: {part.id}</p>
