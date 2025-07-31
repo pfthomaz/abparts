@@ -1,374 +1,216 @@
-# ABParts Data Migration
+# ABParts Data Migration and Seeding
 
-This directory contains comprehensive data migration tools for aligning ABParts with the actual business model. The migration system provides data validation, integrity checking, rollback capabilities, and progress tracking.
+This directory contains scripts for migrating existing data to comply with the ABParts Business Model Realignment requirements (Task 18).
 
 ## Overview
 
-The migration transforms the existing ABParts database to properly represent:
-- Organization types and business relationships
-- Enhanced user management with proper roles
-- Warehouse-based inventory management
-- Comprehensive transaction tracking
-- Business rule enforcement
+The migration process ensures that:
+1. Default organizations (Oraseas EE and BossAqua) exist with proper configuration
+2. All organizations have valid country assignments
+3. All required organizations have default warehouses
+4. Machine model types are validated and corrected
+5. Initial machine hours records are created for tracking
 
-## Migration Components
+## Scripts
 
-### Core Files
+### 1. `simple_migration.py` (Recommended)
 
-- **`migration_manager.py`** - Main migration orchestrator with step-by-step execution
-- **`data_validator.py`** - Comprehensive data validation and integrity checking
-- **`migration_tester.py`** - Testing utilities for production data samples
-- **`run_migration.py`** - Command-line interface for migration operations
+A standalone migration script that uses direct SQL commands to avoid import dependencies.
 
-### Directory Structure
+**Usage:**
+```bash
+# Check migration status
+docker-compose exec -T api python data_migration/simple_migration.py --status
 
+# Run full migration
+docker-compose exec -T api python data_migration/simple_migration.py --migrate
 ```
-backend/data_migration/
-├── migration_manager.py      # Main migration logic
-├── data_validator.py         # Data validation utilities
-├── migration_tester.py       # Testing and sample data generation
-├── run_migration.py          # CLI interface
-├── README.md                 # This documentation
-├── backups/                  # Migration backups for rollback
-├── reports/                  # Migration and validation reports
-└── logs/                     # Migration execution logs
+
+**Features:**
+- ✅ Creates default organizations (Oraseas EE, BossAqua)
+- ✅ Updates organization countries to 'GR' where missing
+- ✅ Creates default warehouses for all organizations that need them
+- ✅ Validates and fixes machine model types
+- ✅ Creates initial machine hours records
+- ✅ Validates migration results
+
+### 2. `migrate_existing_data.py`
+
+Comprehensive migration script using SQLAlchemy models (requires proper imports).
+
+**Usage:**
+```bash
+python backend/data_migration/migrate_existing_data.py
+```
+
+### 3. `seed_default_data.py`
+
+Dedicated script for seeding default organizations and warehouses.
+
+**Usage:**
+```bash
+python backend/data_migration/seed_default_data.py
+```
+
+### 4. `validate_schema_compliance.py`
+
+Comprehensive validation script to check schema compliance.
+
+**Usage:**
+```bash
+python backend/data_migration/validate_schema_compliance.py
+```
+
+### 5. `run_migration.py`
+
+Orchestration script that runs all migration tasks in sequence.
+
+**Usage:**
+```bash
+# Full migration
+python backend/data_migration/run_migration.py
+
+# Individual steps
+python backend/data_migration/run_migration.py --migrate-only
+python backend/data_migration/run_migration.py --seed-only
+python backend/data_migration/run_migration.py --validate-only
+python backend/data_migration/run_migration.py --status
 ```
 
 ## Migration Process
 
-The migration follows a structured 11-step process:
+The migration follows these steps:
 
-1. **Validate Current Schema** - Check existing data integrity
-2. **Backup Existing Data** - Create rollback-capable backups
-3. **Migrate Organizations** - Update organization types and relationships
-4. **Create Default Warehouses** - Establish warehouse structure
-5. **Migrate Users** - Update user roles and security features
-6. **Migrate Parts** - Implement part classification system
-7. **Migrate Machines** - Update machine-customer relationships
-8. **Migrate Inventory** - Convert to warehouse-based inventory
-9. **Create Initial Transactions** - Generate transaction audit trail
-10. **Validate Migrated Data** - Comprehensive post-migration validation
-11. **Cleanup Old Data** - Optimize database and clean temporary data
+### Step 1: Default Organizations
+- Ensures exactly one Oraseas EE organization exists
+- Ensures exactly one BossAqua organization exists
+- Updates organization details (country, address, contact info) if missing
 
-## Usage
+### Step 2: Country Assignment
+- Updates all organizations without countries to use 'GR' as default
+- Validates that all countries are within allowed values: ['GR', 'KSA', 'ES', 'CY', 'OM']
 
-### Prerequisites
+### Step 3: Default Warehouses
+- Creates default warehouses for organizations that don't have any:
+  - Oraseas EE: Gets "Main Warehouse" and "Spare Parts Warehouse"
+  - BossAqua: Gets "Main Warehouse" and "Quality Control Warehouse"
+  - Customer organizations: Get "{Organization Name} Main Warehouse"
 
-1. Ensure the database is running:
-   ```bash
-   docker-compose up db
-   ```
+### Step 4: Machine Model Validation
+- Validates that all machines have valid model types ('V3_1B' or 'V4_0')
+- Updates invalid or missing model types to 'V4_0'
 
-2. Install Python dependencies:
-   ```bash
-   pip install -r backend/requirements.txt
-   ```
+### Step 5: Machine Hours Initialization
+- Creates initial machine hours records (0.00 hours) for machines without any records
+- Uses the superadmin user as the recorder
+- Adds explanatory notes about the migration
 
-### Command Line Interface
+### Step 6: Validation
+- Verifies all migration requirements are met
+- Reports any remaining issues
 
-Navigate to the migration directory:
-```bash
-cd backend/data_migration
+## Database Schema Requirements
+
+The migration ensures compliance with these schema requirements:
+
+### Organizations
+- ✅ Exactly one Oraseas EE organization
+- ✅ Exactly one BossAqua organization
+- ✅ All organizations have valid countries
+- ✅ Suppliers have parent organizations
+- ✅ All required organizations have warehouses
+
+### Machines
+- ✅ All machines have valid model types (V3_1B or V4_0)
+- ✅ All machines have initial hours records
+
+### Users
+- ✅ Superadmins belong only to Oraseas EE
+- ✅ All users have valid roles and statuses
+
+### Data Integrity
+- ✅ No orphaned records
+- ✅ All foreign key relationships are valid
+- ✅ Business rule constraints are enforced
+
+## Validation Results
+
+After running the migration, you should see:
+
 ```
+📊 Checking Migration Status
+==============================
+Oraseas EE organizations: 1
+BossAqua organizations: 1
+Organizations without warehouses: 0
+Machine hours records: [number of machines]
 
-#### 1. Data Validation
-
-Run comprehensive data validation:
-```bash
-python run_migration.py validate
+✅ Migration appears to be complete
 ```
-
-This checks for:
-- Missing required fields
-- Duplicate records
-- Referential integrity issues
-- Business rule violations
-
-#### 2. Migration Execution
-
-**Recommended approach (with validation and dry run):**
-```bash
-python run_migration.py migrate
-```
-
-This will:
-1. Run pre-migration validation
-2. Execute a dry run to test the migration
-3. Ask for confirmation
-4. Run the actual migration
-5. Run post-migration validation
-
-**Quick migration (skip confirmations):**
-```bash
-python run_migration.py migrate --yes
-```
-
-**Dry run only:**
-```bash
-python run_migration.py migrate --dry-run
-```
-
-**Force migration (skip validation and dry run):**
-```bash
-python run_migration.py migrate --force --yes
-```
-
-#### 3. Testing
-
-**Test rollback capability:**
-```bash
-python run_migration.py test --type rollback
-```
-
-**Test with specific data sample:**
-```bash
-python run_migration.py test --type sample --sample-size medium_sample
-```
-
-Available sample sizes:
-- `minimal_sample` - 3 orgs, 5 users, 10 parts
-- `small_sample` - 10 orgs, 25 users, 50 parts
-- `medium_sample` - 25 orgs, 75 users, 100 parts
-- `large_sample` - 50 orgs, 150 users, 200 parts
-- `production_scale` - 100 orgs, 200 users, 200 parts
-
-**Comprehensive testing:**
-```bash
-python run_migration.py test --type comprehensive
-```
-
-### Python API Usage
-
-#### Direct Migration Manager Usage
-
-```python
-from migration_manager import DataMigrationManager
-
-# Create migration manager
-manager = DataMigrationManager()
-
-# Run dry run
-dry_run_report = manager.run_migration(dry_run=True)
-
-if dry_run_report.status == MigrationStatus.COMPLETED:
-    # Run actual migration
-    actual_report = manager.run_migration(dry_run=False)
-    print(f"Migration status: {actual_report.status.value}")
-```
-
-#### Data Validation
-
-```python
-from data_validator import run_validation
-
-# Run validation
-report = run_validation()
-
-print(f"Validation: {report.summary}")
-if not report.is_valid:
-    for result in report.results:
-        if result.severity.value in ['error', 'critical']:
-            print(f"Issue: {result}")
-```
-
-#### Testing
-
-```python
-from migration_tester import MigrationTester
-
-# Create tester
-tester = MigrationTester()
-
-# Test with specific sample
-samples = tester.create_test_samples()
-small_sample = next(s for s in samples if s.name == 'small_sample')
-result = tester.test_migration_with_sample(small_sample)
-
-print(f"Test result: {'PASSED' if result.success else 'FAILED'}")
-```
-
-## Migration Features
-
-### Data Validation
-
-The validator performs comprehensive checks:
-
-- **Structure Validation**: Required fields, data types, constraints
-- **Business Rules**: Organization types, user roles, relationships
-- **Referential Integrity**: Foreign key relationships, orphaned records
-- **Data Consistency**: Unit of measure matching, inventory calculations
-
-### Rollback Capability
-
-The migration system provides rollback capabilities:
-
-1. **Automatic Backup**: Creates JSON backup before migration
-2. **Failure Recovery**: Automatic rollback attempt on migration failure
-3. **Manual Rollback**: Restore from backup files if needed
-
-Backup files are stored in `backups/` directory with format:
-`migration_backup_{migration_id}.json`
-
-### Progress Tracking
-
-Migration progress is tracked at multiple levels:
-
-- **Step-level Progress**: Each migration step reports progress
-- **Record-level Tracking**: Number of records processed per step
-- **Time Tracking**: Duration for each step and overall migration
-- **Error Tracking**: Detailed error messages and affected records
-
-### Reporting
-
-Comprehensive reports are generated:
-
-- **Migration Reports**: Complete migration execution details
-- **Validation Reports**: Data integrity and business rule compliance
-- **Test Reports**: Performance and reliability test results
-
-Reports are saved in `reports/` directory in JSON format.
-
-## Business Model Changes
-
-### Organization Structure
-
-**Before:**
-- Generic organizations without business type differentiation
-- No hierarchy or parent-child relationships
-
-**After:**
-- Typed organizations: `oraseas_ee`, `bossaqua`, `customer`, `supplier`
-- Hierarchical relationships with parent organization support
-- Business rule enforcement (single Oraseas EE, suppliers need parents)
-
-### User Management
-
-**Before:**
-- Basic user roles without business context
-- Limited security features
-
-**After:**
-- Business-aligned roles: `user`, `admin`, `super_admin`
-- Enhanced security: session management, account lockout, invitation system
-- Organization-scoped permissions with super_admin cross-organization access
-
-### Inventory Management
-
-**Before:**
-- Organization-based inventory tracking
-- Limited part classification
-
-**After:**
-- Warehouse-based inventory with multiple warehouses per organization
-- Enhanced part classification: `consumable` vs `bulk_material`
-- Decimal quantity support for bulk materials
-- Unit of measure validation and consistency
-
-### Transaction Tracking
-
-**Before:**
-- Limited transaction history
-- No comprehensive audit trail
-
-**After:**
-- Complete transaction audit trail for all parts movements
-- Transaction types: `creation`, `transfer`, `consumption`, `adjustment`
-- Automatic inventory updates based on transactions
-- Machine-specific usage tracking
 
 ## Troubleshooting
 
-### Common Issues
+### Import Errors
+If you encounter import errors with the model-based scripts, use `simple_migration.py` instead, which uses direct SQL commands.
 
-1. **Migration Fails at Organization Step**
-   - Check for duplicate organization names
-   - Ensure organization types are properly set
-   - Verify parent-child relationships
+### Database Connection Issues
+Ensure the `DATABASE_URL` environment variable is set correctly:
+```bash
+docker-compose exec -T api env | grep DATABASE_URL
+```
 
-2. **User Migration Issues**
-   - Check for duplicate usernames/emails
-   - Ensure all users have valid organization references
-   - Verify role assignments
+### Permission Issues
+Make sure you're running the scripts from within the Docker container:
+```bash
+docker-compose exec -T api python data_migration/simple_migration.py --status
+```
 
-3. **Inventory Migration Problems**
-   - Ensure all parts have proper classifications
-   - Check warehouse-organization relationships
-   - Verify unit of measure consistency
+### Enum Value Errors
+The machine model types use underscores in the database ('V3_1B', 'V4_0') not dots ('V3.1B', 'V4.0').
 
-4. **Validation Errors**
-   - Review validation report for specific issues
-   - Fix data integrity problems before migration
-   - Use `--skip-validation` only if issues are acceptable
+## Files Created/Modified
 
-### Recovery Procedures
+The migration process:
+- ✅ Creates default organizations if they don't exist
+- ✅ Updates existing organization records with missing data
+- ✅ Creates warehouse records for organizations without them
+- ✅ Creates machine_hours records for machines without them
+- ✅ Does not modify existing valid data
 
-1. **Migration Failure Recovery**
-   ```bash
-   # Check migration logs
-   tail -f logs/migration.log
-   
-   # Review migration report
-   cat reports/migration_report_*.json
-   
-   # Run validation to identify issues
-   python run_migration.py validate
-   ```
+## Rollback
 
-2. **Manual Rollback**
-   ```bash
-   # Locate backup file
-   ls backups/migration_backup_*.json
-   
-   # Restore from backup (manual process)
-   # Contact system administrator for assistance
-   ```
+The migration is designed to be safe and additive. It:
+- Does not delete existing data
+- Does not modify existing valid data
+- Only adds missing required data
+- Only fixes invalid data to comply with constraints
 
-3. **Data Repair**
-   ```bash
-   # Run validation to identify specific issues
-   python run_migration.py validate
-   
-   # Fix identified issues in database
-   # Re-run migration
-   python run_migration.py migrate
-   ```
+If you need to rollback:
+1. The migration creates new records with UUIDs, so they can be identified
+2. Use the notes fields to identify migration-created records
+3. Manually remove records created during migration if needed
 
-## Performance Considerations
+## Requirements Compliance
 
-### Expected Performance
+This migration addresses the following requirements from the ABParts Business Model Realignment:
 
-Based on testing with different data sizes:
+- **Requirement 1.2**: Default organization seeding (Oraseas EE, BossAqua)
+- **Requirement 1.3**: Default warehouse creation for existing customer organizations
+- **Requirement 4.2**: Machine model type validation
+- **Requirement 4.3**: Machine hours tracking initialization
 
-- **Small datasets** (< 100 records): < 10 seconds
-- **Medium datasets** (< 1000 records): < 30 seconds  
-- **Large datasets** (< 10000 records): < 2 minutes
-- **Production scale** (ABParts max): < 5 minutes
+## Next Steps
 
-### Optimization Tips
-
-1. **Run during low-traffic periods**
-2. **Ensure adequate database resources**
-3. **Monitor disk space for backups**
-4. **Use dry run to estimate duration**
-
-## Security Considerations
-
-1. **Backup Security**: Backup files contain sensitive data
-2. **Access Control**: Limit migration tool access to administrators
-3. **Audit Trail**: All migration activities are logged
-4. **Validation**: Comprehensive validation prevents data corruption
+After running the migration:
+1. Verify all validation checks pass
+2. Test the application functionality
+3. Run integration tests to ensure everything works correctly
+4. Monitor the application for any issues
 
 ## Support
 
-For migration issues or questions:
-
-1. Check the logs in `logs/migration.log`
-2. Review validation reports in `reports/`
-3. Run diagnostic validation: `python run_migration.py validate`
-4. Contact the development team with migration ID and error details
-
-## Version History
-
-- **v1.0** - Initial migration implementation with comprehensive validation and rollback
-- **v1.1** - Added testing framework and sample data generation
-- **v1.2** - Enhanced CLI interface and progress tracking
+If you encounter issues:
+1. Check the migration logs for specific error messages
+2. Verify database connectivity and permissions
+3. Ensure all required environment variables are set
+4. Use the `--status` flag to check current migration state
