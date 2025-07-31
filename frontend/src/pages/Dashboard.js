@@ -18,7 +18,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// Enhanced Dashboard box component for three-column layout
+// Enhanced Dashboard box component for three-column layout with mobile-first touch-friendly design
 const DashboardBox = ({
   title,
   value,
@@ -66,41 +66,55 @@ const DashboardBox = ({
   const styling = getAlertStyling();
 
   const content = (
-    <div className={`group block ${styling.bgColor} ${styling.borderColor} border rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-300 cursor-pointer relative`}>
-      {/* Badge for notifications */}
+    <div className={`group block ${styling.bgColor} ${styling.borderColor} border rounded-xl 
+      p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 
+      hover:scale-105 hover:border-blue-300 cursor-pointer relative
+      min-h-[120px] sm:min-h-[140px] 
+      touch-manipulation select-none
+      active:scale-95 active:shadow-lg
+      focus:outline-none focus:ring-4 focus:ring-blue-200 focus:ring-opacity-50`}>
+
+      {/* Badge for notifications - larger on mobile */}
       {showBadge && badgeText && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs sm:text-sm font-bold 
+          px-2 py-1 sm:px-3 sm:py-1.5 rounded-full min-w-[24px] sm:min-w-[28px] text-center
+          shadow-lg border-2 border-white">
           {badgeText}
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-3">
-        <div className={`p-2 rounded-lg ${styling.accentColor.replace('text-', 'bg-').replace('-600', '-100')} group-hover:scale-110 transition-transform duration-300`}>
-          {icon}
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className={`p-3 sm:p-2 rounded-lg ${styling.accentColor.replace('text-', 'bg-').replace('-600', '-100')} 
+          group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+          <div className="w-6 h-6 sm:w-5 sm:h-5">
+            {icon}
+          </div>
         </div>
         <div className="text-right">
-          <div className={`text-2xl font-bold ${styling.textColor} group-hover:text-blue-600 transition-colors duration-300`}>
+          <div className={`text-3xl sm:text-2xl font-bold ${styling.textColor} 
+            group-hover:text-blue-600 transition-colors duration-300`}>
             {value}
           </div>
         </div>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-1">{title}</h3>
+        <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-1 sm:mb-1">{title}</h3>
         {subtitle && (
-          <p className="text-xs text-gray-500">{subtitle}</p>
+          <p className="text-sm sm:text-xs text-gray-500 leading-relaxed">{subtitle}</p>
         )}
       </div>
     </div>
   );
 
   if (onClick) {
-    return <div onClick={onClick}>{content}</div>;
+    return <div onClick={onClick} role="button" tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}>{content}</div>;
   }
 
   return linkTo ? <Link to={linkTo}>{content}</Link> : content;
 };
 
-// Enhanced Action button component
+// Enhanced Action button component with mobile-first touch-friendly design
 const ActionButton = ({
   title,
   description,
@@ -113,12 +127,12 @@ const ActionButton = ({
   priority = 'normal' // 'high', 'normal', 'low'
 }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200',
-    green: 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200',
-    purple: 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200',
-    orange: 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200',
-    red: 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200',
-    teal: 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200',
+    blue: 'bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-700 border-blue-200',
+    green: 'bg-green-50 hover:bg-green-100 active:bg-green-200 text-green-700 border-green-200',
+    purple: 'bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-700 border-purple-200',
+    orange: 'bg-orange-50 hover:bg-orange-100 active:bg-orange-200 text-orange-700 border-orange-200',
+    red: 'bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-700 border-red-200',
+    teal: 'bg-teal-50 hover:bg-teal-100 active:bg-teal-200 text-teal-700 border-teal-200',
   };
 
   const priorityClasses = {
@@ -128,21 +142,37 @@ const ActionButton = ({
   };
 
   const content = (
-    <div className={`group block border rounded-xl p-4 transition-all duration-300 hover:scale-105 cursor-pointer relative ${colorClasses[color]} ${priorityClasses[priority]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-      {/* Shortcut indicator */}
+    <div className={`group block border rounded-xl 
+      p-4 sm:p-4 transition-all duration-300 hover:scale-105 cursor-pointer relative 
+      ${colorClasses[color]} ${priorityClasses[priority]} 
+      ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+      min-h-[100px] sm:min-h-[90px]
+      touch-manipulation select-none
+      active:scale-95 active:shadow-lg
+      focus:outline-none focus:ring-4 focus:ring-opacity-50
+      ${color === 'blue' ? 'focus:ring-blue-200' :
+        color === 'green' ? 'focus:ring-green-200' :
+          color === 'purple' ? 'focus:ring-purple-200' :
+            color === 'orange' ? 'focus:ring-orange-200' :
+              color === 'red' ? 'focus:ring-red-200' : 'focus:ring-teal-200'}`}>
+
+      {/* Shortcut indicator - hidden on mobile */}
       {shortcut && (
-        <div className="absolute top-2 right-2 text-xs bg-white/80 px-2 py-1 rounded-md font-mono text-gray-500">
+        <div className="absolute top-2 right-2 text-xs bg-white/80 px-2 py-1 rounded-md font-mono text-gray-500
+          hidden sm:block">
           {shortcut}
         </div>
       )}
 
-      <div className="flex items-center space-x-3 mb-2">
-        <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform duration-300">
-          {icon}
+      <div className="flex items-center space-x-3 sm:space-x-3 mb-3 sm:mb-2">
+        <div className="p-3 sm:p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform duration-300">
+          <div className="w-6 h-6 sm:w-5 sm:h-5">
+            {icon}
+          </div>
         </div>
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="font-semibold text-base sm:text-sm">{title}</h3>
       </div>
-      <p className="text-sm opacity-80">{description}</p>
+      <p className="text-sm sm:text-sm opacity-80 leading-relaxed">{description}</p>
     </div>
   );
 
@@ -151,13 +181,14 @@ const ActionButton = ({
   }
 
   if (onClick) {
-    return <div onClick={onClick}>{content}</div>;
+    return <div onClick={onClick} role="button" tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}>{content}</div>;
   }
 
   return linkTo ? <Link to={linkTo}>{content}</Link> : content;
 };
 
-// Enhanced Report card component
+// Enhanced Report card component with mobile-first touch-friendly design
 const ReportCard = ({
   title,
   description,
@@ -170,44 +201,58 @@ const ReportCard = ({
   lastUpdated = null
 }) => {
   const colorClasses = {
-    indigo: 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200',
-    teal: 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200',
-    pink: 'bg-pink-50 hover:bg-pink-100 text-pink-700 border-pink-200',
-    amber: 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200',
-    emerald: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200',
-    violet: 'bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200',
+    indigo: 'bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 border-indigo-200',
+    teal: 'bg-teal-50 hover:bg-teal-100 active:bg-teal-200 text-teal-700 border-teal-200',
+    pink: 'bg-pink-50 hover:bg-pink-100 active:bg-pink-200 text-pink-700 border-pink-200',
+    amber: 'bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-700 border-amber-200',
+    emerald: 'bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border-emerald-200',
+    violet: 'bg-violet-50 hover:bg-violet-100 active:bg-violet-200 text-violet-700 border-violet-200',
   };
 
   const getTrendIcon = () => {
     switch (trend) {
       case 'up':
-        return <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>;
+        return <svg className="w-4 h-4 sm:w-3 sm:h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>;
       case 'down':
-        return <svg className="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
+        return <svg className="w-4 h-4 sm:w-3 sm:h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
       case 'stable':
-        return <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
+        return <svg className="w-4 h-4 sm:w-3 sm:h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>;
       default:
         return null;
     }
   };
 
   const content = (
-    <div className={`group block border rounded-xl p-4 transition-all duration-300 hover:scale-105 cursor-pointer ${colorClasses[color]}`}>
-      <div className="flex items-center justify-between mb-2">
+    <div className={`group block border rounded-xl 
+      p-4 sm:p-4 transition-all duration-300 hover:scale-105 cursor-pointer 
+      ${colorClasses[color]}
+      min-h-[110px] sm:min-h-[100px]
+      touch-manipulation select-none
+      active:scale-95 active:shadow-lg
+      focus:outline-none focus:ring-4 focus:ring-opacity-50
+      ${color === 'indigo' ? 'focus:ring-indigo-200' :
+        color === 'teal' ? 'focus:ring-teal-200' :
+          color === 'pink' ? 'focus:ring-pink-200' :
+            color === 'amber' ? 'focus:ring-amber-200' :
+              color === 'emerald' ? 'focus:ring-emerald-200' : 'focus:ring-violet-200'}`}>
+
+      <div className="flex items-center justify-between mb-3 sm:mb-2">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform duration-300">
-            {icon}
+          <div className="p-3 sm:p-2 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform duration-300">
+            <div className="w-6 h-6 sm:w-5 sm:h-5">
+              {icon}
+            </div>
           </div>
-          <h3 className="font-semibold">{title}</h3>
+          <h3 className="font-semibold text-base sm:text-sm">{title}</h3>
         </div>
         {dataValue && (
-          <div className="flex items-center space-x-1">
-            <span className="text-lg font-bold">{dataValue}</span>
+          <div className="flex items-center space-x-1 sm:space-x-1">
+            <span className="text-xl sm:text-lg font-bold">{dataValue}</span>
             {getTrendIcon()}
           </div>
         )}
       </div>
-      <p className="text-sm opacity-80 mb-2">{description}</p>
+      <p className="text-sm sm:text-sm opacity-80 mb-2 leading-relaxed">{description}</p>
       {lastUpdated && (
         <p className="text-xs text-gray-500">Updated {lastUpdated}</p>
       )}
@@ -215,7 +260,8 @@ const ReportCard = ({
   );
 
   if (onClick) {
-    return <div onClick={onClick}>{content}</div>;
+    return <div onClick={onClick} role="button" tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}>{content}</div>;
   }
 
   return linkTo ? <Link to={linkTo}>{content}</Link> : content;
@@ -428,8 +474,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Enhanced Three-Column Dashboard Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Enhanced Three-Column Dashboard Layout - Mobile-First Responsive */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Column 1: Entities */}
           <div className="space-y-6">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">

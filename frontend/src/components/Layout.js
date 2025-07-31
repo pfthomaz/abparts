@@ -6,6 +6,8 @@ import { useAuth } from '../AuthContext';
 import { getNavigationItems, getUIConfiguration, isSuperAdmin } from '../utils/permissions';
 import PermissionGuard from './PermissionGuard';
 import OrganizationScopeIndicator from './OrganizationScopeIndicator';
+import MobileNavigation from './MobileNavigation';
+import OfflineStatusIndicator from './OfflineStatusIndicator';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -311,9 +313,15 @@ const Layout = () => {
         </div>
       )}
 
-      <main className="container mx-auto p-4">
+      {/* Offline Status Indicator */}
+      <OfflineStatusIndicator />
+
+      <main className="container mx-auto p-4 pb-20 lg:pb-4">
         <Outlet />
       </main>
+
+      {/* Mobile Navigation */}
+      <MobileNavigation />
     </div>
   );
 };
