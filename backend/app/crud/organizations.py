@@ -98,18 +98,27 @@ def create_organization(db: Session, org_data):
     """Creates a new organization with business rule validation."""
     org_dict = org_data.dict()
     
+    # Convert string organization_type to model enum if needed
+    org_type = org_dict.get('organization_type')
+    if isinstance(org_type, str):
+        try:
+            org_type = OrganizationType(org_type)
+            org_dict['organization_type'] = org_type
+        except ValueError:
+            raise ValueError(f"Invalid organization type: {org_type}")
+    
     # Validate business rules
-    if org_dict.get('organization_type') == OrganizationType.supplier:
+    if org_type == OrganizationType.supplier:
         if not org_dict.get('parent_organization_id'):
             raise ValueError("Supplier organizations must have a parent organization")
     
     # Check for singleton organizations (Oraseas EE, BossAqua)
-    if org_dict.get('organization_type') in [OrganizationType.oraseas_ee, OrganizationType.bossaqua]:
+    if org_type in [OrganizationType.oraseas_ee, OrganizationType.bossaqua]:
         existing = db.query(models.Organization)\
-            .filter(models.Organization.organization_type == org_dict['organization_type'])\
+            .filter(models.Organization.organization_type == org_type)\
             .first()
         if existing:
-            raise ValueError(f"Only one {org_dict['organization_type'].value} organization is allowed")
+            raise ValueError(f"Only one {org_type.value} organization is allowed")
     
     # Validate parent organization exists
     if org_dict.get('parent_organization_id'):
@@ -137,6 +146,16 @@ def update_organization(db: Session, organization_id: uuid.UUID, org_data):
         return None
     
     update_dict = org_data.dict(exclude_unset=True)
+    
+    # Convert string organization_type to model enum if needed
+    if 'organization_type' in update_dict:
+        org_type = update_dict['organization_type']
+        if isinstance(org_type, str):
+            try:
+                org_type = OrganizationType(org_type)
+                update_dict['organization_type'] = org_type
+            except ValueError:
+                raise ValueError(f"Invalid organization type: {org_type}")
     
     # Validate business rules for updates
     new_type = update_dict.get('organization_type', org.organization_type)
