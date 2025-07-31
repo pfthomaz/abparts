@@ -15,4 +15,5 @@ from . import machines
 from . import dashboard
 from . import stock_adjustments
 from . import stocktake
+from . import transaction
 # Add other CRUD modules here as you create them:

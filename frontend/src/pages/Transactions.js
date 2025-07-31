@@ -9,6 +9,9 @@ import TransactionForm from '../components/TransactionForm';
 import TransactionAnalyticsDashboard from '../components/TransactionAnalyticsDashboard';
 import TransactionApprovalWorkflow from '../components/TransactionApprovalWorkflow';
 import TransactionReversalInterface from '../components/TransactionReversalInterface';
+import TwoPhaseOrderWizard from '../components/TwoPhaseOrderWizard';
+import PartUsageRecorder from '../components/PartUsageRecorder';
+import InventoryTransactionLog from '../components/InventoryTransactionLog';
 import Modal from '../components/Modal';
 import { transactionService } from '../services/transactionService';
 
@@ -16,6 +19,8 @@ const Transactions = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('history');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showOrderWizard, setShowOrderWizard] = useState(false);
+  const [showPartUsageRecorder, setShowPartUsageRecorder] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleCreateTransaction = async (transactionData) => {
@@ -34,6 +39,13 @@ const Transactions = () => {
       label: 'Transaction History',
       icon: '📋',
       description: 'View and search transaction records',
+      permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS
+    },
+    {
+      id: 'audit-log',
+      label: 'Audit Trail',
+      icon: '🔍',
+      description: 'Detailed transaction audit log with filters',
       permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS
     },
     {
@@ -70,6 +82,8 @@ const Transactions = () => {
     switch (activeTab) {
       case 'history':
         return <TransactionHistory key={refreshTrigger} />;
+      case 'audit-log':
+        return <InventoryTransactionLog key={refreshTrigger} />;
       case 'analytics':
         return <TransactionAnalyticsDashboard />;
       case 'approvals':
@@ -93,6 +107,24 @@ const Transactions = () => {
             </p>
           </div>
           <div className="flex space-x-3">
+            <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
+              <button
+                onClick={() => setShowOrderWizard(true)}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
+                Create Order
+              </button>
+            </PermissionGuard>
+
+            <PermissionGuard permission={PERMISSIONS.RECORD_PART_USAGE} hideIfNoPermission={true}>
+              <button
+                onClick={() => setShowPartUsageRecorder(true)}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+              >
+                Record Usage
+              </button>
+            </PermissionGuard>
+
             <button
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -111,8 +143,8 @@ const Transactions = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`${activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors`}
                 >
                   <span className="text-lg">{tab.icon}</span>
@@ -152,6 +184,26 @@ const Transactions = () => {
             onClose={() => setShowCreateModal(false)}
           />
         </Modal>
+
+        {/* Two-Phase Order Wizard */}
+        <TwoPhaseOrderWizard
+          isOpen={showOrderWizard}
+          onClose={() => setShowOrderWizard(false)}
+          onOrderComplete={(order) => {
+            setRefreshTrigger(prev => prev + 1);
+            console.log('Order created:', order);
+          }}
+        />
+
+        {/* Part Usage Recorder */}
+        <PartUsageRecorder
+          isOpen={showPartUsageRecorder}
+          onClose={() => setShowPartUsageRecorder(false)}
+          onUsageRecorded={(transaction) => {
+            setRefreshTrigger(prev => prev + 1);
+            console.log('Usage recorded:', transaction);
+          }}
+        />
       </div>
     </PermissionGuard>
   );
