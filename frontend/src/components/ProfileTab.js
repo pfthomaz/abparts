@@ -1,6 +1,7 @@
 // frontend/src/components/ProfileTab.js
 
 import React from 'react';
+import LanguageSelector from './LanguageSelector';
 
 const ProfileTab = ({
   profile,
@@ -27,10 +28,10 @@ const ProfileTab = ({
           <div>
             <label className="block text-sm font-medium text-gray-600">Role</label>
             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${profile?.role === 'super_admin'
-                ? 'bg-purple-100 text-purple-800'
-                : profile?.role === 'admin'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-green-100 text-green-800'
+              ? 'bg-purple-100 text-purple-800'
+              : profile?.role === 'admin'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-green-100 text-green-800'
               }`}>
               {profile?.role?.replace('_', ' ').toUpperCase()}
             </span>
@@ -42,12 +43,12 @@ const ProfileTab = ({
           <div>
             <label className="block text-sm font-medium text-gray-600">Account Status</label>
             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${profile?.user_status === 'active'
-                ? 'bg-green-100 text-green-800'
-                : profile?.user_status === 'inactive'
-                  ? 'bg-red-100 text-red-800'
-                  : profile?.user_status === 'pending_invitation'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
+              ? 'bg-green-100 text-green-800'
+              : profile?.user_status === 'inactive'
+                ? 'bg-red-100 text-red-800'
+                : profile?.user_status === 'pending_invitation'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-gray-100 text-gray-800'
               }`}>
               {profile?.user_status?.replace('_', ' ').toUpperCase()}
             </span>
@@ -181,6 +182,18 @@ const ProfileTab = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Language and Localization Preferences */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Language & Localization</h3>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <LanguageSelector
+            showCountrySelector={true}
+            showAdvancedOptions={true}
+            disabled={false}
+          />
+        </div>
       </div>
     </div>
   );

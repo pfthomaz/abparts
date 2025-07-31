@@ -1,6 +1,7 @@
 // frontend/src/components/MultilingualPartName.js
 
 import React, { useState, useEffect } from 'react';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 /**
  * MultilingualPartName component for handling compound multilingual strings
@@ -11,15 +12,27 @@ const MultilingualPartName = ({
   value = '',
   onChange,
   isEditing = false,
-  preferredLanguage = 'en',
-  supportedLanguages = ['en', 'el', 'ar', 'es'],
+  preferredLanguage = null, // Will use context if not provided
+  supportedLanguages = null, // Will use context if not provided
   className = '',
   placeholder = 'Enter part name...',
   required = false,
   disabled = false
 }) => {
+  const {
+    currentLanguage,
+    supportedLanguages: contextSupportedLanguages,
+    parseMultilingualString,
+    isRTL,
+    getDirectionClass
+  } = useLocalization();
+
   const [parsedNames, setParsedNames] = useState({});
   const [displayName, setDisplayName] = useState('');
+
+  // Use context values or fallback to props
+  const effectivePreferredLanguage = preferredLanguage || currentLanguage;
+  const effectiveSupportedLanguages = supportedLanguages || Object.keys(contextSupportedLanguages);
 
   // Language labels for UI
   const languageLabels = {
@@ -40,27 +53,27 @@ const MultilingualPartName = ({
       return;
     }
 
-    // Handle compound string format: "English | Greek | Arabic"
-    const parts = value.split('|').map(part => part.trim());
-    const parsed = {};
-
-    // Map parts to supported languages in order
-    const langs = supportedLanguages || ['en', 'el', 'ar', 'es'];
-    langs.forEach((lang, index) => {
-      if (parts[index]) {
-        parsed[lang] = parts[index];
-      }
-    });
-
-    setParsedNames(parsed);
-
-    // Set display name based on preferred language with fallback
-    const displayValue = parsed[preferredLanguage] ||
-      parsed[langs[0]] ||
-      parts[0] ||
-      value;
+    // Use the localization context to parse the multilingual string
+    const displayValue = parseMultilingualString(value, effectivePreferredLanguage);
     setDisplayName(displayValue);
-  }, [value, preferredLanguage]);
+
+    // Also parse for editing mode
+    if (value.includes('|')) {
+      const parts = value.split('|').map(part => part.trim());
+      const parsed = {};
+
+      effectiveSupportedLanguages.forEach((lang, index) => {
+        if (parts[index]) {
+          parsed[lang] = parts[index];
+        }
+      });
+
+      setParsedNames(parsed);
+    } else {
+      // Single language value
+      setParsedNames({ [effectivePreferredLanguage]: value });
+    }
+  }, [value, effectivePreferredLanguage, parseMultilingualString]);
 
   // Handle changes in editing mode
   const handleLanguageChange = (language, newValue) => {
@@ -76,8 +89,7 @@ const MultilingualPartName = ({
     setParsedNames(updatedNames);
 
     // Construct compound string
-    const langs = supportedLanguages || ['en', 'el', 'ar', 'es'];
-    const compoundString = langs
+    const compoundString = effectiveSupportedLanguages
       .map(lang => updatedNames[lang] || '')
       .filter(name => name.trim() !== '')
       .join(' | ');
@@ -97,9 +109,9 @@ const MultilingualPartName = ({
           {displayName || value || 'No name provided'}
         </span>
         {hasMultipleLanguages && (
-          <span className="language-indicator ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-            {languageLabels[preferredLanguage] || preferredLanguage.toUpperCase()}
-            <span className="ml-1 text-gray-400">
+          <span className={`language-indicator text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded ${getDirectionClass('ml-2')}`}>
+            {languageLabels[effectivePreferredLanguage] || effectivePreferredLanguage.toUpperCase()}
+            <span className={getDirectionClass('ml-1 text-gray-400')}>
               (+{Object.keys(parsedNames).length - 1} more)
             </span>
           </span>
@@ -124,14 +136,14 @@ const MultilingualPartName = ({
   return (
     <div className={`multilingual-part-name-editor ${className}`}>
       <div className="space-y-3">
-        {(supportedLanguages || ['en', 'el', 'ar', 'es']).map((language) => (
+        {effectiveSupportedLanguages.map((language) => (
           <div key={language} className="language-input-group">
             <label
               htmlFor={`name-${language}`}
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               {languageLabels[language] || language.toUpperCase()}
-              {language === (supportedLanguages || ['en', 'el', 'ar', 'es'])[0] && required && (
+              {language === effectiveSupportedLanguages[0] && required && (
                 <span className="text-red-500 ml-1">*</span>
               )}
             </label>
@@ -142,9 +154,9 @@ const MultilingualPartName = ({
               onChange={(e) => handleLanguageChange(language, e.target.value)}
               placeholder={`${placeholder} (${languageLabels[language] || language})`}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-              required={language === (supportedLanguages || ['en', 'el', 'ar', 'es'])[0] && required}
+              required={language === effectiveSupportedLanguages[0] && required}
               disabled={disabled}
-              dir={language === 'ar' ? 'rtl' : 'ltr'}
+              dir={contextSupportedLanguages[language]?.rtl ? 'rtl' : 'ltr'}
             />
           </div>
         ))}
@@ -154,7 +166,7 @@ const MultilingualPartName = ({
       <div className="mt-3 p-2 bg-gray-50 rounded-md">
         <div className="text-xs font-medium text-gray-600 mb-1">Preview:</div>
         <div className="text-sm text-gray-800">
-          {(supportedLanguages || ['en', 'el', 'ar', 'es'])
+          {effectiveSupportedLanguages
             .map(lang => parsedNames[lang] || '')
             .filter(name => name.trim() !== '')
             .join(' | ') || 'No names entered'}

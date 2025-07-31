@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { userService } from '../services/userService';
+import { useLocalization } from '../contexts/LocalizationContext';
 import Modal from '../components/Modal';
 import ProfileTab from '../components/ProfileTab';
 import SecurityTab from '../components/SecurityTab';
@@ -11,6 +12,7 @@ import NotificationsTab from '../components/NotificationsTab';
 
 const UserProfile = () => {
   const { logout } = useAuth();
+  const { userPreferences, currentLanguage, currentCountry } = useLocalization();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -102,7 +104,15 @@ const UserProfile = () => {
       setError('');
       setSuccess('');
 
-      await userService.updateMyProfile(profileForm);
+      // Include localization preferences in the update
+      const updateData = {
+        ...profileForm,
+        preferred_language: currentLanguage,
+        preferred_country: currentCountry,
+        localization_preferences: JSON.stringify(userPreferences)
+      };
+
+      await userService.updateMyProfile(updateData);
       setSuccess('Profile updated successfully');
       setIsEditingProfile(false);
       await fetchProfile(); // Refresh profile data

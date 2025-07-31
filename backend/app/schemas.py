@@ -229,6 +229,9 @@ class UserProfileUpdate(BaseModel):
     """Schema for user profile self-service updates"""
     name: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = Field(None, max_length=255)
+    preferred_language: Optional[str] = Field(None, max_length=5, description="Preferred language code (en, el, ar, es)")
+    preferred_country: Optional[str] = Field(None, max_length=3, description="Preferred country code (GR, KSA, ES, CY, OM)")
+    localization_preferences: Optional[str] = Field(None, description="JSON string for advanced localization preferences")
     
 class UserPasswordChange(BaseModel):
     """Schema for secure password change"""
@@ -246,6 +249,9 @@ class UserProfileResponse(BaseModel):
     organization_id: uuid.UUID
     organization_name: str
     organization_type: str
+    preferred_language: Optional[str] = None
+    preferred_country: Optional[str] = None
+    localization_preferences: Optional[str] = None
     last_login: Optional[datetime]
     created_at: datetime
     updated_at: datetime

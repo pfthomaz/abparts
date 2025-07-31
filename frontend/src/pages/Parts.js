@@ -11,6 +11,8 @@ import { useAuth } from '../AuthContext';
 import MultilingualPartName from '../components/MultilingualPartName';
 import PartPhotoGallery from '../components/PartPhotoGallery';
 import PartCategoryBadge, { PartCategoryFilter } from '../components/PartCategoryBadge';
+import LocalizedText, { LocalizedDate, LocalizedNumber } from '../components/LocalizedText';
+import { useLocalization } from '../contexts/LocalizationContext';
 import SuperAdminPartsManager from '../components/SuperAdminPartsManager';
 import {
   formatErrorForDisplay,
@@ -23,6 +25,7 @@ import {
 
 const Parts = () => {
   const { user } = useAuth();
+  const { formatDate, formatNumber } = useLocalization();
 
   // Check if user is superadmin first
   const isUserSuperAdmin = isSuperAdmin(user);
