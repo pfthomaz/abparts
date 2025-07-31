@@ -22,7 +22,7 @@ from app.main import app as fastapi_app
 from app.database import get_db, Base
 from app.models import (
     Organization, User, Part, Warehouse, Inventory, Machine, Transaction,
-    OrganizationType, UserRole, UserStatus, PartType, TransactionType, MachineStatus
+    OrganizationType, UserRole, UserStatus, PartType, TransactionType, MachineStatus, MachineModelType
 )
 # Import all models to ensure they're registered with SQLAlchemy
 import app.models
@@ -364,7 +364,7 @@ def test_machines(db_session: Session, test_organizations: Dict[str, Organizatio
     # Customer 1 machines
     machine1 = Machine(
         name="AutoBoss Unit 1",
-        model_type="V4.0",
+        model_type=MachineModelType.V4_0,
         serial_number="AB-V4-001",
         customer_organization_id=test_organizations["customer1"].id,
         purchase_date=datetime.utcnow() - timedelta(days=365),
@@ -378,7 +378,7 @@ def test_machines(db_session: Session, test_organizations: Dict[str, Organizatio
     
     machine2 = Machine(
         name="AutoBoss Unit 2",
-        model_type="V3.1B",
+        model_type=MachineModelType.V3_1B,
         serial_number="AB-V31B-001",
         customer_organization_id=test_organizations["customer1"].id,
         purchase_date=datetime.utcnow() - timedelta(days=730),
@@ -393,7 +393,7 @@ def test_machines(db_session: Session, test_organizations: Dict[str, Organizatio
     # Customer 2 machine
     machine3 = Machine(
         name="AutoBoss Service Unit",
-        model_type="V4.0",
+        model_type=MachineModelType.V4_0,
         serial_number="AB-V4-002",
         customer_organization_id=test_organizations["customer2"].id,
         purchase_date=datetime.utcnow() - timedelta(days=180),
