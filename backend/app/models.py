@@ -11,6 +11,9 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 from .database import Base
 
+# Import configuration models
+from .models_config import SystemConfiguration, OrganizationConfiguration
+
 
 # Enums for the new business model
 class OrganizationType(enum.Enum):

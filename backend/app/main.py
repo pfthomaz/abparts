@@ -45,6 +45,7 @@ from .routers.sessions import router as sessions_router # New: Import sessions r
 from .routers.transactions import router as transactions_router # New: Import transactions router
 from .routers.inventory_workflow import router as inventory_workflow_router # New: Import inventory workflow router
 from .routers.monitoring import router as monitoring_router # New: Import monitoring router
+from .routers.configuration import router as configuration_router # New: Import configuration router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -224,6 +225,7 @@ app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
 app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
 app.include_router(inventory_workflow_router, tags=["Inventory Workflows"])
 app.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])
+app.include_router(configuration_router, prefix="/configuration", tags=["Configuration"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)

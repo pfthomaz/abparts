@@ -383,6 +383,20 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Configuration - admin and above
+  if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN) {
+    items.push({
+      path: '/configuration',
+      label: 'Configuration',
+      icon: 'configuration',
+      permission: null, // Role-based access handled in component
+      description: 'Administrative configuration panel',
+      adminOnly: true,
+      category: 'administration',
+      accessScope: user.role === USER_ROLES.SUPER_ADMIN ? 'global' : 'organization'
+    });
+  }
+
   return items;
 };
 
