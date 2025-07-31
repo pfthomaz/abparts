@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getNavigationItems, hasPermission, PERMISSIONS } from '../utils/permissions';
+import { getNavigationItems, PERMISSIONS } from '../utils/permissions';
 import PermissionGuard from './PermissionGuard';
 
 const MobileNavigation = () => {
@@ -74,61 +74,69 @@ const MobileNavigation = () => {
           {/* Dashboard */}
           <Link
             to="/"
-            className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors
+            className={`flex flex-col items-center justify-center py-2 text-xs font-medium transition-colors
               ${location.pathname === '/'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-600 hover:text-gray-900 active:bg-gray-100'}`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z" />
-            </svg>
-            <span>Home</span>
+            <div className="flex flex-col items-center space-y-1">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z" />
+              </svg>
+              <span>Home</span>
+            </div>
           </Link>
 
           {/* Inventory */}
           <PermissionGuard permission={PERMISSIONS.VIEW_INVENTORY} hideIfNoPermission={true}>
             <Link
               to="/inventory"
-              className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors
+              className={`flex flex-col items-center justify-center py-2 text-xs font-medium transition-colors
                 ${location.pathname === '/inventory'
                   ? 'text-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 active:bg-gray-100'}`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <span>Stock</span>
+              <div className="flex flex-col items-center space-y-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <span>Stock</span>
+              </div>
             </Link>
           </PermissionGuard>
 
           {/* Quick Actions Menu */}
           <button
             onClick={() => setIsOpen(true)}
-            className="flex flex-col items-center justify-center space-y-1 text-xs font-medium text-gray-600 hover:text-gray-900 active:bg-gray-100 transition-colors"
+            className="flex flex-col items-center justify-center py-2 text-xs font-medium text-gray-600 hover:text-gray-900 active:bg-gray-100 transition-colors"
           >
-            <div className="relative">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+            <div className="flex flex-col items-center space-y-1">
+              <div className="relative">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+              </div>
+              <span>Actions</span>
             </div>
-            <span>Actions</span>
           </button>
 
           {/* Orders */}
           <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
             <Link
               to="/orders"
-              className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors
+              className={`flex flex-col items-center justify-center py-2 text-xs font-medium transition-colors
                 ${location.pathname === '/orders'
                   ? 'text-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 active:bg-gray-100'}`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M8 11v6h8v-6M8 11H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2h-2" />
-              </svg>
-              <span>Orders</span>
+              <div className="flex flex-col items-center space-y-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M8 11v6h8v-6M8 11H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2h-2" />
+                </svg>
+                <span>Orders</span>
+              </div>
             </Link>
           </PermissionGuard>
 
@@ -136,15 +144,17 @@ const MobileNavigation = () => {
           <PermissionGuard permission={PERMISSIONS.VIEW_ORG_MACHINES} hideIfNoPermission={true}>
             <Link
               to="/machines"
-              className={`flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors
+              className={`flex flex-col items-center justify-center py-2 text-xs font-medium transition-colors
                 ${location.pathname === '/machines'
                   ? 'text-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-900 active:bg-gray-100'}`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span>Machines</span>
+              <div className="flex flex-col items-center space-y-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>Machines</span>
+              </div>
             </Link>
           </PermissionGuard>
         </div>
@@ -216,14 +226,7 @@ const MobileNavigation = () => {
         </div>
       )}
 
-      {/* Add bottom padding to main content to account for mobile nav */}
-      <style jsx>{`
-        @media (max-width: 1023px) {
-          main {
-            padding-bottom: 80px !important;
-          }
-        }
-      `}</style>
+      {/* Mobile navigation padding is handled by the parent layout component */}
     </>
   );
 };

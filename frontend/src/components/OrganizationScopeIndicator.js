@@ -38,13 +38,13 @@ const OrganizationScopeIndicator = ({
   const currentOrg = getCurrentOrganization();
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-4 ${className}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+    <div className={`bg-white border border-gray-200 rounded-lg p-3 sm:p-4 ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+        <div className="flex items-center space-x-3 min-w-0 flex-1">
           {/* Access Scope Icon */}
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${accessScope.canAccessAllOrganizations
-              ? 'bg-purple-100 text-purple-600'
-              : 'bg-blue-100 text-blue-600'
+          <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${accessScope.canAccessAllOrganizations
+            ? 'bg-purple-100 text-purple-600'
+            : 'bg-blue-100 text-blue-600'
             }`}>
             {accessScope.canAccessAllOrganizations ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,19 +58,19 @@ const OrganizationScopeIndicator = ({
           </div>
 
           {/* Organization Info */}
-          <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-medium text-gray-900">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+              <h3 className="text-sm font-medium text-gray-900 truncate">
                 {accessScope.canAccessAllOrganizations ? 'Global Access' : 'Organization Access'}
               </h3>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${accessScope.canAccessAllOrganizations
-                  ? 'bg-purple-100 text-purple-800'
-                  : 'bg-blue-100 text-blue-800'
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium self-start ${accessScope.canAccessAllOrganizations
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-blue-100 text-blue-800'
                 }`}>
                 {accessScope.accessLevel}
               </span>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-xs sm:text-sm text-gray-500 truncate">
               {accessScope.canAccessAllOrganizations
                 ? `Viewing: ${currentOrg?.name || 'All Organizations'}`
                 : `Limited to: ${currentOrg?.name || 'Your Organization'}`
@@ -81,12 +81,13 @@ const OrganizationScopeIndicator = ({
 
         {/* Organization Selector for Super Admins */}
         {showOrganizationSelector && isSuperAdmin(user) && availableOrganizations.length > 0 && (
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <span>Switch Organization</span>
+              <span className="hidden sm:inline">Switch Organization</span>
+              <span className="sm:hidden">Switch</span>
               <svg className={`w-4 h-4 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -116,12 +117,12 @@ const OrganizationScopeIndicator = ({
                     >
                       <div className="flex items-center space-x-2">
                         <div className={`w-3 h-3 rounded-full ${org.organization_type === 'oraseas_ee' ? 'bg-blue-500' :
-                            org.organization_type === 'bossaqua' ? 'bg-green-500' :
-                              org.organization_type === 'customer' ? 'bg-purple-500' :
-                                'bg-orange-500'
+                          org.organization_type === 'bossaqua' ? 'bg-green-500' :
+                            org.organization_type === 'customer' ? 'bg-purple-500' :
+                              'bg-orange-500'
                           }`}></div>
-                        <span>{org.name}</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="truncate">{org.name}</span>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
                           ({org.organization_type})
                         </span>
                       </div>
@@ -134,8 +135,8 @@ const OrganizationScopeIndicator = ({
         )}
       </div>
 
-      {/* Data Scope Details */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      {/* Data Scope Details - Hidden on mobile to save space */}
+      <div className="hidden md:block mt-4 pt-4 border-t border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
             <span className="text-gray-500">Data Access:</span>

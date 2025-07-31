@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
 import Modal from '../components/Modal';
 import ConfigurationCategoryPanel from '../components/ConfigurationCategoryPanel';
 import ConfigurationTemplateSelector from '../components/ConfigurationTemplateSelector';
@@ -37,18 +38,7 @@ const Configuration = () => {
       setError(null);
 
       // Fetch configurations by category
-      const response = await fetch('/configuration/system/categories', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const categoriesData = await response.json();
+      const categoriesData = await api.get('/configuration/system/categories');
       setCategories(categoriesData);
 
       // Extract all configurations
@@ -65,19 +55,7 @@ const Configuration = () => {
 
   const handleConfigurationUpdate = async (configId, newValue) => {
     try {
-      const response = await fetch(`/configuration/system/${configId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ value: newValue }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update configuration');
-      }
+      await api.put(`/configuration/system/${configId}`, { value: newValue });
 
       // Refresh configurations
       await fetchConfigurations();
@@ -96,20 +74,7 @@ const Configuration = () => {
     }
 
     try {
-      const response = await fetch('/configuration/initialize-defaults', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to initialize defaults');
-      }
-
-      const result = await response.json();
+      const result = await api.post('/configuration/initialize-defaults');
       alert(`Default configurations initialized: ${result.created_count} created, ${result.skipped_count} skipped`);
 
       // Refresh configurations

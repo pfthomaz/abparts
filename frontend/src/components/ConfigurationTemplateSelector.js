@@ -1,14 +1,12 @@
 // frontend/src/components/ConfigurationTemplateSelector.js
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
 
 const ConfigurationTemplateSelector = ({ onClose, onApplyTemplate }) => {
-  const { token } = useAuth();
   const [templates, setTemplates] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
@@ -20,18 +18,7 @@ const ConfigurationTemplateSelector = ({ onClose, onApplyTemplate }) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/configuration/templates', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const templatesData = await response.json();
+      const templatesData = await api.get('/configuration/templates');
       setTemplates(templatesData);
 
     } catch (error) {
@@ -53,23 +40,9 @@ const ConfigurationTemplateSelector = ({ onClose, onApplyTemplate }) => {
         value: typeof value === 'object' ? JSON.stringify(value) : String(value)
       }));
 
-      const response = await fetch('/configuration/bulk-update', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          configurations: configurations
-        }),
+      const result = await api.post('/configuration/bulk-update', {
+        configurations: configurations
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to apply template');
-      }
-
-      const result = await response.json();
 
       if (result.success) {
         alert(`Template applied successfully! ${result.updated_count} configurations updated.`);

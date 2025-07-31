@@ -99,14 +99,16 @@ const Transactions = () => {
     <PermissionGuard permission={PERMISSIONS.VIEW_ORG_TRANSACTIONS}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Transaction Management</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Transaction Management</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">
               Manage and track all inventory transactions across your organization
             </p>
           </div>
-          <div className="flex space-x-3">
+
+          {/* Desktop Action Buttons */}
+          <div className="hidden sm:flex space-x-3">
             <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
               <button
                 onClick={() => setShowOrderWizard(true)}
@@ -132,12 +134,41 @@ const Transactions = () => {
               Create Transaction
             </button>
           </div>
+
+          {/* Mobile Action Buttons */}
+          <div className="flex sm:hidden space-x-2 overflow-x-auto pb-2">
+            <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>
+              <button
+                onClick={() => setShowOrderWizard(true)}
+                className="flex-shrink-0 px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
+                Create Order
+              </button>
+            </PermissionGuard>
+
+            <PermissionGuard permission={PERMISSIONS.RECORD_PART_USAGE} hideIfNoPermission={true}>
+              <button
+                onClick={() => setShowPartUsageRecorder(true)}
+                className="flex-shrink-0 px-3 py-2 text-xs font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+              >
+                Record Usage
+              </button>
+            </PermissionGuard>
+
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex-shrink-0 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Create Transaction
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
         <div className="bg-white rounded-lg shadow-md">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            {/* Desktop Tab Navigation */}
+            <nav className="-mb-px hidden md:flex space-x-8 px-6" aria-label="Tabs">
               {availableTabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -157,17 +188,54 @@ const Transactions = () => {
                 </button>
               ))}
             </nav>
+
+            {/* Mobile Tab Navigation - Horizontal Scroll */}
+            <div className="md:hidden">
+              <nav className="-mb-px flex overflow-x-auto scrollbar-hide px-4 mobile-tab-nav" aria-label="Tabs">
+                {availableTabs.map((tab, index) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`${activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      } flex-shrink-0 py-3 px-3 border-b-2 font-medium text-sm flex items-center space-x-1.5 transition-colors min-w-max rounded-t-lg ${index === 0 ? 'ml-0' : 'ml-1'}`}
+                  >
+                    <span className="text-base">{tab.icon}</span>
+                    <span className="text-xs whitespace-nowrap">{tab.label}</span>
+                    {tab.adminOnly && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        Admin
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Mobile scroll indicator */}
+              <div className="flex justify-center py-1">
+                <div className="flex space-x-1">
+                  {availableTabs.map((tab) => (
+                    <div
+                      key={`indicator-${tab.id}`}
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${activeTab === tab.id ? 'bg-blue-500' : 'bg-gray-300'
+                        }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Tab Description */}
-          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-            <p className="text-sm text-gray-600">
+          <div className="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-600">
               {availableTabs.find(tab => tab.id === activeTab)?.description}
             </p>
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {renderTabContent()}
           </div>
         </div>

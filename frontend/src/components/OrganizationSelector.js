@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { isSuperAdmin } from '../utils/permissions';
 import { getCountryFlag } from '../utils/countryFlags';
+import { organizationsService } from '../services/organizationsService';
 
 const OrganizationSelector = ({ selectedOrganization, onOrganizationChange }) => {
   const { user } = useAuth();
@@ -16,17 +17,8 @@ const OrganizationSelector = ({ selectedOrganization, onOrganizationChange }) =>
 
       setLoading(true);
       try {
-        const response = await fetch('/api/organizations', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setOrganizations(data);
-        }
+        const data = await organizationsService.getOrganizations();
+        setOrganizations(data);
       } catch (error) {
         console.error('Failed to fetch organizations:', error);
       } finally {

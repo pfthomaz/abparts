@@ -307,7 +307,7 @@ const Layout = () => {
           <div className="container mx-auto px-4 py-2">
             <OrganizationScopeIndicator
               showOrganizationSelector={true}
-              className="max-w-4xl"
+              className="w-full"
             />
           </div>
         </div>

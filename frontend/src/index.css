@@ -220,3 +220,28 @@ body {
   font-family: 'Inter', sans-serif;
   /* Recommended font as per instructions */
 }
+
+/* Hide scrollbar for mobile tab navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Safari and Chrome */
+}
+
+/* Mobile tab navigation improvements */
+@media (max-width: 768px) {
+  .mobile-tab-nav {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-tab-nav::-webkit-scrollbar {
+    display: none;
+  }
+}

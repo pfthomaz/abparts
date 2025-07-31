@@ -1,10 +1,9 @@
 // frontend/src/components/ConfigurationItem.js
 
 import React, { useState } from 'react';
-import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
 
 const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
-  const { token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(configuration.value || '');
   const [isValidating, setIsValidating] = useState(false);
@@ -33,23 +32,10 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
 
     try {
       setIsValidating(true);
-      const response = await fetch('/configuration/validate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          key: configuration.key,
-          value: value
-        }),
+      const result = await api.post('/configuration/validate', {
+        key: configuration.key,
+        value: value
       });
-
-      if (!response.ok) {
-        throw new Error('Validation request failed');
-      }
-
-      const result = await response.json();
       return result;
 
     } catch (error) {

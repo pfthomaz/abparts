@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { machinesService } from '../services/machinesService';
+import { organizationsService } from '../services/organizationsService';
 import { useAuth } from '../AuthContext';
 
 const MachineTransferWizard = ({ machine, onTransferComplete, onClose }) => {
@@ -23,22 +24,13 @@ const MachineTransferWizard = ({ machine, onTransferComplete, onClose }) => {
 
   const fetchOrganizations = async () => {
     try {
-      // This would need to be implemented in a service
-      // For now, we'll use a placeholder
-      const response = await fetch('/api/organizations', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out current organization and non-customer organizations
-        const customerOrgs = data.filter(org =>
-          org.id !== machine.customer_organization_id &&
-          org.organization_type === 'customer'
-        );
-        setOrganizations(customerOrgs);
-      }
+      const data = await organizationsService.getOrganizations();
+      // Filter out current organization and non-customer organizations
+      const customerOrgs = data.filter(org =>
+        org.id !== machine.customer_organization_id &&
+        org.organization_type === 'customer'
+      );
+      setOrganizations(customerOrgs);
     } catch (err) {
       console.error('Failed to fetch organizations:', err);
       setError('Failed to load organizations');

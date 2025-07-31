@@ -76,7 +76,7 @@ const MobilePartPhotoGallery = ({
         {photos.map((photo, index) => (
           <div key={photo.id} className="relative group">
             <div
-              className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+              className="aspect-square min-h-[120px] sm:min-h-0 bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
               onClick={() => setSelectedPhoto(photo)}
             >
               <img
@@ -109,7 +109,7 @@ const MobilePartPhotoGallery = ({
 
         {/* Add Photo Button */}
         {editable && canAddMore && (
-          <div className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center space-y-2 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer group">
+          <div className="aspect-square min-h-[120px] sm:min-h-0 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center space-y-2 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer group">
             <div className="flex flex-col items-center space-y-2">
               {/* Camera Button */}
               <button
@@ -188,14 +188,7 @@ const MobilePartPhotoGallery = ({
         </div>
       )}
 
-      {/* Mobile-specific styles */}
-      <style jsx>{`
-        @media (max-width: 640px) {
-          .aspect-square {
-            min-height: 120px;
-          }
-        }
-      `}</style>
+      {/* Mobile-specific styles handled by Tailwind CSS classes */}
     </div>
   );
 };

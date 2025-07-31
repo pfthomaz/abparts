@@ -143,14 +143,52 @@ const getPendingApprovalTransactions = (skip = 0, limit = 100, organizationId = 
  * @param {number} days Number of days to analyze
  * @param {string} organizationId Optional organization ID filter
  */
-const getTransactionAnalytics = (days = 30, organizationId = null) => {
+const getTransactionAnalytics = async (days = 30, organizationId = null) => {
   const queryParams = new URLSearchParams();
   queryParams.append('days', days);
   if (organizationId) {
     queryParams.append('organization_id', organizationId);
   }
 
-  return api.get(`/transactions/analytics?${queryParams.toString()}`);
+  try {
+    // Get transaction summary data
+    const summaryData = await api.get(`/transactions/summary?${queryParams.toString()}`);
+
+    // Transform the data to match the expected analytics structure
+    const totalTransactions = summaryData.reduce((sum, item) => sum + (item.transaction_count || 0), 0);
+    const totalQuantity = summaryData.reduce((sum, item) => sum + parseFloat(item.total_quantity || 0), 0);
+
+    // Transform transaction types for pie chart
+    const transactionTypes = summaryData.map(item => ({
+      name: item.transaction_type || 'Unknown',
+      count: item.transaction_count || 0,
+      value: item.transaction_count || 0
+    }));
+
+    // Create the expected analytics structure
+    return {
+      summary: {
+        total_transactions: totalTransactions,
+        total_value: totalQuantity, // Using quantity as value for now
+        most_active_part: {
+          name: 'N/A',
+          transaction_count: 0
+        },
+        most_active_warehouse: {
+          name: 'N/A',
+          transaction_count: 0
+        }
+      },
+      transaction_types: transactionTypes,
+      daily_volume: [], // Empty for now
+      top_parts: [], // Empty for now
+      warehouse_activity: [], // Empty for now
+      trends: [] // Empty for now
+    };
+  } catch (error) {
+    console.error('Error fetching transaction analytics:', error);
+    throw error;
+  }
 };
 
 export const transactionService = {

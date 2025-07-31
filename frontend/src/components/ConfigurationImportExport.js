@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
 
 const ConfigurationImportExport = ({ configurations, onClose, onImportComplete }) => {
   const { token } = useAuth();
@@ -18,18 +19,7 @@ const ConfigurationImportExport = ({ configurations, onClose, onImportComplete }
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/configuration/export', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const exportResult = await response.json();
+      const exportResult = await api.get('/configuration/export');
       setExportData(exportResult);
       setSuccess('Configuration data exported successfully!');
 
@@ -96,24 +86,10 @@ const ConfigurationImportExport = ({ configurations, onClose, onImportComplete }
         throw new Error('Invalid JSON format. Please check your data.');
       }
 
-      const response = await fetch('/configuration/import', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          configurations: configData.configurations || configData,
-          overwrite_existing: true
-        }),
+      const result = await api.post('/configuration/import', {
+        configurations: configData.configurations || configData,
+        overwrite_existing: true
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to import configurations');
-      }
-
-      const result = await response.json();
 
       if (result.success) {
         setSuccess(`Import completed! ${result.imported_count} configurations imported, ${result.skipped_count} skipped.`);

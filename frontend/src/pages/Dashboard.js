@@ -408,68 +408,68 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
-            <div className="flex-1">
-              <div className="flex items-center space-x-4">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                    Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}!
-                  </h1>
-                  <p className="text-lg text-gray-600">Welcome back, {user.name || user.username}</p>
-                  {metrics && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {isSuperAdmin(user)
-                        ? `Managing ${metrics.total_organizations} organizations with ${metrics.total_users} users`
-                        : `${user.organization?.name || 'Your organization'} - ${metrics.total_inventory_items || 0} parts in inventory`
-                      }
-                    </p>
-                  )}
-                </div>
-
-                {/* Refresh Button */}
-                <button
-                  onClick={() => fetchMetrics(true)}
-                  disabled={refreshing}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                  title="Refresh dashboard data"
-                >
-                  <svg
-                    className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/20">
-              <div className="text-right space-y-2">
-                <div className="flex items-center justify-end space-x-2">
-                  <span className="text-sm font-semibold text-gray-900">
-                    {user.role === 'super_admin' ? 'Super Administrator' :
-                      user.role === 'admin' ? 'Administrator' : 'User'}
-                  </span>
-                  {isSuperAdmin(user) && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
-                      Global Access
-                    </span>
-                  )}
-                </div>
-                {!isSuperAdmin(user) && user.organization && (
-                  <p className="text-sm text-gray-600 font-medium">{user.organization.name}</p>
+          {/* Good afternoon greeting card with rounded corners */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-4">
+            <div className="flex items-center space-x-4">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                  Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}!
+                </h1>
+                <p className="text-lg text-gray-600">Welcome back, {user.name || user.username}</p>
+                {metrics && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {isSuperAdmin(user)
+                      ? `Managing ${metrics.total_organizations} organizations with ${metrics.total_users} users`
+                      : `${user.organization?.name || 'Your organization'} - ${metrics.total_inventory_items || 0} parts in inventory`
+                    }
+                  </p>
                 )}
-                <p className="text-xs text-gray-500">
-                  Scope: {isSuperAdmin(user) ? 'All Organizations' : 'Organization Only'}
-                </p>
-                {/* Organization Selector for Superadmin */}
-                <OrganizationSelector
-                  selectedOrganization={selectedOrganization}
-                  onOrganizationChange={setSelectedOrganization}
-                />
               </div>
+
+              {/* Refresh Button */}
+              <button
+                onClick={() => fetchMetrics(true)}
+                disabled={refreshing}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                title="Refresh dashboard data"
+              >
+                <svg
+                  className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Global Access card with full width matching the page */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/30">
+            <div className="text-right space-y-2">
+              <div className="flex items-center justify-end space-x-2">
+                <span className="text-sm font-semibold text-gray-900">
+                  {user.role === 'super_admin' ? 'Super Administrator' :
+                    user.role === 'admin' ? 'Administrator' : 'User'}
+                </span>
+                {isSuperAdmin(user) && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
+                    Global Access
+                  </span>
+                )}
+              </div>
+              {!isSuperAdmin(user) && user.organization && (
+                <p className="text-sm text-gray-600 font-medium">{user.organization.name}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Scope: {isSuperAdmin(user) ? 'All Organizations' : 'Organization Only'}
+              </p>
+              {/* Organization Selector for Superadmin */}
+              <OrganizationSelector
+                selectedOrganization={selectedOrganization}
+                onOrganizationChange={setSelectedOrganization}
+              />
             </div>
           </div>
         </div>
