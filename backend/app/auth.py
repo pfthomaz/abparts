@@ -355,3 +355,44 @@ async def get_current_user_from_token(token: str, db: Session = None) -> TokenDa
     except Exception as e:
         logger.error(f"Unexpected error validating session: {e}")
         raise credentials_exception
+
+async def get_current_user_object(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> models.User:
+    """
+    Dependency to get the current authenticated user object from session token.
+    Returns the actual User model object instead of TokenData.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        # Get session data from Redis
+        session_data = session_manager.get_session(token)
+        if not session_data:
+            raise credentials_exception
+        
+        # Extract user information from session
+        user_id = uuid.UUID(session_data["user_id"])
+        username = session_data["username"]
+        
+        # Get the actual user object
+        user = db.query(models.User).filter(
+            models.User.id == user_id, 
+            models.User.username == username,
+            models.User.is_active == True,
+            models.User.user_status == models.UserStatus.active
+        ).first()
+        
+        if not user:
+            # User no longer exists or is inactive, terminate session
+            session_manager.terminate_session(token, "user_inactive", db)
+            raise credentials_exception
+        
+        return user
+        
+    except ValueError as e:
+        logger.error(f"Invalid UUID in session data: {e}")
+        session_manager.terminate_session(token, "invalid_data", db)
+        raise credentials_exception

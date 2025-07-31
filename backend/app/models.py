@@ -1309,3 +1309,75 @@ class PartUsageItem(Base):
 
     def __repr__(self):
         return f"<PartUsageItem(id={self.id}, usage_record_id={self.usage_record_id}, part_id={self.part_id}, quantity={self.quantity})>"
+
+# Audit and Security Models
+class AuditLog(Base):
+    """Audit log table for tracking all data access and modifications"""
+    __tablename__ = "audit_logs"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    user_id = Column(UUID(as_uuid=True), nullable=False)
+    organization_id = Column(UUID(as_uuid=True), nullable=True)
+    
+    # Resource information
+    resource_type = Column(String(100), nullable=False)  # e.g., 'parts', 'machines', 'organizations'
+    resource_id = Column(UUID(as_uuid=True), nullable=False)
+    
+    # Action information
+    action = Column(String(50), nullable=False)  # e.g., 'CREATE', 'READ', 'UPDATE', 'DELETE'
+    
+    # Change tracking
+    old_values = Column(Text, nullable=True)  # Previous values for updates (JSON string)
+    new_values = Column(Text, nullable=True)  # New values for creates/updates (JSON string)
+    
+    # Additional context
+    details = Column(Text, nullable=True)  # Additional context information (JSON string)
+    ip_address = Column(String(45), nullable=True)  # IPv4 or IPv6
+    user_agent = Column(Text, nullable=True)
+    
+    # Request information
+    endpoint = Column(String(255), nullable=True)
+    http_method = Column(String(10), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<AuditLog(id={self.id}, user_id={self.user_id}, resource_type='{self.resource_type}', action='{self.action}')>"
+
+
+class SecurityEventLog(Base):
+    """Security events table for tracking security-related incidents"""
+    __tablename__ = "security_event_logs"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    
+    # Event classification
+    event_type = Column(String(100), nullable=False)  # e.g., 'UNAUTHORIZED_ACCESS', 'ISOLATION_VIOLATION'
+    severity = Column(String(20), nullable=False)  # 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
+    
+    # User and organization context
+    user_id = Column(UUID(as_uuid=True), nullable=True)
+    organization_id = Column(UUID(as_uuid=True), nullable=True)
+    
+    # Event details
+    description = Column(Text, nullable=False)
+    details = Column(Text, nullable=True)  # JSON string
+    
+    # Request context
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    endpoint = Column(String(255), nullable=True)
+    
+    # Resolution tracking
+    resolved = Column(String(20), nullable=False, default='OPEN')  # 'OPEN', 'INVESTIGATING', 'RESOLVED'
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(UUID(as_uuid=True), nullable=True)
+    resolution_notes = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<SecurityEventLog(id={self.id}, event_type='{self.event_type}', severity='{self.severity}')>"
