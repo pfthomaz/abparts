@@ -1,0 +1,138 @@
+# docker-compose.prod.yml - Production Environment
+version: "3.9"
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:15
+    container_name: abparts_db_prod
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-abparts_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-abparts_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data_prod:/var/lib/postgresql/data
+      - ./init_db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Service
+  redis:
+    image: redis:latest
+    container_name: abparts_redis_prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Backend Service
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_api_prod
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
+      REDIS_URL: redis://redis:6379/0
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    volumes:
+      - api_static_images_prod:/app/static/images
+      # No source code mounting in production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    restart: unless-stopped
+
+  # Celery Worker Service
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_celery_worker_prod
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    restart: unless-stopped
+
+  # React Web Frontend (Production Build)
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+      target: production # Use production build stage
+    container_name: abparts_web_prod
+    ports:
+      - "81:80" # Nginx serving on port 80, exposed as 81
+    environment:
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+  # Optional: PgAdmin (can be disabled in production)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: abparts_pgadmin_prod
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+    volumes:
+      - pgadmin_data_prod:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - admin # Only start with --profile admin
+
+volumes:
+  db_data_prod:
+  redis_data_prod:
+  pgadmin_data_prod:
+  api_static_images_prod:

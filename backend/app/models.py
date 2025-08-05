@@ -253,7 +253,7 @@ class Machine(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
-    model_type = Column(ENUM(MachineModelType, name='machinemodeltype'), nullable=False)
+    model_type = Column(String(10), nullable=False)
     name = Column(String(255), nullable=False)
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
     purchase_date = Column(DateTime(timezone=True), nullable=True)
