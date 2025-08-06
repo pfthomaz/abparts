@@ -1,6 +1,6 @@
 // frontend/src/components/MaintenanceForm.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../AuthContext';
 
 const MaintenanceForm = ({ machineId, initialData = {}, onSubmit, onClose }) => {
@@ -19,23 +19,26 @@ const MaintenanceForm = ({ machineId, initialData = {}, onSubmit, onClose }) => 
   const [loading, setLoading] = useState(false);
 
   const { user } = useAuth();
+  const initializedRef = useRef(false);
 
   const maintenanceTypes = [
-    'routine',
-    'preventive',
-    'corrective',
-    'emergency',
+    'scheduled',
+    'unscheduled',
+    'repair',
     'inspection',
     'cleaning',
     'calibration',
-    'repair',
-    'replacement',
-    'upgrade',
     'other'
   ];
 
+  // Initialize form data only once when component mounts
   useEffect(() => {
-    if (initialData.id) {
+    if (initializedRef.current) return; // Prevent re-initialization
+
+    const userId = user?.id || '';
+
+    if (initialData?.id) {
+      // Editing existing maintenance record
       setFormData({
         machine_id: machineId,
         maintenance_date: initialData.maintenance_date ?
@@ -44,21 +47,28 @@ const MaintenanceForm = ({ machineId, initialData = {}, onSubmit, onClose }) => 
         description: initialData.description || '',
         duration_hours: initialData.duration_hours || '',
         cost: initialData.cost || '',
-        performed_by_user_id: initialData.performed_by_user_id || user?.id || '',
+        performed_by_user_id: initialData.performed_by_user_id || userId,
         next_maintenance_date: initialData.next_maintenance_date ?
           new Date(initialData.next_maintenance_date).toISOString().split('T')[0] : '',
         parts_used: initialData.parts_used || []
       });
     } else {
-      // Set defaults for new maintenance record
-      setFormData(prev => ({
-        ...prev,
+      // Creating new maintenance record
+      setFormData({
         machine_id: machineId,
         maintenance_date: new Date().toISOString().split('T')[0],
-        performed_by_user_id: user?.id || ''
-      }));
+        maintenance_type: '',
+        description: '',
+        duration_hours: '',
+        cost: '',
+        performed_by_user_id: userId,
+        next_maintenance_date: '',
+        parts_used: []
+      });
     }
-  }, [initialData, machineId, user]);
+
+    initializedRef.current = true; // Mark as initialized
+  }, []); // Empty dependency array - only run once on mount
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -81,15 +91,18 @@ const MaintenanceForm = ({ machineId, initialData = {}, onSubmit, onClose }) => 
     }
 
     try {
-      // Convert date strings to ISO format for API
+      // Convert date strings to ISO format for API and map field names
       const submitData = {
         ...formData,
         maintenance_date: new Date(formData.maintenance_date).toISOString(),
         next_maintenance_date: formData.next_maintenance_date ?
           new Date(formData.next_maintenance_date).toISOString() : null,
-        duration_hours: formData.duration_hours ? parseFloat(formData.duration_hours) : null,
+        hours_spent: formData.duration_hours ? parseFloat(formData.duration_hours) : null, // Map duration_hours to hours_spent
         cost: formData.cost ? parseFloat(formData.cost) : null
       };
+
+      // Remove the old field name
+      delete submitData.duration_hours;
 
       await onSubmit(submitData);
     } catch (err) {
