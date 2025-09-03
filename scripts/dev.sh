@@ -13,7 +13,7 @@ echo "🚀 Starting ABParts Development Environment..."
 case "$1" in
   "start")
     echo "Starting development services..."
-    docker-compose -f docker-compose.dev.yml --env-file .env.development up -d
+    docker compose -f docker-compose.dev.yml --env-file .env.development up -d
     echo "✅ Development environment started!"
     echo "🌐 Frontend: http://localhost:3000"
     echo "🔧 API: http://localhost:8000"
@@ -21,24 +21,24 @@ case "$1" in
     ;;
   "stop")
     echo "Stopping development services..."
-    docker-compose -f docker-compose.dev.yml down
+    docker compose -f docker-compose.dev.yml down
     echo "✅ Development environment stopped!"
     ;;
   "restart")
     echo "Restarting development services..."
-    docker-compose -f docker-compose.dev.yml --env-file .env.development restart
+    docker compose -f docker-compose.dev.yml --env-file .env.development restart
     echo "✅ Development environment restarted!"
     ;;
   "build")
     echo "Building development services..."
-    docker-compose -f docker-compose.dev.yml --env-file .env.development build --no-cache
+    docker compose -f docker-compose.dev.yml --env-file .env.development build --no-cache
     echo "✅ Development services built!"
     ;;
   "logs")
-    docker-compose -f docker-compose.dev.yml logs -f ${2:-}
+    docker compose -f docker-compose.dev.yml logs -f ${2:-}
     ;;
   "shell")
-    docker-compose -f docker-compose.dev.yml exec ${2:-api} /bin/sh
+    docker compose -f docker-compose.dev.yml exec ${2:-api} /bin/sh
     ;;
   *)
     echo "Usage: $0 {start|stop|restart|build|logs [service]|shell [service]}"
