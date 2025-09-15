@@ -15,15 +15,15 @@ case "$1" in
     echo "Starting production services..."
     docker compose -f docker-compose.prod.yml --env-file .env.production up -d
     echo "✅ Production environment started!"
-    echo "🌐 Frontend: http://46.62.153.166:81"
-    echo "🔧 API: http://46.62.153.166:8001"
+    echo "🌐 Frontend: http://46.62.153.166:80"
+    echo "🔧 API: http://46.62.153.166:8000"
     ;;
   "start-with-admin")
     echo "Starting production services with PgAdmin..."
     docker compose -f docker-compose.prod.yml --env-file .env.production --profile admin up -d
     echo "✅ Production environment started with admin tools!"
-    echo "🌐 Frontend: http://46.62.153.166:81"
-    echo "🔧 API: http://46.62.153.166:8001"
+    echo "🌐 Frontend: http://46.62.153.166:80"
+    echo "🔧 API: http://46.62.153.166:8000"
     echo "📊 PgAdmin: http://46.62.153.166:8080"
     ;;
   "stop")

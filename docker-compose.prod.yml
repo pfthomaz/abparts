@@ -3,10 +3,10 @@
 services:
   # PostgreSQL Database Service
   db:
-    image: postgres:15
+    image: postgres:16
     container_name: abparts_db_prod
     ports:
-      - "5434:5432"
+      - "5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-abparts_prod}
       POSTGRES_USER: ${POSTGRES_USER:-abparts_user}
@@ -44,7 +44,7 @@ services:
       dockerfile: Dockerfile.backend
     container_name: abparts_api_prod
     ports:
-      - "8001:8000"
+      - "8000:8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
       REDIS_URL: redis://redis:6379/0
@@ -59,8 +59,10 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-production}
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      FORCE_HTTPS: ${FORCE_HTTPS}
     volumes:
-      - api_static_images_prod:/app/static/images
+      #- api_static_images_prod:/app/static/images
+      - /var/lib/abparts/images:/app/static/images
       # No source code mounting in production
     depends_on:
       db:
@@ -103,7 +105,7 @@ services:
       target: production # Use production build stage
     container_name: abparts_web_prod
     ports:
-      - "81:80" # Nginx serving on port 80, exposed as 81
+      - "80:80" # Nginx serving on port 80, exposed as 81
     environment:
       REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
     depends_on:

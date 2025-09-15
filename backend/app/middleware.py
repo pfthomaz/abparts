@@ -40,7 +40,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
         # Add HTTPS-specific security headers for production
-        if self.is_production or self.is_https:
+        #if self.is_production or self.is_https:
+        if self.is_https:
             # Force HTTPS for 1 year (31536000 seconds)
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
             
@@ -49,7 +50,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net; "
                 "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
-                "img-src 'self' data: cdn.jsdelivr.net; "
+                "img-src 'self' data: cdn.jsdelivr.net fastapi.tiangolo.com; "
                 "font-src 'self' cdn.jsdelivr.net; "
                 "connect-src 'self'; "
                 "upgrade-insecure-requests"
@@ -57,7 +58,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         else:
             # More permissive CSP for development
             if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
-                response.headers["Content-Security-Policy"] = "default-src 'self' cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net"
+               #response.headers["Content-Security-Policy"] = "default-src 'self' cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net"
+               response.headers["Content-Security-Policy"] = "default-src 'self' cdn.jsdelivr.net; img-src 'self' data: fastapi.tiangolo.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net"
             else:
                 response.headers["Content-Security-Policy"] = "default-src 'self'"
         
@@ -605,7 +607,8 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         # Only redirect in production or when FORCE_HTTPS is enabled
-        if (self.force_https or self.is_production) and request.url.scheme == "http":
+        # if (self.force_https or self.is_production) and request.url.scheme == "http":
+        if self.force_https and request.url.scheme == "http":
             # Build HTTPS URL
             https_url = request.url.replace(scheme="https")
             

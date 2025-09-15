@@ -71,6 +71,7 @@ app = FastAPI(
     title="ABParts API",
     description="API for managing AutoBoss parts inventory and customer stock.",
     version="0.1.0",
+    openapi_version="3.1.0",
     swagger_ui_parameters={
         "persistAuthorization": True,
         "displayRequestDuration": True,
@@ -78,6 +79,11 @@ app = FastAPI(
         "filter": True,
         "tryItOutEnabled": True
     },
+    # Use latest Swagger UI (supports OpenAPI 3.1.0)
+    swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+    swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    #swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui-bundle.js",
+    #swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui.css",
     docs_url=None,  # Disable automatic docs
     redoc_url=None,  # Disable automatic redoc
 )
