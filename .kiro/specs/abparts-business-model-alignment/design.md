@@ -9,7 +9,7 @@ This design document outlines the architectural changes needed to align the ABPa
 The system is designed to efficiently handle:
 - **100 customer organizations** with hierarchical relationships
 - **200 total users** with role-based access control
-- **200 parts catalog** with complex classification and inventory tracking
+- **Unlimited parts catalog** with complex classification and inventory tracking, optimized for performance
 - **150 AutoBoss machines** with usage history and maintenance tracking
 - **150 warehouses** across all organizations with real-time inventory
 - **7,500 transactions per year** (50 per machine) with full audit trail

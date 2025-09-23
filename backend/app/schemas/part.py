@@ -175,3 +175,22 @@ class PartReorderSuggestion(BaseModel):
     
     class Config:
         from_attributes = True
+
+# --- Enhanced Parts List Response Schemas ---
+class PartsListResponse(BaseModel):
+    """Response schema for parts list endpoints with optional count"""
+    items: List[PartResponse]
+    total_count: Optional[int] = None
+    has_more: bool = False
+    
+    class Config:
+        from_attributes = True
+
+class PartsWithInventoryListResponse(BaseModel):
+    """Response schema for parts with inventory list endpoints with optional count"""
+    items: List[PartWithInventoryResponse]
+    total_count: Optional[int] = None
+    has_more: bool = False
+    
+    class Config:
+        from_attributes = True

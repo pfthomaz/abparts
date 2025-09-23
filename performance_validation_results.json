@@ -1,0 +1,196 @@
+{
+  "system_info": {
+    "total_parts": 3,
+    "total_organizations": 19,
+    "total_warehouses": 21
+  },
+  "test_timestamp": "2025-09-23 00:21:33",
+  "api_response_times": {
+    "endpoint_tests": [
+      {
+        "endpoint": "Get parts (limit 100)",
+        "url": "/parts/",
+        "iterations": 10,
+        "avg_response_time": 0.025769376754760744,
+        "min_response_time": 0.019257545471191406,
+        "max_response_time": 0.03751420974731445,
+        "median_response_time": 0.022719383239746094,
+        "errors": 0,
+        "success_rate": 100.0
+      },
+      {
+        "endpoint": "Get parts (limit 50)",
+        "url": "/parts/",
+        "iterations": 10,
+        "avg_response_time": 0.023067355155944824,
+        "min_response_time": 0.015037059783935547,
+        "max_response_time": 0.03815770149230957,
+        "median_response_time": 0.018572568893432617,
+        "errors": 0,
+        "success_rate": 100.0
+      },
+      {
+        "endpoint": "Get parts (limit 10)",
+        "url": "/parts/",
+        "iterations": 10,
+        "avg_response_time": 0.019929122924804688,
+        "min_response_time": 0.014148473739624023,
+        "max_response_time": 0.02796316146850586,
+        "median_response_time": 0.019659876823425293,
+        "errors": 0,
+        "success_rate": 100.0
+      },
+      {
+        "endpoint": "Get organizations",
+        "url": "/organizations/",
+        "iterations": 10,
+        "avg_response_time": 0.02223989963531494,
+        "min_response_time": 0.012824296951293945,
+        "max_response_time": 0.04074454307556152,
+        "median_response_time": 0.017844676971435547,
+        "errors": 0,
+        "success_rate": 100.0
+      },
+      {
+        "endpoint": "Get warehouses",
+        "url": "/warehouses/",
+        "iterations": 10,
+        "avg_response_time": 0.021418380737304687,
+        "min_response_time": 0.011211395263671875,
+        "max_response_time": 0.06067252159118652,
+        "median_response_time": 0.01625359058380127,
+        "errors": 0,
+        "success_rate": 100.0
+      }
+    ]
+  },
+  "search_performance": {
+    "search_tests": [
+      {
+        "query": "",
+        "description": "Empty search (all parts)",
+        "avg_response_time": 0.030327701568603517,
+        "avg_result_count": 3,
+        "errors": 0,
+        "success": true
+      },
+      {
+        "query": "part",
+        "description": "Generic search term",
+        "avg_response_time": 0.024135398864746093,
+        "avg_result_count": 3,
+        "errors": 0,
+        "success": true
+      },
+      {
+        "query": "test",
+        "description": "Test search term",
+        "avg_response_time": 0.025043725967407227,
+        "avg_result_count": 3,
+        "errors": 0,
+        "success": true
+      },
+      {
+        "query": "nonexistent",
+        "description": "No results search",
+        "avg_response_time": 0.0220339298248291,
+        "avg_result_count": 3,
+        "errors": 0,
+        "success": true
+      }
+    ]
+  },
+  "pagination_performance": {
+    "pagination_tests": [
+      {
+        "limit": 10,
+        "pages_tested": 3,
+        "avg_page_time": 0.022157589594523113,
+        "min_page_time": 0.019020795822143555,
+        "max_page_time": 0.024689912796020508,
+        "success": true
+      },
+      {
+        "limit": 25,
+        "pages_tested": 2,
+        "avg_page_time": 0.02328193187713623,
+        "min_page_time": 0.018967866897583008,
+        "max_page_time": 0.027595996856689453,
+        "success": true
+      },
+      {
+        "limit": 50,
+        "pages_tested": 2,
+        "avg_page_time": 0.033262014389038086,
+        "min_page_time": 0.032569169998168945,
+        "max_page_time": 0.03395485877990723,
+        "success": true
+      }
+    ]
+  },
+  "concurrent_access": {
+    "concurrent_requests": 5,
+    "total_time": 0.15426397323608398,
+    "successful_requests": 5,
+    "failed_requests": 0,
+    "average_response_time": 0.14238905906677246,
+    "requests_per_second": 32.411974715237314,
+    "detailed_results": [
+      {
+        "request_id": 0,
+        "success": true,
+        "status_code": 200,
+        "response_time": 0.14340567588806152,
+        "result_count": 3
+      },
+      {
+        "request_id": 2,
+        "success": true,
+        "status_code": 200,
+        "response_time": 0.13955235481262207,
+        "result_count": 3
+      },
+      {
+        "request_id": 1,
+        "success": true,
+        "status_code": 200,
+        "response_time": 0.14781665802001953,
+        "result_count": 3
+      },
+      {
+        "request_id": 3,
+        "success": true,
+        "status_code": 200,
+        "response_time": 0.14223122596740723,
+        "result_count": 3
+      },
+      {
+        "request_id": 4,
+        "success": true,
+        "status_code": 200,
+        "response_time": 0.13893938064575195,
+        "result_count": 3
+      }
+    ]
+  },
+  "validation": {
+    "requirements_validation": {
+      "2.1": {
+        "requirement": "API response times < 2 seconds",
+        "max_response_time": 0.025769376754760744,
+        "status": "PASS"
+      },
+      "2.2": {
+        "requirement": "Pagination response time < 1 second",
+        "max_pagination_time": 0.033262014389038086,
+        "status": "PASS"
+      },
+      "2.3": {
+        "requirement": "Search response time < 2 seconds",
+        "max_search_time": 0.030327701568603517,
+        "status": "PASS"
+      }
+    },
+    "overall_status": "PASS"
+  }
+}

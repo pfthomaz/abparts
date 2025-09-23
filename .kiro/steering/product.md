@@ -16,10 +16,16 @@ ABParts is an inventory and order management system for AutoBoss net cleaner par
 
 - Maximum 100 customer organizations
 - Maximum 200 total users across all organizations  
-- Maximum 200 different parts in catalog
+- Parts catalog scales efficiently with proper indexing and pagination
 - Maximum 150 AutoBoss machines deployed
 - Maximum 150 warehouses across all organizations
 - Maximum 7,500 transactions per year
+
+## Performance Considerations
+
+- **Parts Management**: System optimized for large parts catalogs through database indexing, efficient pagination, and search optimization
+- **Database Performance**: Composite indexes on frequently queried fields ensure fast retrieval regardless of catalog size
+- **API Scalability**: Pagination and caching strategies maintain responsive performance with growing datasets
 
 ## Core Features
 

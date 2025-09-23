@@ -22,10 +22,15 @@ The database properly represents the AutoBoss parts ecosystem:
 The schema is optimized for:
 - Maximum 100 customer organizations
 - Maximum 200 total users across all organizations
-- Maximum 200 different parts in catalog
+- Parts catalog with efficient indexing for unlimited scalability
 - Maximum 150 AutoBoss machines deployed
 - Maximum 150 warehouses across all organizations
 - Maximum 7,500 transactions per year
+
+### **Performance Optimizations**
+- **Parts Table**: Indexed on part_number (unique), part_type, and manufacturer for fast queries
+- **Composite Indexes**: Optimized for common filtering patterns (type + proprietary status)
+- **Full-Text Search**: Indexed search capabilities for multilingual part names
 
 ---
 
@@ -177,7 +182,7 @@ CREATE INDEX idx_parts_name ON parts(name);
 
 **Business Rules:**
 - Part numbers must be unique across the system
-- Maximum 200 different parts in catalog (enforced by application)
+- Parts catalog scales efficiently with proper database indexing
 - Proprietary parts (is_proprietary = true) are manufactured by BossAqua
 - Consumable parts tracked in whole units, bulk_material supports decimals
 

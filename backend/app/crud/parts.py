@@ -2,7 +2,8 @@
 
 import uuid
 import logging
-from typing import List, Optional, Dict, Any
+import time
+from typing import List, Optional, Dict, Any, Tuple
 from decimal import Decimal
 from datetime import datetime, timedelta
 
@@ -11,23 +12,33 @@ from sqlalchemy import and_, func, desc, text
 from fastapi import HTTPException, status
 
 from .. import models, schemas # Import models and schemas
+from ..performance_monitoring import monitor_performance
 
 logger = logging.getLogger(__name__)
 
+@monitor_performance("parts_crud.get_part")
 def get_part(db: Session, part_id: uuid.UUID):
     """Retrieve a single part by ID."""
     return db.query(models.Part).filter(models.Part.id == part_id).first()
 
+@monitor_performance("parts_crud.get_part_with_monitoring")
+def get_part_with_monitoring(db: Session, part_id: uuid.UUID):
+    """Retrieve a single part by ID with performance monitoring."""
+    return db.query(models.Part).filter(models.Part.id == part_id).first()
+
+@monitor_performance("parts_crud.get_parts", param_keys=["skip", "limit"])
 def get_parts(db: Session, skip: int = 0, limit: int = 100):
     """Retrieve a list of parts."""
     return db.query(models.Part).offset(skip).limit(limit).all()
 
+@monitor_performance("parts_crud.create_part")
 def create_part(db: Session, part: schemas.PartCreate):
     """Create a new part."""
     # The image_urls field is already a list from the schema, pass it directly
     db_part = models.Part(**part.dict())
     try:
         db.add(db_part)
+        db.flush()  # Flush to get the ID without committing
         db.commit()
         db.refresh(db_part)
         return db_part
@@ -38,6 +49,7 @@ def create_part(db: Session, part: schemas.PartCreate):
         logger.error(f"Error creating part: {e}")
         raise HTTPException(status_code=400, detail="Error creating part")
 
+@monitor_performance("parts_crud.update_part")
 def update_part(db: Session, part_id: uuid.UUID, part_update: schemas.PartUpdate):
     """Update an existing part."""
     db_part = db.query(models.Part).filter(models.Part.id == part_id).first()
@@ -59,6 +71,7 @@ def update_part(db: Session, part_id: uuid.UUID, part_update: schemas.PartUpdate
         logger.error(f"Error updating part: {e}")
         raise HTTPException(status_code=400, detail="Error updating part")
 
+@monitor_performance("parts_crud.delete_part")
 def delete_part(db: Session, part_id: uuid.UUID):
     """Delete a part by ID."""
     db_part = db.query(models.Part).filter(models.Part.id == part_id).first()
@@ -73,6 +86,7 @@ def delete_part(db: Session, part_id: uuid.UUID):
         logger.error(f"Error deleting part: {e}")
         raise HTTPException(status_code=400, detail="Error deleting part. Check for dependent records.")
 
+@monitor_performance("parts_crud.get_filtered_parts", param_keys=["part_type", "is_proprietary", "skip", "limit"])
 def get_filtered_parts(db: Session, part_type: Optional[str] = None, is_proprietary: Optional[bool] = None, skip: int = 0, limit: int = 100):
     """
     Retrieve a filtered list of parts based on type and origin.
@@ -105,6 +119,56 @@ def get_filtered_parts(db: Session, part_type: Optional[str] = None, is_propriet
     # Apply pagination
     return query.offset(skip).limit(limit).all()
 
+@monitor_performance("parts_crud.get_filtered_parts_with_count", param_keys=["part_type", "is_proprietary", "skip", "limit", "include_count"])
+def get_filtered_parts_with_count(db: Session, part_type: Optional[str] = None, is_proprietary: Optional[bool] = None, 
+                                 skip: int = 0, limit: int = 100, include_count: bool = False) -> Dict[str, Any]:
+    """
+    Retrieve a filtered list of parts with optional total count.
+    
+    Args:
+        db: Database session
+        part_type: Filter by part type (consumable or bulk_material)
+        is_proprietary: Filter by proprietary status
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        include_count: Whether to include total count (impacts performance)
+        
+    Returns:
+        Dictionary with items, total_count (if requested), and has_more flag
+    """
+    query = db.query(models.Part)
+    
+    # Apply filters if provided
+    if part_type:
+        try:
+            enum_part_type = models.PartType(part_type)
+            query = query.filter(models.Part.part_type == enum_part_type)
+        except ValueError:
+            logger.warning(f"Invalid part_type filter: {part_type}")
+    
+    if is_proprietary is not None:
+        query = query.filter(models.Part.is_proprietary == is_proprietary)
+    
+    # Get total count if requested (expensive operation)
+    total_count = None
+    if include_count:
+        total_count = query.count()
+    
+    # Get paginated results
+    items = query.offset(skip).limit(limit + 1).all()  # Get one extra to check if there are more
+    
+    # Check if there are more items
+    has_more = len(items) > limit
+    if has_more:
+        items = items[:limit]  # Remove the extra item
+    
+    return {
+        "items": items,
+        "total_count": total_count,
+        "has_more": has_more
+    }
+
+@monitor_performance("parts_crud.search_parts", param_keys=["part_type", "is_proprietary", "skip", "limit"])
 def search_parts(db: Session, search_term: str, part_type: Optional[str] = None, is_proprietary: Optional[bool] = None, skip: int = 0, limit: int = 100):
     """
     Search parts by name or part number with optional filtering by type and origin.
@@ -181,6 +245,7 @@ def validate_multilingual_name(name: str) -> bool:
     
     return True
 
+@monitor_performance("parts_crud.search_parts_multilingual", param_keys=["part_type", "is_proprietary", "skip", "limit"])
 def search_parts_multilingual(db: Session, search_term: str, part_type: Optional[str] = None, 
                              is_proprietary: Optional[bool] = None, skip: int = 0, limit: int = 100):
     """
@@ -241,6 +306,78 @@ def search_parts_multilingual(db: Session, search_term: str, part_type: Optional
     # Apply pagination and return results
     return query.offset(skip).limit(limit).all()
 
+@monitor_performance("parts_crud.search_parts_multilingual_with_count", param_keys=["part_type", "is_proprietary", "skip", "limit", "include_count"])
+def search_parts_multilingual_with_count(db: Session, search_term: str, part_type: Optional[str] = None, 
+                                        is_proprietary: Optional[bool] = None, skip: int = 0, limit: int = 100,
+                                        include_count: bool = False) -> Dict[str, Any]:
+    """
+    Enhanced search for parts with multilingual name support and optional count.
+    
+    Args:
+        db: Database session
+        search_term: Search term for multilingual names, part numbers, etc.
+        part_type: Filter by part type (consumable or bulk_material)
+        is_proprietary: Filter by proprietary status
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        include_count: Whether to include total count (impacts performance)
+        
+    Returns:
+        Dictionary with items, total_count (if requested), and has_more flag
+    """
+    from sqlalchemy import or_, func
+    
+    # Create search conditions for multilingual names
+    search_conditions = [
+        models.Part.name.ilike(f"%{search_term}%"),
+        models.Part.part_number.ilike(f"%{search_term}%"),
+        models.Part.description.ilike(f"%{search_term}%")
+    ]
+    
+    # Add search in new fields
+    if hasattr(models.Part, 'manufacturer') and models.Part.manufacturer is not None:
+        search_conditions.append(models.Part.manufacturer.ilike(f"%{search_term}%"))
+    
+    if hasattr(models.Part, 'part_code') and models.Part.part_code is not None:
+        search_conditions.append(models.Part.part_code.ilike(f"%{search_term}%"))
+    
+    if hasattr(models.Part, 'serial_number') and models.Part.serial_number is not None:
+        search_conditions.append(models.Part.serial_number.ilike(f"%{search_term}%"))
+    
+    # Start with base query
+    query = db.query(models.Part).filter(or_(*search_conditions))
+    
+    # Apply additional filters if provided
+    if part_type:
+        try:
+            enum_part_type = models.PartType(part_type)
+            query = query.filter(models.Part.part_type == enum_part_type)
+        except ValueError:
+            logger.warning(f"Invalid part_type filter: {part_type}")
+    
+    if is_proprietary is not None:
+        query = query.filter(models.Part.is_proprietary == is_proprietary)
+    
+    # Get total count if requested (expensive operation)
+    total_count = None
+    if include_count:
+        total_count = query.count()
+    
+    # Get paginated results
+    items = query.offset(skip).limit(limit + 1).all()  # Get one extra to check if there are more
+    
+    # Check if there are more items
+    has_more = len(items) > limit
+    if has_more:
+        items = items[:limit]  # Remove the extra item
+    
+    return {
+        "items": items,
+        "total_count": total_count,
+        "has_more": has_more
+    }
+
+@monitor_performance("parts_crud.create_part_enhanced")
 def create_part_enhanced(db: Session, part: schemas.PartCreate):
     """
     Enhanced part creation with multilingual name support and new field validation.
@@ -261,8 +398,14 @@ def create_part_enhanced(db: Session, part: schemas.PartCreate):
         # Create part with all fields
         db_part = models.Part(**part.dict())
         
+        # Use a separate transaction to avoid conflicts
         db.add(db_part)
+        db.flush()  # Flush to get the ID without committing
+        
+        # Commit the transaction
         db.commit()
+        
+        # Refresh to get the latest data
         db.refresh(db_part)
         
         logger.info(f"Created part with enhanced fields: {db_part.id}")
@@ -275,6 +418,7 @@ def create_part_enhanced(db: Session, part: schemas.PartCreate):
         logger.error(f"Error creating enhanced part: {e}")
         raise HTTPException(status_code=400, detail="Error creating part")
 
+@monitor_performance("parts_crud.update_part_enhanced")
 def update_part_enhanced(db: Session, part_id: uuid.UUID, part_update: schemas.PartUpdate):
     """
     Enhanced part update with multilingual name support and new field validation.
@@ -316,6 +460,7 @@ def update_part_enhanced(db: Session, part_id: uuid.UUID, part_update: schemas.P
         logger.error(f"Error updating enhanced part: {e}")
         raise HTTPException(status_code=400, detail="Error updating part")
 
+@monitor_performance("parts_crud.delete_part_enhanced")
 def delete_part_enhanced(db: Session, part_id: uuid.UUID):
     """
     Enhanced part deletion with proper validation.
@@ -373,6 +518,7 @@ def delete_part_enhanced(db: Session, part_id: uuid.UUID):
         db.rollback()
         logger.error(f"Error deleting enhanced part: {e}")
         raise HTTPException(status_code=400, detail="Error deleting part")
+@monitor_performance("parts_crud.get_part_with_inventory")
 def get_part_with_inventory(db: Session, part_id: uuid.UUID, organization_id: Optional[uuid.UUID] = None):
     """
     Retrieve a single part by ID with inventory information across all warehouses.
@@ -438,6 +584,7 @@ def get_part_with_inventory(db: Session, part_id: uuid.UUID, organization_id: Op
     
     return result
 
+@monitor_performance("parts_crud.get_parts_with_inventory", param_keys=["part_type", "is_proprietary", "skip", "limit"])
 def get_parts_with_inventory(db: Session, organization_id: Optional[uuid.UUID] = None, 
                             part_type: Optional[str] = None, is_proprietary: Optional[bool] = None, 
                             skip: int = 0, limit: int = 100):
@@ -480,6 +627,65 @@ def get_parts_with_inventory(db: Session, organization_id: Optional[uuid.UUID] =
     
     return result
 
+@monitor_performance("parts_crud.get_parts_with_inventory_with_count", param_keys=["part_type", "is_proprietary", "skip", "limit", "include_count"])
+def get_parts_with_inventory_with_count(db: Session, organization_id: Optional[uuid.UUID] = None, 
+                                       part_type: Optional[str] = None, is_proprietary: Optional[bool] = None, 
+                                       skip: int = 0, limit: int = 100, include_count: bool = False) -> Dict[str, Any]:
+    """
+    Retrieve a list of parts with inventory information and optional count.
+    
+    Args:
+        db: Database session
+        organization_id: Optional organization ID to filter warehouses
+        part_type: Filter by part type (consumable or bulk_material)
+        is_proprietary: Filter by proprietary status
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        include_count: Whether to include total count (impacts performance)
+        
+    Returns:
+        Dictionary with items, total_count (if requested), and has_more flag
+    """
+    # Start with base query for parts
+    parts_query = db.query(models.Part)
+    
+    # Apply filters if provided
+    if part_type:
+        try:
+            enum_part_type = models.PartType(part_type)
+            parts_query = parts_query.filter(models.Part.part_type == enum_part_type)
+        except ValueError:
+            logger.warning(f"Invalid part_type filter: {part_type}")
+    
+    if is_proprietary is not None:
+        parts_query = parts_query.filter(models.Part.is_proprietary == is_proprietary)
+    
+    # Get total count if requested (expensive operation)
+    total_count = None
+    if include_count:
+        total_count = parts_query.count()
+    
+    # Get paginated results
+    parts = parts_query.offset(skip).limit(limit + 1).all()  # Get one extra to check if there are more
+    
+    # Check if there are more items
+    has_more = len(parts) > limit
+    if has_more:
+        parts = parts[:limit]  # Remove the extra item
+    
+    # Get inventory information for these parts
+    result_items = []
+    for part in parts:
+        part_with_inventory = get_part_with_inventory(db, part.id, organization_id)
+        result_items.append(part_with_inventory)
+    
+    return {
+        "items": result_items,
+        "total_count": total_count,
+        "has_more": has_more
+    }
+
+@monitor_performance("parts_crud.get_part_usage_history", param_keys=["days"])
 def get_part_usage_history(db: Session, part_id: uuid.UUID, organization_id: Optional[uuid.UUID] = None, 
                           days: int = 90):
     """
@@ -532,6 +738,7 @@ def get_part_usage_history(db: Session, part_id: uuid.UUID, organization_id: Opt
     
     return usage_history
 
+@monitor_performance("parts_crud.get_part_with_usage_history", param_keys=["days"])
 def get_part_with_usage_history(db: Session, part_id: uuid.UUID, organization_id: Optional[uuid.UUID] = None, 
                                days: int = 90):
     """
@@ -586,6 +793,7 @@ def get_part_with_usage_history(db: Session, part_id: uuid.UUID, organization_id
     
     return result
 
+@monitor_performance("parts_crud.get_parts_reorder_suggestions", param_keys=["threshold_days", "limit"])
 def get_parts_reorder_suggestions(db: Session, organization_id: Optional[uuid.UUID] = None, 
                                  threshold_days: int = 30, limit: int = 10):
     """
@@ -638,6 +846,7 @@ def get_parts_reorder_suggestions(db: Session, organization_id: Optional[uuid.UU
     # Limit the number of suggestions
     return suggestions[:limit]
 
+@monitor_performance("parts_crud.search_parts_with_inventory", param_keys=["part_type", "is_proprietary", "skip", "limit"])
 def search_parts_with_inventory(db: Session, search_term: str, organization_id: Optional[uuid.UUID] = None,
                                part_type: Optional[str] = None, is_proprietary: Optional[bool] = None,
                                skip: int = 0, limit: int = 100):
@@ -688,3 +897,70 @@ def search_parts_with_inventory(db: Session, search_term: str, organization_id: 
         result.append(part_with_inventory)
     
     return result
+
+@monitor_performance("parts_crud.search_parts_with_inventory_with_count", param_keys=["part_type", "is_proprietary", "skip", "limit", "include_count"])
+def search_parts_with_inventory_with_count(db: Session, search_term: str, organization_id: Optional[uuid.UUID] = None,
+                                          part_type: Optional[str] = None, is_proprietary: Optional[bool] = None,
+                                          skip: int = 0, limit: int = 100, include_count: bool = False) -> Dict[str, Any]:
+    """
+    Search parts by name or part number with inventory context and optional count.
+    
+    Args:
+        db: Database session
+        search_term: Search term for part name or part number
+        organization_id: Optional organization ID to filter warehouses
+        part_type: Filter by part type (consumable or bulk_material)
+        is_proprietary: Filter by proprietary status
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        include_count: Whether to include total count (impacts performance)
+        
+    Returns:
+        Dictionary with items, total_count (if requested), and has_more flag
+    """
+    from sqlalchemy import or_
+    
+    # Start with base query
+    query = db.query(models.Part).filter(
+        or_(
+            models.Part.name.ilike(f"%{search_term}%"),
+            models.Part.part_number.ilike(f"%{search_term}%"),
+            models.Part.description.ilike(f"%{search_term}%")
+        )
+    )
+    
+    # Apply additional filters if provided
+    if part_type:
+        try:
+            enum_part_type = models.PartType(part_type)
+            query = query.filter(models.Part.part_type == enum_part_type)
+        except ValueError:
+            logger.warning(f"Invalid part_type filter: {part_type}")
+    
+    if is_proprietary is not None:
+        query = query.filter(models.Part.is_proprietary == is_proprietary)
+    
+    # Get total count if requested (expensive operation)
+    total_count = None
+    if include_count:
+        total_count = query.count()
+    
+    # Get paginated results
+    parts = query.offset(skip).limit(limit + 1).all()  # Get one extra to check if there are more
+    
+    # Check if there are more items
+    has_more = len(parts) > limit
+    if has_more:
+        parts = parts[:limit]  # Remove the extra item
+    
+    # Get inventory information for these parts
+    result_items = []
+    for part in parts:
+        part_with_inventory = get_part_with_inventory(db, part.id, organization_id)
+        result_items.append(part_with_inventory)
+    
+    return {
+        "items": result_items,
+        "total_count": total_count,
+        "has_more": has_more
+    }

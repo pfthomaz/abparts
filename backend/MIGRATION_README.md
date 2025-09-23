@@ -196,7 +196,7 @@ The migration system includes comprehensive error handling:
 The migration is designed for the ABParts scale requirements:
 - Maximum 100 customer organizations
 - Maximum 200 total users
-- Maximum 200 different parts
+- Parts catalog with efficient processing for unlimited scalability
 - Maximum 150 warehouses
 - Maximum 7,500 transactions per year
 

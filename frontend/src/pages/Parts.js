@@ -1,19 +1,19 @@
 // frontend/src/pages/Parts.js
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { partsService } from '../services/partsService';
-import { API_BASE_URL } from '../services/api';
 import Modal from '../components/Modal';
 import PartForm from '../components/PartForm';
 import PermissionGuard from '../components/PermissionGuard';
 import { PERMISSIONS, isSuperAdmin } from '../utils/permissions';
 import { useAuth } from '../AuthContext';
-import MultilingualPartName from '../components/MultilingualPartName';
-import PartPhotoGallery from '../components/PartPhotoGallery';
-import PartCategoryBadge, { PartCategoryFilter } from '../components/PartCategoryBadge';
-import LocalizedText, { LocalizedDate, LocalizedNumber } from '../components/LocalizedText';
-import { useLocalization } from '../contexts/LocalizationContext';
 import SuperAdminPartsManager from '../components/SuperAdminPartsManager';
+import PartCard from '../components/PartCard';
+import PartsSearchFilter from '../components/PartsSearchFilter';
+import ProgressiveLoader from '../components/ProgressiveLoader';
+import VirtualizedPartsList from '../components/VirtualizedPartsList';
+import { useDebounceSearch } from '../hooks/useDebounce';
+import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import {
   formatErrorForDisplay,
   isRetryableError,
@@ -25,7 +25,6 @@ import {
 
 const Parts = () => {
   const { user } = useAuth();
-  const { formatDate, formatNumber } = useLocalization();
 
   // Check if user is superadmin first
   const isUserSuperAdmin = isSuperAdmin(user);
@@ -41,6 +40,12 @@ const Parts = () => {
   const [filterProprietary, setFilterProprietary] = useState('all');
   const [filterPartType, setFilterPartType] = useState('all');
 
+  // Debounced search with loading state
+  const { debouncedSearchTerm, isSearching } = useDebounceSearch(searchTerm, 300);
+
+  // Performance monitoring
+  const { renderTime } = usePerformanceMonitor('Parts');
+
   const fetchParts = useCallback(async (isRetry = false) => {
     if (isUserSuperAdmin) return; // Don't fetch if superadmin (they use different component)
 
@@ -51,8 +56,13 @@ const Parts = () => {
     }
 
     try {
-      const data = await partsService.getPartsWithInventory();
-      setParts(data);
+      // Fetch more parts for better user experience (up to 1000)
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      console.log('Fetched parts response:', response); // Debug log
+
+      // Handle the new response format
+      const partsData = response.items || response;
+      setParts(partsData);
       setError(null);
       setRetryCount(0);
     } catch (err) {
@@ -160,16 +170,21 @@ const Parts = () => {
     );
   };
 
+  // Optimized filtering with debounced search term
   const filteredParts = useMemo(() => {
     if (isUserSuperAdmin) return [];
 
     return parts
       .filter(part => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
+        if (!debouncedSearchTerm) return true;
+        const term = debouncedSearchTerm.toLowerCase();
         return (
           part.name.toLowerCase().includes(term) ||
-          part.part_number.toLowerCase().includes(term)
+          part.part_number.toLowerCase().includes(term) ||
+          (part.description && part.description.toLowerCase().includes(term)) ||
+          (part.manufacturer && part.manufacturer.toLowerCase().includes(term)) ||
+          (part.part_code && part.part_code.toLowerCase().includes(term)) ||
+          (part.manufacturer_part_number && part.manufacturer_part_number.toLowerCase().includes(term))
         );
       })
       .filter(part => {
@@ -180,27 +195,18 @@ const Parts = () => {
         if (filterPartType === 'all') return true;
         return part.part_type === filterPartType;
       });
-  }, [parts, searchTerm, filterProprietary, filterPartType, isUserSuperAdmin]);
+  }, [parts, debouncedSearchTerm, filterProprietary, filterPartType, isUserSuperAdmin]);
 
-  const handleCreateOrUpdate = async (partData) => {
-    try {
-      if (editingPart) {
-        await partsService.updatePart(editingPart.id, partData);
-      } else {
-        await partsService.createPart(partData);
-      }
+  // Use virtualized rendering for large datasets (>100 parts)
+  const useVirtualization = filteredParts.length > 100;
 
-      await fetchParts();
-      setShowModal(false);
-      setEditingPart(null);
-    } catch (err) {
-      console.error("Error creating/updating part:", err);
-      // Re-throw to be caught by the form's error handling
-      throw err;
-    }
-  };
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleEditPart = useCallback((part) => {
+    setEditingPart(part);
+    setShowModal(true);
+  }, []);
 
-  const handleDelete = async (partId) => {
+  const handleDeletePart = useCallback(async (partId) => {
     if (!window.confirm("Are you sure you want to delete this part?")) {
       return;
     }
@@ -214,7 +220,54 @@ const Parts = () => {
       const formattedError = formatErrorForDisplay(err, 0);
       setError(formattedError);
     }
+  }, [fetchParts]);
+
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleProprietaryChange = useCallback((value) => {
+    setFilterProprietary(value);
+  }, []);
+
+  const handlePartTypeChange = useCallback((value) => {
+    setFilterPartType(value);
+  }, []);
+
+  const handleCreateOrUpdate = async (partData) => {
+    try {
+      if (editingPart) {
+        await partsService.updatePart(editingPart.id, partData);
+      } else {
+        await partsService.createPart(partData);
+      }
+
+      // Small delay to ensure backend processing is complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Clear search and filters first to ensure new part is visible
+      setSearchTerm('');
+      setFilterProprietary('all');
+      setFilterPartType('all');
+
+      // Clear current parts to force a fresh load
+      setParts([]);
+
+      // Force refresh the parts data with a fresh API call
+      await fetchParts();
+
+      console.log('Parts refreshed after creation/update'); // Debug log
+
+      setShowModal(false);
+      setEditingPart(null);
+    } catch (err) {
+      console.error("Error creating/updating part:", err);
+      // Re-throw to be caught by the form's error handling
+      throw err;
+    }
   };
+
+
 
   const openModal = (part = null) => {
     setEditingPart(part);
@@ -245,14 +298,13 @@ const Parts = () => {
         </PermissionGuard>
       </div>
 
-      {loading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="text-gray-500">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p>{DISPLAY_CONSTANTS.LOADING_MESSAGE}</p>
-          </div>
-        </div>
-      )}
+      <ProgressiveLoader
+        isLoading={loading}
+        isSearching={isSearching}
+        totalItems={parts.length}
+        displayedItems={filteredParts.length}
+        itemType="parts"
+      />
 
       <ErrorDisplay
         error={error}
@@ -260,152 +312,49 @@ const Parts = () => {
         retryCount={retryCount}
       />
 
-      {/* Search and Filter Bar */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-1">
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Search</label>
-            <input
-              type="text"
-              id="search"
-              placeholder="By name or number..."
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor="filterProprietary" className="block text-sm font-medium text-gray-700">Proprietary</label>
-            <select
-              id="filterProprietary"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              value={filterProprietary}
-              onChange={(e) => setFilterProprietary(e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Part Category</label>
-            <PartCategoryFilter
-              value={filterPartType}
-              onChange={setFilterPartType}
-              showAll={true}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Optimized Search and Filter Bar */}
+      <PartsSearchFilter
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        filterProprietary={filterProprietary}
+        onProprietaryChange={handleProprietaryChange}
+        filterPartType={filterPartType}
+        onPartTypeChange={handlePartTypeChange}
+        isSearching={isSearching}
+        resultCount={filteredParts.length}
+      />
 
       {!loading && !error && filteredParts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {filteredParts.map((part) => (
-            <div key={part.id} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200 group">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <MultilingualPartName
-                    value={part.name}
-                    isEditing={false}
-                    preferredLanguage="en"
-                    className="text-2xl font-semibold text-purple-700 mb-2"
-                  />
-                </div>
-                <PartCategoryBadge
-                  partType={part.part_type}
-                  isProprietaryPart={part.is_proprietary}
-                  size="medium"
-                />
-              </div>
-
-              <p className="text-gray-600 mb-1"><span className="font-medium">Part #:</span> {part.part_number}</p>
-              {part.description && <p className="text-gray-600 mb-1"><span className="font-medium">Description:</span> {part.description}</p>}
-              <p className="text-gray-600 mb-1">
-                <span className="font-medium">Unit:</span> {part.unit_of_measure}
-              </p>
-              {part.manufacturer && (
-                <p className="text-gray-600 mb-1">
-                  <span className="font-medium">Manufacturer:</span> {part.manufacturer}
-                </p>
-              )}
-              {part.part_code && (
-                <p className="text-gray-600 mb-1">
-                  <span className="font-medium">Part Code:</span> {part.part_code}
-                </p>
-              )}
-              {part.serial_number && (
-                <p className="text-gray-600 mb-1">
-                  <span className="font-medium">Serial #:</span> {part.serial_number}
-                </p>
-              )}
-              {part.manufacturer_part_number && (
-                <p className="text-gray-600 mb-1">
-                  <span className="font-medium">Mfg Part #:</span> {part.manufacturer_part_number}
-                </p>
-              )}
-
-              {/* Inventory Information */}
-              <div className="mt-3 p-3 bg-gray-100 rounded-md">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium text-gray-700">Total Stock:</span>
-                  <span className={`font-semibold ${part.is_low_stock ? 'text-red-600' : 'text-green-600'}`}>
-                    {part.total_stock || 0} {part.unit_of_measure}
-                    {part.is_low_stock && <span className="ml-1 text-xs">(LOW)</span>}
-                  </span>
-                </div>
-
-                {part.warehouse_inventory && part.warehouse_inventory.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-gray-600">By Warehouse:</span>
-                    {part.warehouse_inventory.map((warehouse, idx) => (
-                      <div key={idx} className="flex justify-between text-sm">
-                        <span className="text-gray-600">{warehouse.warehouse_name}:</span>
-                        <span className={warehouse.is_low_stock ? 'text-red-600' : 'text-gray-800'}>
-                          {warehouse.current_stock} {warehouse.unit_of_measure}
-                          {warehouse.is_low_stock && <span className="ml-1 text-xs">(LOW)</span>}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {(!part.warehouse_inventory || part.warehouse_inventory.length === 0) && (
-                  <p className="text-sm text-gray-500">No inventory data available</p>
-                )}
-              </div>
-
-              {part.image_urls && part.image_urls.length > 0 && (
-                <div className="mt-3">
-                  <span className="font-medium text-gray-600 block mb-2">Images:</span>
-                  <PartPhotoGallery
-                    images={part.image_urls}
-                    isEditing={false}
-                    className="part-images-display"
-                  />
-                </div>
-              )}
-              <p className="text-sm text-gray-400 mt-3">ID: {part.id}</p>
-              <div className="mt-4 flex space-x-2">
-                <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
-                  <button
-                    onClick={() => openModal(part)}
-                    className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
-                  >
-                    Edit
-                  </button>
-                </PermissionGuard>
-                <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
-                  <button
-                    onClick={() => handleDelete(part.id)}
-                    className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
-                  >
-                    Delete
-                  </button>
-                </PermissionGuard>
-              </div>
+        <>
+          {/* Performance indicator for development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              Performance: {filteredParts.length} parts, {renderTime}ms render
+              {useVirtualization && <span className="ml-2 font-semibold">(Virtualized)</span>}
             </div>
-          ))}
-        </div>
+          )}
+
+          {useVirtualization ? (
+            <VirtualizedPartsList
+              parts={filteredParts}
+              onEdit={handleEditPart}
+              onDelete={handleDeletePart}
+              containerHeight={600}
+              itemHeight={400}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {filteredParts.map((part) => (
+                <PartCard
+                  key={part.id}
+                  part={part}
+                  onEdit={handleEditPart}
+                  onDelete={handleDeletePart}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {!loading && !error && filteredParts.length === 0 && (

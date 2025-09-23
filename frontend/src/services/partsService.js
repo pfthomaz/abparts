@@ -87,12 +87,19 @@ const uploadImage = async (formData) => {
 /**
  * Fetches all parts with inventory information across warehouses.
  * @param {object} filters Optional filters for parts and inventory
- * @returns {Promise<Array>} Array of parts with inventory information
+ * @returns {Promise<Object>} Object with items array and metadata
  * @throws {Error} Throws error with user-friendly message
  */
 const getPartsWithInventory = async (filters = {}) => {
   try {
     const queryParams = new URLSearchParams();
+
+    // Always include count for analytics
+    queryParams.append('include_count', 'true');
+
+    // Add cache-busting parameter to ensure fresh data
+    queryParams.append('_t', Date.now().toString());
+
     if (filters && typeof filters === 'object') {
       Object.keys(filters).forEach(key => {
         if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
@@ -102,19 +109,76 @@ const getPartsWithInventory = async (filters = {}) => {
     }
 
     const queryString = queryParams.toString();
-    const endpoint = queryString ? `/parts/with-inventory?${queryString}` : '/parts/with-inventory';
+    const endpoint = queryString ? `/parts/with-inventory?${queryString}` : '/parts/with-inventory?include_count=true';
 
     const response = await api.get(endpoint);
 
-    // Ensure we always return an array, even if the response is malformed
-    if (!Array.isArray(response)) {
-      console.warn('API returned non-array response for parts with inventory:', response);
-      return [];
+    // Handle the correct API response structure: {items: [...], total_count: number, has_more: boolean}
+    if (response && typeof response === 'object' && Array.isArray(response.items)) {
+      return {
+        items: response.items,
+        total_count: response.total_count || response.items.length,
+        has_more: response.has_more || false
+      };
     }
 
-    return response;
+    // Fallback: if response is already an array (for backward compatibility)
+    if (Array.isArray(response)) {
+      return {
+        items: response,
+        total_count: response.length,
+        has_more: false
+      };
+    }
+
+    // If response is malformed, log warning and return empty result
+    console.warn('API returned unexpected response format for parts with inventory:', response);
+    return {
+      items: [],
+      total_count: 0,
+      has_more: false
+    };
   } catch (error) {
     logError(error, 'partsService.getPartsWithInventory');
+    throw error;
+  }
+};
+
+/**
+ * Fetches all parts for analytics (without pagination limits).
+ * @returns {Promise<Object>} Object with all parts and analytics data
+ * @throws {Error} Throws error with user-friendly message
+ */
+const getAllPartsForAnalytics = async () => {
+  try {
+    // Fetch with a high limit to get all parts for analytics
+    const response = await api.get('/parts/with-inventory?include_count=true&limit=10000');
+
+    // Handle the correct API response structure
+    if (response && typeof response === 'object' && Array.isArray(response.items)) {
+      return {
+        items: response.items,
+        total_count: response.total_count || response.items.length,
+        has_more: response.has_more || false
+      };
+    }
+
+    // Fallback: if response is already an array
+    if (Array.isArray(response)) {
+      return {
+        items: response,
+        total_count: response.length,
+        has_more: false
+      };
+    }
+
+    return {
+      items: [],
+      total_count: 0,
+      has_more: false
+    };
+  } catch (error) {
+    logError(error, 'partsService.getAllPartsForAnalytics');
     throw error;
   }
 };
@@ -166,13 +230,19 @@ const searchPartsWithInventory = async (searchTerm, filters = {}) => {
 
     const response = await api.get(`/parts/search-with-inventory?${queryParams.toString()}`);
 
-    // Ensure we always return an array, even if the response is malformed
-    if (!Array.isArray(response)) {
-      console.warn('API returned non-array response for parts search with inventory:', response);
-      return [];
+    // Handle the correct API response structure: {items: [...], total_count: number, has_more: boolean}
+    if (response && typeof response === 'object' && Array.isArray(response.items)) {
+      return response.items;
     }
 
-    return response;
+    // Fallback: if response is already an array (for backward compatibility)
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    // If response is malformed, log warning and return empty array
+    console.warn('API returned unexpected response format for parts search with inventory:', response);
+    return [];
   } catch (error) {
     logError(error, 'partsService.searchPartsWithInventory');
     throw error;
@@ -186,6 +256,7 @@ export const partsService = {
   deletePart,
   uploadImage,
   getPartsWithInventory,
+  getAllPartsForAnalytics,
   getPartWithInventory,
   searchPartsWithInventory,
 };

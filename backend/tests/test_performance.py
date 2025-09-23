@@ -166,8 +166,9 @@ class TestDataModelPerformance:
         db_session.flush()
         data["warehouses"].append(secondary_warehouse)
         
-        # Create parts (up to 200)
-        for i in range(1, 101):  # Create 100 parts
+        # Create parts (configurable, no longer limited to 200)
+        parts_count = 200  # Default for performance tests, can be increased
+        for i in range(1, parts_count + 1):  # Create configurable number of parts
             part_type = PartType.CONSUMABLE if i % 3 != 0 else PartType.BULK_MATERIAL
             is_proprietary = i % 5 == 0
             unit = "pieces" if part_type == PartType.CONSUMABLE else "liters"

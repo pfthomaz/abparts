@@ -15,7 +15,12 @@ if not DATABASE_URL:
     logger.error("DATABASE_URL environment variable is not set.")
     raise ValueError("DATABASE_URL environment variable is not set.")
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Verify connections before use
+    pool_recycle=3600,   # Recycle connections every hour
+    echo=False           # Set to True for SQL debugging
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -36,6 +41,11 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception as e:
+        # Rollback any failed transaction
+        db.rollback()
+        logger.error(f"Database session error: {e}")
+        raise
     finally:
         db.close()
 

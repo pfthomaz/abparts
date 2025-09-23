@@ -494,11 +494,32 @@ def performance_test_data(db_session: Session) -> Dict[str, Any]:
     return {
         "organizations_count": 100,
         "users_count": 200,
-        "parts_count": 200,
+        "parts_count": 1000,  # Updated to support larger datasets
         "machines_count": 150,
         "warehouses_count": 150,
         "transactions_count": 7500
     }
+
+
+@pytest.fixture(scope="function")
+def large_parts_dataset_1k(db_session: Session) -> Dict[str, Any]:
+    """Create dataset with 1,000 parts for performance testing."""
+    from .test_data_generators import generate_large_parts_dataset
+    return generate_large_parts_dataset(db_session, parts_count=1000)
+
+
+@pytest.fixture(scope="function") 
+def large_parts_dataset_5k(db_session: Session) -> Dict[str, Any]:
+    """Create dataset with 5,000 parts for performance testing."""
+    from .test_data_generators import generate_large_parts_dataset
+    return generate_large_parts_dataset(db_session, parts_count=5000)
+
+
+@pytest.fixture(scope="function")
+def large_parts_dataset_10k(db_session: Session) -> Dict[str, Any]:
+    """Create dataset with 10,000+ parts for performance testing."""
+    from .test_data_generators import generate_large_parts_dataset
+    return generate_large_parts_dataset(db_session, parts_count=10000)
 
 
 # Utility functions for tests

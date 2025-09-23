@@ -33,10 +33,15 @@ The API now properly represents the AutoBoss parts ecosystem:
 The API is designed to efficiently handle:
 - Maximum 100 customer organizations
 - Maximum 200 total users across all organizations
-- Maximum 200 different parts in catalog
+- Parts catalog with efficient pagination and search capabilities
 - Maximum 150 AutoBoss machines deployed
 - Maximum 150 warehouses across all organizations
 - Maximum 7,500 transactions per year (50 per machine)
+
+### **Performance Features**
+- **Parts API**: Optimized pagination (up to 1000 results per page) with efficient database queries
+- **Search & Filtering**: Indexed search on part names, numbers, and properties for fast results
+- **Caching**: Response caching for frequently accessed parts data
 
 ---
 
@@ -759,7 +764,7 @@ DELETE /inventory-workflows/alerts/{id}          # Delete alert (admin+ only)
 
 #### **Part Constraints**
 - Part numbers must be unique across the system
-- Maximum 200 different parts in catalog
+- Parts catalog supports unlimited entries with optimized performance
 - Proprietary parts can only be created by super_admin
 
 #### **Inventory Constraints**

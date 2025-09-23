@@ -19,12 +19,12 @@ The system tracks parts flow from creation (manufacturer/suppliers) → distribu
 The application must be designed to support:
 - **Maximum 100 customer organizations**
 - **Maximum 200 total users** across all organizations
-- **Maximum 200 different parts** in the catalog
+- **Parts catalog with unlimited scalability** through efficient indexing and pagination
 - **Maximum 150 AutoBoss machines** deployed across customers
 - **Maximum 150 warehouses** across all organizations
 - **Maximum 50 transactions per year per machine** (7,500 total transactions/year)
 
-These numbers inform database design, indexing strategy, caching requirements, and performance optimization decisions.
+These numbers inform database design, indexing strategy, caching requirements, and performance optimization decisions. The parts catalog is designed for unlimited growth with performance optimizations ensuring system responsiveness regardless of catalog size.
 
 ## Requirements
 

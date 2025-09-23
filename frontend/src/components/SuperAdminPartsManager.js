@@ -3,12 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { partsService } from '../services/partsService';
-import { PERMISSIONS, isSuperAdmin } from '../utils/permissions';
-import PermissionGuard from './PermissionGuard';
+import { isSuperAdmin } from '../utils/permissions';
 import Modal from './Modal';
 import PartForm from './PartForm';
 import MultilingualPartName from './MultilingualPartName';
-import PartPhotoGallery from './PartPhotoGallery';
 import PartCategoryBadge, { PartCategoryFilter } from './PartCategoryBadge';
 
 /**
@@ -67,10 +65,18 @@ const SuperAdminPartsManager = () => {
     setError(null);
 
     try {
-      const data = await partsService.getPartsWithInventory();
-      setParts(data);
-      calculateAnalytics(data);
+      // Fetch ALL parts for SuperAdmin interface (use max API limit)
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      console.log('Fetched parts response:', response); // Debug log
+
+      // Handle the new response format
+      const partsData = response.items || response;
+      const totalCount = response.total_count || partsData.length;
+
+      setParts(partsData);
+      calculateAnalytics(partsData, totalCount);
     } catch (err) {
+      console.error('Error fetching parts:', err); // Debug log
       setError(err.message || 'Failed to fetch parts');
     } finally {
       setLoading(false);
@@ -78,7 +84,7 @@ const SuperAdminPartsManager = () => {
   };
 
   // Calculate analytics from parts data
-  const calculateAnalytics = (partsData) => {
+  const calculateAnalytics = (partsData, totalCount = null) => {
     const manufacturers = new Set();
     let consumableCount = 0;
     let bulkMaterialCount = 0;
@@ -93,13 +99,16 @@ const SuperAdminPartsManager = () => {
       if (part.manufacturer) manufacturers.add(part.manufacturer);
     });
 
+    // Use the actual total count from the API if available
+    const actualTotalParts = totalCount !== null ? totalCount : partsData.length;
+
     setAnalytics({
-      totalParts: partsData.length,
+      totalParts: actualTotalParts,
       consumableParts: consumableCount,
       bulkMaterialParts: bulkMaterialCount,
       proprietaryParts: proprietaryCount,
       partsWithImages: withImagesCount,
-      partsWithoutImages: partsData.length - withImagesCount,
+      partsWithoutImages: partsData.length - withImagesCount, // This is based on visible parts only
       manufacturerCount: manufacturers.size
     });
   };
@@ -265,7 +274,31 @@ const SuperAdminPartsManager = () => {
       } else {
         await partsService.createPart(partData);
       }
+
+      // Small delay to ensure backend processing is complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Reset filters first to ensure new part is visible
+      setFilters({
+        search: '',
+        partType: 'all',
+        proprietary: 'all',
+        manufacturer: 'all',
+        hasImages: 'all',
+        stockStatus: 'all'
+      });
+
+      // Reset to first page
+      setCurrentPage(1);
+
+      // Clear current parts to force a fresh load
+      setParts([]);
+
+      // Force refresh the parts data with a fresh API call
       await fetchParts();
+
+      console.log('Parts refreshed after creation/update'); // Debug log
+
       setShowModal(false);
       setEditingPart(null);
     } catch (err) {

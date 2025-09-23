@@ -542,6 +542,12 @@ class MachineHours(Base):
 class Part(Base):
     """
     SQLAlchemy model for the 'parts' table.
+    
+    Performance Indexes:
+    - part_number: Unique index (existing)
+    - idx_parts_type_proprietary: Composite index on (part_type, is_proprietary) for filtering
+    - idx_parts_manufacturer: Index on manufacturer field (partial, where manufacturer IS NOT NULL)
+    - idx_parts_name_fulltext: Full-text search index on name field for multilingual search
     """
     __tablename__ = "parts"
 

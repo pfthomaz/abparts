@@ -93,6 +93,21 @@ def performance_test_data():
     """Mock performance test data for test discovery"""
     return {}
 
+@pytest.fixture(scope="function")
+def large_parts_dataset_1k():
+    """Mock large parts dataset (1K) for test discovery"""
+    return {}
+
+@pytest.fixture(scope="function") 
+def large_parts_dataset_5k():
+    """Mock large parts dataset (5K) for test discovery"""
+    return {}
+
+@pytest.fixture(scope="function")
+def large_parts_dataset_10k():
+    """Mock large parts dataset (10K) for test discovery"""
+    return {}
+
 # Configure pytest to skip actual test execution when running locally
 def pytest_configure(config):
     """Configure pytest for local test discovery"""
