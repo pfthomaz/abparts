@@ -269,6 +269,9 @@ const SuperAdminPartsManager = () => {
   // Handle part CRUD operations
   const handleCreateOrUpdate = async (partData) => {
     try {
+      console.log('SuperAdminPartsManager: Submitting part data:', partData); // Debug log
+      console.log('SuperAdminPartsManager: Image URLs in part data:', partData.image_urls); // Debug log
+
       if (editingPart) {
         await partsService.updatePart(editingPart.id, partData);
       } else {

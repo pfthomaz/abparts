@@ -1,194 +1,117 @@
 // frontend/src/components/PartPhotoGallery.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { API_BASE_URL } from '../services/api';
 import { partsService } from '../services/partsService';
 
 /**
  * PartPhotoGallery component for managing up to 4 part images
  * Supports viewing, uploading, removing, and reordering images
+ * 
+ * Simplified architecture to avoid circular dependencies and initialization issues
  */
-const PartPhotoGallery = ({
+const PartPhotoGallery = forwardRef(({
   images = [],
   onImagesChange,
   isEditing = false,
   maxImages = 4,
   className = '',
   disabled = false
-}) => {
-  const [imageList, setImageList] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [removedImages, setRemovedImages] = useState([]);
+}, ref) => {
+  // Simplified state management
+  const [currentImages, setCurrentImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
 
-  // Initialize images from props
+  // Track previous image URLs to prevent unnecessary parent notifications
+  const previousImageUrls = useRef([]);
+
+  // Initialize images from props - only when props change
   useEffect(() => {
-    const processedImages = (images || []).map((url, index) => ({
-      id: `existing-${index}`,
-      url: url,
-      isExisting: true,
-      isUploaded: true
-    }));
-    setImageList(processedImages);
-    setImagePreviews(processedImages.map(img => img.url));
+    if (Array.isArray(images)) {
+      const processedImages = images.map((url, index) => ({
+        id: `existing-${index}-${Date.now()}`,
+        url: url,
+        isExisting: true
+      }));
+      setCurrentImages(processedImages);
+    }
   }, [images]);
 
-  // Handle file selection
-  const handleFileSelect = (event) => {
-    const files = Array.from(event.target.files);
-    const currentImageCount = imageList.length - removedImages.length;
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    getCurrentImageUrls: () => currentImages.map(img => img.url)
+  }));
 
-    if (currentImageCount + files.length > maxImages) {
+  // Handle file selection and immediate upload
+  const handleFileSelect = async (event) => {
+    const files = Array.from(event.target.files);
+
+    if (currentImages.length + files.length > maxImages) {
       setError(`You can only upload a maximum of ${maxImages} images per part.`);
       return;
     }
 
     setError(null);
+    event.target.value = ''; // Clear input
 
-    // Create preview URLs for new files
-    const newPreviews = files.map(file => URL.createObjectURL(file));
-    const newImages = files.map((file, index) => ({
-      id: `new-${Date.now()}-${index}`,
-      file: file,
-      url: newPreviews[index],
-      isExisting: false,
-      isUploaded: false
-    }));
-
-    setSelectedFiles(prev => [...prev, ...files]);
-    setImageList(prev => [...prev, ...newImages]);
-    setImagePreviews(prev => [...prev, ...newPreviews]);
-
-    // Clear the input
-    event.target.value = '';
-  };
-
-  // Remove image
-  const handleRemoveImage = (index) => {
-    const imageToRemove = imageList[index];
-
-    if (imageToRemove.isExisting) {
-      // Mark existing image for removal
-      setRemovedImages(prev => [...prev, imageToRemove.url]);
-    } else {
-      // Remove from selected files
-      const fileIndex = selectedFiles.findIndex(file =>
-        URL.createObjectURL(file) === imageToRemove.url
-      );
-      if (fileIndex !== -1) {
-        setSelectedFiles(prev => prev.filter((_, i) => i !== fileIndex));
-      }
-
-      // Revoke object URL to prevent memory leaks
-      URL.revokeObjectURL(imageToRemove.url);
-    }
-
-    // Remove from image list and previews
-    setImageList(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
-
-    // Update parent component
-    updateParentImages();
-  };
-
-  // Move image position
-  const handleMoveImage = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= imageList.length) return;
-
-    const newImageList = [...imageList];
-    const newPreviews = [...imagePreviews];
-
-    // Swap positions
-    [newImageList[fromIndex], newImageList[toIndex]] = [newImageList[toIndex], newImageList[fromIndex]];
-    [newPreviews[fromIndex], newPreviews[toIndex]] = [newPreviews[toIndex], newPreviews[fromIndex]];
-
-    setImageList(newImageList);
-    setImagePreviews(newPreviews);
-    updateParentImages();
-  };
-
-  // Upload new images
-  const uploadNewImages = async () => {
-    if (selectedFiles.length === 0) return [];
+    if (files.length === 0) return;
 
     setUploading(true);
-    const uploadedUrls = [];
 
     try {
-      for (const file of selectedFiles) {
+      const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
 
         const response = await partsService.uploadImage(formData);
-        uploadedUrls.push(response.url);
-      }
+        return {
+          id: `uploaded-${Date.now()}-${Math.random()}`,
+          url: response.url,
+          isExisting: false
+        };
+      });
 
-      setSelectedFiles([]);
-      return uploadedUrls;
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      // Add uploaded images to current list
+      const newImages = [...currentImages, ...uploadedImages];
+      setCurrentImages(newImages);
+
     } catch (uploadError) {
-      setError(`Failed to upload images: ${uploadError.message}`);
-      throw uploadError;
+      console.error('Upload error:', uploadError);
+      setError(`Upload failed: ${uploadError.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
   };
 
-  // Update parent component with current image state
-  const updateParentImages = () => {
-    if (!onImagesChange) return;
-
-    const existingImages = imageList
-      .filter(img => img.isExisting && !removedImages.includes(img.url))
-      .map(img => img.url);
-
-    const newImageUrls = imageList
-      .filter(img => !img.isExisting && img.isUploaded)
-      .map(img => img.url);
-
-    onImagesChange([...existingImages, ...newImageUrls], removedImages);
+  // Remove image
+  const handleRemoveImage = (index) => {
+    const newImages = currentImages.filter((_, i) => i !== index);
+    setCurrentImages(newImages);
   };
 
-  // Handle save (upload new images and update state)
-  const handleSave = async () => {
-    try {
-      const uploadedUrls = await uploadNewImages();
+  // Move image position
+  const handleMoveImage = (fromIndex, toIndex) => {
+    if (toIndex < 0 || toIndex >= currentImages.length) return;
 
-      // Update image list with uploaded URLs
-      const updatedImageList = imageList.map(img => {
-        if (!img.isExisting && !img.isUploaded) {
-          const uploadedIndex = selectedFiles.findIndex(file =>
-            URL.createObjectURL(file) === img.url
-          );
-          if (uploadedIndex !== -1) {
-            return {
-              ...img,
-              url: uploadedUrls[uploadedIndex],
-              isUploaded: true
-            };
-          }
-        }
-        return img;
-      });
-
-      setImageList(updatedImageList);
-      updateParentImages();
-
-      return true;
-    } catch (error) {
-      return false;
-    }
+    const newImages = [...currentImages];
+    [newImages[fromIndex], newImages[toIndex]] = [newImages[toIndex], newImages[fromIndex]];
+    setCurrentImages(newImages);
   };
 
-  // Image modal for full-size viewing
+  // Image modal component
   const ImageModal = ({ imageUrl, onClose }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div className="max-w-4xl max-h-4xl p-4">
         <img
           src={imageUrl.startsWith('/static/images') ? `${API_BASE_URL}${imageUrl}` : imageUrl}
-          alt="Full size part image"
+          alt="Full size part"
           className="max-w-full max-h-full object-contain"
           onClick={(e) => e.stopPropagation()}
         />
@@ -206,13 +129,13 @@ const PartPhotoGallery = ({
   if (!isEditing) {
     return (
       <div className={`part-photo-gallery ${className}`}>
-        {imageList.length > 0 ? (
+        {currentImages.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {imageList.map((image, index) => (
+            {currentImages.map((image, index) => (
               <div key={image.id} className="relative group cursor-pointer">
                 <img
                   src={image.url.startsWith('/static/images') ? `${API_BASE_URL}${image.url}` : image.url}
-                  alt={`Part image ${index + 1}`}
+                  alt={`Part ${index + 1}`}
                   className="w-full h-24 object-cover rounded-md shadow-sm hover:shadow-md transition-shadow"
                   onClick={() => setSelectedImageIndex(index)}
                   onError={(e) => {
@@ -238,7 +161,7 @@ const PartPhotoGallery = ({
         {/* Image modal */}
         {selectedImageIndex !== null && (
           <ImageModal
-            imageUrl={imageList[selectedImageIndex]?.url}
+            imageUrl={currentImages[selectedImageIndex]?.url}
             onClose={() => setSelectedImageIndex(null)}
           />
         )}
@@ -266,17 +189,17 @@ const PartPhotoGallery = ({
             multiple
             accept="image/*"
             onChange={handleFileSelect}
-            disabled={disabled || uploading || imageList.length >= maxImages}
+            disabled={disabled || uploading || currentImages.length >= maxImages}
             className="hidden"
             id="image-upload"
           />
           <label
             htmlFor="image-upload"
-            className={`cursor-pointer ${disabled || uploading || imageList.length >= maxImages ? 'cursor-not-allowed opacity-50' : ''}`}
+            className={`cursor-pointer ${disabled || uploading || currentImages.length >= maxImages ? 'cursor-not-allowed opacity-50' : ''}`}
           >
             <div className="text-4xl mb-2">📷</div>
             <p className="text-sm text-gray-600">
-              {imageList.length >= maxImages
+              {currentImages.length >= maxImages
                 ? `Maximum ${maxImages} images reached`
                 : 'Click to upload images or drag and drop'
               }
@@ -289,13 +212,13 @@ const PartPhotoGallery = ({
       </div>
 
       {/* Image grid with management controls */}
-      {imageList.length > 0 && (
+      {currentImages.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {imageList.map((image, index) => (
+          {currentImages.map((image, index) => (
             <div key={image.id} className="relative group">
               <img
                 src={image.url.startsWith('/static/images') ? `${API_BASE_URL}${image.url}` : image.url}
-                alt={`Part image ${index + 1}`}
+                alt={`Part ${index + 1}`}
                 className="w-full h-24 object-cover rounded-md shadow-sm"
                 onError={(e) => {
                   e.target.onerror = null;
@@ -311,7 +234,7 @@ const PartPhotoGallery = ({
                     onClick={() => handleRemoveImage(index)}
                     disabled={disabled || uploading}
                     className="bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 disabled:opacity-50"
-                    title="Remove image"
+                    title="Remove"
                   >
                     ✕
                   </button>
@@ -331,7 +254,7 @@ const PartPhotoGallery = ({
                   <button
                     type="button"
                     onClick={() => handleMoveImage(index, index + 1)}
-                    disabled={disabled || uploading || index === imageList.length - 1}
+                    disabled={disabled || uploading || index === currentImages.length - 1}
                     className="bg-blue-500 text-white rounded p-1 text-xs hover:bg-blue-600 disabled:opacity-50"
                     title="Move right"
                   >
@@ -339,15 +262,6 @@ const PartPhotoGallery = ({
                   </button>
                 </div>
               </div>
-
-              {/* Upload status indicator */}
-              {!image.isUploaded && (
-                <div className="absolute inset-0 bg-yellow-100 bg-opacity-75 rounded-md flex items-center justify-center">
-                  <span className="text-yellow-800 text-xs font-medium">
-                    {uploading ? 'Uploading...' : 'Pending upload'}
-                  </span>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -364,8 +278,6 @@ const PartPhotoGallery = ({
       )}
     </div>
   );
-};
+});
 
-// Export the component and the save handler for external use
 export default PartPhotoGallery;
-export { PartPhotoGallery };

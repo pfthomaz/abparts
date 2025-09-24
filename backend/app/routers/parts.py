@@ -45,6 +45,17 @@ async def upload_image(
     In production, files should be stored on a cloud storage service (e.g., AWS S3).
     """
     try:
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Validate file size (10MB limit)
+        if file.size and file.size > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+        
+        # Ensure upload directory exists
+        os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+        
         # Generate a unique filename
         filename = f"{uuid.uuid4()}_{file.filename}"
         file_path = os.path.join(UPLOAD_DIRECTORY, filename)
@@ -57,8 +68,12 @@ async def upload_image(
         # This assumes your FastAPI app serves static files from /static
         image_url = f"/static/images/{filename}"
         return {"url": image_url}
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not upload file: {e}")
+        logger.error(f"Error uploading image: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not upload file: {str(e)}")
 
 # --- Parts CRUD ---
 @router.get("/", response_model=schemas.PartsListResponse)

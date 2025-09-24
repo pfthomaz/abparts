@@ -1,6 +1,6 @@
 // frontend/src/components/PartForm.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { partsService } from '../services/partsService';
 import { API_BASE_URL } from '../services/api';
 import MultilingualPartName from './MultilingualPartName';
@@ -25,6 +25,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
   const [removedImageUrls, setRemovedImageUrls] = useState([]); // State to track removed existing images
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const photoGalleryRef = useRef(null);
 
   useEffect(() => {
     // Reset form data when initialData changes (e.g., opening for new vs. edit)
@@ -62,14 +63,20 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
     setError(null);
 
     try {
+      // Get current image URLs from the photo gallery component
+      const currentImageUrls = photoGalleryRef.current?.getCurrentImageUrls() || [];
+
       // Prepare data, converting empty strings to null for optional int fields
       const dataToSend = {
         ...formData,
         manufacturer_part_number: formData.manufacturer_part_number === '' ? null : formData.manufacturer_part_number,
         manufacturer_delivery_time_days: formData.manufacturer_delivery_time_days === '' ? null : parseInt(formData.manufacturer_delivery_time_days, 10),
         local_supplier_delivery_time_days: formData.local_supplier_delivery_time_days === '' ? null : parseInt(formData.local_supplier_delivery_time_days, 10),
-        // image_urls is already handled by the PartPhotoGallery component
+        image_urls: currentImageUrls
       };
+
+      console.log('PartForm: Submitting data:', dataToSend); // Debug log
+      console.log('PartForm: Image URLs:', dataToSend.image_urls); // Debug log
 
       // Remove deprecated field if it exists
       delete dataToSend.is_consumable;
@@ -238,11 +245,8 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       {/* Image Upload Section */}
       <div>
         <PartPhotoGallery
+          ref={photoGalleryRef}
           images={formData.image_urls || []}
-          onImagesChange={(newImages, removedImages) => {
-            setFormData(prev => ({ ...prev, image_urls: newImages }));
-            setRemovedImageUrls(removedImages);
-          }}
           isEditing={true}
           maxImages={4}
           disabled={loading}
