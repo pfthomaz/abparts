@@ -91,3 +91,86 @@ def get_all_stock_adjustments(db: Session, skip: int = 0, limit: int = 100) -> L
         .offset(skip)\
         .limit(limit)\
         .all()
+
+def get_stock_adjustments_by_organization(
+    db: Session, 
+    organization_id: uuid.UUID, 
+    skip: int = 0, 
+    limit: int = 100
+) -> List[models.StockAdjustment]:
+    """Retrieve stock adjustments for a specific organization."""
+    return db.query(models.StockAdjustment)\
+        .join(models.Inventory, models.StockAdjustment.inventory_id == models.Inventory.id)\
+        .join(models.Warehouse, models.Inventory.warehouse_id == models.Warehouse.id)\
+        .filter(models.Warehouse.organization_id == organization_id)\
+        .order_by(models.StockAdjustment.adjustment_date.desc())\
+        .offset(skip)\
+        .limit(limit)\
+        .all()
+
+def create_stock_adjustment_with_frontend_schema(
+    db: Session, 
+    inventory_id: uuid.UUID, 
+    adjustment_in: schemas.StockAdjustmentCreate, 
+    user_id: uuid.UUID
+):
+    """
+    Create a stock adjustment using frontend-compatible schema.
+    Maps frontend field names to database field names.
+    """
+    # Map frontend schema to database schema
+    db_adjustment_data = {
+        "quantity_adjusted": adjustment_in.quantity_change,
+        "reason_code": adjustment_in.reason,
+        "notes": adjustment_in.notes
+    }
+    
+    # Create a temporary schema object with database field names
+    class TempAdjustmentCreate:
+        def __init__(self, quantity_adjusted, reason_code, notes):
+            self.quantity_adjusted = quantity_adjusted
+            self.reason_code = reason_code
+            self.notes = notes
+    
+    temp_adjustment = TempAdjustmentCreate(
+        quantity_adjusted=adjustment_in.quantity_change,
+        reason_code=adjustment_in.reason,
+        notes=adjustment_in.notes
+    )
+    
+    # Validate reason (skip enum validation for now since frontend uses free text)
+    # We'll store the reason as-is for now
+    
+    try:
+        # Fetch the inventory item
+        inventory_item = db.query(models.Inventory).filter(models.Inventory.id == inventory_id).first()
+        if not inventory_item:
+            raise HTTPException(status_code=404, detail="Inventory item not found")
+
+        # Create the stock adjustment record
+        db_adjustment = models.StockAdjustment(
+            inventory_id=inventory_id,
+            user_id=user_id,
+            quantity_adjusted=adjustment_in.quantity_change,
+            reason_code=adjustment_in.reason,
+            notes=adjustment_in.notes
+        )
+        db.add(db_adjustment)
+
+        # Update the current stock in the inventory item
+        inventory_item.current_stock += adjustment_in.quantity_change
+
+        db.add(inventory_item)
+        db.commit()
+        db.refresh(db_adjustment)
+        db.refresh(inventory_item)
+
+        return db_adjustment
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating stock adjustment: {e}")
+        raise HTTPException(status_code=500, detail="Error creating stock adjustment")

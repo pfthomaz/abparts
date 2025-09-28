@@ -5,10 +5,11 @@ import logging
 from typing import List, Optional
 from datetime import datetime, date
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel, Field
+from decimal import Decimal
 
 from .. import schemas, crud, models # Import schemas, CRUD functions, and models
 from ..database import get_db # Import DB session dependency
@@ -821,5 +822,226 @@ async def clear_all_analytics_cache(
         raise HTTPException(
             status_code=500,
             detail="Error clearing analytics cache"
+        )
+
+
+# --- Warehouse Stock Adjustments ---
+
+@router.get("/warehouse/{warehouse_id}/adjustments")
+async def get_warehouse_stock_adjustments(
+    warehouse_id: uuid.UUID,
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    start_date: Optional[date] = Query(None, description="Start date filter (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="End date filter (YYYY-MM-DD)"),
+    reason: Optional[str] = Query(None, description="Filter by adjustment reason"),
+    adjustment_type: Optional[str] = Query(None, description="Filter by adjustment type (increase/decrease)"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get all stock adjustments for a specific warehouse with optional filtering.
+    Users can only view adjustments for warehouses in their organization.
+    """
+    try:
+        # Check if user can access this warehouse
+        if not check_warehouse_access(current_user, warehouse_id, db):
+            raise HTTPException(
+                status_code=403, 
+                detail="Not authorized to view stock adjustments for this warehouse"
+            )
+        
+        # Convert date objects to datetime objects if provided
+        start_datetime = None
+        end_datetime = None
+        
+        if start_date:
+            start_datetime = datetime.combine(start_date, datetime.min.time())
+        if end_date:
+            end_datetime = datetime.combine(end_date, datetime.max.time())
+        
+        # Get all inventory items for this warehouse
+        inventory_items = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == warehouse_id
+        ).all()
+        
+        if not inventory_items:
+            return []  # No inventory items means no adjustments
+        
+        inventory_ids = [item.id for item in inventory_items]
+        
+        if not inventory_ids:
+            return []  # Safety check for empty inventory_ids
+        
+        # Build query for stock adjustments
+        query = db.query(models.StockAdjustment).filter(
+            models.StockAdjustment.inventory_id.in_(inventory_ids)
+        )
+        
+        # Apply date filters
+        if start_datetime:
+            query = query.filter(models.StockAdjustment.created_at >= start_datetime)
+        if end_datetime:
+            query = query.filter(models.StockAdjustment.created_at <= end_datetime)
+        
+        # Apply reason filter
+        if reason and reason != "all":
+            query = query.filter(models.StockAdjustment.reason_code == reason)
+        
+        # Apply adjustment type filter (increase/decrease)
+        if adjustment_type and adjustment_type != "all":
+            if adjustment_type == "increase":
+                query = query.filter(models.StockAdjustment.quantity_adjusted > 0)
+            elif adjustment_type == "decrease":
+                query = query.filter(models.StockAdjustment.quantity_adjusted < 0)
+        
+        # Order by creation date (newest first) and apply pagination
+        adjustments = query.order_by(models.StockAdjustment.created_at.desc()).offset(skip).limit(limit).all()
+        
+        # Convert to response format
+        adjustment_responses = []
+        for adjustment in adjustments:
+            # Get inventory item details
+            inventory_item = db.query(models.Inventory).filter(
+                models.Inventory.id == adjustment.inventory_id
+            ).first()
+            
+            # Get part details
+            part = None
+            if inventory_item:
+                part = db.query(models.Part).filter(
+                    models.Part.id == inventory_item.part_id
+                ).first()
+            
+            # Get user details
+            user = db.query(models.User).filter(
+                models.User.id == adjustment.user_id
+            ).first()
+            
+            adjustment_response = {
+                "id": str(adjustment.id),
+                "inventory_id": str(adjustment.inventory_id),
+                "part_id": str(inventory_item.part_id) if inventory_item else None,
+                "part_number": part.part_number if part else None,
+                "part_name": part.name if part else None,
+                "quantity_change": float(adjustment.quantity_adjusted),
+                "unit_of_measure": inventory_item.unit_of_measure if inventory_item else None,
+                "reason": adjustment.reason_code,
+                "notes": adjustment.notes,
+                "performed_by_user_id": str(adjustment.user_id),
+                "performed_by_user_name": user.name if user else "Unknown",
+                "created_at": adjustment.created_at.isoformat(),
+                "updated_at": adjustment.updated_at.isoformat()
+            }
+            adjustment_responses.append(adjustment_response)
+        
+        return adjustment_responses
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Error fetching warehouse stock adjustments: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while fetching stock adjustments"
+        )
+
+
+class WarehouseStockAdjustmentRequest(BaseModel):
+    """Temporary schema for warehouse stock adjustment requests"""
+    part_id: uuid.UUID
+    quantity_change: Decimal = Field(..., decimal_places=3)
+    reason: str
+    notes: Optional[str] = None
+
+@router.post("/warehouse/{warehouse_id}/adjustment", status_code=status.HTTP_201_CREATED)
+async def create_warehouse_stock_adjustment(
+    warehouse_id: uuid.UUID,
+    adjustment_data: WarehouseStockAdjustmentRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.WRITE))
+):
+    """
+    Create a stock adjustment for a specific part in a warehouse.
+    This endpoint allows adjusting stock levels with a reason and notes.
+    """
+    try:
+        # Check if user can access this warehouse
+        if not check_warehouse_access(current_user, warehouse_id, db):
+            raise HTTPException(
+                status_code=403, 
+                detail="Not authorized to create stock adjustments for this warehouse"
+            )
+        
+        # Find the inventory item for this part in this warehouse
+        inventory_item = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == warehouse_id,
+            models.Inventory.part_id == adjustment_data.part_id
+        ).first()
+        
+        if not inventory_item:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No inventory found for part {adjustment_data.part_id} in warehouse {warehouse_id}"
+            )
+        
+        # Create the stock adjustment directly to avoid schema validation issues
+        try:
+            # Create the stock adjustment record
+            db_adjustment = models.StockAdjustment(
+                inventory_id=inventory_item.id,
+                user_id=current_user.user_id,
+                quantity_adjusted=adjustment_data.quantity_change,
+                reason_code=adjustment_data.reason,
+                notes=adjustment_data.notes
+            )
+            db.add(db_adjustment)
+
+            # Update the current stock in the inventory item
+            inventory_item.current_stock += adjustment_data.quantity_change
+            db.add(inventory_item)
+
+            db.commit()
+            db.refresh(db_adjustment)
+            db.refresh(inventory_item)
+
+            # Get part and user details for response
+            part = db.query(models.Part).filter(models.Part.id == adjustment_data.part_id).first()
+            user = db.query(models.User).filter(models.User.id == current_user.user_id).first()
+
+            # Return a simple dictionary response to avoid schema validation issues
+            created_adjustment = {
+                "id": str(db_adjustment.id),
+                "inventory_id": str(db_adjustment.inventory_id),
+                "part_id": str(adjustment_data.part_id),
+                "part_number": part.part_number if part else None,
+                "part_name": part.name if part else None,
+                "quantity_change": float(db_adjustment.quantity_adjusted),
+                "unit_of_measure": inventory_item.unit_of_measure,
+                "reason": db_adjustment.reason_code,
+                "notes": db_adjustment.notes,
+                "performed_by_user_id": str(db_adjustment.user_id),
+                "performed_by_user_name": user.name if user else "Unknown",
+                "created_at": db_adjustment.created_at.isoformat(),
+                "updated_at": db_adjustment.updated_at.isoformat()
+            }
+            
+        except Exception as db_error:
+            db.rollback()
+            logger.error(f"Database error creating stock adjustment: {db_error}")
+            raise HTTPException(
+                status_code=500,
+                detail="Database error while creating stock adjustment"
+            )
+        
+        return created_adjustment
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Error creating warehouse stock adjustment: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while creating stock adjustment"
         )
 

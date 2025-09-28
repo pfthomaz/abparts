@@ -8,6 +8,9 @@ import Modal from '../components/Modal';
 import WarehouseForm from '../components/WarehouseForm';
 import WarehouseSelector from '../components/WarehouseSelector';
 import WarehousePerformanceDashboard from '../components/WarehousePerformanceDashboard';
+import WarehouseStockAdjustmentForm from '../components/WarehouseStockAdjustmentForm';
+import WarehouseDetailedView from '../components/WarehouseDetailedView';
+import { inventoryService } from '../services/inventoryService';
 
 const Warehouses = () => {
   const { user } = useAuth();
@@ -22,7 +25,10 @@ const Warehouses = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState(null);
+  const [selectedWarehouseForInventory, setSelectedWarehouseForInventory] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [currentView, setCurrentView] = useState('list'); // 'list' or 'performance'
 
@@ -125,7 +131,11 @@ const Warehouses = () => {
       await warehouseService.deleteWarehouse(warehouse.id);
       handleSearch();
     } catch (err) {
-      setError('Failed to delete warehouse. It may have associated inventory or transactions.');
+      if (err.message && err.message.includes('inventory')) {
+        setError(`Cannot delete warehouse "${warehouse.name}" because it has inventory. Please adjust inventory to zero first or transfer items to another warehouse.`);
+      } else {
+        setError('Failed to delete warehouse. It may have associated inventory or transactions.');
+      }
       console.error('Failed to delete warehouse:', err);
     }
   };
@@ -138,6 +148,28 @@ const Warehouses = () => {
   const openPerformanceModal = (warehouse) => {
     setSelectedWarehouse(warehouse);
     setShowPerformanceModal(true);
+  };
+
+  const openInventoryModal = (warehouse) => {
+    setSelectedWarehouseForInventory(warehouse);
+    setShowInventoryModal(true);
+  };
+
+  const openAdjustmentModal = (warehouse) => {
+    setSelectedWarehouseForInventory(warehouse);
+    setShowAdjustmentModal(true);
+  };
+
+  const handleStockAdjustment = async (adjustmentData) => {
+    try {
+      await inventoryService.createWarehouseStockAdjustment(selectedWarehouseForInventory.id, adjustmentData);
+      setShowAdjustmentModal(false);
+      setSelectedWarehouseForInventory(null);
+      // Optionally refresh data or show success message
+    } catch (err) {
+      console.error("Error creating stock adjustment:", err);
+      throw err;
+    }
   };
 
   const getOrganizationName = (organizationId) => {
@@ -346,34 +378,50 @@ const Warehouses = () => {
                           {warehouse.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => openPerformanceModal(warehouse)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Performance
-                        </button>
-                        <button
-                          onClick={() => openEditModal(warehouse)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleToggleWarehouseStatus(warehouse)}
-                          className={`${warehouse.is_active
-                            ? 'text-orange-600 hover:text-orange-900'
-                            : 'text-green-600 hover:text-green-900'
-                            }`}
-                        >
-                          {warehouse.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteWarehouse(warehouse)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => openInventoryModal(warehouse)}
+                            className="text-purple-600 hover:text-purple-900"
+                            title="View inventory"
+                          >
+                            Inventory
+                          </button>
+                          <button
+                            onClick={() => openAdjustmentModal(warehouse)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Adjust stock levels"
+                          >
+                            Adjust Stock
+                          </button>
+                          <button
+                            onClick={() => openPerformanceModal(warehouse)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Performance
+                          </button>
+                          <button
+                            onClick={() => openEditModal(warehouse)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleToggleWarehouseStatus(warehouse)}
+                            className={`${warehouse.is_active
+                              ? 'text-orange-600 hover:text-orange-900'
+                              : 'text-green-600 hover:text-green-900'
+                              }`}
+                          >
+                            {warehouse.is_active ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWarehouse(warehouse)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -433,6 +481,47 @@ const Warehouses = () => {
           <WarehousePerformanceDashboard
             warehouseId={selectedWarehouse.id}
             warehouse={selectedWarehouse}
+          />
+        )}
+      </Modal>
+
+      {/* Inventory Modal */}
+      <Modal
+        isOpen={showInventoryModal}
+        onClose={() => {
+          setShowInventoryModal(false);
+          setSelectedWarehouseForInventory(null);
+        }}
+        title={`Inventory - ${selectedWarehouseForInventory?.name}`}
+        size="xl"
+      >
+        {selectedWarehouseForInventory && (
+          <WarehouseDetailedView
+            warehouseId={selectedWarehouseForInventory.id}
+            warehouse={selectedWarehouseForInventory}
+          />
+        )}
+      </Modal>
+
+      {/* Stock Adjustment Modal */}
+      <Modal
+        isOpen={showAdjustmentModal}
+        onClose={() => {
+          setShowAdjustmentModal(false);
+          setSelectedWarehouseForInventory(null);
+        }}
+        title={`Adjust Stock - ${selectedWarehouseForInventory?.name}`}
+        size="lg"
+      >
+        {selectedWarehouseForInventory && (
+          <WarehouseStockAdjustmentForm
+            warehouseId={selectedWarehouseForInventory.id}
+            warehouse={selectedWarehouseForInventory}
+            onSubmit={handleStockAdjustment}
+            onCancel={() => {
+              setShowAdjustmentModal(false);
+              setSelectedWarehouseForInventory(null);
+            }}
           />
         )}
       </Modal>

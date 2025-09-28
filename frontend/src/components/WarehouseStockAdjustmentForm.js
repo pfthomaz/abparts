@@ -1,6 +1,6 @@
 // frontend/src/components/WarehouseStockAdjustmentForm.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { partsService } from '../services/partsService';
 import { inventoryService } from '../services/inventoryService';
 
@@ -22,19 +22,22 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       fetchParts();
       fetchWarehouseInventory();
     }
-  }, [warehouseId, fetchParts, fetchWarehouseInventory]);
+  }, [warehouseId]);
 
-  const fetchParts = useCallback(async () => {
+  const fetchParts = async () => {
     try {
-      const data = await partsService.getParts({ limit: 200 });
-      setParts(data);
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      // Handle paginated response format
+      const partsData = response?.items || response || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
     } catch (err) {
       setError('Failed to fetch parts');
       console.error('Failed to fetch parts:', err);
+      setParts([]); // Ensure parts is always an array
     }
-  }, []);
+  };
 
-  const fetchWarehouseInventory = useCallback(async () => {
+  const fetchWarehouseInventory = async () => {
     try {
       const data = await inventoryService.getWarehouseInventory(warehouseId);
       setWarehouseInventory(data);
@@ -42,7 +45,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       console.error('Failed to fetch warehouse inventory:', err);
       setWarehouseInventory([]);
     }
-  }, [warehouseId]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,13 +97,16 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
   };
 
   const getPartDetails = (partId) => {
+    if (!Array.isArray(parts)) {
+      return null;
+    }
     return parts.find(p => p.id === partId);
   };
 
-  const filteredParts = parts.filter(part =>
+  const filteredParts = Array.isArray(parts) ? parts.filter(part =>
     part.part_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     part.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   const reasonOptions = [
     'Stocktake adjustment',

@@ -1,12 +1,20 @@
 // frontend/src/components/WarehouseDetailedView.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WarehouseInventoryView from './WarehouseInventoryView';
 import InventoryTransferHistory from './InventoryTransferHistory';
 import WarehouseStockAdjustmentHistory from './WarehouseStockAdjustmentHistory';
 
-const WarehouseDetailedView = ({ warehouseId, warehouse }) => {
+const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) => {
   const [activeTab, setActiveTab] = useState('inventory');
+  const [refreshInventory, setRefreshInventory] = useState(null);
+
+  // Pass the refresh function up to the parent when it's available
+  useEffect(() => {
+    if (refreshInventory && onInventoryRefresh) {
+      onInventoryRefresh(refreshInventory);
+    }
+  }, [refreshInventory, onInventoryRefresh]);
 
   const tabs = [
     { id: 'inventory', label: 'Current Inventory', icon: '📦' },
@@ -21,6 +29,7 @@ const WarehouseDetailedView = ({ warehouseId, warehouse }) => {
           <WarehouseInventoryView
             warehouseId={warehouseId}
             warehouse={warehouse}
+            onRefresh={setRefreshInventory}
           />
         );
       case 'transfers':
@@ -58,8 +67,8 @@ const WarehouseDetailedView = ({ warehouseId, warehouse }) => {
           </div>
           <div className="text-right">
             <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${warehouse?.is_active
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
               }`}>
               {warehouse?.is_active ? 'Active' : 'Inactive'}
             </div>
@@ -76,8 +85,8 @@ const WarehouseDetailedView = ({ warehouseId, warehouse }) => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <span className="mr-2">{tab.icon}</span>

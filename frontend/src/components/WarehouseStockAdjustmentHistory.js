@@ -1,6 +1,6 @@
 // frontend/src/components/WarehouseStockAdjustmentHistory.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
 
@@ -17,32 +17,58 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (warehouseId) {
-      fetchData();
-    }
-  }, [warehouseId, filters, fetchData]);
-
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
-      const [adjustmentsData, partsData] = await Promise.all([
-        inventoryService.getWarehouseStockAdjustments(warehouseId, filters),
-        partsService.getParts({ limit: 200 })
-      ]);
+      // Fetch parts data first (this should work)
+      const partsResponse = await partsService.getPartsWithInventory({ limit: 1000 });
+      const partsData = partsResponse?.items || partsResponse || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
 
-      setAdjustments(adjustmentsData);
-      setParts(partsData);
+      // Try to fetch adjustments data, but handle 404 gracefully
+      try {
+        const adjustmentsData = await inventoryService.getWarehouseStockAdjustments(warehouseId, filters);
+        setAdjustments(adjustmentsData);
+      } catch (adjustmentError) {
+        // If it's a 404, the API endpoint doesn't exist yet - show empty state without error
+        if (adjustmentError.response?.status === 404) {
+          console.warn('Stock adjustments API endpoint not implemented yet');
+          setAdjustments([]);
+        } else {
+          // For other errors, show the error message
+          throw adjustmentError;
+        }
+      }
     } catch (err) {
       setError('Failed to fetch adjustment history');
       console.error('Failed to fetch adjustment history:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (warehouseId) {
+      fetchData();
+    }
   }, [warehouseId, filters]);
 
+  // Auto-refresh every 15 minutes (reduced frequency for non-existent API endpoint)
+  useEffect(() => {
+    if (!warehouseId) return;
+
+    const interval = setInterval(() => {
+      fetchData();
+    }, 15 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [warehouseId]);
+
   const getPartDetails = (partId) => {
+    if (!Array.isArray(parts)) {
+      return {};
+    }
     return parts.find(p => p.id === partId) || {};
   };
 
@@ -281,9 +307,16 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
       {filteredAdjustments.length === 0 ? (
         <div className="bg-gray-50 p-8 rounded-lg text-center">
           <div className="text-gray-500">
-            {adjustments.length === 0
-              ? 'No stock adjustments found for this warehouse.'
-              : 'No adjustments match your current filters.'}
+            {error ? (
+              <div>
+                <div className="mb-2">Stock adjustment history is currently unavailable.</div>
+                <div className="text-sm">The backend API endpoint is being developed. Please check back later.</div>
+              </div>
+            ) : adjustments.length === 0 ? (
+              'No stock adjustments found for this warehouse.'
+            ) : (
+              'No adjustments match your current filters.'
+            )}
           </div>
         </div>
       ) : (

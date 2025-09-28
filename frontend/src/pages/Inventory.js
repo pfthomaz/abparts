@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
+import { partsService } from '../services/partsService';
 import { api } from '../services/api'; // For fetching related data
 import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
@@ -31,6 +32,7 @@ const Inventory = () => {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
   const [viewMode, setViewMode] = useState('warehouse'); // 'warehouse', 'aggregated', 'analytics', 'reporting'
+  const [warehouseInventoryRefresh, setWarehouseInventoryRefresh] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -41,16 +43,39 @@ const Inventory = () => {
         filters.warehouse_id = selectedWarehouseId;
       }
 
-      const [, orgsData, warehousesData, partsData] = await Promise.all([
-        inventoryService.getInventory(filters),
-        api.get('/organizations'),
-        warehouseService.getWarehouses(),
-        api.get('/parts'),
-      ]);
+      // Fetch data with individual error handling to identify which call is failing
+      let orgsData = [];
+      let warehousesData = [];
+      let partsResponse = [];
+
+      try {
+        orgsData = await api.get('/organizations');
+      } catch (orgError) {
+        console.error('Failed to fetch organizations:', orgError);
+        orgsData = [];
+      }
+
+      try {
+        warehousesData = await warehouseService.getWarehouses();
+      } catch (warehouseError) {
+        console.error('Failed to fetch warehouses:', warehouseError);
+        warehousesData = [];
+      }
+
+      try {
+        partsResponse = await partsService.getPartsWithInventory({ limit: 1000 });
+      } catch (partsError) {
+        console.error('Failed to fetch parts:', partsError);
+        partsResponse = [];
+      }
+
+
 
       setOrganizations(orgsData);
       setWarehouses(warehousesData);
-      setParts(partsData);
+      // Handle paginated response format
+      const partsData = partsResponse?.items || partsResponse || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
     } catch (err) {
       setError(err.message || 'Failed to fetch inventory data.');
     } finally {
@@ -60,7 +85,16 @@ const Inventory = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCreateOrUpdate = async (inventoryData) => {
     try {
@@ -93,7 +127,15 @@ const Inventory = () => {
   const handleStockAdjustment = async (adjustmentData) => {
     try {
       await inventoryService.createWarehouseStockAdjustment(selectedWarehouseId, adjustmentData);
+
+      // Refresh the main inventory data
       await fetchData();
+
+      // Also refresh the warehouse inventory view if it's available
+      if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+        await warehouseInventoryRefresh();
+      }
+
       closeModal();
     } catch (err) {
       console.error("Error creating stock adjustment:", err);
@@ -269,6 +311,7 @@ const Inventory = () => {
             <WarehouseDetailedView
               warehouseId={selectedWarehouseId}
               warehouse={selectedWarehouse}
+              onInventoryRefresh={setWarehouseInventoryRefresh}
             />
           ) : (
             <div className="text-center py-10 bg-white rounded-lg shadow-md">

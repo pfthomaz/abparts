@@ -1,11 +1,11 @@
 // frontend/src/components/WarehouseInventoryView.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
 import { validateInventoryData, safeFilter } from '../utils/inventoryValidation';
 
-const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
+const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
   const [inventoryItems, setInventoryItems] = useState([]);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -13,14 +13,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'low_stock', 'out_of_stock'
 
-  useEffect(() => {
-    if (warehouseId) {
-      fetchWarehouseInventory();
-      fetchParts();
-    }
-  }, [warehouseId]);
-
-  const fetchWarehouseInventory = async () => {
+  const fetchWarehouseInventory = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -36,18 +29,38 @@ const WarehouseInventoryView = ({ warehouseId, warehouse }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [warehouseId]);
 
-  const fetchParts = async () => {
+  const fetchParts = useCallback(async () => {
     try {
-      const data = await partsService.getParts();
-      setParts(data);
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      // Handle paginated response format
+      const partsData = response?.items || response || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
     } catch (err) {
       console.error('Failed to fetch parts:', err);
+      setParts([]); // Ensure parts is always an array
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (warehouseId) {
+      fetchWarehouseInventory();
+      fetchParts();
+    }
+  }, [warehouseId, fetchWarehouseInventory, fetchParts]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefresh && typeof onRefresh === 'function') {
+      onRefresh(fetchWarehouseInventory);
+    }
+  }, [onRefresh, fetchWarehouseInventory]);
 
   const getPartDetails = (partId) => {
+    if (!Array.isArray(parts)) {
+      return {};
+    }
     return parts.find(p => p.id === partId) || {};
   };
 

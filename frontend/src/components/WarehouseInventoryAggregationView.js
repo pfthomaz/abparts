@@ -25,6 +25,17 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
     }
   }, [organizationId]);
 
+  // Auto-refresh every 10 minutes (reduced frequency to avoid API overload)
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [organizationId]);
+
   /**
    * Validates and extracts inventory data from API response
    * @param {*} data - API response data

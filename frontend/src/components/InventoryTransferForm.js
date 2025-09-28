@@ -38,11 +38,14 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
 
   const fetchParts = async () => {
     try {
-      const data = await partsService.getParts({ limit: 200 });
-      setParts(data);
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      // Handle paginated response format
+      const partsData = response?.items || response || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
     } catch (err) {
       setError('Failed to fetch parts');
       console.error('Failed to fetch parts:', err);
+      setParts([]); // Ensure parts is always an array
     }
   };
 
@@ -165,6 +168,9 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
   };
 
   const getPartDetails = (partId) => {
+    if (!Array.isArray(parts)) {
+      return null;
+    }
     return parts.find(p => p.id === partId);
   };
 

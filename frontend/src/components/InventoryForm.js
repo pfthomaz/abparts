@@ -30,16 +30,16 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
     // For Customer Admin/User roles, pre-fill their organization_id if not in edit mode
     // or if in edit mode and the org_id matches their own (should always be true for them)
     if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
-        if (!isEditMode || (isEditMode && initialData.organization_id === user.organization_id)) {
-            effectiveInitialData.organization_id = user.organization_id || '';
-        }
+      if (!isEditMode || (isEditMode && initialData.organization_id === user.organization_id)) {
+        effectiveInitialData.organization_id = user.organization_id || '';
+      }
     }
     // If not in edit mode and user is Oraseas Inventory Manager, default to Oraseas EE if available
     else if (user && user.role === "Oraseas Inventory Manager" && !isEditMode) {
-        const oraseasOrg = organizations.find(org => org.name === "Oraseas EE");
-        if (oraseasOrg) {
-            effectiveInitialData.organization_id = oraseasOrg.id;
-        }
+      const oraseasOrg = organizations.find(org => org.name === "Oraseas EE");
+      if (oraseasOrg) {
+        effectiveInitialData.organization_id = oraseasOrg.id;
+      }
     }
 
 
@@ -80,12 +80,18 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
   // Filter organizations based on user role
   const getFilteredOrganizations = () => {
     if (!user) return [];
+
+    // Super Admin can see all organizations
+    if (user.role === "super_admin") {
+      return organizations;
+    }
+
     // In edit mode, the organization is fixed, so we just need to show the current one if it's available.
     // Or, if user is Customer Admin/User, their org is fixed.
     if (isEditMode || (user.role === "Customer Admin" || user.role === "Customer User")) {
-        const currentOrgId = formData.organization_id || user.organization_id;
-        const org = organizations.find(o => o.id === currentOrgId);
-        return org ? [org] : []; // Return as array or empty if not found (shouldn't happen if data is consistent)
+      const currentOrgId = formData.organization_id || user.organization_id;
+      const org = organizations.find(o => o.id === currentOrgId);
+      return org ? [org] : []; // Return as array or empty if not found (shouldn't happen if data is consistent)
     }
     // For Oraseas Admin/Inventory Manager in create mode:
     if (user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") {
@@ -122,7 +128,9 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
         >
           <option value="">Select an Organization</option>
           {filteredOrganizations.map((org) => (
-            <option key={org.id} value={org.id}>{org.name} ({org.type})</option>
+            <option key={org.id} value={org.id}>
+              {org.name}{org.type ? ` (${org.type})` : ''}
+            </option>
           ))}
         </select>
       </div>
@@ -140,7 +148,7 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
           disabled={loading || isEditMode}
         >
           <option value="">Select a Part</option>
-          {parts.map((part) => (
+          {Array.isArray(parts) && parts.map((part) => (
             <option key={part.id} value={part.id}>{part.name} ({part.part_number})</option>
           ))}
         </select>

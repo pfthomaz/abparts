@@ -66,7 +66,16 @@ const Orders = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredSupplierOrders = useMemo(() => {
     return supplierOrders

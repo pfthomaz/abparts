@@ -38,11 +38,14 @@ const InventoryAdjustmentForm = ({ onSubmit, onCancel }) => {
 
   const fetchParts = async () => {
     try {
-      const data = await partsService.getParts({ limit: 100 });
-      setParts(data);
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      // Handle paginated response format
+      const partsData = response?.items || response || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
     } catch (err) {
       setError('Failed to fetch parts');
       console.error('Failed to fetch parts:', err);
+      setParts([]); // Ensure parts is always an array
     }
   };
 
@@ -73,10 +76,10 @@ const InventoryAdjustmentForm = ({ onSubmit, onCancel }) => {
     }));
   };
 
-  const filteredParts = parts.filter(part =>
+  const filteredParts = Array.isArray(parts) ? parts.filter(part =>
     part.part_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     part.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   const reasonOptions = [
     'Damaged goods',
