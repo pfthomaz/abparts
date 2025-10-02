@@ -31,6 +31,9 @@ const getInventory = (filters = {}) => {
 const getWarehouseInventory = (warehouseId, filters = {}) => {
   const queryParams = new URLSearchParams();
 
+  // Add cache-busting timestamp
+  queryParams.append('_t', Date.now().toString());
+
   if (filters && typeof filters === 'object') {
     Object.keys(filters).forEach(key => {
       if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
@@ -40,7 +43,7 @@ const getWarehouseInventory = (warehouseId, filters = {}) => {
   }
 
   const queryString = queryParams.toString();
-  const endpoint = queryString ? `/inventory/warehouse/${warehouseId}?${queryString}` : `/inventory/warehouse/${warehouseId}`;
+  const endpoint = `/inventory/warehouse/${warehouseId}?${queryString}`;
 
   return api.get(endpoint);
 };

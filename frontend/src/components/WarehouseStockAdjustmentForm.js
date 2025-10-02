@@ -76,6 +76,21 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       };
 
       await onSubmit(submitData);
+
+      // Immediately update local state to reflect the change
+      setWarehouseInventory(prevInventory =>
+        prevInventory.map(item =>
+          item.part_id === formData.part_id
+            ? { ...item, current_stock: (parseFloat(item.current_stock) + quantityChange).toString() }
+            : item
+        )
+      );
+
+      // Also refresh from server to ensure consistency
+      setTimeout(async () => {
+        await fetchWarehouseInventory();
+      }, 500);
+
     } catch (err) {
       setError(err.message || 'Failed to create adjustment');
     } finally {

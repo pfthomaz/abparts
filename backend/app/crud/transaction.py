@@ -194,21 +194,21 @@ def validate_transaction_data(transaction: schemas.TransactionCreate):
 
 def update_inventory_from_transaction(db: Session, transaction: models.Transaction):
     """Update inventory based on transaction type."""
-    if transaction.transaction_type == models.TransactionType.CREATION:
+    if transaction.transaction_type == "creation":
         # Increase inventory in to_warehouse
         update_inventory(db, transaction.to_warehouse_id, transaction.part_id, transaction.quantity)
     
-    elif transaction.transaction_type == models.TransactionType.TRANSFER:
+    elif transaction.transaction_type == "transfer":
         # Decrease inventory in from_warehouse
         update_inventory(db, transaction.from_warehouse_id, transaction.part_id, -transaction.quantity)
         # Increase inventory in to_warehouse
         update_inventory(db, transaction.to_warehouse_id, transaction.part_id, transaction.quantity)
     
-    elif transaction.transaction_type == models.TransactionType.CONSUMPTION:
+    elif transaction.transaction_type == "consumption":
         # Decrease inventory in from_warehouse
         update_inventory(db, transaction.from_warehouse_id, transaction.part_id, -transaction.quantity)
     
-    elif transaction.transaction_type == models.TransactionType.ADJUSTMENT:
+    elif transaction.transaction_type == "adjustment":
         # Adjust inventory in from_warehouse (can be positive or negative)
         update_inventory(db, transaction.from_warehouse_id, transaction.part_id, transaction.quantity)
 
@@ -359,21 +359,21 @@ def reverse_transaction(db: Session, reversal: schemas.TransactionReversal):
         db.add(new_transaction)
         
         # Update inventory based on transaction type (with opposite effect)
-        if original_transaction.transaction_type == models.TransactionType.CREATION:
+        if original_transaction.transaction_type == "creation":
             # Decrease inventory in original to_warehouse
             update_inventory(db, original_transaction.to_warehouse_id, original_transaction.part_id, -original_transaction.quantity)
         
-        elif original_transaction.transaction_type == models.TransactionType.TRANSFER:
+        elif original_transaction.transaction_type == "transfer":
             # Increase inventory in original from_warehouse
             update_inventory(db, original_transaction.from_warehouse_id, original_transaction.part_id, original_transaction.quantity)
             # Decrease inventory in original to_warehouse
             update_inventory(db, original_transaction.to_warehouse_id, original_transaction.part_id, -original_transaction.quantity)
         
-        elif original_transaction.transaction_type == models.TransactionType.CONSUMPTION:
+        elif original_transaction.transaction_type == "consumption":
             # Increase inventory in original from_warehouse
             update_inventory(db, original_transaction.from_warehouse_id, original_transaction.part_id, original_transaction.quantity)
         
-        elif original_transaction.transaction_type == models.TransactionType.ADJUSTMENT:
+        elif original_transaction.transaction_type == "adjustment":
             # Adjust inventory in original from_warehouse (with opposite sign)
             update_inventory(db, original_transaction.from_warehouse_id, original_transaction.part_id, -original_transaction.quantity)
         
@@ -504,13 +504,13 @@ def get_part_transaction_history(db: Session, part_id: uuid.UUID, days: int = 90
     total_adjusted = Decimal('0')
     
     for transaction in transactions:
-        if transaction["transaction_type"] == models.TransactionType.CREATION:
+        if transaction["transaction_type"] == "creation":
             total_created += transaction["quantity"]
-        elif transaction["transaction_type"] == models.TransactionType.TRANSFER:
+        elif transaction["transaction_type"] == "transfer":
             total_transferred += transaction["quantity"]
-        elif transaction["transaction_type"] == models.TransactionType.CONSUMPTION:
+        elif transaction["transaction_type"] == "consumption":
             total_consumed += transaction["quantity"]
-        elif transaction["transaction_type"] == models.TransactionType.ADJUSTMENT:
+        elif transaction["transaction_type"] == "adjustment":
             total_adjusted += transaction["quantity"]
     
     # Calculate net quantity

@@ -5,7 +5,7 @@ import logging
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func # for sum
+from sqlalchemy import func # for sum and now()
 from fastapi import HTTPException, status
 
 from .. import models, schemas # Import models and schemas
@@ -42,7 +42,14 @@ def create_stock_adjustment(db: Session, inventory_id: uuid.UUID, adjustment_in:
         db.add(db_adjustment)
 
         # Update the current stock in the inventory item
+        old_stock = inventory_item.current_stock
         inventory_item.current_stock += adjustment_in.quantity_adjusted
+        inventory_item.last_updated = func.now()  # Update timestamp
+
+        # Log the stock change for debugging
+        logger.info(f"Stock adjustment: Inventory {inventory_id}, "
+                   f"old stock: {old_stock}, adjustment: {adjustment_in.quantity_adjusted}, "
+                   f"new stock: {inventory_item.current_stock}")
 
         # Sanity check: stock should not go below zero if not allowed by business logic (not enforced here yet)
         # if inventory_item.current_stock < 0:
@@ -54,6 +61,7 @@ def create_stock_adjustment(db: Session, inventory_id: uuid.UUID, adjustment_in:
         db.refresh(db_adjustment)
         db.refresh(inventory_item) # Refresh to get updated inventory
 
+        logger.info(f"Stock adjustment completed successfully: {db_adjustment.id}")
         return db_adjustment
 
     except HTTPException: # Re-raise HTTPExceptions

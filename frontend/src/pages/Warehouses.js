@@ -163,9 +163,23 @@ const Warehouses = () => {
   const handleStockAdjustment = async (adjustmentData) => {
     try {
       await inventoryService.createWarehouseStockAdjustment(selectedWarehouseForInventory.id, adjustmentData);
+
+      // Close modal first
       setShowAdjustmentModal(false);
       setSelectedWarehouseForInventory(null);
-      // Optionally refresh data or show success message
+
+      // Refresh warehouse data
+      await handleSearch();
+
+      // Dispatch inventory update event for other components
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', {
+        detail: {
+          warehouseId: selectedWarehouseForInventory.id,
+          partId: adjustmentData.part_id,
+          adjustment: adjustmentData.quantity_change
+        }
+      }));
+
     } catch (err) {
       console.error("Error creating stock adjustment:", err);
       throw err;

@@ -810,7 +810,7 @@ class Transaction(Base):
     approvals = relationship("TransactionApproval", back_populates="transaction", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Transaction(id={self.id}, type='{self.transaction_type.value}', part_id={self.part_id}, qty={self.quantity})>"
+        return f"<Transaction(id={self.id}, type='{self.transaction_type}', part_id={self.part_id}, qty={self.quantity})>"
 
 
 class TransactionApprovalStatus(enum.Enum):

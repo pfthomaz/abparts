@@ -30,39 +30,21 @@ class TransactionProcessor:
             # Validate transaction data
             self._validate_transaction(transaction)
             
-            # Check if transaction requires approval
-            requires_approval = self._requires_approval(transaction)
-            
             # Create the transaction
             db_transaction = models.Transaction(**transaction.dict())
-            db_transaction.requires_approval = requires_approval
+            self.db.add(db_transaction)
             
-            # Set approval status if required
-            if requires_approval:
-                db_transaction.approval_status = 'pending'
-                self.db.add(db_transaction)
-                self.db.commit()
-                self.db.refresh(db_transaction)
-                
-                # Log that transaction requires approval
-                logger.info(f"Transaction {db_transaction.id} requires approval and is pending")
-                
-                return db_transaction
-            else:
-                # If no approval required, process immediately
-                self.db.add(db_transaction)
-                
-                # Update inventory based on transaction type
-                self._update_inventory(db_transaction)
-                
-                # Commit the transaction
-                self.db.commit()
-                self.db.refresh(db_transaction)
-                
-                # Log the transaction
-                logger.info(f"Transaction {db_transaction.id} processed successfully")
-                
-                return db_transaction
+            # Update inventory based on transaction type
+            self._update_inventory(db_transaction)
+            
+            # Commit the transaction
+            self.db.commit()
+            self.db.refresh(db_transaction)
+            
+            # Log the transaction
+            logger.info(f"Transaction {db_transaction.id} processed successfully")
+            
+            return db_transaction
         except Exception as e:
             self.db.rollback()
             logger.error(f"Error processing transaction: {e}")
@@ -79,30 +61,18 @@ class TransactionProcessor:
             
             # Create and process all transactions
             db_transactions = []
-            transactions_requiring_approval = []
-            transactions_for_immediate_processing = []
             
-            # First pass: create all transaction records and check which ones need approval
+            # Create all transaction records
             for transaction in transactions:
-                requires_approval = self._requires_approval(transaction)
-                
                 db_transaction = models.Transaction(**transaction.dict())
-                db_transaction.requires_approval = requires_approval
-                
-                if requires_approval:
-                    db_transaction.approval_status = 'pending'
-                    transactions_requiring_approval.append(db_transaction)
-                else:
-                    transactions_for_immediate_processing.append(db_transaction)
-                
                 self.db.add(db_transaction)
                 db_transactions.append(db_transaction)
             
             # Flush to get IDs assigned
             self.db.flush()
             
-            # Second pass: update inventory only for transactions that don't require approval
-            for db_transaction in transactions_for_immediate_processing:
+            # Update inventory for all transactions
+            for db_transaction in db_transactions:
                 self._update_inventory(db_transaction)
             
             # Commit all transactions
@@ -114,8 +84,6 @@ class TransactionProcessor:
             
             # Log the batch processing
             logger.info(f"Batch of {len(db_transactions)} transactions processed successfully")
-            if transactions_requiring_approval:
-                logger.info(f"{len(transactions_requiring_approval)} transactions require approval")
             
             return db_transactions
         except Exception as e:
@@ -196,31 +164,28 @@ class TransactionProcessor:
         if not user:
             raise ValueError(f"User {transaction.performed_by_user_id} not found")
         
-        # Check if transaction requires approval (high-value)
-        if self._requires_approval(transaction):
-            # For now, we'll just log this. In a real system, we might set a status flag
-            # and implement an approval workflow.
-            logger.info(f"High-value transaction requires approval: {transaction.dict()}")
+        # Log transaction validation success
+        logger.debug(f"Transaction validation successful: {transaction.dict()}")
     
     def _update_inventory(self, transaction: models.Transaction):
         """
         Update inventory based on transaction type.
         """
-        if transaction.transaction_type == models.TransactionType.CREATION:
+        if transaction.transaction_type == "creation":
             # Increase inventory in to_warehouse
             self._update_warehouse_inventory(transaction.to_warehouse_id, transaction.part_id, transaction.quantity)
         
-        elif transaction.transaction_type == models.TransactionType.TRANSFER:
+        elif transaction.transaction_type == "transfer":
             # Decrease inventory in from_warehouse
             self._update_warehouse_inventory(transaction.from_warehouse_id, transaction.part_id, -transaction.quantity)
             # Increase inventory in to_warehouse
             self._update_warehouse_inventory(transaction.to_warehouse_id, transaction.part_id, transaction.quantity)
         
-        elif transaction.transaction_type == models.TransactionType.CONSUMPTION:
+        elif transaction.transaction_type == "consumption":
             # Decrease inventory in from_warehouse
             self._update_warehouse_inventory(transaction.from_warehouse_id, transaction.part_id, -transaction.quantity)
         
-        elif transaction.transaction_type == models.TransactionType.ADJUSTMENT:
+        elif transaction.transaction_type == "adjustment":
             # Adjust inventory in from_warehouse (can be positive or negative)
             self._update_warehouse_inventory(transaction.from_warehouse_id, transaction.part_id, transaction.quantity)
     
@@ -309,7 +274,7 @@ class TransactionProcessor:
         creation_transactions = self.db.query(
             models.Transaction
         ).filter(
-            models.Transaction.transaction_type == models.TransactionType.CREATION,
+            models.Transaction.transaction_type == "creation",
             models.Transaction.part_id == part_id,
             models.Transaction.to_warehouse_id == warehouse_id
         ).all()
@@ -317,7 +282,7 @@ class TransactionProcessor:
         transfer_in_transactions = self.db.query(
             models.Transaction
         ).filter(
-            models.Transaction.transaction_type == models.TransactionType.TRANSFER,
+            models.Transaction.transaction_type == "transfer",
             models.Transaction.part_id == part_id,
             models.Transaction.to_warehouse_id == warehouse_id
         ).all()
@@ -325,7 +290,7 @@ class TransactionProcessor:
         transfer_out_transactions = self.db.query(
             models.Transaction
         ).filter(
-            models.Transaction.transaction_type == models.TransactionType.TRANSFER,
+            models.Transaction.transaction_type == "transfer",
             models.Transaction.part_id == part_id,
             models.Transaction.from_warehouse_id == warehouse_id
         ).all()
@@ -333,7 +298,7 @@ class TransactionProcessor:
         consumption_transactions = self.db.query(
             models.Transaction
         ).filter(
-            models.Transaction.transaction_type == models.TransactionType.CONSUMPTION,
+            models.Transaction.transaction_type == "consumption",
             models.Transaction.part_id == part_id,
             models.Transaction.from_warehouse_id == warehouse_id
         ).all()
@@ -341,7 +306,7 @@ class TransactionProcessor:
         adjustment_transactions = self.db.query(
             models.Transaction
         ).filter(
-            models.Transaction.transaction_type == models.TransactionType.ADJUSTMENT,
+            models.Transaction.transaction_type == "adjustment",
             models.Transaction.part_id == part_id,
             models.Transaction.from_warehouse_id == warehouse_id
         ).all()
@@ -412,6 +377,7 @@ class TransactionProcessor:
     def process_approved_transaction(self, transaction_id: uuid.UUID) -> models.Transaction:
         """
         Process a transaction that was previously pending approval and has now been approved.
+        Note: This is a placeholder for future approval workflow implementation.
         """
         try:
             # Get the transaction
@@ -419,22 +385,8 @@ class TransactionProcessor:
             if not db_transaction:
                 raise ValueError(f"Transaction {transaction_id} not found")
             
-            # Check if transaction is pending approval
-            if not db_transaction.requires_approval or db_transaction.approval_status != 'pending':
-                raise ValueError(f"Transaction {transaction_id} is not pending approval")
-            
-            # Update inventory based on transaction type
-            self._update_inventory(db_transaction)
-            
-            # Update transaction status
-            db_transaction.approval_status = 'approved'
-            
-            # Commit the changes
-            self.db.commit()
-            self.db.refresh(db_transaction)
-            
-            # Log the transaction
-            logger.info(f"Approved transaction {db_transaction.id} processed successfully")
+            # For now, just return the transaction as approval workflow is not yet implemented
+            logger.info(f"Transaction {db_transaction.id} approval processed (placeholder)")
             
             return db_transaction
         except Exception as e:
@@ -536,8 +488,8 @@ class TransactionProcessor:
         top_warehouses = top_warehouses_query.all()
         
         # Format results
-        type_counts_dict = {t.transaction_type.value: t.count for t in type_counts}
-        type_quantities_dict = {t.transaction_type.value: float(t.total_quantity) for t in type_quantities}
+        type_counts_dict = {t.transaction_type: t.count for t in type_counts}
+        type_quantities_dict = {t.transaction_type: float(t.total_quantity) for t in type_quantities}
         
         top_parts_list = [
             {

@@ -327,8 +327,7 @@ export const logInventoryValidation = (originalData, validatedData, context = ''
   console.log('Validated data:', validatedData);
 
   if (originalData && typeof originalData === 'object' && !Array.isArray(originalData)) {
-    console.log('Has inventory_summary:', !!originalData.inventory_summary);
-    console.log('inventory_summary type:', typeof originalData.inventory_summary);
+    // Check for inventory_summary structure
   }
 
   console.groupEnd();

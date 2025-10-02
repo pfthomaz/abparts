@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 
 function SupplierOrderForm({ organizations = [], initialData = {}, onSubmit, onClose }) {
-  console.log('SupplierOrderForm received organizations:', organizations);
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

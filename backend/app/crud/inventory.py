@@ -287,23 +287,9 @@ def transfer_inventory_between_warehouses(db: Session, from_warehouse_id: uuid.U
         before_stock_source = from_inventory.current_stock
         before_stock_destination = to_inventory.current_stock if to_inventory else Decimal('0')
         
-        # Update source inventory
-        from_inventory.current_stock -= quantity
-        from_inventory.last_updated = func.now()
-        
-        # Create or update destination inventory
-        if not to_inventory:
-            to_inventory = models.Inventory(
-                warehouse_id=to_warehouse_id,
-                part_id=part_id,
-                current_stock=quantity,
-                unit_of_measure=part.unit_of_measure,
-                minimum_stock_recommendation=Decimal('0')
-            )
-            db.add(to_inventory)
-        else:
-            to_inventory.current_stock += quantity
-            to_inventory.last_updated = func.now()
+        # Note: Inventory updates are handled automatically by the database trigger
+        # 'trigger_update_inventory_on_transaction' when the transaction is inserted.
+        # We don't need to manually update inventory here to avoid double updates.
         
         # Create comprehensive transaction record (only using fields that exist in database)
         transaction = models.Transaction(
@@ -314,17 +300,26 @@ def transfer_inventory_between_warehouses(db: Session, from_warehouse_id: uuid.U
             quantity=quantity,
             unit_of_measure=part.unit_of_measure,
             performed_by_user_id=performed_by_user_id,
-            transaction_date=func.now(),
+            transaction_date=datetime.now(),
             notes=f"Transfer from {from_warehouse.name} to {to_warehouse.name}",
             reference_number=None
         )
         db.add(transaction)
         
-        # Commit all changes atomically
+        # Commit all changes atomically (trigger will update inventory)
         db.commit()
-        db.refresh(from_inventory)
-        db.refresh(to_inventory)
         db.refresh(transaction)
+        
+        # Fetch updated inventory values after trigger execution
+        updated_from_inventory = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == from_warehouse_id,
+            models.Inventory.part_id == part_id
+        ).first()
+        
+        updated_to_inventory = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == to_warehouse_id,
+            models.Inventory.part_id == part_id
+        ).first()
         
         # Invalidate cache for both warehouses
         invalidate_warehouse_analytics_cache(str(from_warehouse_id))
@@ -342,13 +337,13 @@ def transfer_inventory_between_warehouses(db: Session, from_warehouse_id: uuid.U
                 "id": str(from_warehouse_id),
                 "name": from_warehouse.name,
                 "stock_before": float(before_stock_source),
-                "stock_after": float(from_inventory.current_stock)
+                "stock_after": float(updated_from_inventory.current_stock) if updated_from_inventory else 0.0
             },
             "destination_warehouse": {
                 "id": str(to_warehouse_id),
                 "name": to_warehouse.name,
                 "stock_before": float(before_stock_destination),
-                "stock_after": float(to_inventory.current_stock)
+                "stock_after": float(updated_to_inventory.current_stock) if updated_to_inventory else float(quantity)
             },
             "transfer_date": transaction.transaction_date.isoformat()
         }

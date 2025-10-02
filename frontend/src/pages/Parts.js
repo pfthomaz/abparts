@@ -256,8 +256,6 @@ const Parts = () => {
       // Force refresh the parts data with a fresh API call
       await fetchParts();
 
-      console.log('Parts refreshed after creation/update'); // Debug log
-
       setShowModal(false);
       setEditingPart(null);
     } catch (err) {

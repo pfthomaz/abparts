@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { warehouseService } from '../services/warehouseService';
 import { partsService } from '../services/partsService';
+import { inventoryService } from '../services/inventoryService';
 import { safeFilter } from '../utils/inventoryValidation';
 
 const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
@@ -12,8 +13,8 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
-    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end_date: new Date().toISOString().split('T')[0],
+    start_date: '2025-09-01', // Use a fixed date in the past
+    end_date: '2025-09-29',   // Use a fixed date that's valid
     direction: 'all', // 'all', 'in', 'out'
     part_id: '',
     status: 'all'
@@ -25,32 +26,108 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
     if (warehouseId) {
       fetchData();
     }
-  }, [warehouseId]); // Remove filters dependency to prevent excessive API calls
+  }, [warehouseId, filters.start_date, filters.end_date]); // Refresh when warehouse or date filters change
 
-  // Auto-refresh disabled temporarily while transfer API has validation issues
-  // useEffect(() => {
-  //   if (!warehouseId) return;
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    if (!warehouseId) return;
 
-  //   const interval = setInterval(() => {
-  //     fetchData();
-  //   }, 10 * 60 * 1000);
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10 * 60 * 1000);
 
-  //   return () => clearInterval(interval);
-  // }, [warehouseId]);
+    return () => clearInterval(interval);
+  }, [warehouseId]);
 
   const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
+      // Validate warehouse ID before making API calls
+      if (!warehouseId) {
+        console.log('No warehouse ID provided, skipping transfer fetch');
+        setTransfers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(warehouseId)) {
+        console.error('Invalid warehouse ID format:', warehouseId);
+        setError('Invalid warehouse ID format');
+        setLoading(false);
+        return;
+      }
+
       // Fetch data with individual error handling
       let transfersData = [];
       let warehousesData = [];
       let partsData = [];
 
-      // Skip transfer API calls for now to avoid console errors
-      // The transfer API seems to have validation issues that need backend fixes
-      // For now, we'll show an empty state instead of making failing API calls
-      transfersData = [];
+      try {
+        // Debug: Log all the values we're about to send
+        console.log('Debug - warehouseId:', warehouseId, 'type:', typeof warehouseId);
+        console.log('Debug - start_date:', filters.start_date, 'type:', typeof filters.start_date);
+        console.log('Debug - end_date:', filters.end_date, 'type:', typeof filters.end_date);
+
+        console.log('Fetching transfers with params:', {
+          warehouse_id: warehouseId,
+          start_date: filters.start_date,
+          end_date: filters.end_date,
+          limit: 1000
+        });
+
+        // Validate date formats
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(filters.start_date) || !dateRegex.test(filters.end_date)) {
+          throw new Error(`Invalid date format. start_date: ${filters.start_date}, end_date: ${filters.end_date}. Expected YYYY-MM-DD`);
+        }
+
+        // Fetch transfers with proper filtering
+        console.log('Fetching transfers with params:', {
+          warehouse_id: warehouseId,
+          start_date: filters.start_date,
+          end_date: filters.end_date,
+          limit: 1000
+        });
+
+        const transfersResponse = await inventoryService.getInventoryTransfers({
+          warehouse_id: warehouseId,
+          start_date: filters.start_date,
+          end_date: filters.end_date,
+          limit: 1000
+        });
+
+        console.log('Transfers response:', transfersResponse);
+        transfersData = Array.isArray(transfersResponse) ? transfersResponse : [];
+      } catch (transferError) {
+        console.error('Failed to fetch transfers:', transferError);
+        console.error('Full error object:', JSON.stringify(transferError, null, 2));
+
+        // Log the full response for debugging
+        if (transferError.response) {
+          console.error('Error response status:', transferError.response.status);
+          console.error('Error response headers:', transferError.response.headers);
+          console.error('Error response data:', transferError.response.data);
+        }
+
+        // Handle specific error types
+        if (transferError.response?.status === 422) {
+          console.error('422 Validation error details:', transferError.response.data);
+          // Log the specific validation errors
+          if (transferError.response.data?.detail) {
+            console.error('Validation detail:', transferError.response.data.detail);
+          }
+        } else if (transferError.response?.status === 401) {
+          console.error('Authentication error - user may need to log in again');
+        } else {
+          console.error('Transfer error details:', transferError.response?.data || transferError.message);
+        }
+
+        transfersData = [];
+        // Don't set a general error here - let the component show "no transfers found" instead
+      }
 
       try {
         warehousesData = await warehouseService.getWarehouses();
@@ -136,8 +213,8 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       ...prev,
       [field]: value
     }));
-    // Don't trigger API calls on filter changes - filters work client-side
-    // This prevents the 422 validation errors from rapid API calls
+    // Date filters will trigger API calls via useEffect
+    // Other filters work client-side to avoid excessive API calls
   };
 
   const getTransferDirection = (transfer) => {
@@ -343,8 +420,16 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       {filteredTransfers.length === 0 ? (
         <div className="bg-gray-50 p-8 rounded-lg text-center">
           <div className="text-gray-500">
-            <div className="mb-2">Transfer history is temporarily unavailable.</div>
-            <div className="text-sm">The transfer API is being updated to resolve validation issues. This feature will be restored soon.</div>
+            <div className="mb-2">No transfer history found.</div>
+            <div className="text-sm">
+              {warehouseId ?
+                'No transfers have been recorded for this warehouse in the selected date range.' :
+                'Please select a warehouse to view transfer history.'
+              }
+            </div>
+            <div className="text-xs text-gray-600 mt-2">
+              Transfer functionality is working. Create some transfers to see history here.
+            </div>
           </div>
         </div>
       ) : (

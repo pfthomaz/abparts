@@ -1,6 +1,6 @@
 // frontend/src/components/WarehouseInventoryView.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
 import { validateInventoryData, safeFilter } from '../utils/inventoryValidation';
@@ -12,6 +12,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'low_stock', 'out_of_stock'
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchWarehouseInventory = useCallback(async () => {
     setLoading(true);
@@ -21,6 +22,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
       // Use the validation utility to ensure we have a proper array
       const validatedData = validateInventoryData(data);
       setInventoryItems(validatedData);
+      setLastUpdated(new Date());
     } catch (err) {
       setError('Failed to fetch warehouse inventory');
       console.error('Failed to fetch warehouse inventory:', err);
@@ -50,12 +52,37 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
     }
   }, [warehouseId, fetchWarehouseInventory, fetchParts]);
 
+  // Listen for inventory updates and refresh automatically
+  useEffect(() => {
+    const handleInventoryUpdate = (event) => {
+      if (event.detail) {
+        // Check if this warehouse is affected (either as source or destination)
+        const isSourceWarehouse = event.detail.warehouseId === warehouseId;
+        const isDestinationWarehouse = event.detail.toWarehouseId === warehouseId;
+
+        if (isSourceWarehouse || isDestinationWarehouse) {
+          fetchWarehouseInventory();
+        }
+      }
+    };
+
+    window.addEventListener('inventoryUpdated', handleInventoryUpdate);
+    return () => {
+      window.removeEventListener('inventoryUpdated', handleInventoryUpdate);
+    };
+  }, [warehouseId, fetchWarehouseInventory]);
+
+  // Use ref to store the latest refresh function
+  const refreshFunctionRef = useRef(fetchWarehouseInventory);
+  refreshFunctionRef.current = fetchWarehouseInventory;
+
   // Expose refresh function to parent component
   useEffect(() => {
     if (onRefresh && typeof onRefresh === 'function') {
-      onRefresh(fetchWarehouseInventory);
+      const refreshWrapper = () => refreshFunctionRef.current();
+      onRefresh(refreshWrapper);
     }
-  }, [onRefresh, fetchWarehouseInventory]);
+  }, [onRefresh]);
 
   const getPartDetails = (partId) => {
     if (!Array.isArray(parts)) {
@@ -138,6 +165,11 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
 
         <div className="text-sm text-gray-500">
           {filteredInventory.length} items
+          {lastUpdated && (
+            <div className="text-xs text-gray-400 mt-1">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+          )}
         </div>
       </div>
 

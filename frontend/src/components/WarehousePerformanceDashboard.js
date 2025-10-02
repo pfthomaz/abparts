@@ -253,7 +253,6 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
           warehouse={warehouse}
           onUpdate={(updatedWarehouse) => {
             // Handle warehouse update if needed
-            console.log('Warehouse updated:', updatedWarehouse);
           }}
         />
       )}

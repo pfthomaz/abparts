@@ -12,6 +12,7 @@ import InventoryTransferForm from '../components/InventoryTransferForm';
 import WarehouseStockAdjustmentForm from '../components/WarehouseStockAdjustmentForm';
 import WarehouseInventoryAggregationView from '../components/WarehouseInventoryAggregationView';
 import WarehouseInventoryAnalytics from '../components/WarehouseInventoryAnalytics';
+
 import WarehouseInventoryReporting from '../components/WarehouseInventoryReporting';
 import WarehouseDetailedView from '../components/WarehouseDetailedView';
 import WarehouseSelector from '../components/WarehouseSelector';
@@ -33,6 +34,8 @@ const Inventory = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
   const [viewMode, setViewMode] = useState('warehouse'); // 'warehouse', 'aggregated', 'analytics', 'reporting'
   const [warehouseInventoryRefresh, setWarehouseInventoryRefresh] = useState(null);
+
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -116,8 +119,42 @@ const Inventory = () => {
   const handleInventoryTransfer = async (transferData) => {
     try {
       await inventoryService.transferInventory(transferData);
-      await fetchData();
+
+      // Close modal first to avoid any interference
       closeModal();
+
+      // Refresh the main inventory data
+      await fetchData();
+
+      // Dispatch event immediately for any listening components
+      const eventDetail = {
+        warehouseId: transferData.from_warehouse_id,
+        toWarehouseId: transferData.to_warehouse_id,
+        partId: transferData.part_id,
+        transfer: transferData.quantity
+      };
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', { detail: eventDetail }));
+
+      // Force refresh the warehouse inventory view with multiple attempts for reliability
+      if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+        // Use multiple refresh attempts to ensure it works
+        setTimeout(async () => {
+          try {
+            await warehouseInventoryRefresh();
+          } catch (refreshError) {
+            console.error('Error refreshing warehouse inventory:', refreshError);
+          }
+        }, 100);
+
+        setTimeout(async () => {
+          try {
+            await warehouseInventoryRefresh();
+          } catch (refreshError) {
+            console.error('Error refreshing warehouse inventory:', refreshError);
+          }
+        }, 1000);
+      }
+
     } catch (err) {
       console.error("Error creating inventory transfer:", err);
       throw err;
@@ -128,13 +165,29 @@ const Inventory = () => {
     try {
       await inventoryService.createWarehouseStockAdjustment(selectedWarehouseId, adjustmentData);
 
-      // Refresh the main inventory data
+      // Refresh the main inventory data first
       await fetchData();
 
-      // Also refresh the warehouse inventory view if it's available
+      // Force refresh the warehouse inventory view with a small delay to ensure backend consistency
       if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
-        await warehouseInventoryRefresh();
+        // Add a small delay to ensure database consistency
+        setTimeout(async () => {
+          try {
+            await warehouseInventoryRefresh();
+          } catch (refreshError) {
+            console.error('Error refreshing warehouse inventory:', refreshError);
+          }
+        }, 500);
       }
+
+      // Also trigger a page-level refresh to ensure all components are updated
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', {
+        detail: {
+          warehouseId: selectedWarehouseId,
+          partId: adjustmentData.part_id,
+          adjustment: adjustmentData.quantity_change
+        }
+      }));
 
       closeModal();
     } catch (err) {
@@ -305,66 +358,68 @@ const Inventory = () => {
       )}
 
       {/* Render content based on view mode */}
-      {viewMode === 'warehouse' && (
-        <>
-          {selectedWarehouseId ? (
-            <WarehouseDetailedView
-              warehouseId={selectedWarehouseId}
-              warehouse={selectedWarehouse}
-              onInventoryRefresh={setWarehouseInventoryRefresh}
-            />
-          ) : (
-            <div className="text-center py-10 bg-white rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold text-gray-700">Select a Warehouse</h3>
-              <p className="text-gray-500 mt-2">
-                Choose a warehouse from the dropdown above to view its inventory.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {viewMode === 'aggregated' && (
-        <WarehouseInventoryAggregationView
-          organizationId={user.organization_id}
-        />
-      )}
-
-      {viewMode === 'analytics' && (
-        <>
-          {selectedWarehouseId ? (
-            <WarehouseInventoryAnalytics
-              warehouseId={selectedWarehouseId}
-              warehouse={selectedWarehouse}
-            />
-          ) : (
-            <div className="mb-6">
-              <div className="bg-white p-4 rounded-lg shadow-md">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Warehouse for Analytics
-                </label>
-                <WarehouseSelector
-                  selectedWarehouseId={selectedWarehouseId}
-                  onWarehouseChange={handleWarehouseChange}
-                  placeholder="Select a warehouse to view analytics"
-                />
-              </div>
-              <div className="text-center py-10 bg-white rounded-lg shadow-md mt-4">
+      <>
+        {viewMode === 'warehouse' && (
+          <>
+            {selectedWarehouseId ? (
+              <WarehouseDetailedView
+                warehouseId={selectedWarehouseId}
+                warehouse={selectedWarehouse}
+                onInventoryRefresh={setWarehouseInventoryRefresh}
+              />
+            ) : (
+              <div className="text-center py-10 bg-white rounded-lg shadow-md">
                 <h3 className="text-xl font-semibold text-gray-700">Select a Warehouse</h3>
                 <p className="text-gray-500 mt-2">
-                  Choose a warehouse from the dropdown above to view its analytics.
+                  Choose a warehouse from the dropdown above to view its inventory.
                 </p>
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
 
-      {viewMode === 'reporting' && (
-        <WarehouseInventoryReporting
-          organizationId={user.organization_id}
-        />
-      )}
+        {viewMode === 'aggregated' && (
+          <WarehouseInventoryAggregationView
+            organizationId={user.organization_id}
+          />
+        )}
+
+        {viewMode === 'analytics' && (
+          <>
+            {selectedWarehouseId ? (
+              <WarehouseInventoryAnalytics
+                warehouseId={selectedWarehouseId}
+                warehouse={selectedWarehouse}
+              />
+            ) : (
+              <div className="mb-6">
+                <div className="bg-white p-4 rounded-lg shadow-md">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Warehouse for Analytics
+                  </label>
+                  <WarehouseSelector
+                    selectedWarehouseId={selectedWarehouseId}
+                    onWarehouseChange={handleWarehouseChange}
+                    placeholder="Select a warehouse to view analytics"
+                  />
+                </div>
+                <div className="text-center py-10 bg-white rounded-lg shadow-md mt-4">
+                  <h3 className="text-xl font-semibold text-gray-700">Select a Warehouse</h3>
+                  <p className="text-gray-500 mt-2">
+                    Choose a warehouse from the dropdown above to view its analytics.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {viewMode === 'reporting' && (
+          <WarehouseInventoryReporting
+            organizationId={user.organization_id}
+          />
+        )}
+      </>
 
       <Modal
         isOpen={showModal}
@@ -373,7 +428,7 @@ const Inventory = () => {
       >
         {renderModalContent()}
       </Modal>
-    </div>
+    </div >
   );
 };
 

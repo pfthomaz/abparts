@@ -8,6 +8,7 @@ from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import func
 from pydantic import ValidationError, BaseModel, Field
 from decimal import Decimal
 
@@ -188,6 +189,89 @@ async def get_inventory_items(
         # Regular users can only see inventory from their organization's warehouses
         inventory_items = crud.inventory.get_inventory_by_organization(db, current_user.organization_id)
     return inventory_items
+
+# --- Transfer History Endpoint (must be before /{inventory_id}) ---
+@router.get("/transfers", response_model=List[schemas.TransactionResponse])
+async def get_inventory_transfers(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    start_date: Optional[date] = Query(None, description="Start date filter (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="End date filter (YYYY-MM-DD)"),
+    from_warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by source warehouse"),
+    to_warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by destination warehouse"),
+    warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by warehouse (either source or destination)"),
+    part_id: Optional[uuid.UUID] = Query(None, description="Filter by part ID"),
+    direction: Optional[str] = Query(None, description="Transfer direction filter (ignored - for frontend compatibility)"),
+    directions: Optional[str] = Query(None, description="Transfer directions filter (ignored - for frontend compatibility)"),
+    status: Optional[str] = Query(None, description="Status filter (ignored - for frontend compatibility)"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get inventory transfer history with optional filtering.
+    Users can only view transfers involving their organization's warehouses.
+    """
+    try:
+        logger.info(f"Transfer history request from user {current_user.user_id} (org: {current_user.organization_id})")
+        
+        # Convert date objects to datetime objects if provided
+        start_datetime = None
+        end_datetime = None
+        
+        if start_date:
+            start_datetime = datetime.combine(start_date, datetime.min.time())
+        if end_date:
+            end_datetime = datetime.combine(end_date, datetime.max.time())
+        
+        # Handle warehouse_id parameter - if provided, it means transfers involving this warehouse
+        # We'll filter this after getting the results since we need OR logic (from OR to)
+        actual_from_warehouse_id = from_warehouse_id
+        actual_to_warehouse_id = to_warehouse_id
+        
+        # Create filter for transfer transactions
+        filters = schemas.TransactionFilter(
+            transaction_type=schemas.TransactionTypeEnum.TRANSFER,
+            start_date=start_datetime,
+            end_date=end_datetime,
+            from_warehouse_id=actual_from_warehouse_id,
+            to_warehouse_id=actual_to_warehouse_id,
+            part_id=part_id
+        )
+        
+        # Get transfer transactions
+        transfers = crud.transaction.search_transactions(db, filters, skip, limit)
+        
+        # If user is not a super_admin, filter transfers by organization
+        if current_user.role != "super_admin":
+            # Get all warehouses for the user's organization
+            warehouses = db.query(models.Warehouse).filter(
+                models.Warehouse.organization_id == current_user.organization_id
+            ).all()
+            warehouse_ids = [w.id for w in warehouses]
+            
+            # Filter transfers where from_warehouse_id or to_warehouse_id is in the organization's warehouses
+            transfers = [
+                t for t in transfers 
+                if (t.get("from_warehouse_id") in warehouse_ids or t.get("to_warehouse_id") in warehouse_ids)
+            ]
+        
+        # Apply warehouse_id filter if provided (transfers involving this specific warehouse)
+        if warehouse_id:
+            transfers = [
+                t for t in transfers
+                if (t.get("from_warehouse_id") == warehouse_id or t.get("to_warehouse_id") == warehouse_id)
+            ]
+        
+        return transfers
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Error fetching inventory transfers: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while fetching transfer history"
+        )
 
 @router.get("/{inventory_id}", response_model=schemas.InventoryResponse)
 async def get_inventory_item(
@@ -393,84 +477,6 @@ async def transfer_inventory_between_warehouses(
         logger.error(f"Unexpected error in inventory transfer endpoint: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during transfer")
 
-
-@router.get("/transfers", response_model=List[schemas.TransactionResponse])
-async def get_inventory_transfers(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    start_date: Optional[date] = Query(None, description="Start date filter (YYYY-MM-DD)"),
-    end_date: Optional[date] = Query(None, description="End date filter (YYYY-MM-DD)"),
-    from_warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by source warehouse"),
-    to_warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by destination warehouse"),
-    warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by warehouse (either source or destination)"),
-    part_id: Optional[uuid.UUID] = Query(None, description="Filter by part ID"),
-    direction: Optional[str] = Query(None, description="Transfer direction filter (ignored - for frontend compatibility)"),
-    directions: Optional[str] = Query(None, description="Transfer directions filter (ignored - for frontend compatibility)"),
-    status: Optional[str] = Query(None, description="Status filter (ignored - for frontend compatibility)"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    """
-    Get inventory transfer history with optional filtering.
-    Users can only view transfers involving their organization's warehouses.
-    """
-    try:
-        # Convert date objects to datetime objects if provided
-        start_datetime = None
-        end_datetime = None
-        
-        if start_date:
-            start_datetime = datetime.combine(start_date, datetime.min.time())
-        if end_date:
-            end_datetime = datetime.combine(end_date, datetime.max.time())
-        
-        # Handle warehouse_id parameter - if provided, it means transfers involving this warehouse
-        # We'll filter this after getting the results since we need OR logic (from OR to)
-        actual_from_warehouse_id = from_warehouse_id
-        actual_to_warehouse_id = to_warehouse_id
-        
-        # Create filter for transfer transactions
-        filters = schemas.TransactionFilter(
-            transaction_type=schemas.TransactionTypeEnum.TRANSFER,
-            start_date=start_datetime,
-            end_date=end_datetime,
-            from_warehouse_id=actual_from_warehouse_id,
-            to_warehouse_id=actual_to_warehouse_id,
-            part_id=part_id
-        )
-        
-        # Get transfer transactions
-        transfers = crud.transaction.search_transactions(db, filters, skip, limit)
-        
-        # If user is not a super_admin, filter transfers by organization
-        if current_user.role != "super_admin":
-            # Get all warehouses for the user's organization
-            warehouses = db.query(models.Warehouse).filter(
-                models.Warehouse.organization_id == current_user.organization_id
-            ).all()
-            warehouse_ids = [w.id for w in warehouses]
-            
-            # Filter transfers where from_warehouse_id or to_warehouse_id is in the organization's warehouses
-            transfers = [
-                t for t in transfers 
-                if (t.get("from_warehouse_id") in warehouse_ids or t.get("to_warehouse_id") in warehouse_ids)
-            ]
-        
-        # Apply warehouse_id filter if provided (transfers involving this specific warehouse)
-        if warehouse_id:
-            transfers = [
-                t for t in transfers
-                if (t.get("from_warehouse_id") == warehouse_id or t.get("to_warehouse_id") == warehouse_id)
-            ]
-        
-        return transfers
-        
-    except Exception as e:
-        logger.error(f"Error fetching inventory transfers: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error while fetching transfer history"
-        )
 
 
 @router.get("/warehouse/{warehouse_id}/balance-calculations")
@@ -998,12 +1004,21 @@ async def create_warehouse_stock_adjustment(
             db.add(db_adjustment)
 
             # Update the current stock in the inventory item
+            old_stock = inventory_item.current_stock
             inventory_item.current_stock += adjustment_data.quantity_change
+            inventory_item.last_updated = func.now()  # Update the last_updated timestamp
             db.add(inventory_item)
 
+            # Commit the transaction
             db.commit()
+            
+            # Refresh both objects to get the latest data
             db.refresh(db_adjustment)
             db.refresh(inventory_item)
+            
+            logger.info(f"Stock adjustment completed: Part {adjustment_data.part_id} in warehouse {warehouse_id}, "
+                       f"changed from {old_stock} to {inventory_item.current_stock} "
+                       f"(adjustment: {adjustment_data.quantity_change})")
 
             # Get part and user details for response
             part = db.query(models.Part).filter(models.Part.id == adjustment_data.part_id).first()
@@ -1023,7 +1038,8 @@ async def create_warehouse_stock_adjustment(
                 "performed_by_user_id": str(db_adjustment.user_id),
                 "performed_by_user_name": user.name if user else "Unknown",
                 "created_at": db_adjustment.created_at.isoformat(),
-                "updated_at": db_adjustment.updated_at.isoformat()
+                "updated_at": db_adjustment.updated_at.isoformat(),
+                "new_current_stock": float(inventory_item.current_stock)  # Include the updated stock level
             }
             
         except Exception as db_error:
