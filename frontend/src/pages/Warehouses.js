@@ -15,6 +15,7 @@ import { inventoryService } from '../services/inventoryService';
 const Warehouses = () => {
   const { user } = useAuth();
   const [warehouses, setWarehouses] = useState([]);
+  const [warehouseSummaries, setWarehouseSummaries] = useState({});
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -63,6 +64,22 @@ const Warehouses = () => {
       }
 
       setWarehouses(data);
+
+      // Fetch inventory summaries for each warehouse
+      const summaries = {};
+      await Promise.all(
+        data.map(async (warehouse) => {
+          try {
+            const summary = await warehouseService.getWarehouseSummary(warehouse.id);
+            summaries[warehouse.id] = summary;
+          } catch (err) {
+            console.error(`Failed to fetch summary for warehouse ${warehouse.id}:`, err);
+            summaries[warehouse.id] = { total_inventory_items: 0, total_stock_quantity: 0 };
+          }
+        })
+      );
+      setWarehouseSummaries(summaries);
+
     } catch (err) {
       setError(searchQuery.trim() ? 'Failed to search warehouses' : 'Failed to fetch warehouses');
       console.error('Failed to fetch/search warehouses:', err);
@@ -123,20 +140,56 @@ const Warehouses = () => {
   };
 
   const handleDeleteWarehouse = async (warehouse) => {
-    if (!window.confirm(`Are you sure you want to delete warehouse "${warehouse.name}"? This action cannot be undone.`)) {
-      return;
-    }
-
     try {
+      // First, check if warehouse has inventory
+      const summary = await warehouseService.getWarehouseSummary(warehouse.id);
+
+      if (summary.total_inventory_items > 0) {
+        const hasStock = summary.total_stock_quantity > 0;
+        const message = hasStock
+          ? `Cannot delete warehouse "${warehouse.name}" because it contains ${summary.total_inventory_items} inventory items with stock (total quantity: ${summary.total_stock_quantity}). Please transfer all inventory to other warehouses or adjust stock levels to zero before deletion.`
+          : `Cannot delete warehouse "${warehouse.name}" because it contains ${summary.total_inventory_items} inventory items (even with zero stock). Please remove all inventory items before deletion.`;
+
+        setError(message);
+        return;
+      }
+
+      // Show confirmation dialog
+      const confirmMessage = `Are you sure you want to delete warehouse "${warehouse.name}"?\n\nThis action cannot be undone and will permanently remove:\n- The warehouse record\n- All associated data\n\nNote: This warehouse appears to have no inventory items.`;
+
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+
       await warehouseService.deleteWarehouse(warehouse.id);
       handleSearch();
+
+      // Show success message
+      setError(''); // Clear any previous errors
+
     } catch (err) {
-      if (err.message && err.message.includes('inventory')) {
-        setError(`Cannot delete warehouse "${warehouse.name}" because it has inventory. Please adjust inventory to zero first or transfer items to another warehouse.`);
-      } else {
-        setError('Failed to delete warehouse. It may have associated inventory or transactions.');
-      }
       console.error('Failed to delete warehouse:', err);
+
+      // Handle specific error messages from backend
+      let errorMessage = `Failed to delete warehouse "${warehouse.name}".`;
+
+      if (err.response && err.response.data && err.response.data.detail) {
+        const detail = err.response.data.detail;
+
+        if (detail.includes('inventory stock')) {
+          errorMessage = `Cannot delete warehouse "${warehouse.name}" because it has inventory with stock. Please transfer all inventory to other warehouses or adjust stock levels to zero first.`;
+        } else if (detail.includes('transactions')) {
+          errorMessage = `Cannot delete warehouse "${warehouse.name}" because it has associated transactions. Consider deactivating the warehouse instead of deleting it.`;
+        } else if (detail.includes('stock adjustments')) {
+          errorMessage = `Cannot delete warehouse "${warehouse.name}" because it has stock adjustment history. Consider deactivating the warehouse instead of deleting it.`;
+        } else {
+          errorMessage = `Cannot delete warehouse "${warehouse.name}": ${detail}`;
+        }
+      } else if (err.message) {
+        errorMessage = `Cannot delete warehouse "${warehouse.name}": ${err.message}`;
+      }
+
+      setError(errorMessage);
     }
   };
 
@@ -355,6 +408,9 @@ const Warehouses = () => {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Inventory
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -391,6 +447,22 @@ const Warehouses = () => {
                           }`}>
                           {warehouse.is_active ? 'Active' : 'Inactive'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {warehouseSummaries[warehouse.id] ? (
+                          <div className="text-sm">
+                            <div className="text-gray-900">
+                              {warehouseSummaries[warehouse.id].total_inventory_items} items
+                            </div>
+                            {warehouseSummaries[warehouse.id].total_stock_quantity > 0 && (
+                              <div className="text-red-600 text-xs">
+                                Stock: {warehouseSummaries[warehouse.id].total_stock_quantity}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-400">Loading...</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex flex-wrap gap-2">
@@ -431,7 +503,16 @@ const Warehouses = () => {
                           </button>
                           <button
                             onClick={() => handleDeleteWarehouse(warehouse)}
-                            className="text-red-600 hover:text-red-900"
+                            disabled={warehouseSummaries[warehouse.id]?.total_inventory_items > 0}
+                            className={`${warehouseSummaries[warehouse.id]?.total_inventory_items > 0
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-red-600 hover:text-red-900'
+                              }`}
+                            title={
+                              warehouseSummaries[warehouse.id]?.total_inventory_items > 0
+                                ? 'Cannot delete warehouse with inventory items'
+                                : 'Delete warehouse'
+                            }
                           >
                             Delete
                           </button>

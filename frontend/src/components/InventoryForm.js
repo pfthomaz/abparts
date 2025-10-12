@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { processError } from '../utils/errorHandling';
 
-function InventoryForm({ organizations = [], parts = [], initialData = {}, onSubmit, onClose, isEditMode = false }) {
-  const { token, user } = useAuth();
+function InventoryForm({ organizations = [], parts = [], warehouses = [], initialData = {}, onSubmit, onClose, isEditMode = false }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    organization_id: '',
+    warehouse_id: '',
     part_id: '',
     current_stock: 0,
     minimum_stock_recommendation: 0,
+    unit_of_measure: '',
     reorder_threshold_set_by: 'user', // Default value
     // No spread of initialData here, handled by useEffect
   });
@@ -18,30 +20,15 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
 
   useEffect(() => {
     const defaultData = {
-      organization_id: '',
+      warehouse_id: '',
       part_id: '',
       current_stock: 0,
       minimum_stock_recommendation: 0,
+      unit_of_measure: '',
       reorder_threshold_set_by: 'user',
     };
 
     let effectiveInitialData = { ...defaultData, ...initialData };
-
-    // For Customer Admin/User roles, pre-fill their organization_id if not in edit mode
-    // or if in edit mode and the org_id matches their own (should always be true for them)
-    if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
-      if (!isEditMode || (isEditMode && initialData.organization_id === user.organization_id)) {
-        effectiveInitialData.organization_id = user.organization_id || '';
-      }
-    }
-    // If not in edit mode and user is Oraseas Inventory Manager, default to Oraseas EE if available
-    else if (user && user.role === "Oraseas Inventory Manager" && !isEditMode) {
-      const oraseasOrg = organizations.find(org => org.name === "Oraseas EE");
-      if (oraseasOrg) {
-        effectiveInitialData.organization_id = oraseasOrg.id;
-      }
-    }
-
 
     setFormData(effectiveInitialData);
 
@@ -49,10 +36,24 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: type === 'number' ? parseInt(value, 10) : value,
-    }));
+    let newValue = type === 'number' ? parseFloat(value) || 0 : value;
+
+    setFormData((prevData) => {
+      const newData = {
+        ...prevData,
+        [name]: newValue,
+      };
+
+      // Auto-populate unit_of_measure when part is selected
+      if (name === 'part_id' && value) {
+        const selectedPart = parts.find(part => part.id === value);
+        if (selectedPart && selectedPart.unit_of_measure) {
+          newData.unit_of_measure = selectedPart.unit_of_measure;
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -64,45 +65,34 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
       // Ensure numerical fields are numbers, even if optional
       const dataToSend = {
         ...formData,
-        current_stock: parseInt(formData.current_stock, 10),
-        minimum_stock_recommendation: parseInt(formData.minimum_stock_recommendation, 10),
+        current_stock: parseFloat(formData.current_stock),
+        minimum_stock_recommendation: parseFloat(formData.minimum_stock_recommendation),
       };
 
       await onSubmit(dataToSend);
       onClose(); // Close modal on successful submission
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.');
+      const errorMessage = processError(err);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter organizations based on user role
-  const getFilteredOrganizations = () => {
-    if (!user) return [];
+  // Filter warehouses based on user role
+  const getFilteredWarehouses = () => {
+    if (!user || !Array.isArray(warehouses)) return [];
 
-    // Super Admin can see all organizations
+    // Super Admin can see all warehouses
     if (user.role === "super_admin") {
-      return organizations;
+      return warehouses;
     }
 
-    // In edit mode, the organization is fixed, so we just need to show the current one if it's available.
-    // Or, if user is Customer Admin/User, their org is fixed.
-    if (isEditMode || (user.role === "Customer Admin" || user.role === "Customer User")) {
-      const currentOrgId = formData.organization_id || user.organization_id;
-      const org = organizations.find(o => o.id === currentOrgId);
-      return org ? [org] : []; // Return as array or empty if not found (shouldn't happen if data is consistent)
-    }
-    // For Oraseas Admin/Inventory Manager in create mode:
-    if (user.role === "Oraseas Admin" || user.role === "Oraseas Inventory Manager") {
-      // Oraseas roles can ONLY create inventory for "Oraseas EE" via this form, as per backend restrictions.
-      const oraseasOrg = organizations.find(org => org.name === "Oraseas EE" && org.type === 'Warehouse');
-      return oraseasOrg ? [oraseasOrg] : []; // If Oraseas EE (Warehouse) isn't found, they can't create.
-    }
-    return [];
+    // Filter warehouses by user's organization
+    return warehouses.filter(warehouse => warehouse.organization_id === user.organization_id);
   };
 
-  const filteredOrganizations = getFilteredOrganizations();
+  const filteredWarehouses = getFilteredWarehouses();
 
 
   return (
@@ -114,22 +104,22 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
         </div>
       )}
       <div>
-        <label htmlFor="organization_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Organization
+        <label htmlFor="warehouse_id" className="block text-sm font-medium text-gray-700 mb-1">
+          Warehouse
         </label>
         <select
-          id="organization_id"
-          name="organization_id"
+          id="warehouse_id"
+          name="warehouse_id"
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-          value={formData.organization_id}
+          value={formData.warehouse_id}
           onChange={handleChange}
           required
-          disabled={loading || isEditMode || (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) || (user && user.role === 'Oraseas Inventory Manager')}
+          disabled={loading || isEditMode}
         >
-          <option value="">Select an Organization</option>
-          {filteredOrganizations.map((org) => (
-            <option key={org.id} value={org.id}>
-              {org.name}{org.type ? ` (${org.type})` : ''}
+          <option value="">Select a Warehouse</option>
+          {filteredWarehouses.map((warehouse) => (
+            <option key={warehouse.id} value={warehouse.id}>
+              {warehouse.name}
             </option>
           ))}
         </select>
@@ -165,6 +155,7 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
           value={formData.current_stock}
           onChange={handleChange}
           min="0"
+          step="0.001"
           required
           disabled={loading}
         />
@@ -181,8 +172,25 @@ function InventoryForm({ organizations = [], parts = [], initialData = {}, onSub
           value={formData.minimum_stock_recommendation}
           onChange={handleChange}
           min="0"
+          step="0.001"
           required
           disabled={loading}
+        />
+      </div>
+      <div>
+        <label htmlFor="unit_of_measure" className="block text-sm font-medium text-gray-700 mb-1">
+          Unit of Measure
+        </label>
+        <input
+          type="text"
+          id="unit_of_measure"
+          name="unit_of_measure"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
+          value={formData.unit_of_measure}
+          onChange={handleChange}
+          required
+          disabled={loading || !formData.part_id}
+          placeholder="Select a part to auto-fill"
         />
       </div>
       <div>

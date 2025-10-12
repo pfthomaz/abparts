@@ -1,11 +1,14 @@
 # backend/app/crud/warehouses.py
 
 import uuid
+import logging
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from .. import models, schemas
+
+logger = logging.getLogger(__name__)
 
 
 def get_warehouse(db: Session, warehouse_id: uuid.UUID) -> Optional[models.Warehouse]:
@@ -113,14 +116,29 @@ def update_warehouse(db: Session, warehouse_id: uuid.UUID, warehouse_update: "sc
 
 def delete_warehouse(db: Session, warehouse_id: uuid.UUID) -> bool:
     """Delete (deactivate) a warehouse."""
+    logger.info(f"Starting warehouse deletion for ID: {warehouse_id}")
     db_warehouse = get_warehouse(db, warehouse_id)
     if not db_warehouse:
+        logger.warning(f"Warehouse not found: {warehouse_id}")
         return False
     
-    # Check if warehouse has inventory items
-    inventory_count = db.query(models.Inventory).filter(models.Inventory.warehouse_id == warehouse_id).count()
-    if inventory_count > 0:
-        raise ValueError("Cannot delete warehouse with existing inventory items. Deactivate instead.")
+    # Check if warehouse has inventory items with non-zero stock
+    inventory_with_stock = db.query(models.Inventory).filter(
+        models.Inventory.warehouse_id == warehouse_id,
+        models.Inventory.current_stock > 0
+    ).count()
+    if inventory_with_stock > 0:
+        raise ValueError("Cannot delete warehouse with existing inventory stock. Transfer or adjust inventory to zero first.")
+    
+    # Clean up any zero-stock inventory records before deletion
+    zero_stock_inventory = db.query(models.Inventory).filter(
+        models.Inventory.warehouse_id == warehouse_id,
+        models.Inventory.current_stock == 0
+    )
+    zero_stock_count = zero_stock_inventory.count()
+    if zero_stock_count > 0:
+        logger.info(f"Cleaning up {zero_stock_count} zero-stock inventory records for warehouse {warehouse_id}")
+        zero_stock_inventory.delete(synchronize_session=False)
     
     # Check if warehouse has transactions
     transaction_count = db.query(models.Transaction).filter(
@@ -133,10 +151,29 @@ def delete_warehouse(db: Session, warehouse_id: uuid.UUID) -> bool:
     if transaction_count > 0:
         raise ValueError("Cannot delete warehouse with existing transactions. Deactivate instead.")
     
+    # Check if warehouse has stock adjustments (through inventory items)
+    adjustments_count = db.query(models.StockAdjustment).join(
+        models.Inventory, models.StockAdjustment.inventory_id == models.Inventory.id
+    ).filter(
+        models.Inventory.warehouse_id == warehouse_id
+    ).count()
+    if adjustments_count > 0:
+        raise ValueError("Cannot delete warehouse with existing stock adjustments. Deactivate instead.")
+    
+    # Note: Stocktake and MachineWarehouseAssignment models don't exist in current schema
+    # Additional constraint checks can be added here when those models are implemented
+    
     # Safe to delete
-    db.delete(db_warehouse)
-    db.commit()
-    return True
+    logger.info(f"All checks passed, proceeding with warehouse deletion: {warehouse_id}")
+    try:
+        db.delete(db_warehouse)
+        db.commit()
+        logger.info(f"Warehouse successfully deleted: {warehouse_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error during warehouse deletion: {e}")
+        db.rollback()
+        raise
 
 
 def activate_warehouse(db: Session, warehouse_id: uuid.UUID) -> Optional[models.Warehouse]:

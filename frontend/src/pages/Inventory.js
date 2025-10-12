@@ -107,8 +107,52 @@ const Inventory = () => {
         await inventoryService.createInventoryItem(inventoryData);
       }
 
-      await fetchData();
+      // Close modal first to avoid any interference
       closeModal();
+
+      // Refresh the main inventory data
+      await fetchData();
+
+      // Auto-select the warehouse if we're in warehouse view and it's not already selected
+      if (viewMode === 'warehouse' && inventoryData.warehouse_id !== selectedWarehouseId) {
+        const targetWarehouse = warehouses.find(w => w.id === inventoryData.warehouse_id);
+        if (targetWarehouse) {
+          setSelectedWarehouseId(inventoryData.warehouse_id);
+          setSelectedWarehouse(targetWarehouse);
+        }
+      }
+
+      // Dispatch event for any listening components
+      const eventDetail = {
+        warehouseId: inventoryData.warehouse_id,
+        partId: inventoryData.part_id,
+        action: editingInventory ? 'update' : 'create'
+      };
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', { detail: eventDetail }));
+
+      // Force refresh the warehouse inventory view if it's currently displayed
+      // Use a longer delay to ensure the warehouse selection has time to update
+      setTimeout(async () => {
+        if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+          try {
+            await warehouseInventoryRefresh();
+          } catch (refreshError) {
+            console.error('Error refreshing warehouse inventory:', refreshError);
+          }
+        }
+      }, 300);
+
+      // Additional refresh after warehouse selection should be complete
+      setTimeout(async () => {
+        if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+          try {
+            await warehouseInventoryRefresh();
+          } catch (refreshError) {
+            console.error('Error refreshing warehouse inventory:', refreshError);
+          }
+        }
+      }, 2000);
+
     } catch (err) {
       console.error("Error creating/updating inventory item:", err);
       // Re-throw to be caught by the form's error handling
@@ -249,6 +293,7 @@ const Inventory = () => {
           <InventoryForm
             initialData={editingInventory || {}}
             organizations={organizations}
+            warehouses={warehouses}
             parts={parts}
             onSubmit={handleCreateOrUpdate}
             onClose={closeModal}
