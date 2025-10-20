@@ -32,6 +32,9 @@ class SupplierOrderResponse(SupplierOrderBase):
     
     # Include organization name for easier display
     ordering_organization_name: Optional[str] = None
+    
+    # Include order items
+    items: List['SupplierOrderItemResponse'] = []
 
     class Config:
         from_attributes = True
@@ -61,3 +64,6 @@ class SupplierOrderItemResponse(SupplierOrderItemBase):
 
     class Config:
         from_attributes = True
+
+# Update forward references for Pydantic
+SupplierOrderResponse.model_rebuild()

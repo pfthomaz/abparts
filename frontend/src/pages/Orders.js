@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ordersService } from '../services/ordersService';
+import { organizationsService } from '../services/organizationsService';
 import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
 import SupplierOrderForm from '../components/SupplierOrderForm';
 import CustomerOrderForm from '../components/CustomerOrderForm';
-import EnhancedPartOrderForm from '../components/EnhancedPartOrderForm';
 import OrderHistoryView from '../components/OrderHistoryView';
 
 // A helper service to fetch data needed by forms, could be in its own file.
@@ -23,7 +23,6 @@ const Orders = () => {
   const [error, setError] = useState(null);
   const [showSupplierOrderModal, setShowSupplierOrderModal] = useState(false);
   const [showCustomerOrderModal, setShowCustomerOrderModal] = useState(false);
-  const [showEnhancedOrderModal, setShowEnhancedOrderModal] = useState(false);
   const [showFulfillmentModal, setShowFulfillmentModal] = useState(false);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
   const [selectedOrderForFulfillment, setSelectedOrderForFulfillment] = useState(null);
@@ -47,7 +46,7 @@ const Orders = () => {
       ] = await Promise.all([
         ordersService.getSupplierOrders(),
         ordersService.getCustomerOrders(),
-        api.get('/organizations'), // Fetching data for forms
+        organizationsService.getOrganizations({ for_orders: true }), // Fetching data for forms
         api.get('/parts'),         // Fetching data for forms
         api.get('/warehouses'),    // Fetching warehouses for fulfillment
       ]);
@@ -55,7 +54,9 @@ const Orders = () => {
       setSupplierOrders(supplierOrdersData);
       setCustomerOrders(customerOrdersData);
       setOrganizations(orgsData);
-      setParts(partsData);
+      // Handle paginated response format for parts
+      const partsArray = partsData?.items || partsData || [];
+      setParts(Array.isArray(partsArray) ? partsArray : []);
       setWarehouses(warehousesData);
     } catch (err) {
       setError(err.message || 'Failed to fetch order data.');
@@ -130,7 +131,18 @@ const Orders = () => {
 
   const handleCreateSupplierOrder = async (orderData) => {
     try {
-      await ordersService.createSupplierOrder(orderData);
+      const createdOrder = await ordersService.createSupplierOrder(orderData);
+
+      // Create order items
+      for (const item of orderData.items) {
+        await ordersService.createSupplierOrderItem({
+          supplier_order_id: createdOrder.id,
+          part_id: item.part_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price
+        });
+      }
+
       await fetchData(); // Refresh all data
       setShowSupplierOrderModal(false);
     } catch (err) {
@@ -142,7 +154,18 @@ const Orders = () => {
 
   const handleCreateCustomerOrder = async (orderData) => {
     try {
-      await ordersService.createCustomerOrder(orderData);
+      const createdOrder = await ordersService.createCustomerOrder(orderData);
+
+      // Create order items
+      for (const item of orderData.items) {
+        await ordersService.createCustomerOrderItem({
+          customer_order_id: createdOrder.id,
+          part_id: item.part_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price
+        });
+      }
+
       await fetchData(); // Refresh all data
       setShowCustomerOrderModal(false);
     } catch (err) {
@@ -152,63 +175,7 @@ const Orders = () => {
     }
   };
 
-  const handleCreateEnhancedOrder = async (orderData) => {
-    try {
-      // Determine order type based on supplier selection
-      if (orderData.supplier_type === 'oraseas_ee') {
-        // Create customer order (ordering from Oraseas EE)
-        const customerOrderData = {
-          customer_organization_id: orderData.customer_organization_id,
-          oraseas_organization_id: orderData.supplier_organization_id,
-          order_date: orderData.order_date,
-          expected_delivery_date: orderData.expected_delivery_date,
-          status: orderData.status,
-          ordered_by_user_id: user.id,
-          notes: orderData.notes
-        };
 
-        const createdOrder = await ordersService.createCustomerOrder(customerOrderData);
-
-        // Create order items
-        for (const item of orderData.items) {
-          await ordersService.createCustomerOrderItem({
-            customer_order_id: createdOrder.id,
-            part_id: item.part_id,
-            quantity: item.quantity,
-            unit_price: item.unit_price
-          });
-        }
-      } else {
-        // Create supplier order (ordering from own suppliers)
-        const supplierOrderData = {
-          ordering_organization_id: orderData.customer_organization_id,
-          supplier_name: organizations.find(org => org.id === orderData.supplier_organization_id)?.name || 'Unknown',
-          order_date: orderData.order_date,
-          expected_delivery_date: orderData.expected_delivery_date,
-          status: orderData.status,
-          notes: orderData.notes
-        };
-
-        const createdOrder = await ordersService.createSupplierOrder(supplierOrderData);
-
-        // Create order items
-        for (const item of orderData.items) {
-          await ordersService.createSupplierOrderItem({
-            supplier_order_id: createdOrder.id,
-            part_id: item.part_id,
-            quantity: item.quantity,
-            unit_price: item.unit_price
-          });
-        }
-      }
-
-      await fetchData(); // Refresh all data
-      setShowEnhancedOrderModal(false);
-    } catch (err) {
-      console.error("Error creating enhanced order:", err);
-      throw err;
-    }
-  };
 
   const handleOrderStatusUpdate = async (orderId, orderType, newStatus, fulfillmentData = null) => {
     try {
@@ -269,18 +236,17 @@ const Orders = () => {
           >
             Order History
           </button>
-          <button
-            onClick={() => setShowEnhancedOrderModal(true)}
-            className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 font-semibold"
-          >
-            Create Part Order
-          </button>
-          <button
-            onClick={() => setShowSupplierOrderModal(true)}
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold"
-          >
-            Add Supplier Order
-          </button>
+
+          {/* Only show Add Supplier Order for Oraseas EE users and super admins */}
+          {(user?.role === 'super_admin' ||
+            organizations.find(org => org.id === user?.organization_id)?.organization_type === 'oraseas_ee') && (
+              <button
+                onClick={() => setShowSupplierOrderModal(true)}
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold"
+              >
+                Add Supplier Order
+              </button>
+            )}
           <button
             onClick={() => setShowCustomerOrderModal(true)}
             className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-semibold"
@@ -431,7 +397,7 @@ const Orders = () => {
                         <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
                           {order.items.map(item => (
                             <li key={item.id}>
-                              {item.quantity} x {item.part.name} ({item.part.part_number})
+                              {item.quantity} x {item.part_name} ({item.part_number})
                             </li>
                           ))}
                         </ul>
@@ -517,7 +483,7 @@ const Orders = () => {
                         <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
                           {order.items.map(item => (
                             <li key={item.id}>
-                              {item.quantity} x {item.part.name} ({item.part.part_number})
+                              {item.quantity} x {item.part_name} ({item.part_number})
                             </li>
                           ))}
                         </ul>
@@ -552,15 +518,7 @@ const Orders = () => {
         <CustomerOrderForm onSubmit={handleCreateCustomerOrder} onClose={() => setShowCustomerOrderModal(false)} organizations={organizations} parts={parts} />
       </Modal>
 
-      <Modal isOpen={showEnhancedOrderModal} onClose={() => setShowEnhancedOrderModal(false)} title="Create Part Order">
-        <EnhancedPartOrderForm
-          onSubmit={handleCreateEnhancedOrder}
-          onClose={() => setShowEnhancedOrderModal(false)}
-          organizations={organizations}
-          parts={parts}
-          warehouses={warehouses}
-        />
-      </Modal>
+
 
       {/* Order Fulfillment Modal */}
       <Modal

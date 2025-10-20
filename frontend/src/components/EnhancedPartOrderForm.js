@@ -23,8 +23,13 @@ function EnhancedPartOrderForm({ organizations = [], parts = [], warehouses = []
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Ensure parts is always an array
+  const safeParts = Array.isArray(parts) ? parts : [];
+  const safeOrganizations = Array.isArray(organizations) ? organizations : [];
+  const safeWarehouses = Array.isArray(warehouses) ? warehouses : [];
+
   // Find Oraseas EE organization
-  const oraseasOrg = organizations.find(org =>
+  const oraseasOrg = safeOrganizations.find(org =>
     org.organization_type === 'oraseas_ee' ||
     (org.name === 'Oraseas EE' && org.type === 'Warehouse')
   );
@@ -32,13 +37,13 @@ function EnhancedPartOrderForm({ organizations = [], parts = [], warehouses = []
   // Filter suppliers based on selection
   const availableSuppliers = formData.supplier_type === 'oraseas_ee'
     ? [oraseasOrg].filter(Boolean)
-    : organizations.filter(org =>
+    : safeOrganizations.filter(org =>
       org.organization_type === 'supplier' &&
       org.parent_organization_id === user?.organization_id
     );
 
   // Filter warehouses for current user's organization
-  const userWarehouses = warehouses.filter(warehouse =>
+  const userWarehouses = safeWarehouses.filter(warehouse =>
     warehouse.organization_id === user?.organization_id
   );
 
@@ -78,7 +83,7 @@ function EnhancedPartOrderForm({ organizations = [], parts = [], warehouses = []
       return;
     }
 
-    const part = parts.find(p => p.id === currentItem.part_id);
+    const part = safeParts.find(p => p.id === currentItem.part_id);
     if (!part) {
       setError('Selected part not found');
       return;
@@ -141,7 +146,7 @@ function EnhancedPartOrderForm({ organizations = [], parts = [], warehouses = []
     }
   };
 
-  const selectedPart = parts.find(p => p.id === currentItem.part_id);
+  const selectedPart = safeParts.find(p => p.id === currentItem.part_id);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -288,7 +293,7 @@ function EnhancedPartOrderForm({ organizations = [], parts = [], warehouses = []
               disabled={loading}
             >
               <option value="">Select Part</option>
-              {parts.map(part => (
+              {safeParts.map(part => (
                 <option key={part.id} value={part.id}>
                   {part.name} ({part.part_number})
                 </option>

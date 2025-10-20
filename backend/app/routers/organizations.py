@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from .. import schemas, crud
 from ..database import get_db
@@ -24,6 +25,7 @@ router = APIRouter()
 async def get_organizations(
     organization_type: Optional[schemas.OrganizationTypeEnum] = Query(None, description="Filter by organization type"),
     include_inactive: bool = Query(False, description="Include inactive organizations"),
+    for_orders: bool = Query(False, description="Include organizations needed for order creation"),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(require_permission(ResourceType.ORGANIZATION, PermissionType.READ))
 ):
@@ -38,7 +40,36 @@ async def get_organizations(
             query = db.query(models.Organization)
         
         # Apply organization-scoped filtering
-        query = OrganizationScopedQueries.filter_organizations(query, current_user)
+        if for_orders:
+            # For order forms, allow broader access to necessary organizations
+            if not permission_checker.is_super_admin(current_user):
+                # Get user's organization to check type
+                user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+                
+                if user_org and user_org.organization_type == OrganizationType.oraseas_ee:
+                    # Oraseas EE users can see:
+                    # 1. Their own organization (Oraseas EE)
+                    # 2. Supplier organizations (for supplier orders)
+                    # 3. Customer organizations (for customer orders)
+                    query = query.filter(
+                        or_(
+                            models.Organization.id == current_user.organization_id,  # Own organization
+                            models.Organization.organization_type == OrganizationType.supplier,  # Suppliers
+                            models.Organization.organization_type == OrganizationType.customer  # Customers
+                        )
+                    )
+                else:
+                    # Customer users can see:
+                    # 1. Their own organization
+                    # 2. Oraseas EE (needed for customer orders)
+                    query = query.filter(
+                        or_(
+                            models.Organization.id == current_user.organization_id,  # Own organization
+                            models.Organization.organization_type == OrganizationType.oraseas_ee  # Oraseas EE
+                        )
+                    )
+        else:
+            query = OrganizationScopedQueries.filter_organizations(query, current_user)
         
         # Apply inactive filter
         if not include_inactive:

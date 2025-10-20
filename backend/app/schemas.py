@@ -696,6 +696,7 @@ class CustomerOrderUpdate(CustomerOrderBase):
     status: Optional[str] = Field(None, max_length=50)
     ordered_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
+    receiving_warehouse_id: Optional[uuid.UUID] = None
 
 class CustomerOrderResponse(CustomerOrderBase, BaseSchema):
     items: List['CustomerOrderItemResponse'] = []

@@ -49,7 +49,47 @@ def read_customer_orders(
         query = query.filter(models.CustomerOrder.customer_organization_id == current_user.organization_id)
     
     orders = query.order_by(models.CustomerOrder.order_date.desc()).offset(skip).limit(limit).all()
-    return orders
+    
+    # Convert to response format and populate part information
+    response_orders = []
+    for order in orders:
+        order_dict = {
+            "id": order.id,
+            "customer_organization_id": order.customer_organization_id,
+            "oraseas_organization_id": order.oraseas_organization_id,
+            "order_date": order.order_date,
+            "expected_delivery_date": order.expected_delivery_date,
+            "actual_delivery_date": order.actual_delivery_date,
+            "status": order.status,
+            "ordered_by_user_id": order.ordered_by_user_id,
+            "notes": order.notes,
+            "created_at": order.created_at,
+            "updated_at": order.updated_at,
+            "customer_organization_name": order.customer_organization.name if order.customer_organization else None,
+            "oraseas_organization_name": None,  # This would need to be populated from a join
+            "ordered_by_username": None,  # This would need to be populated from a join
+            "items": []
+        }
+        
+        # Populate items with part information
+        for item in order.items:
+            item_dict = {
+                "id": item.id,
+                "customer_order_id": item.customer_order_id,
+                "part_id": item.part_id,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+                "part_number": item.part.part_number if item.part else None,
+                "part_name": item.part.name if item.part else None,
+                "unit_of_measure": item.part.unit_of_measure if item.part else None
+            }
+            order_dict["items"].append(item_dict)
+        
+        response_orders.append(order_dict)
+    
+    return response_orders
 
 @router.put("/{order_id}", response_model=schemas.CustomerOrderResponse)
 def update_customer_order(
@@ -70,7 +110,7 @@ def update_customer_order(
         if order.customer_organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Cannot update orders for other organizations")
     
-    return crud.customer_orders.update_customer_order(db=db, order_id=order_id, order_update=order_update)
+    return crud.customer_orders.update_customer_order(db=db, order_id=order_id, order_update=order_update, current_user_id=current_user.user_id)
 
 @router.get("/{order_id}", response_model=schemas.CustomerOrderResponse)
 def get_customer_order(

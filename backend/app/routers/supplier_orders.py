@@ -21,10 +21,15 @@ def create_supplier_order(
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     """Create a new supplier order with organization access control."""
-    # Ensure user can only create orders for their own organization (unless super admin)
+    # Only Oraseas EE users and super admins can create supplier orders
     if not permission_checker.is_super_admin(current_user):
-        if hasattr(order, 'organization_id') and order.organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Cannot create orders for other organizations")
+        # Get user's organization to check type
+        user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+        if not user_org or user_org.organization_type != models.OrganizationType.oraseas_ee:
+            raise HTTPException(
+                status_code=403, 
+                detail="Only Oraseas EE users can create supplier orders"
+            )
     
     return crud.supplier_orders.create_supplier_order(db=db, order=order)
 
@@ -45,14 +50,50 @@ def read_supplier_orders(
     
     # Filter based on user permissions
     if not permission_checker.is_super_admin(current_user):
-        # Users can see orders from their organization or orders placed with their organization as supplier
+        # Users can see orders where their organization is the ordering organization
         query = query.filter(
-            (models.SupplierOrder.customer_organization_id == current_user.organization_id) |
-            (models.SupplierOrder.supplier_organization_id == current_user.organization_id)
+            models.SupplierOrder.ordering_organization_id == current_user.organization_id
         )
     
     orders = query.order_by(models.SupplierOrder.order_date.desc()).offset(skip).limit(limit).all()
-    return orders
+    
+    # Convert to response format and populate part information
+    response_orders = []
+    for order in orders:
+        order_dict = {
+            "id": order.id,
+            "ordering_organization_id": order.ordering_organization_id,
+            "supplier_name": order.supplier_name,
+            "order_date": order.order_date,
+            "expected_delivery_date": order.expected_delivery_date,
+            "actual_delivery_date": order.actual_delivery_date,
+            "status": order.status,
+            "notes": order.notes,
+            "created_at": order.created_at,
+            "updated_at": order.updated_at,
+            "ordering_organization_name": None,  # This would need to be populated from a join
+            "items": []
+        }
+        
+        # Populate items with part information
+        for item in order.items:
+            item_dict = {
+                "id": item.id,
+                "supplier_order_id": item.supplier_order_id,
+                "part_id": item.part_id,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+                "part_number": item.part.part_number if item.part else None,
+                "part_name": item.part.name if item.part else None,
+                "unit_of_measure": item.part.unit_of_measure if item.part else None
+            }
+            order_dict["items"].append(item_dict)
+        
+        response_orders.append(order_dict)
+    
+    return response_orders
 
 @router.put("/{order_id}", response_model=schemas.SupplierOrderResponse)
 def update_supplier_order(

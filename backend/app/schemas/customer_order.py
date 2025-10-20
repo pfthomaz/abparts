@@ -23,6 +23,7 @@ class CustomerOrderUpdate(BaseModel):
     actual_delivery_date: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    receiving_warehouse_id: Optional[uuid.UUID] = None
 
 class CustomerOrderResponse(CustomerOrderBase):
     id: uuid.UUID
@@ -34,6 +35,9 @@ class CustomerOrderResponse(CustomerOrderBase):
     customer_organization_name: Optional[str] = None
     oraseas_organization_name: Optional[str] = None
     ordered_by_username: Optional[str] = None
+    
+    # Include order items
+    items: List['CustomerOrderItemResponse'] = []
 
     class Config:
         from_attributes = True
@@ -63,3 +67,6 @@ class CustomerOrderItemResponse(CustomerOrderItemBase):
 
     class Config:
         from_attributes = True
+
+# Update forward references for Pydantic
+CustomerOrderResponse.model_rebuild()
