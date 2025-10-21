@@ -510,11 +510,11 @@ const Orders = () => {
         </div>
       )}
 
-      <Modal isOpen={showSupplierOrderModal} onClose={() => setShowSupplierOrderModal(false)} title="Add Supplier Order">
+      <Modal isOpen={showSupplierOrderModal} onClose={() => setShowSupplierOrderModal(false)} title="Add Supplier Order" size="xl">
         <SupplierOrderForm onSubmit={handleCreateSupplierOrder} onClose={() => setShowSupplierOrderModal(false)} organizations={organizations} parts={parts} />
       </Modal>
 
-      <Modal isOpen={showCustomerOrderModal} onClose={() => setShowCustomerOrderModal(false)} title="Add Customer Order">
+      <Modal isOpen={showCustomerOrderModal} onClose={() => setShowCustomerOrderModal(false)} title="Add Customer Order" size="xl">
         <CustomerOrderForm onSubmit={handleCreateCustomerOrder} onClose={() => setShowCustomerOrderModal(false)} organizations={organizations} parts={parts} />
       </Modal>
 

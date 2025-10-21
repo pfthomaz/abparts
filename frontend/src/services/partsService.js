@@ -249,6 +249,59 @@ const searchPartsWithInventory = async (searchTerm, filters = {}) => {
   }
 };
 
+/**
+ * Fetches parts sorted by order frequency for a specific organization and order type.
+ * @param {string} organizationId The organization ID to get order frequency for
+ * @param {string} orderType The order type: 'customer' or 'supplier'
+ * @param {object} options Optional parameters like skip and limit
+ * @returns {Promise<Array>} Array of parts sorted by order frequency
+ * @throws {Error} Throws error with user-friendly message
+ */
+const getPartsForOrders = async (organizationId, orderType = 'customer', options = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+
+    if (organizationId) {
+      queryParams.append('organization_id', organizationId);
+    }
+
+    queryParams.append('order_type', orderType);
+
+    if (options.skip) {
+      queryParams.append('skip', options.skip);
+    }
+
+    if (options.limit) {
+      queryParams.append('limit', options.limit);
+    }
+
+    const response = await api.get(`/parts/for-orders?${queryParams.toString()}`);
+
+    // Handle the correct API response structure: {items: [...], total_count: number, has_more: boolean}
+    if (response && typeof response === 'object' && Array.isArray(response.items)) {
+      return response.items;
+    }
+
+    // Fallback: if response is already an array (for backward compatibility)
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    // If response is malformed, log warning and return empty array
+    console.warn('API returned unexpected response format for parts for orders:', response);
+    return [];
+  } catch (error) {
+    logError(error, 'partsService.getPartsForOrders');
+    // Fallback to regular parts if the new endpoint fails
+    try {
+      const fallbackResponse = await getParts();
+      return Array.isArray(fallbackResponse) ? fallbackResponse : fallbackResponse.items || [];
+    } catch (fallbackError) {
+      throw error; // Throw original error if fallback also fails
+    }
+  }
+};
+
 export const partsService = {
   getParts,
   createPart,
@@ -259,4 +312,5 @@ export const partsService = {
   getAllPartsForAnalytics,
   getPartWithInventory,
   searchPartsWithInventory,
+  getPartsForOrders,
 };

@@ -223,6 +223,48 @@ async def search_parts_with_inventory(
     
     return result
 
+@router.get("/for-orders", response_model=schemas.PartsListResponse)
+@monitor_api_performance("api.get_parts_for_orders")
+async def get_parts_for_orders(
+    organization_id: Optional[uuid.UUID] = Query(None, description="Organization ID to get order frequency for"),
+    order_type: str = Query("customer", description="Order type: 'customer' or 'supplier'"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Get parts sorted by order frequency for a specific organization and order type.
+    Parts are sorted by most ordered first, then alphabetically by name.
+    """
+    # If organization_id is not provided, use the current user's organization
+    # unless the user is a super_admin
+    if not organization_id and not permission_checker.is_super_admin(current_user):
+        organization_id = current_user.organization_id
+    
+    # Check organization access if organization_id is provided
+    if organization_id and not check_organization_access(current_user, organization_id, db):
+        raise HTTPException(status_code=403, detail="Not authorized to access this organization's data")
+    
+    # Validate order_type
+    if order_type not in ["customer", "supplier"]:
+        raise HTTPException(status_code=400, detail="order_type must be 'customer' or 'supplier'")
+    
+    parts = crud.parts.get_parts_sorted_by_order_frequency(
+        db, organization_id, order_type, skip, limit
+    )
+    
+    # Get total count for pagination
+    total_count = crud.parts.get_parts_count(db)
+    
+    result = schemas.PartsListResponse(
+        items=parts,
+        total_count=total_count,
+        has_more=(skip + len(parts)) < total_count
+    )
+    
+    return result
+
 @router.get("/{part_id}", response_model=schemas.PartResponse)
 @monitor_api_performance("api.get_part")
 async def get_part(
@@ -440,4 +482,7 @@ async def get_parts_reorder_suggestions(
     
     suggestions = crud.parts.get_parts_reorder_suggestions(db, organization_id, threshold_days, limit)
     return suggestions
+
+
+
 

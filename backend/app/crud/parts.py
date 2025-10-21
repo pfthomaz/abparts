@@ -964,3 +964,85 @@ def search_parts_with_inventory_with_count(db: Session, search_term: str, organi
         "total_count": total_count,
         "has_more": has_more
     }
+
+
+
+@monitor_performance("parts_crud.get_parts_count")
+def get_parts_count(db: Session):
+    """Get total count of parts."""
+    return db.query(models.Part).count()
+
+
+@monitor_performance("parts_crud.get_parts_sorted_by_order_frequency", param_keys=["organization_id", "order_type", "skip", "limit"])
+def get_parts_sorted_by_order_frequency(db: Session, organization_id: Optional[uuid.UUID] = None, 
+                                       order_type: str = "customer", skip: int = 0, limit: int = 100):
+    """
+    Get parts sorted by order frequency for a specific organization and order type.
+    Parts are sorted by most ordered first, then alphabetically by name.
+    """
+    try:
+        # Base query for parts
+        parts_query = db.query(models.Part)
+        
+        # Determine which order table to use based on order_type
+        if order_type == "customer":
+            order_table = models.CustomerOrderItem
+            order_org_field = models.CustomerOrder.customer_organization_id
+            order_join = models.CustomerOrder
+        else:  # supplier
+            order_table = models.SupplierOrderItem
+            order_org_field = models.SupplierOrder.ordering_organization_id
+            order_join = models.SupplierOrder
+        
+        # Create subquery to count orders per part for the specific organization
+        if organization_id:
+            order_count_subquery = (
+                db.query(
+                    order_table.part_id,
+                    func.count(order_table.id).label('order_count')
+                )
+                .join(order_join, order_table.customer_order_id == order_join.id if order_type == "customer" 
+                      else order_table.supplier_order_id == order_join.id)
+                .filter(order_org_field == organization_id)
+                .group_by(order_table.part_id)
+                .subquery()
+            )
+        else:
+            # If no organization specified, count all orders
+            order_count_subquery = (
+                db.query(
+                    order_table.part_id,
+                    func.count(order_table.id).label('order_count')
+                )
+                .group_by(order_table.part_id)
+                .subquery()
+            )
+        
+        # Join parts with order counts and sort
+        parts_with_counts = (
+            parts_query
+            .outerjoin(order_count_subquery, models.Part.id == order_count_subquery.c.part_id)
+            .add_columns(func.coalesce(order_count_subquery.c.order_count, 0).label('order_count'))
+            .order_by(
+                desc(func.coalesce(order_count_subquery.c.order_count, 0)),  # Most ordered first
+                models.Part.name.asc()  # Then alphabetically by name
+            )
+            .offset(skip)
+            .limit(limit)
+        )
+        
+        # Extract just the Part objects from the result
+        parts = [row[0] for row in parts_with_counts.all()]
+        
+        return parts
+        
+    except Exception as e:
+        logger.error(f"Error getting parts sorted by order frequency: {e}")
+        # Fallback to alphabetical sorting if there's an error
+        return (
+            db.query(models.Part)
+            .order_by(models.Part.name.asc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )

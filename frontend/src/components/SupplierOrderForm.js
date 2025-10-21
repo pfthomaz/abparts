@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
+import { partsService } from '../services/partsService';
 
 function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  const [smartParts, setSmartParts] = useState([]);
+  const [partsLoading, setPartsLoading] = useState(false);
 
   // Initialize form data with a function to avoid recreating the object
   const [formData, setFormData] = useState(() => ({
@@ -29,8 +31,8 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
     unit_price: ''
   });
 
-  // Ensure parts is always an array
-  const safeParts = Array.isArray(parts) ? parts : [];
+  // Use smart parts if available, otherwise fallback to provided parts
+  const safeParts = smartParts.length > 0 ? smartParts : (Array.isArray(parts) ? parts : []);
 
   // Use useMemo to prevent recalculation on every render
   const oraseasOrg = useMemo(() => {
@@ -58,6 +60,34 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
       }));
     }
   }, [oraseasOrg, formData.ordering_organization_id]);
+
+  // Effect to load smart-sorted parts when ordering organization changes
+  useEffect(() => {
+    const loadSmartParts = async () => {
+      if (!formData.ordering_organization_id) {
+        setSmartParts([]);
+        return;
+      }
+
+      setPartsLoading(true);
+      try {
+        const sortedParts = await partsService.getPartsForOrders(
+          formData.ordering_organization_id,
+          'supplier',
+          { limit: 1000 } // Get a large number of parts for the dropdown
+        );
+        setSmartParts(sortedParts);
+      } catch (error) {
+        console.warn('Failed to load smart-sorted parts, using fallback:', error);
+        // Keep using the provided parts as fallback
+        setSmartParts([]);
+      } finally {
+        setPartsLoading(false);
+      }
+    };
+
+    loadSmartParts();
+  }, [formData.ordering_organization_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -281,15 +311,24 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               value={currentItem.part_id}
               onChange={handleItemChange}
-              disabled={loading}
+              disabled={loading || partsLoading}
             >
-              <option value="">Select Part</option>
+              <option value="">
+                {partsLoading ? 'Loading parts...' : 'Select Part'}
+              </option>
               {safeParts.map(part => (
                 <option key={part.id} value={part.id}>
                   {part.name} ({part.part_number})
                 </option>
               ))}
             </select>
+            <div className="h-5 mt-1">
+              {smartParts.length > 0 && (
+                <p className="text-xs text-gray-500">
+                  Parts sorted by order frequency for this supplier
+                </p>
+              )}
+            </div>
           </div>
 
           <div>
@@ -307,11 +346,13 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
               onChange={handleItemChange}
               disabled={loading}
             />
-            {selectedPart && (
-              <p className="text-xs text-gray-500 mt-1">
-                Unit: {selectedPart.unit_of_measure}
-              </p>
-            )}
+            <div className="h-5 mt-1">
+              {selectedPart && (
+                <p className="text-xs text-gray-500">
+                  Unit: {selectedPart.unit_of_measure}
+                </p>
+              )}
+            </div>
           </div>
 
           <div>
@@ -329,9 +370,11 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
               onChange={handleItemChange}
               disabled={loading}
             />
+            <div className="h-5 mt-1"></div>
           </div>
 
-          <div className="flex items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
             <button
               type="button"
               onClick={addItem}
@@ -340,6 +383,7 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
             >
               Add Item
             </button>
+            <div className="h-5 mt-1"></div>
           </div>
         </div>
 
