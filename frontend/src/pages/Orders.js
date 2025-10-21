@@ -92,8 +92,8 @@ const Orders = () => {
       .filter(order => filterStatus === 'all' || order.status === filterStatus)
       .filter(order => {
         if (!searchTerm) return true;
-        // The customer_organization can be null, so we need to check for its existence.
-        return order.customer_organization?.name.toLowerCase().includes(searchTerm.toLowerCase());
+        // Use the flat customer_organization_name field
+        return order.customer_organization_name?.toLowerCase().includes(searchTerm.toLowerCase());
       });
   }, [customerOrders, searchTerm, filterStatus]);
 
@@ -425,7 +425,7 @@ const Orders = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-semibold text-indigo-700">Order for {order.customer_organization?.name || 'Unknown'}</h3>
+                        <h3 className="text-xl font-semibold text-indigo-700">Order for {order.customer_organization_name || 'Unknown'}</h3>
                         <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' :
                             order.status === 'Pending' ? 'bg-blue-100 text-blue-800' :

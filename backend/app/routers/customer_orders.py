@@ -41,7 +41,9 @@ def read_customer_orders(
     # Apply organization-scoped filtering
     query = db.query(models.CustomerOrder).options(
         selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part),
-        selectinload(models.CustomerOrder.customer_organization)
+        selectinload(models.CustomerOrder.customer_organization),
+        selectinload(models.CustomerOrder.oraseas_organization),
+        selectinload(models.CustomerOrder.ordered_by_user)
     )
     
     # Filter based on user permissions
@@ -50,9 +52,10 @@ def read_customer_orders(
     
     orders = query.order_by(models.CustomerOrder.order_date.desc()).offset(skip).limit(limit).all()
     
-    # Convert to response format and populate part information
+    # Convert to response format with populated flat fields
     response_orders = []
     for order in orders:
+        # Create a dict from the order
         order_dict = {
             "id": order.id,
             "customer_organization_id": order.customer_organization_id,
@@ -65,9 +68,10 @@ def read_customer_orders(
             "notes": order.notes,
             "created_at": order.created_at,
             "updated_at": order.updated_at,
+            # Populate flat fields from relationships
             "customer_organization_name": order.customer_organization.name if order.customer_organization else None,
-            "oraseas_organization_name": None,  # This would need to be populated from a join
-            "ordered_by_username": None,  # This would need to be populated from a join
+            "oraseas_organization_name": order.oraseas_organization.name if order.oraseas_organization else None,
+            "ordered_by_username": order.ordered_by_user.username if order.ordered_by_user else None,
             "items": []
         }
         
