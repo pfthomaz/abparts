@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryWorkflowService } from '../services/inventoryWorkflowService';
 
-const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoading }) => {
+const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -12,10 +12,24 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
   const [applyAdjustments, setApplyAdjustments] = useState(false);
 
   useEffect(() => {
-    if (stocktake?.items) {
-      setItems(stocktake.items);
+    if (stocktake?.id) {
+      fetchStocktakeItems();
     }
   }, [stocktake]);
+
+  const fetchStocktakeItems = async () => {
+    try {
+      setLoading(true);
+      const itemsData = await inventoryWorkflowService.getStocktakeItems(stocktake.id);
+      setItems(Array.isArray(itemsData) ? itemsData : []);
+    } catch (err) {
+      console.error('Failed to fetch stocktake items:', err);
+      setError(err.message || 'Failed to fetch stocktake items');
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleItemUpdate = async (itemId, actualQuantity, notes = '') => {
     try {
@@ -33,9 +47,9 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
               ...item,
               actual_quantity: parseFloat(actualQuantity),
               notes,
-              discrepancy: parseFloat(actualQuantity) - item.expected_quantity,
-              discrepancy_percentage: item.expected_quantity > 0
-                ? ((parseFloat(actualQuantity) - item.expected_quantity) / item.expected_quantity) * 100
+              discrepancy: parseFloat(actualQuantity) - parseFloat(item.expected_quantity),
+              discrepancy_percentage: parseFloat(item.expected_quantity) > 0
+                ? ((parseFloat(actualQuantity) - parseFloat(item.expected_quantity)) / parseFloat(item.expected_quantity)) * 100
                 : 0
             }
             : item
@@ -72,13 +86,14 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
           prevItems.map(item => {
             const update = updates.find(u => u.item_id === item.id);
             if (update) {
+              const expectedQty = parseFloat(item.expected_quantity);
               return {
                 ...item,
                 actual_quantity: update.actual_quantity,
                 notes: update.notes,
-                discrepancy: update.actual_quantity - item.expected_quantity,
-                discrepancy_percentage: item.expected_quantity > 0
-                  ? ((update.actual_quantity - item.expected_quantity) / item.expected_quantity) * 100
+                discrepancy: update.actual_quantity - expectedQty,
+                discrepancy_percentage: expectedQty > 0
+                  ? ((update.actual_quantity - expectedQty) / expectedQty) * 100
                   : 0
               };
             }
@@ -126,7 +141,14 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
   const getDiscrepancyBadge = (discrepancy, discrepancyPercentage) => {
     if (discrepancy === null || discrepancy === undefined) return null;
 
-    if (discrepancy === 0) {
+    // Convert to numbers to handle string values from API
+    const numDiscrepancy = parseFloat(discrepancy);
+    const numDiscrepancyPercentage = parseFloat(discrepancyPercentage);
+
+    // Check for invalid numbers
+    if (isNaN(numDiscrepancy)) return null;
+
+    if (numDiscrepancy === 0) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           ✓ Match
@@ -134,13 +156,13 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
       );
     }
 
-    const isSignificant = Math.abs(discrepancyPercentage) > 10;
+    const isSignificant = !isNaN(numDiscrepancyPercentage) && Math.abs(numDiscrepancyPercentage) > 10;
     const bgColor = isSignificant ? 'bg-red-100' : 'bg-yellow-100';
     const textColor = isSignificant ? 'text-red-800' : 'text-yellow-800';
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>
-        {discrepancy > 0 ? '+' : ''}{discrepancy.toFixed(3)} ({discrepancyPercentage.toFixed(1)}%)
+        {numDiscrepancy > 0 ? '+' : ''}{numDiscrepancy.toFixed(3)} ({!isNaN(numDiscrepancyPercentage) ? numDiscrepancyPercentage.toFixed(1) : '0.0'}%)
       </span>
     );
   };
@@ -260,7 +282,7 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.expected_quantity} {item.unit_of_measure}
+                    {parseFloat(item.expected_quantity).toFixed(3)} {item.unit_of_measure}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {isEditing ? (
@@ -274,7 +296,7 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
                       />
                     ) : (
                       <span className="text-sm text-gray-900">
-                        {item.actual_quantity !== null ? `${item.actual_quantity} ${item.unit_of_measure}` : '-'}
+                        {item.actual_quantity !== null ? `${parseFloat(item.actual_quantity).toFixed(3)} ${item.unit_of_measure}` : '-'}
                       </span>
                     )}
                   </td>
@@ -390,14 +412,23 @@ const StocktakeDetails = ({ stocktake, onComplete, onClose, loading: parentLoadi
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    onComplete(stocktake.id, applyAdjustments);
-                    setShowCompleteConfirm(false);
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      await inventoryWorkflowService.completeStocktake(stocktake.id, applyAdjustments);
+                      setShowCompleteConfirm(false);
+                      if (onUpdate) onUpdate();
+                      if (onClose) onClose();
+                    } catch (err) {
+                      setError(err.message || 'Failed to complete stocktake');
+                    } finally {
+                      setLoading(false);
+                    }
                   }}
-                  disabled={parentLoading}
+                  disabled={loading}
                   className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
                 >
-                  {parentLoading ? 'Completing...' : 'Complete'}
+                  {loading ? 'Completing...' : 'Complete'}
                 </button>
               </div>
             </div>

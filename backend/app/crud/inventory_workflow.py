@@ -11,6 +11,7 @@ from sqlalchemy import and_, or_, func, desc
 from fastapi import HTTPException, status
 
 from .. import models, schemas
+from ..models import StocktakeStatusEnum as StocktakeStatus, StocktakeItem, Stocktake
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +126,7 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
         models.Part.part_number.label("part_number"),
         models.Part.name.label("part_name"),
         models.Part.part_type.label("part_type"),
-        models.Part.unit_of_measure.label("unit_of_measure"),
-        models.Part.average_cost.label("unit_price")
+        models.Part.unit_of_measure.label("unit_of_measure")
     ).join(
         models.Part, models.StocktakeItem.part_id == models.Part.id
     ).filter(
@@ -134,7 +134,7 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
     ).all()
     
     results = []
-    for item, part_number, part_name, part_type, unit_of_measure, unit_price in items:
+    for item, part_number, part_name, part_type, unit_of_measure in items:
         # Calculate discrepancy if actual quantity is set
         discrepancy = None
         discrepancy_percentage = None
@@ -144,8 +144,8 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
             discrepancy = item.actual_quantity - item.expected_quantity
             if item.expected_quantity and item.expected_quantity != 0:
                 discrepancy_percentage = (discrepancy / item.expected_quantity) * 100
-            if unit_price and discrepancy:
-                discrepancy_value = discrepancy * unit_price
+            # Note: discrepancy_value calculation would require part cost data
+            discrepancy_value = None
         
         # Get counted by username if exists
         counted_by_username = None
@@ -159,7 +159,6 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
             "part_name": part_name,
             "part_type": part_type.value if hasattr(part_type, 'value') else part_type,
             "unit_of_measure": unit_of_measure,
-            "unit_price": unit_price,
             "discrepancy": discrepancy,
             "discrepancy_percentage": discrepancy_percentage,
             "discrepancy_value": discrepancy_value,
@@ -394,10 +393,10 @@ def update_stocktake(db: Session, stocktake_id: uuid.UUID, stocktake_update: sch
         
         # Validate status transitions
         valid_transitions = {
-            StocktakeStatus.PLANNED: [StocktakeStatus.IN_PROGRESS, StocktakeStatus.CANCELLED],
-            StocktakeStatus.IN_PROGRESS: [StocktakeStatus.COMPLETED, StocktakeStatus.CANCELLED],
-            StocktakeStatus.COMPLETED: [],  # Cannot change from completed
-            StocktakeStatus.CANCELLED: []   # Cannot change from cancelled
+            StocktakeStatus.planned: [StocktakeStatus.in_progress, StocktakeStatus.cancelled],
+            StocktakeStatus.in_progress: [StocktakeStatus.completed, StocktakeStatus.cancelled],
+            StocktakeStatus.completed: [],  # Cannot change from completed
+            StocktakeStatus.cancelled: []   # Cannot change from cancelled
         }
         
         if new_status not in valid_transitions.get(current_status, []):
@@ -407,7 +406,7 @@ def update_stocktake(db: Session, stocktake_id: uuid.UUID, stocktake_update: sch
             )
         
         # If completing the stocktake, ensure all items have been counted
-        if new_status == StocktakeStatus.COMPLETED:
+        if new_status == StocktakeStatus.completed:
             uncounted_items = db.query(StocktakeItem).filter(
                 StocktakeItem.stocktake_id == stocktake_id,
                 StocktakeItem.actual_quantity.is_(None)
@@ -442,7 +441,7 @@ def delete_stocktake(db: Session, stocktake_id: uuid.UUID):
         return None
     
     # Check if stocktake can be deleted (only if status is PLANNED or CANCELLED)
-    if db_stocktake.status not in [StocktakeStatus.PLANNED, StocktakeStatus.CANCELLED]:
+    if db_stocktake.status not in [StocktakeStatus.planned, StocktakeStatus.cancelled]:
         raise HTTPException(
             status_code=400, 
             detail="Cannot delete stocktake that is in progress or completed"
@@ -469,15 +468,15 @@ def update_stocktake_item(db: Session, item_id: uuid.UUID, item_update: schemas.
     
     # Check if stocktake is in a state that allows updates
     stocktake = db.query(Stocktake).filter(Stocktake.id == db_item.stocktake_id).first()
-    if not stocktake or stocktake.status not in [StocktakeStatus.PLANNED, StocktakeStatus.IN_PROGRESS]:
+    if not stocktake or stocktake.status not in [StocktakeStatus.planned, StocktakeStatus.in_progress]:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot update item: stocktake is in {stocktake.status.value} status"
         )
     
     # If stocktake is still in PLANNED status, change it to IN_PROGRESS
-    if stocktake.status == StocktakeStatus.PLANNED:
-        stocktake.status = StocktakeStatus.IN_PROGRESS
+    if stocktake.status == StocktakeStatus.planned:
+        stocktake.status = StocktakeStatus.in_progress
         db.add(stocktake)
     
     # Update the item
@@ -502,8 +501,7 @@ def update_stocktake_item(db: Session, item_id: uuid.UUID, item_update: schemas.
         
         # Calculate discrepancy value
         discrepancy_value = None
-        if part and part.average_cost:
-            discrepancy_value = discrepancy * part.average_cost
+        # Note: discrepancy_value calculation would require part cost data
         
         # Get counted by username
         counted_user = db.query(models.User).filter(models.User.id == db_item.counted_by_user_id).first()
@@ -515,7 +513,7 @@ def update_stocktake_item(db: Session, item_id: uuid.UUID, item_update: schemas.
             "part_name": part.name,
             "part_type": part.part_type.value if hasattr(part.part_type, 'value') else part.part_type,
             "unit_of_measure": part.unit_of_measure,
-            "unit_price": part.average_cost,
+            "unit_price": None,
             "discrepancy": discrepancy,
             "discrepancy_percentage": discrepancy_percentage,
             "discrepancy_value": discrepancy_value,
@@ -535,15 +533,15 @@ def batch_update_stocktake_items(db: Session, stocktake_id: uuid.UUID, batch_upd
     if not stocktake:
         raise HTTPException(status_code=404, detail="Stocktake not found")
     
-    if stocktake.status not in [StocktakeStatus.PLANNED, StocktakeStatus.IN_PROGRESS]:
+    if stocktake.status not in [StocktakeStatus.planned, StocktakeStatus.in_progress]:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot update items: stocktake is in {stocktake.status.value} status"
         )
     
     # If stocktake is still in PLANNED status, change it to IN_PROGRESS
-    if stocktake.status == StocktakeStatus.PLANNED:
-        stocktake.status = StocktakeStatus.IN_PROGRESS
+    if stocktake.status == StocktakeStatus.planned:
+        stocktake.status = StocktakeStatus.in_progress
         db.add(stocktake)
     
     updated_items = []
@@ -591,7 +589,7 @@ def complete_stocktake(db: Session, stocktake_id: uuid.UUID, current_user_id: uu
     if not stocktake:
         raise HTTPException(status_code=404, detail="Stocktake not found")
     
-    if stocktake.status != StocktakeStatus.IN_PROGRESS:
+    if stocktake.status != StocktakeStatus.in_progress:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot complete stocktake: stocktake is in {stocktake.status.value} status"
@@ -675,7 +673,7 @@ def complete_stocktake(db: Session, stocktake_id: uuid.UUID, current_user_id: uu
                     db.add(alert)
         
         # Update stocktake status
-        stocktake.status = StocktakeStatus.COMPLETED
+        stocktake.status = StocktakeStatus.completed
         stocktake.completed_date = datetime.now()
         stocktake.completed_by_user_id = current_user_id
         

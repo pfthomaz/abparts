@@ -960,3 +960,178 @@ class AdditionalVerification(BaseModel):
     verification_type: str = "email_code"  # Default to email code verification
     verification_code: str
 
+
+# --- Stocktake Schemas ---
+class StocktakeStatusEnum(str, Enum):
+    planned = "planned"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+
+class StocktakeBase(BaseModel):
+    warehouse_id: uuid.UUID
+    scheduled_date: datetime
+    notes: Optional[str] = None
+
+class StocktakeCreate(StocktakeBase):
+    scheduled_by_user_id: Optional[uuid.UUID] = None  # Will be set to current user if not provided
+
+class StocktakeUpdate(BaseModel):
+    scheduled_date: Optional[datetime] = None
+    status: Optional[StocktakeStatusEnum] = None
+    notes: Optional[str] = None
+    completed_date: Optional[datetime] = None
+    completed_by_user_id: Optional[uuid.UUID] = None
+
+class StocktakeResponse(StocktakeBase):
+    id: uuid.UUID
+    status: StocktakeStatusEnum
+    scheduled_by_user_id: uuid.UUID
+    completed_date: Optional[datetime] = None
+    completed_by_user_id: Optional[uuid.UUID] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    # Additional computed fields
+    warehouse_name: Optional[str] = None
+    organization_id: Optional[uuid.UUID] = None
+    organization_name: Optional[str] = None
+    scheduled_by_username: Optional[str] = None
+    completed_by_username: Optional[str] = None
+    total_items: Optional[int] = None
+    items_counted: Optional[int] = None
+    discrepancy_count: Optional[int] = None
+    total_discrepancy_value: Optional[Decimal] = None
+    items: Optional[List[dict]] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Stocktake Item Schemas ---
+class StocktakeItemBase(BaseModel):
+    expected_quantity: Decimal
+    actual_quantity: Optional[Decimal] = None
+    notes: Optional[str] = None
+
+class StocktakeItemUpdate(BaseModel):
+    actual_quantity: Optional[Decimal] = None
+    notes: Optional[str] = None
+
+class StocktakeItemResponse(StocktakeItemBase):
+    id: uuid.UUID
+    stocktake_id: uuid.UUID
+    part_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    
+    # Additional computed fields
+    part_number: Optional[str] = None
+    part_name: Optional[str] = None
+    part_type: Optional[str] = None
+    unit_of_measure: Optional[str] = None
+    discrepancy: Optional[Decimal] = None
+    discrepancy_percentage: Optional[Decimal] = None
+    discrepancy_value: Optional[Decimal] = None
+
+    class Config:
+        from_attributes = True
+
+class BatchStocktakeItemUpdate(BaseModel):
+    items: List[dict]  # List of {item_id: uuid, actual_quantity: Decimal, notes: Optional[str]}
+
+# --- Inventory Alert Schemas ---
+class InventoryAlertCreate(BaseModel):
+    warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    alert_type: str
+    severity: str
+    message: str
+    threshold_value: Optional[Decimal] = None
+
+class InventoryAlertUpdate(BaseModel):
+    severity: Optional[str] = None
+    message: Optional[str] = None
+    threshold_value: Optional[Decimal] = None
+    is_active: Optional[bool] = None
+
+class InventoryAlertResponse(BaseModel):
+    id: uuid.UUID
+    warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    alert_type: str
+    severity: str
+    message: str
+    threshold_value: Optional[Decimal] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    # Additional computed fields
+    warehouse_name: Optional[str] = None
+    part_number: Optional[str] = None
+    part_name: Optional[str] = None
+    current_stock: Optional[Decimal] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Inventory Adjustment Schemas ---
+class InventoryAdjustmentCreate(BaseModel):
+    warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity_adjusted: Decimal
+    reason_code: str
+    notes: Optional[str] = None
+    stocktake_id: Optional[uuid.UUID] = None
+
+class InventoryAdjustmentResponse(BaseModel):
+    id: uuid.UUID
+    inventory_id: uuid.UUID
+    warehouse_id: uuid.UUID
+    part_id: uuid.UUID
+    quantity_adjusted: Decimal
+    reason_code: str
+    notes: Optional[str] = None
+    stocktake_id: Optional[uuid.UUID] = None
+    adjusted_by_user_id: uuid.UUID
+    adjustment_date: datetime
+    created_at: datetime
+    updated_at: datetime
+    
+    # Additional computed fields
+    warehouse_name: Optional[str] = None
+    part_number: Optional[str] = None
+    part_name: Optional[str] = None
+    adjusted_by_username: Optional[str] = None
+    previous_stock: Optional[Decimal] = None
+    new_stock: Optional[Decimal] = None
+
+    class Config:
+        from_attributes = True
+
+class BatchInventoryAdjustment(BaseModel):
+    warehouse_id: uuid.UUID
+    adjustments: List[dict]  # List of {part_id: uuid, quantity_adjusted: Decimal, reason_code: str, notes: Optional[str]}
+    stocktake_id: Optional[uuid.UUID] = None
+
+# --- Inventory Analytics Schemas ---
+class InventoryAnalyticsRequest(BaseModel):
+    organization_id: Optional[uuid.UUID] = None
+    warehouse_id: Optional[uuid.UUID] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    include_trends: bool = True
+    include_alerts: bool = True
+
+class InventoryAnalytics(BaseModel):
+    organization_id: Optional[uuid.UUID] = None
+    warehouse_id: Optional[uuid.UUID] = None
+    analysis_period: dict
+    inventory_summary: dict
+    stock_movements: dict
+    alerts_summary: dict
+    trends: Optional[dict] = None
+    recommendations: List[dict] = []
+
+    class Config:
+        from_attributes = True

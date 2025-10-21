@@ -235,7 +235,7 @@ app.include_router(stock_adjustments_router, prefix="/stock_adjustments", tags=[
 app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
 app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
-app.include_router(inventory_workflow_router, tags=["Inventory Workflows"])
+app.include_router(inventory_workflow_router, prefix="/inventory-workflows", tags=["Inventory Workflows"])
 app.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])
 app.include_router(configuration_router, prefix="/configuration", tags=["Configuration"])
 app.include_router(security_router, tags=["Security"])

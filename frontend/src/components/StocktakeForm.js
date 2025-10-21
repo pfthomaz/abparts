@@ -4,20 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { organizationsService } from '../services/organizationsService';
 import { useAuth } from '../AuthContext';
 
-const StocktakeForm = ({ stocktake = null, onSubmit, onCancel }) => {
-  const { user } = useAuth();
+const StocktakeForm = ({ stocktake = null, warehouses = [], onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     warehouse_id: '',
     scheduled_date: '',
     notes: ''
   });
-  const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchWarehouses();
-
     if (stocktake) {
       setFormData({
         warehouse_id: stocktake.warehouse_id || '',
@@ -36,18 +32,6 @@ const StocktakeForm = ({ stocktake = null, onSubmit, onCancel }) => {
       }));
     }
   }, [stocktake]);
-
-  const fetchWarehouses = async () => {
-    try {
-      // Get warehouses based on user's organization
-      const organizationId = user?.role === 'super_admin' ? null : user?.organization_id;
-      const data = await organizationsService.getWarehouses(organizationId);
-      setWarehouses(data);
-    } catch (err) {
-      setError('Failed to fetch warehouses');
-      console.error('Failed to fetch warehouses:', err);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,7 +124,7 @@ const StocktakeForm = ({ stocktake = null, onSubmit, onCancel }) => {
       <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
-          onClick={onCancel}
+          onClick={onClose}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
         >
           Cancel

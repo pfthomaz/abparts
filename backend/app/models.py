@@ -210,6 +210,8 @@ class User(Base):
     invitation_audit_logs = relationship("InvitationAuditLog", foreign_keys="[InvitationAuditLog.user_id]", back_populates="user")
     invited_by_user = relationship("User", remote_side=[id])
     machine_hours_recorded = relationship("MachineHours", back_populates="recorded_by_user")
+    scheduled_stocktakes = relationship("Stocktake", foreign_keys="[Stocktake.scheduled_by_user_id]", back_populates="scheduled_by_user")
+    completed_stocktakes = relationship("Stocktake", foreign_keys="[Stocktake.completed_by_user_id]", back_populates="completed_by_user")
 
     @hybrid_property
     def is_super_admin(self):
@@ -573,6 +575,7 @@ class Part(Base):
     supplier_order_items = relationship("SupplierOrderItem", back_populates="part", cascade="all, delete-orphan")
     customer_order_items = relationship("CustomerOrderItem", back_populates="part", cascade="all, delete-orphan")
     part_usage_records = relationship("PartUsage", back_populates="part", cascade="all, delete-orphan")
+    stocktake_items = relationship("StocktakeItem", back_populates="part", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Part(id={self.id}, part_number='{self.part_number}', name='{self.name}')>"
@@ -604,6 +607,7 @@ class Warehouse(Base):
     inventory_items = relationship("Inventory", back_populates="warehouse", cascade="all, delete-orphan")
     transactions_from = relationship("Transaction", foreign_keys="[Transaction.from_warehouse_id]", back_populates="from_warehouse")
     transactions_to = relationship("Transaction", foreign_keys="[Transaction.to_warehouse_id]", back_populates="to_warehouse")
+    stocktakes = relationship("Stocktake", back_populates="warehouse", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Warehouse(id={self.id}, name='{self.name}', organization_id={self.organization_id})>"
@@ -1387,3 +1391,80 @@ class SecurityEventLog(Base):
 
     def __repr__(self):
         return f"<SecurityEventLog(id={self.id}, event_type='{self.event_type}', severity='{self.severity}')>"
+
+
+# Stocktake Models
+class StocktakeStatusEnum(enum.Enum):
+    planned = "planned"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+
+
+class Stocktake(Base):
+    """
+    SQLAlchemy model for the 'stocktakes' table.
+    Represents a stocktake session for a specific warehouse.
+    """
+    __tablename__ = "stocktakes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    scheduled_date = Column(DateTime(timezone=True), nullable=False)
+    status = Column(Enum(StocktakeStatusEnum), nullable=False, default=StocktakeStatusEnum.planned)
+    scheduled_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    completed_date = Column(DateTime(timezone=True), nullable=True)
+    completed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    warehouse = relationship("Warehouse", back_populates="stocktakes")
+    scheduled_by_user = relationship("User", foreign_keys=[scheduled_by_user_id], back_populates="scheduled_stocktakes")
+    completed_by_user = relationship("User", foreign_keys=[completed_by_user_id], back_populates="completed_stocktakes")
+    items = relationship("StocktakeItem", back_populates="stocktake", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Stocktake(id={self.id}, warehouse_id={self.warehouse_id}, status='{self.status.value}')>"
+
+
+class StocktakeItem(Base):
+    """
+    SQLAlchemy model for the 'stocktake_items' table.
+    Represents individual items being counted in a stocktake.
+    """
+    __tablename__ = "stocktake_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stocktake_id = Column(UUID(as_uuid=True), ForeignKey("stocktakes.id"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    expected_quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    actual_quantity = Column(DECIMAL(precision=10, scale=3), nullable=True)
+    counted_at = Column(DateTime(timezone=True), nullable=True)
+    counted_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    stocktake = relationship("Stocktake", back_populates="items")
+    part = relationship("Part", back_populates="stocktake_items")
+    counted_by_user = relationship("User", foreign_keys=[counted_by_user_id])
+
+    @property
+    def discrepancy(self):
+        """Calculate the discrepancy between actual and expected quantities."""
+        if self.actual_quantity is None:
+            return None
+        return self.actual_quantity - self.expected_quantity
+
+    @property
+    def discrepancy_percentage(self):
+        """Calculate the discrepancy percentage."""
+        if self.actual_quantity is None or self.expected_quantity == 0:
+            return None
+        return ((self.actual_quantity - self.expected_quantity) / self.expected_quantity) * 100
+
+    def __repr__(self):
+        return f"<StocktakeItem(id={self.id}, stocktake_id={self.stocktake_id}, part_id={self.part_id})>"

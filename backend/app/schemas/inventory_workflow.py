@@ -9,10 +9,10 @@ from pydantic import BaseModel, Field
 
 # Enums for inventory workflows
 class StocktakeStatusEnum(str, Enum):
-    PLANNED = "planned"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    planned = "planned"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
 
 class InventoryAlertTypeEnum(str, Enum):
     LOW_STOCK = "low_stock"
@@ -55,7 +55,7 @@ class StocktakeResponse(StocktakeBase):
     
     # Related data
     warehouse_name: str
-    warehouse_location: str
+    warehouse_location: Optional[str] = None
     organization_id: uuid.UUID
     organization_name: str
     scheduled_by_username: str
