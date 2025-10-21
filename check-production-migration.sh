@@ -11,7 +11,7 @@ docker compose exec -T api alembic branches
 
 echo ""
 echo "📋 Checking if stocktake tables exist:"
-docker compose exec -T db psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\dt stocktake*" || echo "❌ No stocktake tables found"
+docker compose exec -T db psql -U ${POSTGRES_USER:-abparts_user} -d ${POSTGRES_DB:-abparts_dev} -c "\dt stocktake*" || echo "❌ No stocktake tables found"
 
 echo ""
 echo "📋 Checking if inventory_workflow_001 migration exists:"
