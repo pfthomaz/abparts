@@ -39,12 +39,25 @@ const TransactionForm = ({ initialData = {}, onSubmit, onClose }) => {
           warehouseService.getWarehouses(),
           machinesService.getMachines()
         ]);
-        setParts(partsData);
-        setWarehouses(warehousesData);
-        setMachines(machinesData);
+
+        // Handle parts data - API returns {items: [...], total_count: number, has_more: boolean}
+        const partsArray = Array.isArray(partsData) ? partsData : (partsData?.items || []);
+        setParts(partsArray);
+
+        // Handle warehouses data - API returns direct array
+        const warehousesArray = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.items || []);
+        setWarehouses(warehousesArray);
+
+        // Handle machines data - API returns direct array
+        const machinesArray = Array.isArray(machinesData) ? machinesData : (machinesData?.items || []);
+        setMachines(machinesArray);
       } catch (err) {
         console.error('Failed to fetch supporting data:', err);
         setError('Failed to load form data. Please try again.');
+        // Set empty arrays on error to prevent map errors
+        setParts([]);
+        setWarehouses([]);
+        setMachines([]);
       }
     };
 
@@ -190,7 +203,7 @@ const TransactionForm = ({ initialData = {}, onSubmit, onClose }) => {
           required={isFieldRequired('part_id')}
         >
           <option value="">Select a part</option>
-          {parts.map(part => (
+          {Array.isArray(parts) && parts.map(part => (
             <option key={part.id} value={part.id}>
               {part.name} ({part.part_number}) - {part.unit_of_measure}
             </option>

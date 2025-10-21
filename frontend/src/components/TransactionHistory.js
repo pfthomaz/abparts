@@ -36,10 +36,19 @@ const TransactionHistory = () => {
           partsService.getParts(),
           warehouseService.getWarehouses()
         ]);
-        setParts(partsData);
-        setWarehouses(warehousesData);
+
+        // Handle parts data - API returns {items: [...], total_count: number, has_more: boolean}
+        const partsArray = Array.isArray(partsData) ? partsData : (partsData?.items || []);
+        setParts(partsArray);
+
+        // Handle warehouses data - API returns {items: [...], total_count: number, has_more: boolean}
+        const warehousesArray = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.items || []);
+        setWarehouses(warehousesArray);
       } catch (err) {
         console.error('Failed to fetch supporting data:', err);
+        // Set empty arrays on error to prevent map errors
+        setParts([]);
+        setWarehouses([]);
       }
     };
 
@@ -194,7 +203,7 @@ const TransactionHistory = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All Parts</option>
-                {parts.map(part => (
+                {Array.isArray(parts) && parts.map(part => (
                   <option key={part.id} value={part.id}>
                     {part.name} ({part.part_number})
                   </option>
@@ -214,7 +223,7 @@ const TransactionHistory = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All Warehouses</option>
-                {warehouses.map(warehouse => (
+                {Array.isArray(warehouses) && warehouses.map(warehouse => (
                   <option key={warehouse.id} value={warehouse.id}>
                     {warehouse.name}
                   </option>
@@ -234,7 +243,7 @@ const TransactionHistory = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All Warehouses</option>
-                {warehouses.map(warehouse => (
+                {Array.isArray(warehouses) && warehouses.map(warehouse => (
                   <option key={warehouse.id} value={warehouse.id}>
                     {warehouse.name}
                   </option>

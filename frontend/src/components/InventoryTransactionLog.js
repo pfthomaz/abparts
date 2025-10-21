@@ -68,11 +68,23 @@ const InventoryTransactionLog = ({
         machinesService.getMachines()
       ]);
 
-      setParts(partsData);
-      setWarehouses(warehousesData);
-      setMachines(machinesData);
+      // Handle parts data - API returns {items: [...], total_count: number, has_more: boolean}
+      const partsArray = Array.isArray(partsData) ? partsData : (partsData?.items || []);
+      setParts(partsArray);
+
+      // Handle warehouses data - API returns direct array
+      const warehousesArray = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.items || []);
+      setWarehouses(warehousesArray);
+
+      // Handle machines data - API returns direct array
+      const machinesArray = Array.isArray(machinesData) ? machinesData : (machinesData?.items || []);
+      setMachines(machinesArray);
     } catch (err) {
       console.error('Failed to fetch supporting data:', err);
+      // Set empty arrays on error to prevent map errors
+      setParts([]);
+      setWarehouses([]);
+      setMachines([]);
     }
   };
 
@@ -263,7 +275,7 @@ const InventoryTransactionLog = ({
                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All Parts</option>
-                {parts.map(part => (
+                {Array.isArray(parts) && parts.map(part => (
                   <option key={part.id} value={part.id}>
                     {part.name} ({part.part_number})
                   </option>
