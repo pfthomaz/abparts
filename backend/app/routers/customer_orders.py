@@ -62,6 +62,7 @@ def read_customer_orders(
             "oraseas_organization_id": order.oraseas_organization_id,
             "order_date": order.order_date,
             "expected_delivery_date": order.expected_delivery_date,
+            "shipped_date": order.shipped_date,
             "actual_delivery_date": order.actual_delivery_date,
             "status": order.status,
             "ordered_by_user_id": order.ordered_by_user_id,
@@ -135,5 +136,95 @@ def get_customer_order(
     if not permission_checker.is_super_admin(current_user):
         if order.customer_organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Access denied to this order")
+    
+    return order
+
+
+@router.patch("/{order_id}/ship", response_model=schemas.CustomerOrderResponse)
+def ship_customer_order(
+    order_id: str,
+    ship_request: schemas.CustomerOrderShipRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
+):
+    """
+    Mark a customer order as shipped (Oraseas EE only).
+    Updates status to 'Shipped' and records the shipped_date.
+    """
+    # Get the order
+    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Customer order not found")
+    
+    # Verify user is from Oraseas EE organization
+    user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    if not user_org:
+        raise HTTPException(status_code=404, detail="User organization not found")
+    
+    # Check if user is from Oraseas EE (or super admin)
+    is_oraseas_ee = user_org.name in ['Oraseas EE', 'BossServ LLC', 'BossServ Ltd']
+    if not permission_checker.is_super_admin(current_user) and not is_oraseas_ee:
+        raise HTTPException(status_code=403, detail="Only Oraseas EE can mark orders as shipped")
+    
+    # Verify order is in correct status
+    if order.status not in ['Requested', 'Pending']:
+        raise HTTPException(status_code=400, detail=f"Cannot ship order with status '{order.status}'")
+    
+    # Update order
+    order.status = 'Shipped'
+    order.shipped_date = ship_request.shipped_date
+    if ship_request.notes:
+        order.notes = f"{order.notes}\n\nShipped: {ship_request.notes}" if order.notes else f"Shipped: {ship_request.notes}"
+    
+    db.commit()
+    db.refresh(order)
+    
+    return order
+
+
+@router.patch("/{order_id}/confirm-receipt", response_model=schemas.CustomerOrderResponse)
+def confirm_order_receipt(
+    order_id: str,
+    receipt_request: schemas.CustomerOrderConfirmReceiptRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
+):
+    """
+    Confirm receipt of a customer order (Customer organization only).
+    Updates status to 'Received' and records the actual_delivery_date.
+    """
+    # Get the order
+    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Customer order not found")
+    
+    # Verify user is from the customer organization that placed the order
+    if not permission_checker.is_super_admin(current_user):
+        if order.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Only the ordering organization can confirm receipt")
+    
+    # Verify order is in correct status
+    if order.status != 'Shipped':
+        raise HTTPException(status_code=400, detail=f"Cannot confirm receipt for order with status '{order.status}'")
+    
+    # Verify warehouse belongs to customer organization
+    warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == receipt_request.receiving_warehouse_id).first()
+    if not warehouse:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    
+    if warehouse.organization_id != order.customer_organization_id:
+        raise HTTPException(status_code=400, detail="Warehouse must belong to the customer organization")
+    
+    # Update order
+    order.status = 'Received'
+    order.actual_delivery_date = receipt_request.actual_delivery_date
+    if receipt_request.notes:
+        order.notes = f"{order.notes}\n\nReceived: {receipt_request.notes}" if order.notes else f"Received: {receipt_request.notes}"
+    
+    # TODO: Update inventory in the receiving warehouse
+    # This would involve creating inventory transactions for each order item
+    
+    db.commit()
+    db.refresh(order)
     
     return order

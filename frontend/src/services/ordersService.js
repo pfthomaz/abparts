@@ -82,6 +82,24 @@ const createCustomerOrderItem = (itemData) => {
   return api.post('/customer_order_items', itemData);
 };
 
+/**
+ * Marks a customer order as shipped (Oraseas EE only).
+ * @param {string} orderId The ID of the customer order to ship.
+ * @param {object} shipData The shipping data (shipped_date, tracking_number, notes).
+ */
+const shipCustomerOrder = (orderId, shipData) => {
+  return api.patch(`/customer_orders/${orderId}/ship`, shipData);
+};
+
+/**
+ * Confirms receipt of a customer order (Customer organization only).
+ * @param {string} orderId The ID of the customer order to confirm.
+ * @param {object} receiptData The receipt data (actual_delivery_date, receiving_warehouse_id, notes).
+ */
+const confirmCustomerOrderReceipt = (orderId, receiptData) => {
+  return api.patch(`/customer_orders/${orderId}/confirm-receipt`, receiptData);
+};
+
 export const ordersService = {
   getSupplierOrders,
   getCustomerOrders,
@@ -93,4 +111,6 @@ export const ordersService = {
   getOrderHistory,
   createSupplierOrderItem,
   createCustomerOrderItem,
+  shipCustomerOrder,
+  confirmCustomerOrderReceipt,
 };

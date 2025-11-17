@@ -25,7 +25,11 @@ const Orders = () => {
   const [showCustomerOrderModal, setShowCustomerOrderModal] = useState(false);
   const [showFulfillmentModal, setShowFulfillmentModal] = useState(false);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
+  const [showShipOrderModal, setShowShipOrderModal] = useState(false);
+  const [showConfirmReceiptModal, setShowConfirmReceiptModal] = useState(false);
   const [selectedOrderForFulfillment, setSelectedOrderForFulfillment] = useState(null);
+  const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null);
+  const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterOrderType, setFilterOrderType] = useState('all');
@@ -207,6 +211,40 @@ const Orders = () => {
     setShowFulfillmentModal(true);
   };
 
+  const handleShipOrder = (order) => {
+    setSelectedOrderForShipping(order);
+    setShowShipOrderModal(true);
+  };
+
+  const handleConfirmReceipt = (order) => {
+    setSelectedOrderForReceipt(order);
+    setShowConfirmReceiptModal(true);
+  };
+
+  const handleOrderShipped = async (orderId, shipData) => {
+    try {
+      await ordersService.shipCustomerOrder(orderId, shipData);
+      await fetchData(); // Refresh all data
+      setShowShipOrderModal(false);
+      setSelectedOrderForShipping(null);
+    } catch (err) {
+      console.error("Error shipping order:", err);
+      throw err;
+    }
+  };
+
+  const handleReceiptConfirmed = async (orderId, receiptData) => {
+    try {
+      await ordersService.confirmCustomerOrderReceipt(orderId, receiptData);
+      await fetchData(); // Refresh all data
+      setShowConfirmReceiptModal(false);
+      setSelectedOrderForReceipt(null);
+    } catch (err) {
+      console.error("Error confirming receipt:", err);
+      throw err;
+    }
+  };
+
   const canFulfillOrder = (order) => {
     return order.status === 'Requested' || order.status === 'Pending' || order.status === 'Shipped';
   };
@@ -214,6 +252,21 @@ const Orders = () => {
   const canApproveOrder = (order) => {
     return user && (user.role === 'admin' || user.role === 'super_admin') &&
       (order.status === 'Requested' || order.status === 'Pending');
+  };
+
+  const canShipOrder = (order) => {
+    // Oraseas EE users can ship Pending orders
+    return user && 
+      (user.organization_name?.includes('Oraseas') || user.organization_name?.includes('BossServ')) &&
+      (user.role === 'admin' || user.role === 'super_admin') &&
+      order.status === 'Pending';
+  };
+
+  const canConfirmReceipt = (order) => {
+    // Customer users can confirm receipt of Shipped orders
+    return user && 
+      order.customer_organization_id === user.organization_id &&
+      order.status === 'Shipped';
   };
 
   return (
@@ -443,8 +496,11 @@ const Orders = () => {
                         {order.expected_delivery_date && (
                           <p><span className="font-medium">Expected:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
                         )}
+                        {order.shipped_date && (
+                          <p><span className="font-medium">Shipped:</span> {new Date(order.shipped_date).toLocaleDateString()}</p>
+                        )}
                         {order.actual_delivery_date && (
-                          <p><span className="font-medium">Delivered:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">Received:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
                         )}
                         {order.ordered_by_user_id && (
                           <p><span className="font-medium">Ordered by:</span> User ID {order.ordered_by_user_id}</p>
@@ -460,12 +516,20 @@ const Orders = () => {
                           Approve
                         </button>
                       )}
-                      {canFulfillOrder(order) && (
+                      {canShipOrder(order) && (
                         <button
-                          onClick={() => handleFulfillOrder(order, 'customer')}
+                          onClick={() => handleShipOrder(order)}
+                          className="text-sm bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Mark as Shipped
+                        </button>
+                      )}
+                      {canConfirmReceipt(order) && (
+                        <button
+                          onClick={() => handleConfirmReceipt(order)}
                           className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
                         >
-                          Fulfill Order
+                          Confirm Receipt
                         </button>
                       )}
                       <button
@@ -550,7 +614,315 @@ const Orders = () => {
       >
         <OrderHistoryView onClose={() => setShowOrderHistoryModal(false)} />
       </Modal>
+
+      {/* Ship Order Modal */}
+      <Modal
+        isOpen={showShipOrderModal}
+        onClose={() => {
+          setShowShipOrderModal(false);
+          setSelectedOrderForShipping(null);
+        }}
+        title="Mark Order as Shipped"
+      >
+        {selectedOrderForShipping && (
+          <ShipOrderForm
+            order={selectedOrderForShipping}
+            onSubmit={handleOrderShipped}
+            onClose={() => {
+              setShowShipOrderModal(false);
+              setSelectedOrderForShipping(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      {/* Confirm Receipt Modal */}
+      <Modal
+        isOpen={showConfirmReceiptModal}
+        onClose={() => {
+          setShowConfirmReceiptModal(false);
+          setSelectedOrderForReceipt(null);
+        }}
+        title="Confirm Order Receipt"
+      >
+        {selectedOrderForReceipt && (
+          <ConfirmReceiptForm
+            order={selectedOrderForReceipt}
+            warehouses={warehouses}
+            onSubmit={handleReceiptConfirmed}
+            onClose={() => {
+              setShowConfirmReceiptModal(false);
+              setSelectedOrderForReceipt(null);
+            }}
+          />
+        )}
+      </Modal>
     </div>
+  );
+};
+
+// Ship Order Form Component
+const ShipOrderForm = ({ order, onSubmit, onClose }) => {
+  const [formData, setFormData] = useState({
+    shipped_date: new Date().toISOString().split('T')[0],
+    tracking_number: '',
+    notes: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      await onSubmit(order.id, formData);
+    } catch (err) {
+      setError(err.message || 'Failed to ship order');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline ml-2">{error}</span>
+        </div>
+      )}
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-gray-800 mb-2">Order Details</h3>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Customer:</span> {order.customer_organization_name}
+        </p>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Order Date:</span> {new Date(order.order_date).toLocaleDateString()}
+        </p>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Current Status:</span> {order.status}
+        </p>
+      </div>
+
+      <div>
+        <label htmlFor="shipped_date" className="block text-sm font-medium text-gray-700 mb-1">
+          Shipped Date
+        </label>
+        <input
+          type="date"
+          id="shipped_date"
+          name="shipped_date"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+          value={formData.shipped_date}
+          onChange={handleChange}
+          required
+          disabled={loading}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="tracking_number" className="block text-sm font-medium text-gray-700 mb-1">
+          Tracking Number (Optional)
+        </label>
+        <input
+          type="text"
+          id="tracking_number"
+          name="tracking_number"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+          value={formData.tracking_number}
+          onChange={handleChange}
+          placeholder="Enter tracking number..."
+          disabled={loading}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          Shipping Notes
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+          value={formData.notes}
+          onChange={handleChange}
+          placeholder="Any notes about the shipment..."
+          disabled={loading}
+        />
+      </div>
+
+      <div className="flex justify-end space-x-3 mt-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          disabled={loading}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          disabled={loading}
+        >
+          {loading ? 'Shipping...' : 'Mark as Shipped'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// Confirm Receipt Form Component
+const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
+  const [formData, setFormData] = useState({
+    actual_delivery_date: new Date().toISOString().split('T')[0],
+    receiving_warehouse_id: '',
+    notes: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      await onSubmit(order.id, formData);
+    } catch (err) {
+      setError(err.message || 'Failed to confirm receipt');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter warehouses to only show those belonging to the customer organization
+  const customerWarehouses = warehouses.filter(
+    w => w.organization_id === order.customer_organization_id
+  );
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline ml-2">{error}</span>
+        </div>
+      )}
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-gray-800 mb-2">Order Details</h3>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Order from:</span> {order.oraseas_organization_name || 'Oraseas EE'}
+        </p>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Order Date:</span> {new Date(order.order_date).toLocaleDateString()}
+        </p>
+        {order.shipped_date && (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium">Shipped Date:</span> {new Date(order.shipped_date).toLocaleDateString()}
+          </p>
+        )}
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Current Status:</span> {order.status}
+        </p>
+      </div>
+
+      <div>
+        <label htmlFor="actual_delivery_date" className="block text-sm font-medium text-gray-700 mb-1">
+          Actual Delivery Date
+        </label>
+        <input
+          type="date"
+          id="actual_delivery_date"
+          name="actual_delivery_date"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+          value={formData.actual_delivery_date}
+          onChange={handleChange}
+          required
+          disabled={loading}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="receiving_warehouse_id" className="block text-sm font-medium text-gray-700 mb-1">
+          Receiving Warehouse
+        </label>
+        <select
+          id="receiving_warehouse_id"
+          name="receiving_warehouse_id"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+          value={formData.receiving_warehouse_id}
+          onChange={handleChange}
+          required
+          disabled={loading}
+        >
+          <option value="">Select Warehouse</option>
+          {customerWarehouses.map(warehouse => (
+            <option key={warehouse.id} value={warehouse.id}>
+              {warehouse.name}
+            </option>
+          ))}
+        </select>
+        {customerWarehouses.length === 0 && (
+          <p className="text-sm text-red-600 mt-1">No warehouses found for your organization</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          Receipt Notes
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+          value={formData.notes}
+          onChange={handleChange}
+          placeholder="Any notes about the delivery..."
+          disabled={loading}
+        />
+      </div>
+
+      <div className="flex justify-end space-x-3 mt-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          disabled={loading}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          disabled={loading}
+        >
+          {loading ? 'Confirming...' : 'Confirm Receipt'}
+        </button>
+      </div>
+    </form>
   );
 };
 

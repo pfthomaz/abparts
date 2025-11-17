@@ -719,8 +719,9 @@ class CustomerOrder(Base):
     oraseas_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     order_date = Column(DateTime(timezone=True), nullable=False)
     expected_delivery_date = Column(DateTime(timezone=True))
-    actual_delivery_date = Column(DateTime(timezone=True))
-    status = Column(String(50), nullable=False) # e.g., 'Pending', 'Shipped', 'Delivered'
+    shipped_date = Column(DateTime(timezone=True))  # When Oraseas EE ships the order
+    actual_delivery_date = Column(DateTime(timezone=True))  # When customer receives the order
+    status = Column(String(50), nullable=False) # e.g., 'Requested', 'Pending', 'Shipped', 'Received', 'Delivered'
     ordered_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
