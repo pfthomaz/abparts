@@ -23,6 +23,19 @@ class OrganizationType(enum.Enum):
     supplier = "supplier"
 
 
+class CountryCode(enum.Enum):
+    GR = "GR"  # Greece
+    UK = "UK"  # United Kingdom
+    NO = "NO"  # Norway
+    CA = "CA"  # Canada
+    NZ = "NZ"  # New Zealand
+    TR = "TR"  # Turkey
+    OM = "OM"  # Oman
+    ES = "ES"  # Spain
+    CY = "CY"  # Cyprus
+    SA = "SA"  # Saudi Arabia
+
+
 class PartType(enum.Enum):
     CONSUMABLE = "consumable"
     BULK_MATERIAL = "bulk_material"
@@ -69,7 +82,7 @@ class Organization(Base):
     name = Column(String(255), unique=True, nullable=False, index=True)
     organization_type = Column(Enum(OrganizationType), nullable=False)
     parent_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
-    country = Column(String(3), nullable=True)  # Added country field with enum constraint
+    # country = Column(Enum(CountryCode), nullable=True)  # Country field - commented until DB migration runs
     address = Column(Text)
     contact_info = Column(Text)
     is_active = Column(Boolean, nullable=False, server_default='true')
@@ -188,15 +201,15 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     invitation_token = Column(String(255), nullable=True)
     invitation_expires_at = Column(DateTime(timezone=True), nullable=True)
-    invited_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    # invited_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     password_reset_token = Column(String(255), nullable=True)
     password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
-    email_verification_token = Column(String(255), nullable=True)
-    email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
-    pending_email = Column(String(255), nullable=True)
-    preferred_language = Column(String(5), nullable=True, server_default='en')  # Language preference (en, el, ar, es)
-    preferred_country = Column(String(3), nullable=True)  # Country preference (GR, KSA, ES, CY, OM)
-    localization_preferences = Column(Text, nullable=True)  # JSON string for advanced preferences
+    # email_verification_token = Column(String(255), nullable=True)
+    # email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
+    # pending_email = Column(String(255), nullable=True)
+    # preferred_language = Column(String(5), nullable=True, server_default='en')  # Language preference (en, el, ar, es)
+    # preferred_country = Column(String(3), nullable=True)  # Country preference (GR, KSA, ES, CY, OM)
+    # localization_preferences = Column(Text, nullable=True)  # JSON string for advanced preferences
     is_active = Column(Boolean, server_default='true', nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -208,7 +221,7 @@ class User(Base):
     stock_adjustments = relationship("StockAdjustment", back_populates="user")
     transactions_performed = relationship("Transaction", back_populates="performed_by_user")
     invitation_audit_logs = relationship("InvitationAuditLog", foreign_keys="[InvitationAuditLog.user_id]", back_populates="user")
-    invited_by_user = relationship("User", remote_side=[id])
+    # invited_by_user = relationship("User", remote_side=[id])
     machine_hours_recorded = relationship("MachineHours", back_populates="recorded_by_user")
     scheduled_stocktakes = relationship("Stocktake", foreign_keys="[Stocktake.scheduled_by_user_id]", back_populates="scheduled_by_user")
     completed_stocktakes = relationship("Stocktake", foreign_keys="[Stocktake.completed_by_user_id]", back_populates="completed_by_user")
@@ -258,13 +271,13 @@ class Machine(Base):
     model_type = Column(String(10), nullable=False)
     name = Column(String(255), nullable=False)
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
-    purchase_date = Column(DateTime(timezone=True), nullable=True)
-    warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)
-    status = Column(ENUM(MachineStatus, name='machinestatus'), nullable=False, server_default='active')
-    last_maintenance_date = Column(DateTime(timezone=True), nullable=True)
-    next_maintenance_date = Column(DateTime(timezone=True), nullable=True)
-    location = Column(String(255), nullable=True)
-    notes = Column(Text, nullable=True)
+    # purchase_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
+    # warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
+    # status = Column(ENUM(MachineStatus, name='machinestatus'), nullable=False, server_default='active')  # Temporarily commented out
+    # last_maintenance_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
+    # next_maintenance_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
+    # location = Column(String(255), nullable=True)  # Temporarily commented out
+    # notes = Column(Text, nullable=True)  # Temporarily commented out
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -560,9 +573,9 @@ class Part(Base):
     part_type = Column(Enum(PartType, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     is_proprietary = Column(Boolean, nullable=False, server_default='false')
     unit_of_measure = Column(String(50), nullable=False, server_default='pieces')
-    manufacturer = Column(String(255), nullable=True)  # Added manufacturer field
-    part_code = Column(String(100), nullable=True)  # Added part_code field
-    serial_number = Column(String(255), nullable=True)  # Added serial_number field
+    # manufacturer = Column(String(255), nullable=True)  # Added manufacturer field - temporarily commented out
+    # part_code = Column(String(100), nullable=True)  # Added part_code field - temporarily commented out
+    # serial_number = Column(String(255), nullable=True)  # Added serial_number field - temporarily commented out
     manufacturer_part_number = Column(String(255), nullable=True)
     manufacturer_delivery_time_days = Column(Integer)
     local_supplier_delivery_time_days = Column(Integer)

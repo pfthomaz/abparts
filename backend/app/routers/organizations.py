@@ -46,7 +46,7 @@ async def get_organizations(
                 # Get user's organization to check type
                 user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
                 
-                if user_org and user_org.organization_type == OrganizationType.oraseas_ee:
+                if user_org and user_org.organization_type == models.OrganizationType.oraseas_ee:
                     # Oraseas EE users can see:
                     # 1. Their own organization (Oraseas EE)
                     # 2. Supplier organizations (for supplier orders)
@@ -54,8 +54,8 @@ async def get_organizations(
                     query = query.filter(
                         or_(
                             models.Organization.id == current_user.organization_id,  # Own organization
-                            models.Organization.organization_type == OrganizationType.supplier,  # Suppliers
-                            models.Organization.organization_type == OrganizationType.customer  # Customers
+                            models.Organization.organization_type == models.OrganizationType.supplier,  # Suppliers
+                            models.Organization.organization_type == models.OrganizationType.customer  # Customers
                         )
                     )
                 else:
@@ -65,7 +65,7 @@ async def get_organizations(
                     query = query.filter(
                         or_(
                             models.Organization.id == current_user.organization_id,  # Own organization
-                            models.Organization.organization_type == OrganizationType.oraseas_ee  # Oraseas EE
+                            models.Organization.organization_type == models.OrganizationType.oraseas_ee  # Oraseas EE
                         )
                     )
         else:
@@ -473,7 +473,7 @@ async def toggle_organization_active_status(
             pass
         elif permission_checker.is_admin(current_user):
             # Admin can only activate/deactivate suppliers under their organization
-            if organization.organization_type != OrganizationType.supplier:
+            if organization.organization_type != models.OrganizationType.supplier:
                 raise HTTPException(status_code=403, detail="Admins can only activate/deactivate supplier organizations")
             if organization.parent_organization_id != current_user.organization_id:
                 raise HTTPException(status_code=403, detail="Not authorized to modify this supplier organization")

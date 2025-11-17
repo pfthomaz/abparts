@@ -13,6 +13,12 @@ from pydantic import BaseModel
 
 from .. import schemas, models # Import schemas and models
 from ..crud import machines # Corrected: Import machines directly from crud
+from ..crud import machine_hours_reminder # Import reminder functionality
+from ..schemas.machine_hours_reminder import (
+    MachineHoursReminderResponse, 
+    BulkMachineHoursRequest,
+    BulkMachineHoursCreate
+)
 from ..database import get_db # Import DB session dependency
 from ..auth import get_current_user, TokenData # Import authentication dependencies
 from ..permissions import (
@@ -281,7 +287,7 @@ async def validate_model_type(
     return result
 
 # --- Machines CRUD ---
-@router.get("/", response_model=List[schemas.MachineResponse])
+@router.get("/")
 @handle_auth_errors
 @handle_machine_errors("get_machines")
 async def get_machines(
@@ -306,13 +312,81 @@ async def get_machines(
         limit = 100
     
     # If user is not a super_admin, filter machines by organization
+    # Use enriched data with hours information
     if not permission_checker.is_super_admin(current_user):
-        machines_data = machines.get_machines(db, skip, limit, current_user.organization_id)
+        machines_data = machines.get_machines_with_hours_data(db, skip, limit, current_user.organization_id)
     else:
-        machines_data = machines.get_machines(db, skip, limit)
+        machines_data = machines.get_machines_with_hours_data(db, skip, limit)
     
     await log_machine_response(request, machines_data, "get_machines")
     return machines_data
+
+@router.get("/check-hours-reminders")
+@handle_auth_errors
+@handle_machine_errors("check_hours_reminders")
+async def check_hours_reminders(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
+):
+    """
+    Check which machines in the user's organization need hours updates.
+    Returns machines that haven't had hours recorded in the last 2 weeks.
+    """
+    from datetime import datetime, timedelta, timezone
+    
+    await log_machine_request(request, "check_hours_reminders")
+    
+    # Get current day of month
+    today = datetime.now()
+    day_of_month = today.day
+    
+    # Check if today is a reminder day (1-3 or 15-17)
+    is_reminder_day = day_of_month in [1, 2, 3, 15, 16, 17]
+    
+    if not is_reminder_day:
+        return {
+            "is_reminder_day": False,
+            "machines_needing_update": []
+        }
+    
+    # Get machines for user's organization
+    if permission_checker.is_super_admin(current_user):
+        # Super admins see all machines
+        machines_list = machines.get_machines(db, 0, 1000)
+    else:
+        # Regular users see only their organization's machines
+        machines_list = machines.get_machines(db, 0, 1000, current_user.organization_id)
+    
+    # Check each machine for hours updates in last 2 weeks
+    two_weeks_ago = datetime.now(timezone.utc) - timedelta(days=14)
+    machines_needing_update = []
+    
+    for machine in machines_list:
+        # Get latest hours record
+        latest_hours = db.query(models.MachineHours)\
+            .filter(models.MachineHours.machine_id == machine.id)\
+            .order_by(models.MachineHours.recorded_date.desc())\
+            .first()
+        
+        # If no hours record or last record is older than 2 weeks
+        if not latest_hours or latest_hours.recorded_date < two_weeks_ago:
+            machines_needing_update.append({
+                "id": str(machine.id),
+                "name": machine.name,
+                "serial_number": machine.serial_number,
+                "model_type": machine.model_type,
+                "last_hours_date": latest_hours.recorded_date.isoformat() if latest_hours else None,
+                "last_hours_value": float(latest_hours.hours_value) if latest_hours else None
+            })
+    
+    await log_machine_response(request, {"count": len(machines_needing_update)}, "check_hours_reminders")
+    
+    return {
+        "is_reminder_day": True,
+        "machines_needing_update": machines_needing_update,
+        "check_date": today.isoformat()
+    }
 
 @router.get("/{machine_id}", response_model=schemas.MachineResponse)
 @handle_auth_errors
@@ -993,10 +1067,11 @@ async def record_machine_hours(
     hours: schemas.MachineHoursCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.WRITE))
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
 ):
     """
     Record machine hours for a specific machine.
+    All authenticated users can record hours for machines in their organization.
     Users can only record hours for machines owned by their organization.
     Superadmins can record hours for any machine.
     """
@@ -1132,3 +1207,209 @@ async def update_machine_name(
     await log_machine_response(request, updated_machine.__dict__, "update_machine_name")
     return updated_machine
 
+
+# --- Machine Hours Reminder System ---
+
+@router.get("/hours-reminder-check", response_model=MachineHoursReminderResponse)
+@handle_auth_errors
+async def check_machine_hours_reminders(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Check if user should see machine hours reminder modal.
+    
+    Returns reminder data if:
+    - Today is a reminder day (1,2,3 or 15,16,17 of month)
+    - User hasn't dismissed reminder today
+    - There are machines needing hours updates (2+ weeks overdue)
+    """
+    await log_machine_request(request, "check_machine_hours_reminders")
+    
+    try:
+        reminder_response = machine_hours_reminder.check_machine_hours_reminders(
+            db, current_user.user_id, current_user.organization_id
+        )
+        
+        await log_machine_response(request, reminder_response.dict(), "check_machine_hours_reminders")
+        return reminder_response
+        
+    except Exception as e:
+        logger.error(f"Error checking machine hours reminders: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check machine hours reminders"
+        )
+
+@router.post("/bulk-hours", response_model=List[schemas.MachineHoursResponse], status_code=status.HTTP_201_CREATED)
+@handle_auth_errors
+async def record_bulk_machine_hours(
+    bulk_request: BulkMachineHoursRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Record hours for multiple machines at once (typically from reminder modal).
+    
+    Users can only record hours for machines in their organization.
+    Superadmins can record hours for any machine.
+    """
+    await log_machine_request(request, f"record_bulk_machine_hours - {len(bulk_request.machine_hours)} machines")
+    
+    if not bulk_request.machine_hours:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No machine hours data provided"
+        )
+    
+    try:
+        # Validate that user has permission for all machines
+        for hours_data in bulk_request.machine_hours:
+            machine = machines.get_machine(db, hours_data.machine_id)
+            if not machine:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Machine {hours_data.machine_id} not found"
+                )
+            
+            # Check permissions (same logic as individual hours recording)
+            if not permission_checker.is_super_admin(current_user):
+                if machine.customer_organization_id != current_user.organization_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Not authorized to record hours for machine {machine.name}"
+                    )
+        
+        # Create all hours records
+        created_records = machine_hours_reminder.create_bulk_machine_hours(
+            db, bulk_request.machine_hours, current_user.user_id
+        )
+        
+        # Convert to response format
+        response_data = []
+        for record in created_records:
+            response_data.append(schemas.MachineHoursResponse(
+                id=record.id,
+                machine_id=record.machine_id,
+                recorded_by_user_id=record.recorded_by_user_id,
+                hours_value=record.hours_value,
+                recorded_date=record.recorded_date,
+                notes=record.notes,
+                created_at=record.created_at,
+                updated_at=record.updated_at
+            ))
+        
+        await log_machine_response(request, f"Created {len(response_data)} hours records", "record_bulk_machine_hours", status.HTTP_201_CREATED)
+        return response_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error recording bulk machine hours: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to record bulk machine hours"
+        )
+
+@router.post("/dismiss-hours-reminder", status_code=status.HTTP_204_NO_CONTENT)
+@handle_auth_errors
+async def dismiss_hours_reminder(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Record that user dismissed the machine hours reminder for today.
+    This prevents showing the reminder again today.
+    """
+    await log_machine_request(request, "dismiss_hours_reminder")
+    
+    try:
+        machine_hours_reminder.record_reminder_dismissal(db, current_user.user_id)
+        await log_machine_response(request, "Reminder dismissed", "dismiss_hours_reminder", status.HTTP_204_NO_CONTENT)
+        
+    except Exception as e:
+        logger.error(f"Error dismissing hours reminder: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to dismiss reminder"
+        )
+
+# --- Machine Hours History and Analytics ---
+
+@router.get("/{machine_id}/hours-history", response_model=List[schemas.MachineHoursResponse])
+@handle_auth_errors
+@handle_machine_errors("get_machine_hours_history_detailed")
+async def get_machine_hours_history_detailed(
+    machine_id: uuid.UUID,
+    request: Request,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
+):
+    """
+    Get detailed machine hours history for display in machine details modal.
+    """
+    await log_machine_request(request, f"get_machine_hours_history_detailed/{machine_id}")
+    
+    # Validate machine exists and user has access
+    machine = machines.get_machine(db, machine_id)
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found"
+        )
+    
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if machine.customer_organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this machine's hours history"
+            )
+    
+    # Get hours history
+    hours_history = machines.get_machine_hours_history(db, machine_id, skip, limit)
+    
+    await log_machine_response(request, f"Retrieved {len(hours_history)} hours records", "get_machine_hours_history_detailed")
+    return hours_history
+
+@router.get("/{machine_id}/hours-chart-data")
+@handle_auth_errors
+@handle_machine_errors("get_machine_hours_chart_data")
+async def get_machine_hours_chart_data(
+    machine_id: uuid.UUID,
+    request: Request,
+    days: int = 90,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.MACHINE, PermissionType.READ))
+):
+    """
+    Get machine hours data formatted for charting.
+    """
+    await log_machine_request(request, f"get_machine_hours_chart_data/{machine_id}")
+    
+    # Validate machine exists and user has access
+    machine = machines.get_machine(db, machine_id)
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found"
+        )
+    
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        if machine.customer_organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this machine's chart data"
+            )
+    
+    # Get chart data
+    chart_data = machines.get_machine_hours_chart_data(db, machine_id, days)
+    
+    await log_machine_response(request, f"Retrieved chart data with {len(chart_data)} points", "get_machine_hours_chart_data")
+    return {"chart_data": chart_data, "machine_name": machine.name, "days": days}

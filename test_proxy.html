@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Proxy</title>
+</head>
+<body>
+    <h1>Test API Proxy</h1>
+    <button onclick="testProxy()">Test /api/machines/ endpoint</button>
+    <div id="result"></div>
+
+    <script>
+        async function testProxy() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/machines/');
+                resultDiv.innerHTML = `
+                    <h3>Response:</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Status Text: ${response.statusText}</p>
+                    <p>URL: ${response.url}</p>
+                `;
+                
+                if (response.status === 401) {
+                    resultDiv.innerHTML += '<p style="color: green;">✅ Proxy working! (401 = needs authentication)</p>';
+                } else {
+                    resultDiv.innerHTML += '<p style="color: orange;">⚠️ Unexpected status</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

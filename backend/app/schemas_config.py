@@ -185,23 +185,33 @@ class UserManagementConfig(BaseModel):
 class LocalizationConfig(BaseModel):
     """Configuration template for localization settings"""
     supported_languages: List[str] = ["en", "el", "ar", "es"]
-    supported_countries: List[str] = ["GR", "KSA", "ES", "CY", "OM"]
+    supported_countries: List[str] = ["GR", "UK", "NO", "CA", "NZ", "TR", "OM", "ES", "CY", "SA"]
     default_language: str = "en"
     default_country: str = "GR"
     rtl_languages: List[str] = ["ar"]
     date_format_by_country: Dict[str, str] = {
         "GR": "DD/MM/YYYY",
-        "KSA": "DD/MM/YYYY",
+        "UK": "DD/MM/YYYY",
+        "NO": "DD/MM/YYYY",
+        "CA": "MM/DD/YYYY",
+        "NZ": "DD/MM/YYYY",
+        "TR": "DD/MM/YYYY",
+        "OM": "DD/MM/YYYY",
         "ES": "DD/MM/YYYY",
         "CY": "DD/MM/YYYY",
-        "OM": "DD/MM/YYYY"
+        "SA": "DD/MM/YYYY"
     }
     currency_by_country: Dict[str, str] = {
         "GR": "EUR",
-        "KSA": "SAR",
+        "UK": "GBP",
+        "NO": "NOK",
+        "CA": "CAD",
+        "NZ": "NZD",
+        "TR": "TRY",
+        "OM": "OMR",
         "ES": "EUR",
         "CY": "EUR",
-        "OM": "OMR"
+        "SA": "SAR"
     }
 
 

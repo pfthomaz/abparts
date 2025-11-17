@@ -228,14 +228,16 @@ def create_machine(db: Session, machine: schemas.MachineCreate):
 
         # Handle enum conversion for status if provided
         machine_data = machine.dict()
-        if 'status' in machine_data and machine_data['status'] is not None:
-            machine_data['status'] = safe_enum_conversion(
-                models.MachineStatus, 
-                machine_data['status'], 
-                "machine status"
-            )
+        
+        # Temporarily filter out commented fields until DB migration is complete
+        commented_fields = [
+            'purchase_date', 'warranty_expiry_date', 'status', 
+            'last_maintenance_date', 'next_maintenance_date', 
+            'location', 'notes'
+        ]
+        machine_data_filtered = {k: v for k, v in machine_data.items() if k not in commented_fields}
 
-        db_machine = models.Machine(**machine_data)
+        db_machine = models.Machine(**machine_data_filtered)
         db.add(db_machine)
         db.commit()
         db.refresh(db_machine)
@@ -327,16 +329,16 @@ def update_machine(db: Session, machine_id: uuid.UUID, machine_update: schemas.M
                 logger.warning(f"Attempted to assign machine to non-customer organization: {organization.organization_type}")
                 raise HTTPException(status_code=400, detail="Machines can only be assigned to customer organizations")
 
-        # Handle enum conversion for status if being updated
-        if 'status' in update_data and update_data['status'] is not None:
-            update_data['status'] = safe_enum_conversion(
-                models.MachineStatus, 
-                update_data['status'], 
-                "machine status"
-            )
+        # Temporarily filter out commented fields until DB migration is complete
+        commented_fields = [
+            'purchase_date', 'warranty_expiry_date', 'status', 
+            'last_maintenance_date', 'next_maintenance_date', 
+            'location', 'notes'
+        ]
+        update_data_filtered = {k: v for k, v in update_data.items() if k not in commented_fields}
 
         # Apply updates, handling null values gracefully
-        for key, value in update_data.items():
+        for key, value in update_data_filtered.items():
             if hasattr(db_machine, key):
                 # Handle special cases for certain fields
                 if key == 'serial_number' and (not value or not str(value).strip()):
@@ -564,14 +566,19 @@ def get_machine_maintenance_history(db: Session, machine_id: uuid.UUID, skip: in
             logger.warning(f"Machine not found for maintenance history: {machine_id}")
             raise HTTPException(status_code=404, detail="Machine not found")
         
+        # Temporarily return empty list due to missing machine_maintenance table
+        # TODO: Implement proper maintenance history when table is created
+        logger.info(f"Returning empty maintenance history for machine {machine_id} - table not implemented")
+        return []
+        
         # Get maintenance records with left join to handle missing users gracefully
-        maintenance_records = db.query(
-            models.MachineMaintenance
-        ).filter(
-            models.MachineMaintenance.machine_id == machine_id
-        ).order_by(
-            desc(models.MachineMaintenance.maintenance_date)
-        ).offset(skip).limit(limit).all()
+        # maintenance_records = db.query(
+        #     models.MachineMaintenance
+        # ).filter(
+        #     models.MachineMaintenance.machine_id == machine_id
+        # ).order_by(
+        #     desc(models.MachineMaintenance.maintenance_date)
+        # ).offset(skip).limit(limit).all()
         
         results = maintenance_records
         
@@ -750,6 +757,8 @@ def create_machine_hours(db: Session, machine_id: uuid.UUID, hours: schemas.Mach
             logger.error("create_machine_hours called with missing user_id")
             raise HTTPException(status_code=400, detail="User ID is required")
         
+        logger.info(f"Creating machine hours record - Machine: {machine_id}, User: {user_id}, Hours: {hours.hours_value}")
+        
         # Check if machine exists
         machine = db.query(models.Machine).filter(models.Machine.id == machine_id).first()
         if not machine:
@@ -771,17 +780,35 @@ def create_machine_hours(db: Session, machine_id: uuid.UUID, hours: schemas.Mach
             logger.error(f"Hours value too high: {hours.hours_value}")
             raise HTTPException(status_code=400, detail="Hours value seems unreasonably high (max 99,999)")
         
+        # Get the recorded date from the schema or use current time
+        from datetime import timezone
+        if hours.recorded_date:
+            # If recorded_date is provided, ensure it's timezone-aware
+            if hours.recorded_date.tzinfo is None:
+                # Make it timezone-aware (assume UTC)
+                recorded_date = hours.recorded_date.replace(tzinfo=timezone.utc)
+            else:
+                recorded_date = hours.recorded_date
+        else:
+            # Use current UTC time
+            recorded_date = datetime.now(timezone.utc)
+        
         # Validate recorded date is not in the future
-        if hours.recorded_date and hours.recorded_date > datetime.now():
-            logger.error(f"Future recorded date: {hours.recorded_date}")
+        current_time = datetime.now(timezone.utc)
+        if recorded_date > current_time:
+            logger.error(f"Future recorded date: {recorded_date}")
             raise HTTPException(status_code=400, detail="Recorded date cannot be in the future")
         
-        # Create the machine hours record
-        hours_data = hours.dict()
-        hours_data['machine_id'] = machine_id
-        hours_data['recorded_by_user_id'] = user_id
+        # Create the machine hours record directly with explicit values
+        db_hours = models.MachineHours(
+            machine_id=machine_id,
+            recorded_by_user_id=user_id,
+            hours_value=hours.hours_value,
+            recorded_date=recorded_date,
+            notes=hours.notes
+        )
         
-        db_hours = models.MachineHours(**hours_data)
+        logger.info(f"Adding machine hours record to database: {db_hours}")
         db.add(db_hours)
         db.commit()
         db.refresh(db_hours)
@@ -1103,37 +1130,42 @@ def get_machine_part_compatibility(db: Session, machine_id: uuid.UUID, skip: int
             logger.warning(f"Machine not found for compatibility check: {machine_id}")
             raise HTTPException(status_code=404, detail="Machine not found")
         
+        # Temporarily return empty list due to missing machine_part_compatibility table
+        # TODO: Implement proper part compatibility when table is created
+        logger.info(f"Returning empty compatibility list for machine {machine_id} - table not implemented")
+        return []
+        
         # Get compatible parts with left join to handle missing parts gracefully
-        compatibility_records = db.query(
-            models.MachinePartCompatibility,
-            models.Part.part_number.label("part_number"),
-            models.Part.name.label("part_name")
-        ).outerjoin(
-            models.Part, models.MachinePartCompatibility.part_id == models.Part.id
-        ).filter(
-            models.MachinePartCompatibility.machine_id == machine_id
-        ).order_by(
-            models.MachinePartCompatibility.is_recommended.desc(),
-            models.Part.part_number
-        ).offset(skip).limit(limit).all()
+        # compatibility_records = db.query(
+        #     models.MachinePartCompatibility,
+        #     models.Part.part_number.label("part_number"),
+        #     models.Part.name.label("part_name")
+        # ).outerjoin(
+        #     models.Part, models.MachinePartCompatibility.part_id == models.Part.id
+        # ).filter(
+        #     models.MachinePartCompatibility.machine_id == machine_id
+        # ).order_by(
+        #     models.MachinePartCompatibility.is_recommended.desc(),
+        #     models.Part.part_number
+        # ).offset(skip).limit(limit).all()
         
-        results = []
-        for compatibility, part_number, part_name in compatibility_records:
-            # Handle null values gracefully
-            result = {
-                **compatibility.__dict__,
-                "part_number": part_number or "Unknown",
-                "part_name": part_name or "Unknown Part",
-                "machine_name": machine.name or "Unknown Machine",
-                "machine_model_type": machine.model_type or "Unknown Model"
-            }
-            
-            # Remove SQLAlchemy internal attributes
-            result.pop('_sa_instance_state', None)
-            results.append(result)
-        
-        logger.debug(f"Successfully retrieved {len(results)} compatibility records for machine {machine_id}")
-        return results
+        # results = []
+        # for compatibility, part_number, part_name in compatibility_records:
+        #     # Handle null values gracefully
+        #     result = {
+        #         **compatibility.__dict__,
+        #         "part_number": part_number or "Unknown",
+        #         "part_name": part_name or "Unknown Part",
+        #         "machine_name": machine.name or "Unknown Machine",
+        #         "machine_model_type": machine.model_type or "Unknown Model"
+        #     }
+        #     
+        #     # Remove SQLAlchemy internal attributes
+        #     result.pop('_sa_instance_state', None)
+        #     results.append(result)
+        # 
+        # logger.debug(f"Successfully retrieved {len(results)} compatibility records for machine {machine_id}")
+        # return results
         
     except HTTPException:
         # Re-raise HTTP exceptions as-is
@@ -1308,21 +1340,26 @@ def get_machine_usage_history(db: Session, machine_id: uuid.UUID, skip: int = 0,
             logger.warning(f"Machine not found for usage history: {machine_id}")
             raise HTTPException(status_code=404, detail="Machine not found")
         
+        # Temporarily return empty list due to missing part_usage table columns
+        # TODO: Implement proper usage history when table schema is fixed
+        logger.info(f"Returning empty usage history for machine {machine_id} - table schema not aligned")
+        return []
+        
         # Get part usage records with left joins to handle missing data gracefully
-        usage_records = db.query(
-            models.PartUsage,
-            models.Part.part_number.label("part_number"),
-            models.Part.name.label("part_name"),
-            models.User.username.label("recorded_by_username")
-        ).outerjoin(
-            models.Part, models.PartUsage.part_id == models.Part.id
-        ).outerjoin(
-            models.User, models.PartUsage.recorded_by_user_id == models.User.id
-        ).filter(
-            models.PartUsage.machine_id == machine_id
-        ).order_by(
-            desc(models.PartUsage.usage_date)
-        ).offset(skip).limit(limit).all()
+        # usage_records = db.query(
+        #     models.PartUsage,
+        #     models.Part.part_number.label("part_number"),
+        #     models.Part.name.label("part_name"),
+        #     models.User.username.label("recorded_by_username")
+        # ).outerjoin(
+        #     models.Part, models.PartUsage.part_id == models.Part.id
+        # ).outerjoin(
+        #     models.User, models.PartUsage.recorded_by_user_id == models.User.id
+        # ).filter(
+        #     models.PartUsage.machine_id == machine_id
+        # ).order_by(
+        #     desc(models.PartUsage.usage_date)
+        # ).offset(skip).limit(limit).all()
         
         results = []
         for usage, part_number, part_name, recorded_by_username in usage_records:
@@ -1358,3 +1395,137 @@ def get_machine_usage_history(db: Session, machine_id: uuid.UUID, skip: int = 0,
             detail="An unexpected error occurred while retrieving usage history"
         )
 
+
+def get_machines_with_hours_data(db: Session, skip: int = 0, limit: int = 100, organization_id: Optional[uuid.UUID] = None):
+    """
+    Retrieve machines with enriched hours data for display in machine cards.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, desc
+    
+    logger.info(f"get_machines_with_hours_data called - org_id: {organization_id}")
+    
+    try:
+        # Get basic machines
+        machines = get_machines(db, skip, limit, organization_id)
+        logger.info(f"Retrieved {len(machines)} machines to enrich")
+        
+        # Enrich each machine with hours data
+        enriched_machines = []
+        for machine in machines:
+            # Get latest hours record
+            latest_hours_record = db.query(models.MachineHours)\
+                .filter(models.MachineHours.machine_id == machine.id)\
+                .order_by(desc(models.MachineHours.recorded_date))\
+                .first()
+            
+            if latest_hours_record:
+                logger.info(f"Machine {machine.name}: Found hours record - {latest_hours_record.hours_value} hrs recorded on {latest_hours_record.recorded_date}")
+            else:
+                logger.info(f"Machine {machine.name}: No hours records found")
+            
+            # Get total hours records count
+            total_records = db.query(models.MachineHours)\
+                .filter(models.MachineHours.machine_id == machine.id)\
+                .count()
+            
+            # Calculate days since last record
+            days_since_last = None
+            if latest_hours_record:
+                from datetime import timezone
+                # Ensure both datetimes are timezone-aware for comparison
+                now = datetime.now(timezone.utc)
+                recorded_date = latest_hours_record.recorded_date
+                if recorded_date.tzinfo is None:
+                    recorded_date = recorded_date.replace(tzinfo=timezone.utc)
+                days_since_last = (now - recorded_date).days
+            
+            # Create enriched machine data - include all base fields
+            machine_dict = {
+                'id': machine.id,
+                'customer_organization_id': machine.customer_organization_id,
+                'model_type': machine.model_type,
+                'name': machine.name,
+                'serial_number': machine.serial_number,
+                # Include all MachineBase fields
+                'purchase_date': getattr(machine, 'purchase_date', None),
+                'warranty_expiry_date': getattr(machine, 'warranty_expiry_date', None),
+                'status': getattr(machine, 'status', 'active'),
+                'last_maintenance_date': getattr(machine, 'last_maintenance_date', None),
+                'next_maintenance_date': getattr(machine, 'next_maintenance_date', None),
+                'location': getattr(machine, 'location', None),
+                'notes': getattr(machine, 'notes', None),
+                # BaseSchema fields
+                'created_at': machine.created_at,
+                'updated_at': machine.updated_at,
+                # Enriched fields
+                'latest_hours': float(latest_hours_record.hours_value) if latest_hours_record else None,
+                'latest_hours_date': latest_hours_record.recorded_date if latest_hours_record else None,
+                'days_since_last_hours_record': days_since_last,
+                'total_hours_records': total_records,
+                'customer_organization_name': machine.customer_organization.name if machine.customer_organization else None
+            }
+            
+            enriched_machines.append(machine_dict)
+        
+        logger.info(f"Returning {len(enriched_machines)} enriched machines")
+        # Log first machine to verify data structure
+        if enriched_machines:
+            logger.info(f"Sample enriched machine: {enriched_machines[0]}")
+        return enriched_machines
+        
+    except Exception as e:
+        logger.error(f"Error enriching machines with hours data: {str(e)}", exc_info=True)
+        # Fall back to basic machines if enrichment fails
+        logger.warning("Falling back to basic machines without hours data")
+        return get_machines(db, skip, limit, organization_id)
+
+def get_machine_hours_history(db: Session, machine_id: uuid.UUID, skip: int = 0, limit: int = 50):
+    """
+    Get machine hours history for a specific machine.
+    """
+    try:
+        hours_records = db.query(models.MachineHours)\
+            .filter(models.MachineHours.machine_id == machine_id)\
+            .order_by(models.MachineHours.recorded_date.desc())\
+            .offset(skip)\
+            .limit(limit)\
+            .all()
+        
+        return hours_records
+        
+    except Exception as e:
+        logger.error(f"Error getting machine hours history: {str(e)}")
+        return []
+
+def get_machine_hours_chart_data(db: Session, machine_id: uuid.UUID, days: int = 90):
+    """
+    Get machine hours data for charting (last N days).
+    """
+    from datetime import datetime, timedelta
+    
+    try:
+        cutoff_date = datetime.now() - timedelta(days=days)
+        
+        hours_records = db.query(models.MachineHours)\
+            .filter(
+                models.MachineHours.machine_id == machine_id,
+                models.MachineHours.recorded_date >= cutoff_date
+            )\
+            .order_by(models.MachineHours.recorded_date.asc())\
+            .all()
+        
+        # Format for chart
+        chart_data = []
+        for record in hours_records:
+            chart_data.append({
+                'date': record.recorded_date.strftime('%Y-%m-%d'),
+                'hours': float(record.hours_value),
+                'recorded_by': record.recorded_by_user.username if record.recorded_by_user else 'Unknown'
+            })
+        
+        return chart_data
+        
+    except Exception as e:
+        logger.error(f"Error getting machine hours chart data: {str(e)}")
+        return []

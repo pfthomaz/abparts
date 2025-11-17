@@ -14,6 +14,7 @@ const MachineDetails = ({ machineId, onClose }) => {
   const [maintenanceHistory, setMaintenanceHistory] = useState([]);
   const [usageHistory, setUsageHistory] = useState([]);
   const [compatibleParts, setCompatibleParts] = useState([]);
+  const [machineHours, setMachineHours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -29,17 +30,19 @@ const MachineDetails = ({ machineId, onClose }) => {
     setError(null);
 
     try {
-      const [machineData, maintenanceData, usageData, partsData] = await Promise.all([
+      const [machineData, maintenanceData, usageData, partsData, hoursData] = await Promise.all([
         machinesService.getMachine(machineId),
         machinesService.getMaintenanceHistory(machineId),
         machinesService.getUsageHistory(machineId),
-        machinesService.getCompatibleParts(machineId)
+        machinesService.getCompatibleParts(machineId),
+        machinesService.getMachineHours(machineId)
       ]);
 
       setMachine(machineData);
       setMaintenanceHistory(maintenanceData);
       setUsageHistory(usageData);
       setCompatibleParts(partsData);
+      setMachineHours(hoursData);
     } catch (err) {
       setError(err.message || 'Failed to fetch machine data');
     } finally {
@@ -141,6 +144,7 @@ const MachineDetails = ({ machineId, onClose }) => {
           <nav className="-mb-px flex space-x-8 px-6">
             {[
               { id: 'overview', label: 'Overview' },
+              { id: 'hours', label: 'Machine Hours' },
               { id: 'maintenance', label: 'Maintenance History' },
               { id: 'usage', label: 'Parts Usage' },
               { id: 'performance', label: 'Performance' },
@@ -209,6 +213,92 @@ const MachineDetails = ({ machineId, onClose }) => {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Machine Hours Tab */}
+          {activeTab === 'hours' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Machine Hours Log</h3>
+              
+              {machineHours.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No machine hours recorded yet
+                </div>
+              ) : (
+                <div>
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {machineHours[0]?.hours_value?.toLocaleString() || 0} hrs
+                      </div>
+                      <div className="text-sm text-gray-600">Latest Hours</div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">
+                        {machineHours.length}
+                      </div>
+                      <div className="text-sm text-gray-600">Total Records</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {machineHours.length > 1 
+                          ? (machineHours[0]?.hours_value - machineHours[machineHours.length - 1]?.hours_value).toLocaleString()
+                          : 0} hrs
+                      </div>
+                      <div className="text-sm text-gray-600">Total Accumulated</div>
+                    </div>
+                  </div>
+
+                  {/* Hours History Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date & Time
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Hours Value
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Recorded By
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Notes
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {machineHours.map((record, index) => (
+                          <tr key={record.id} className={index === 0 ? 'bg-blue-50' : ''}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(record.recorded_date).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-lg font-semibold text-gray-900">
+                                {record.hours_value?.toLocaleString()} hrs
+                              </span>
+                              {index > 0 && (
+                                <span className="ml-2 text-xs text-gray-500">
+                                  (+{(record.hours_value - machineHours[index - 1]?.hours_value).toLocaleString()})
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {record.recorded_by_username || 'Unknown'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {record.notes || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

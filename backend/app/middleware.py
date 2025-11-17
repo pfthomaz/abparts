@@ -248,6 +248,10 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
         if path in self.custom_permission_endpoints:
             return False
         
+        # Skip machine hours endpoints (all authenticated users can record hours)
+        if "/machines/" in path and path.endswith("/hours"):
+            return False
+        
         return True
     
     def _extract_resource_from_path(self, path: str, method: str) -> Optional[ResourceType]:

@@ -31,9 +31,37 @@ import Transactions from './pages/Transactions'; // New: Import Transactions pag
 import OrganizationManagement from './pages/OrganizationManagement'; // New: Import OrganizationManagement page
 import Configuration from './pages/Configuration'; // New: Import Configuration page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
+import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
+import { useState, useEffect } from 'react';
+import { api } from './services/api';
 
 function App() {
-  const { token, loadingUser } = useAuth();
+  const { token, loadingUser, user } = useAuth();
+  const [showHoursReminder, setShowHoursReminder] = useState(false);
+  const [machinesNeedingUpdate, setMachinesNeedingUpdate] = useState([]);
+
+  // Check for machine hours reminders on login
+  useEffect(() => {
+    const checkHoursReminders = async () => {
+      if (!token || !user) return;
+      
+      try {
+        const response = await api.get('/machines/check-hours-reminders');
+        
+        if (response.is_reminder_day && response.machines_needing_update.length > 0) {
+          setMachinesNeedingUpdate(response.machines_needing_update);
+          setShowHoursReminder(true);
+        }
+      } catch (error) {
+        console.error('Failed to check hours reminders:', error);
+      }
+    };
+
+    // Check reminders when user logs in
+    if (token && user) {
+      checkHoursReminders();
+    }
+  }, [token, user]);
 
   if (loadingUser) {
     return (
@@ -48,6 +76,18 @@ function App() {
       <Router>
         {/* Global session timeout warning - only shows when user is authenticated */}
         {token && <SessionTimeoutWarning />}
+        
+        {/* Machine Hours Reminder Modal */}
+        {showHoursReminder && (
+          <MachineHoursReminderModal
+            machines={machinesNeedingUpdate}
+            onClose={() => setShowHoursReminder(false)}
+            onHoursSaved={() => {
+              setShowHoursReminder(false);
+              // Optionally refresh data
+            }}
+          />
+        )}
 
         <Routes>
           <Route

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug API Calls</title>
+</head>
+<body>
+    <h1>Debug API Calls</h1>
+    
+    <h2>Test 1: Proxy Test</h2>
+    <button onclick="testProxy()">Test /api/machines/ (proxy)</button>
+    <div id="proxyResult"></div>
+    
+    <h2>Test 2: Direct Backend Test</h2>
+    <button onclick="testDirect()">Test http://localhost:8000/machines/ (direct)</button>
+    <div id="directResult"></div>
+    
+    <h2>Test 3: Token Test</h2>
+    <button onclick="testToken()">Check localStorage token</button>
+    <div id="tokenResult"></div>
+
+    <script>
+        async function testProxy() {
+            const resultDiv = document.getElementById('proxyResult');
+            resultDiv.innerHTML = 'Testing proxy...';
+            
+            try {
+                const response = await fetch('/api/machines/');
+                const text = await response.text();
+                
+                resultDiv.innerHTML = `
+                    <h3>Proxy Test Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>URL: ${response.url}</p>
+                    <p>Response type: ${text.includes('<!DOCTYPE') ? 'HTML' : 'JSON/Text'}</p>
+                    <details>
+                        <summary>Response body (first 200 chars)</summary>
+                        <pre>${text.substring(0, 200)}...</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testDirect() {
+            const resultDiv = document.getElementById('directResult');
+            resultDiv.innerHTML = 'Testing direct backend...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/machines/');
+                const text = await response.text();
+                
+                resultDiv.innerHTML = `
+                    <h3>Direct Backend Test Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>URL: ${response.url}</p>
+                    <p>Response type: ${text.includes('<!DOCTYPE') ? 'HTML' : 'JSON/Text'}</p>
+                    <details>
+                        <summary>Response body (first 200 chars)</summary>
+                        <pre>${text.substring(0, 200)}...</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        function testToken() {
+            const resultDiv = document.getElementById('tokenResult');
+            const token = localStorage.getItem('token');
+            
+            resultDiv.innerHTML = `
+                <h3>Token Test Result:</h3>
+                <p>Token exists: ${!!token}</p>
+                <p>Token length: ${token ? token.length : 0}</p>
+                <p>Token preview: ${token ? token.substring(0, 50) + '...' : 'None'}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

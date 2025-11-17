@@ -19,6 +19,30 @@ from ..permissions import (
 
 router = APIRouter()
 
+def _can_have_superadmin_users(organization: models.Organization) -> bool:
+    """
+    Check if an organization can have superadmin users.
+    Key organizations that can have superadmins:
+    - Oraseas EE (organization_type: oraseas_ee)
+    - BossServ Ltd (supplier organization in UK)
+    - BossAqua (supplier organization in New Zealand or bossaqua type)
+    """
+    # Oraseas EE can always have superadmins
+    if organization.organization_type == models.OrganizationType.oraseas_ee:
+        return True
+    
+    # BossAqua organization type can have superadmins
+    if organization.organization_type == models.OrganizationType.bossaqua:
+        return True
+    
+    # Specific organizations that can have superadmins (supplier or customer)
+    key_organization_names = ["BossServ Ltd", "BossServ LLC", "BossAqua"]
+    if (organization.organization_type in [models.OrganizationType.supplier, models.OrganizationType.customer] and 
+        organization.name in key_organization_names):
+        return True
+    
+    return False
+
 def _check_update_user_permissions(user_to_update: models.User, user_update: schemas.UserUpdate, current_user: TokenData):
     """Helper to centralize complex permission checks for updating a user."""
     is_super_admin = permission_checker.is_super_admin(current_user)
@@ -52,8 +76,9 @@ def _check_create_user_permissions(user_to_create: schemas.UserCreate, organizat
              raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only super admins can create super admin users.")
 
     if permission_checker.is_super_admin(current_user):
-        if user_to_create.role == "super_admin" and organization.organization_type != models.OrganizationType.ORASEAS_EE:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super admin role can only be assigned to Oraseas EE organization users.")
+        # Check if organization can have superadmin users
+        if user_to_create.role == "super_admin" and not _can_have_superadmin_users(organization):
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super admin role can only be assigned to key organizations (Oraseas EE, BossServ Ltd, BossAqua).")
 
 
 # --- Users CRUD ---
@@ -428,12 +453,12 @@ async def invite_user(
                 detail="Only super admins can invite other super admins"
             )
     
-    # Super admins can invite to any organization, but super_admin role only to Oraseas EE
+    # Super admins can invite to any organization, but super_admin role only to key organizations
     if invitation.role == schemas.UserRoleEnum.SUPER_ADMIN:
-        if organization.organization_type != models.OrganizationType.ORASEAS_EE:
+        if not _can_have_superadmin_users(organization):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Super admin role can only be assigned to Oraseas EE organization"
+                detail="Super admin role can only be assigned to key organizations (Oraseas EE, BossServ Ltd, BossAqua)"
             )
     
     # Create invitation

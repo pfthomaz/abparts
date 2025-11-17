@@ -13,11 +13,16 @@ class OrganizationTypeEnum(str, Enum):
     supplier = "supplier"
 
 class CountryEnum(str, Enum):
-    GR = "GR"
-    KSA = "KSA"
-    ES = "ES"
-    CY = "CY"
-    OM = "OM"
+    GR = "GR"  # Greece
+    UK = "UK"  # United Kingdom
+    NO = "NO"  # Norway
+    CA = "CA"  # Canada
+    NZ = "NZ"  # New Zealand
+    TR = "TR"  # Turkey
+    OM = "OM"  # Oman
+    ES = "ES"  # Spain
+    CY = "CY"  # Cyprus
+    SA = "SA"  # Saudi Arabia
 
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)

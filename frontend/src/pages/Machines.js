@@ -9,6 +9,7 @@ import Modal from '../components/Modal';
 import MachineForm from '../components/MachineForm';
 import MachineDetails from '../components/MachineDetails';
 import MachineTransferForm from '../components/MachineTransferForm';
+import SimpleMachineHoursButton from '../components/SimpleMachineHoursButton';
 
 const Machines = () => {
   const [machines, setMachines] = useState([]);
@@ -225,6 +226,28 @@ const Machines = () => {
                 <p className="text-gray-600"><span className="font-medium">Model:</span> {machine.model_type}</p>
                 <p className="text-gray-600"><span className="font-medium">Serial:</span> {machine.serial_number}</p>
                 <p className="text-gray-600"><span className="font-medium">Owner:</span> {machine.organizationName}</p>
+                
+                {/* Debug: Log machine data */}
+                {console.log('Machine data:', machine.name, 'latest_hours:', machine.latest_hours, 'type:', typeof machine.latest_hours)}
+                
+                {/* Latest Machine Hours */}
+                {machine.latest_hours !== null && machine.latest_hours !== undefined ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-2 mt-2">
+                    <p className="text-blue-900 text-sm">
+                      <span className="font-semibold">Latest Hours:</span> {machine.latest_hours.toLocaleString()} hrs
+                    </p>
+                    {machine.latest_hours_date && (
+                      <p className="text-blue-700 text-xs mt-1">
+                        Recorded: {new Date(machine.latest_hours_date).toLocaleDateString()} at {new Date(machine.latest_hours_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded p-2 mt-2">
+                    <p className="text-gray-600 text-sm italic">No hours recorded yet</p>
+                  </div>
+                )}
+                
                 {machine.last_maintenance_date && (
                   <p className="text-gray-600">
                     <span className="font-medium">Last Maintenance:</span> {' '}
@@ -240,6 +263,12 @@ const Machines = () => {
                 >
                   View Details
                 </button>
+
+                <SimpleMachineHoursButton 
+                  machineId={machine.id}
+                  machineName={machine.name}
+                  onHoursSaved={fetchData}
+                />
 
                 {permissions.canEdit && (
                   <button

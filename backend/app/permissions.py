@@ -1330,29 +1330,5 @@ def require_organizational_access(organization_param: str = "organization_id"):
     
     return organizational_access_dependency
 
-# --- Audit Logging ---
-
-class AuditLogger:
-    """Class for logging permission-related audit events."""
-    
-    @staticmethod
-    def log_permission_granted(user: TokenData, resource: ResourceType, permission: PermissionType,
-                             context: Dict[str, Any] = None, request: Request = None):
-        """Log permission granted events for sensitive operations."""
-        if resource in [ResourceType.USER, ResourceType.ORGANIZATION] and permission in [PermissionType.WRITE, PermissionType.DELETE]:
-            log_data = {
-                "event": "permission_granted",
-                "user_id": str(user.user_id),
-                "username": user.username,
-                "role": user.role,
-                "organization_id": str(user.organization_id),
-                "resource": resource.value,
-                "permission": permission.value,
-                "context": context or {},
-                "timestamp": datetime.utcnow().isoformat()
-            }
-            
-            logger.info(f"Sensitive permission granted: {log_data}")
-
-# Global audit logger instance
-audit_logger = AuditLogger()
+# Note: AuditLogger class is defined earlier in this file (line ~637)
+# The global audit_logger instance is also defined there

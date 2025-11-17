@@ -30,23 +30,28 @@ class OrganizationTypeEnum(str, Enum):
     supplier = "supplier"
 
 class CountryEnum(str, Enum):
-    GR = "GR"
-    KSA = "KSA"
-    ES = "ES"
-    CY = "CY"
-    OM = "OM"
+    GR = "GR"  # Greece
+    UK = "UK"  # United Kingdom
+    NO = "NO"  # Norway
+    CA = "CA"  # Canada
+    NZ = "NZ"  # New Zealand
+    TR = "TR"  # Turkey
+    OM = "OM"  # Oman
+    ES = "ES"  # Spain
+    CY = "CY"  # Cyprus
+    SA = "SA"  # Saudi Arabia
 
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)
     organization_type: OrganizationTypeEnum
     parent_organization_id: Optional[uuid.UUID] = None
-    country: Optional[CountryEnum] = None
+    # country: Optional[CountryEnum] = None  # Commented until DB migration runs
     address: Optional[str] = None
     contact_info: Optional[str] = None
     is_active: bool = True
 
 class OrganizationCreate(OrganizationBase):
-    pass
+    country: Optional[CountryEnum] = None  # Temporarily accept country field
 
 class OrganizationUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
@@ -349,6 +354,10 @@ class MachineUpdate(BaseModel):
 
 class MachineResponse(MachineBase, BaseSchema):
     customer_organization_name: Optional[str] = None
+    latest_hours: Optional[float] = None
+    latest_hours_date: Optional[datetime] = None
+    days_since_last_hours_record: Optional[int] = None
+    total_hours_records: Optional[int] = None
 
 
 # --- Machine Transfer Schemas ---
@@ -459,15 +468,18 @@ class PartBase(BaseModel):
     part_type: PartTypeEnum = PartTypeEnum.CONSUMABLE
     is_proprietary: bool = False
     unit_of_measure: str = Field(default="pieces", max_length=50)
-    manufacturer: Optional[str] = Field(None, max_length=255, description="Part manufacturer name")
-    part_code: Optional[str] = Field(None, max_length=100, description="AutoBoss-specific part code")
-    serial_number: Optional[str] = Field(None, max_length=255, description="Part serial number if available")
+    # manufacturer: Optional[str] = Field(None, max_length=255, description="Part manufacturer name")  # Temporarily commented out
+    # part_code: Optional[str] = Field(None, max_length=100, description="AutoBoss-specific part code")  # Temporarily commented out
+    # serial_number: Optional[str] = Field(None, max_length=255, description="Part serial number if available")  # Temporarily commented out
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
     image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
     
     # Validators temporarily removed to test field definitions
+    
+    class Config:
+        extra = "ignore"  # Ignore extra fields not defined in the schema
 
 class PartCreate(PartBase):
     pass

@@ -128,7 +128,10 @@ def create_organization(db: Session, org_data):
         if not parent.is_active:
             raise ValueError("Cannot assign inactive parent organization")
     
-    org = models.Organization(**org_dict)
+    # Temporarily remove country field until DB migration is complete
+    org_dict_filtered = {k: v for k, v in org_dict.items() if k != 'country'}
+    
+    org = models.Organization(**org_dict_filtered)
     db.add(org)
     db.commit()
     db.refresh(org)

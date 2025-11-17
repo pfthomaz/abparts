@@ -508,7 +508,7 @@ async def initialize_default_configurations(
             "value": "GR",
             "data_type": ConfigurationDataType.ENUM,
             "description": "Default country for new organizations",
-            "validation_rules": {"allowed_values": ["GR", "KSA", "ES", "CY", "OM"]},
+            "validation_rules": {"allowed_values": ["GR", "UK", "NO", "CA", "NZ", "TR", "OM", "ES", "CY", "SA"]},
             "default_value": "GR"
         },
         {
@@ -598,10 +598,10 @@ async def initialize_default_configurations(
         {
             "category": ConfigurationCategory.LOCALIZATION,
             "key": "locale.supported_countries",
-            "value": '["GR", "KSA", "ES", "CY", "OM"]',
+            "value": '["GR", "UK", "NO", "CA", "NZ", "TR", "OM", "ES", "CY", "SA"]',
             "data_type": ConfigurationDataType.JSON,
             "description": "Supported countries",
-            "default_value": '["GR", "KSA", "ES", "CY", "OM"]'
+            "default_value": '["GR", "UK", "NO", "CA", "NZ", "TR", "OM", "ES", "CY", "SA"]'
         },
         {
             "category": ConfigurationCategory.LOCALIZATION,
