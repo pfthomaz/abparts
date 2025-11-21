@@ -103,11 +103,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.frontend
       target: production # Use production build stage
+      args:
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-/api}
     container_name: abparts_web_prod
     ports:
       - "80:80" # Nginx serving on port 80, exposed as 81
-    environment:
-      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
     depends_on:
       api:
         condition: service_started
