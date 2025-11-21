@@ -11,7 +11,7 @@ import { api } from './api';
  * Fetches all users with enhanced filtering
  */
 const getUsers = (params = {}) => {
-  return api.get('/users', { params });
+  return api.get('/users/', { params });
 };
 
 /**
@@ -25,7 +25,7 @@ const getUser = (userId) => {
  * Creates a new user
  */
 const createUser = (userData) => {
-  return api.post('/users', userData);
+  return api.post('/users/', userData);
 };
 
 /**
