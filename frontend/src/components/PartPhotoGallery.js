@@ -121,7 +121,7 @@ const PartPhotoGallery = forwardRef(({
             ✕
           </button>
           <img
-            src={imageUrl.startsWith('/static/images') ? `${API_BASE_URL}${imageUrl}` : imageUrl}
+            src={imageUrl}
             alt="Full size part"
             className="max-w-full max-h-screen object-contain"
             onClick={(e) => e.stopPropagation()}
@@ -148,7 +148,7 @@ const PartPhotoGallery = forwardRef(({
                   }}
                 >
                   <img
-                    src={image.url.startsWith('/static/images') ? `${API_BASE_URL}${image.url}` : image.url}
+                    src={image.url}
                     alt={`Part ${index + 1}`}
                     className="w-full h-24 object-cover rounded-md shadow-sm hover:shadow-md transition-shadow"
                     onError={(e) => {
@@ -234,7 +234,7 @@ const PartPhotoGallery = forwardRef(({
           {currentImages.map((image, index) => (
             <div key={image.id} className="relative group">
               <img
-                src={image.url.startsWith('/static/images') ? `${API_BASE_URL}${image.url}` : image.url}
+                src={image.url}
                 alt={`Part ${index + 1}`}
                 className="w-full h-24 object-cover rounded-md shadow-sm"
                 onError={(e) => {

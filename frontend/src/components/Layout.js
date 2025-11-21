@@ -135,7 +135,7 @@ const Layout = () => {
                   {user.organization.logo_url && (
                     <img
                       src={user.organization.logo_url.startsWith('/static') 
-                        ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${user.organization.logo_url}`
+                        ? user.organization.logo_url
                         : user.organization.logo_url
                       }
                       alt={user.organization.name}
@@ -168,7 +168,7 @@ const Layout = () => {
                   {user.profile_photo_url ? (
                     <img
                       src={user.profile_photo_url.startsWith('/static') 
-                        ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${user.profile_photo_url}`
+                        ? user.profile_photo_url
                         : user.profile_photo_url
                       }
                       alt={user.name || user.username}
@@ -210,7 +210,7 @@ const Layout = () => {
                         {user.profile_photo_url ? (
                           <img
                             src={user.profile_photo_url.startsWith('/static') 
-                              ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${user.profile_photo_url}`
+                              ? user.profile_photo_url
                               : user.profile_photo_url
                             }
                             alt={user.name || user.username}
