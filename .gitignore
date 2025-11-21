@@ -52,3 +52,18 @@ pgadmin_config/pgadmin4.db
 .DS_Store
 Thumbs.db
 backend.zip
+# Database backups
+*.sql
+backup_*.sql
+abparts_backup*.sql
+
+# Image backups
+*.tar.gz
+abparts_images*.tar.gz
+
+# Static images (should not be in git)
+backend/static/images/
+
+# Backup scripts (optional - you might want to keep these)
+# backup_production_db.sh
+# restore_to_local.sh
