@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getImageUrl } from '../utils/imageUrl';
 import { getNavigationItems, getUIConfiguration, isSuperAdmin } from '../utils/permissions';
 import PermissionGuard from './PermissionGuard';
 import OrganizationScopeIndicator from './OrganizationScopeIndicator';
@@ -135,7 +134,10 @@ const Layout = () => {
                 <div className="hidden md:flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm">
                   {user.organization.logo_url && (
                     <img
-                      src={getImageUrl(user.organization.logo_url)}
+                      src={user.organization.logo_url.startsWith('/static') 
+                        ? user.organization.logo_url
+                        : user.organization.logo_url
+                      }
                       alt={user.organization.name}
                       className="w-12 h-12 rounded object-contain"
                       onError={(e) => {
@@ -165,7 +167,10 @@ const Layout = () => {
                 >
                   {user.profile_photo_url ? (
                     <img
-                      src={getImageUrl(user.profile_photo_url)}
+                      src={user.profile_photo_url.startsWith('/static') 
+                        ? user.profile_photo_url
+                        : user.profile_photo_url
+                      }
                       alt={user.name || user.username}
                       className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
                       onError={(e) => {
@@ -204,7 +209,10 @@ const Layout = () => {
                       <div className="flex items-center space-x-3">
                         {user.profile_photo_url ? (
                           <img
-                            src={getImageUrl(user.profile_photo_url)}
+                            src={user.profile_photo_url.startsWith('/static') 
+                              ? user.profile_photo_url
+                              : user.profile_photo_url
+                            }
                             alt={user.name || user.username}
                             className="w-10 h-10 rounded-full object-cover border-2 border-blue-500"
                           />

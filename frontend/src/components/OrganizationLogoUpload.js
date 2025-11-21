@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../services/api';
-import { getImageUrl } from '../utils/imageUrl';
 
 const OrganizationLogoUpload = ({ organizationId, currentLogoUrl, onLogoUpdated }) => {
   const [uploading, setUploading] = useState(false);
@@ -85,7 +84,7 @@ const OrganizationLogoUpload = ({ organizationId, currentLogoUrl, onLogoUpdated 
     }
   };
 
-  const logoUrl = getImageUrl(currentLogoUrl);
+  const logoUrl = currentLogoUrl;
 
   return (
     <div className="space-y-4">

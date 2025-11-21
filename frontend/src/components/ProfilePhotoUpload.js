@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../services/api';
-import { getImageUrl } from '../utils/imageUrl';
 
 const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
   const [uploading, setUploading] = useState(false);
@@ -90,7 +89,7 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
     }
   };
 
-  const photoUrl = getImageUrl(currentPhotoUrl);
+  const photoUrl = currentPhotoUrl;
 
   console.log('Rendering preview - currentPhotoUrl:', currentPhotoUrl, 'photoUrl:', photoUrl);
 

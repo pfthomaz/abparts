@@ -64,7 +64,7 @@ services:
       # Add any other FastAPI environment variables here (e.g., AUTH0_DOMAIN, KEYCLOAK_URL)
     volumes:
       - ./backend:/app # Mount your backend code for live reloading during development
-      - ./backend/static:/app/static # Mount static files directory
+      - api_static_images:/app/static/images # New: Volume for static images
     depends_on:
       db:
         condition: service_healthy # Ensure DB is healthy before starting API

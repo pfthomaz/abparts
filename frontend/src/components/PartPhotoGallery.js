@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { API_BASE_URL } from '../services/api';
 import { partsService } from '../services/partsService';
-import { getImageUrl } from '../utils/imageUrl';
 
 /**
  * PartPhotoGallery component for managing up to 4 part images
@@ -122,7 +121,7 @@ const PartPhotoGallery = forwardRef(({
             ✕
           </button>
           <img
-            src={getImageUrl(imageUrl)}
+            src={imageUrl}
             alt="Full size part"
             className="max-w-full max-h-screen object-contain"
             onClick={(e) => e.stopPropagation()}
@@ -149,7 +148,7 @@ const PartPhotoGallery = forwardRef(({
                   }}
                 >
                   <img
-                    src={getImageUrl(image.url)}
+                    src={image.url}
                     alt={`Part ${index + 1}`}
                     className="w-full h-24 object-cover rounded-md shadow-sm hover:shadow-md transition-shadow"
                     onError={(e) => {
@@ -235,7 +234,7 @@ const PartPhotoGallery = forwardRef(({
           {currentImages.map((image, index) => (
             <div key={image.id} className="relative group">
               <img
-                src={getImageUrl(image.url)}
+                src={image.url}
                 alt={`Part ${index + 1}`}
                 className="w-full h-24 object-cover rounded-md shadow-sm"
                 onError={(e) => {
