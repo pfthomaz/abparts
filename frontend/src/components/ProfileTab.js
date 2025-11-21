@@ -2,6 +2,7 @@
 
 import React from 'react';
 import LanguageSelector from './LanguageSelector';
+import ProfilePhotoUpload from './ProfilePhotoUpload';
 
 const ProfileTab = ({
   profile,
@@ -9,7 +10,8 @@ const ProfileTab = ({
   setProfileForm,
   isEditingProfile,
   setIsEditingProfile,
-  handleProfileUpdate
+  handleProfileUpdate,
+  onPhotoUpdated
 }) => {
   const handleInputChange = (field, value) => {
     setProfileForm(prev => ({ ...prev, [field]: value }));
@@ -17,6 +19,15 @@ const ProfileTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Profile Photo Upload */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Profile Photo</h3>
+        <ProfilePhotoUpload
+          currentPhotoUrl={profile?.profile_photo_url}
+          onPhotoUpdated={onPhotoUpdated}
+        />
+      </div>
+
       {/* Account Information Display */}
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Information</h3>

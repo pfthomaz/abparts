@@ -11,7 +11,9 @@ class CustomerOrderBase(BaseModel):
     oraseas_organization_id: uuid.UUID
     order_date: datetime
     expected_delivery_date: Optional[datetime] = None
-    status: str = "Pending"  # Pending, Shipped, Delivered, Cancelled
+    shipped_date: Optional[datetime] = None
+    shipped_by_user_id: Optional[uuid.UUID] = None
+    status: str = "Pending"  # Requested, Pending, Shipped, Received, Delivered, Cancelled
     ordered_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
 
@@ -20,6 +22,8 @@ class CustomerOrderCreate(CustomerOrderBase):
 
 class CustomerOrderUpdate(BaseModel):
     expected_delivery_date: Optional[datetime] = None
+    shipped_date: Optional[datetime] = None
+    shipped_by_user_id: Optional[uuid.UUID] = None
     actual_delivery_date: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
@@ -35,12 +39,26 @@ class CustomerOrderResponse(CustomerOrderBase):
     customer_organization_name: Optional[str] = None
     oraseas_organization_name: Optional[str] = None
     ordered_by_username: Optional[str] = None
+    shipped_by_username: Optional[str] = None
     
     # Include order items
     items: List['CustomerOrderItemResponse'] = []
 
     class Config:
         from_attributes = True
+
+# --- Customer Order Action Schemas ---
+class CustomerOrderShipRequest(BaseModel):
+    """Request schema for marking an order as shipped (Oraseas EE action)"""
+    shipped_date: datetime = Field(default_factory=datetime.now)
+    tracking_number: Optional[str] = Field(None, max_length=255)
+    notes: Optional[str] = None
+
+class CustomerOrderConfirmReceiptRequest(BaseModel):
+    """Request schema for confirming order receipt (Customer action)"""
+    actual_delivery_date: datetime = Field(default_factory=datetime.now)
+    receiving_warehouse_id: uuid.UUID
+    notes: Optional[str] = None
 
 class CustomerOrderItemBase(BaseModel):
     customer_order_id: uuid.UUID

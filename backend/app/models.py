@@ -85,6 +85,7 @@ class Organization(Base):
     # country = Column(Enum(CountryCode), nullable=True)  # Country field - commented until DB migration runs
     address = Column(Text)
     contact_info = Column(Text)
+    logo_url = Column(String(500), nullable=True)  # Organization logo - commented until DB migration runs
     is_active = Column(Boolean, nullable=False, server_default='true')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -194,6 +195,7 @@ class User(Base):
     password_hash = Column(Text, nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
+    profile_photo_url = Column(String(500), nullable=True)  # User profile photo
     role = Column(ENUM(UserRole, name='userrole'), nullable=False)
     user_status = Column(ENUM(UserStatus, name='userstatus'), nullable=False)
     failed_login_attempts = Column(Integer, nullable=False, server_default='0')
@@ -217,7 +219,7 @@ class User(Base):
     # Relationships
     organization = relationship("Organization", back_populates="users")
     part_usage_records = relationship("PartUsage", back_populates="recorded_by_user")
-    customer_orders_placed = relationship("CustomerOrder", back_populates="ordered_by_user")
+    customer_orders_placed = relationship("CustomerOrder", foreign_keys="[CustomerOrder.ordered_by_user_id]", back_populates="ordered_by_user")
     stock_adjustments = relationship("StockAdjustment", back_populates="user")
     transactions_performed = relationship("Transaction", back_populates="performed_by_user")
     invitation_audit_logs = relationship("InvitationAuditLog", foreign_keys="[InvitationAuditLog.user_id]", back_populates="user")
@@ -719,10 +721,11 @@ class CustomerOrder(Base):
     oraseas_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     order_date = Column(DateTime(timezone=True), nullable=False)
     expected_delivery_date = Column(DateTime(timezone=True))
-    shipped_date = Column(DateTime(timezone=True))  # When Oraseas EE ships the order
+    shipped_date = Column(DateTime(timezone=True))  # When the order is shipped
+    shipped_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))  # Who shipped the order
     actual_delivery_date = Column(DateTime(timezone=True))  # When customer receives the order
     status = Column(String(50), nullable=False) # e.g., 'Requested', 'Pending', 'Shipped', 'Received', 'Delivered'
-    ordered_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    ordered_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))  # Who placed the order
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -738,7 +741,8 @@ class CustomerOrder(Base):
         foreign_keys=[oraseas_organization_id],
         back_populates="customer_orders_received"
     )
-    ordered_by_user = relationship("User", back_populates="customer_orders_placed") # FIX: Changed from "ordered_by_user"
+    ordered_by_user = relationship("User", foreign_keys=[ordered_by_user_id], back_populates="customer_orders_placed")
+    shipped_by_user = relationship("User", foreign_keys=[shipped_by_user_id])
     items = relationship("CustomerOrderItem", back_populates="customer_order", cascade="all, delete-orphan")
 
     def __repr__(self):

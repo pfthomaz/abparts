@@ -1,86 +1,53 @@
-# Database Migration Instructions
+# Quick Fix for Login Error
 
-## Current Status
-✅ **Organizations page is working** - Country field temporarily disabled
-✅ **Countries endpoint updated** - Will return new countries after migration
-✅ **Configuration updated** - New countries in system config
+The login error is happening because the database doesn't have the new columns yet. Here's how to fix it:
 
-## To Enable New Countries (UK, NO, CA, NZ, TR)
+## Option 1: Using Docker Compose (Recommended)
 
-### Option 1: Using pgAdmin (Recommended)
-
-1. **Open pgAdmin**: http://localhost:8080
-2. **Connect to database**: abparts_dev
-3. **Open Query Tool** (Tools → Query Tool)
-4. **Copy and paste this SQL**:
-
-```sql
--- Create country enum
-DO $$ 
-BEGIN
-    CREATE TYPE countrycode AS ENUM ('GR', 'UK', 'NO', 'CA', 'NZ', 'TR');
-EXCEPTION
-    WHEN duplicate_object THEN 
-        RAISE NOTICE 'countrycode enum already exists';
-END $$;
-
--- Add country column
-DO $$ 
-BEGIN
-    ALTER TABLE organizations ADD COLUMN country countrycode;
-EXCEPTION
-    WHEN duplicate_column THEN 
-        RAISE NOTICE 'country column already exists';
-END $$;
-
--- Update existing organizations with default country
-UPDATE organizations SET country = 'GR' WHERE country IS NULL;
-
--- Create index for performance
-CREATE INDEX IF NOT EXISTS idx_organizations_country ON organizations(country);
-
--- Verify the migration
-SELECT 'Migration completed successfully!' as status;
-```
-
-5. **Execute the query** (F5 or Execute button)
-6. **Verify success** - Should see "Migration completed successfully!"
-
-### Option 2: Using Docker Command Line
+Run this command in your terminal:
 
 ```bash
-docker-compose exec db psql -U abparts_user -d abparts_dev -f /path/to/quick_migration.sql
+docker-compose exec db psql -U abparts_user -d abparts_dev -c "ALTER TABLE organizations ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500);"
+
+docker-compose exec db psql -U abparts_user -d abparts_dev -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url VARCHAR(500);"
 ```
 
-## After Migration
+## Option 2: Using the SQL file
 
-1. **Uncomment country fields** in the code:
-   - In `backend/app/models.py`: Uncomment the country Column
-   - In `backend/app/schemas.py`: Uncomment the country field
-2. **API will restart automatically**
-3. **Frontend will show new countries**:
-   - Greece (GR)
-   - United Kingdom (UK) 
-   - Norway (NO)
-   - Canada (CA)
-   - New Zealand (NZ)
-   - Turkey (TR)
-
-## Verification
-
-Test the countries endpoint:
 ```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/organizations/countries
+docker-compose exec -T db psql -U abparts_user -d abparts_dev < add_images_migration.sql
 ```
 
-Should return: `["GR", "UK", "NO", "CA", "NZ", "TR"]`
+## Option 3: Manual SQL
 
-## Rollback (if needed)
+1. Connect to your database:
+```bash
+docker-compose exec db psql -U abparts_user -d abparts_dev
+```
 
-If something goes wrong:
+2. Run these SQL commands:
 ```sql
--- Remove country column
-ALTER TABLE organizations DROP COLUMN IF EXISTS country;
--- Remove enum type
-DROP TYPE IF EXISTS countrycode;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url VARCHAR(500);
 ```
+
+3. Type `\q` to exit
+
+## After Running Migration
+
+Restart the API container:
+```bash
+docker-compose restart api
+```
+
+Then try logging in again. The error should be resolved!
+
+## Verify Migration
+
+To verify the columns were added:
+```bash
+docker-compose exec db psql -U abparts_user -d abparts_dev -c "\d users"
+docker-compose exec db psql -U abparts_user -d abparts_dev -c "\d organizations"
+```
+
+You should see `logo_url` in the organizations table and `profile_photo_url` in the users table.

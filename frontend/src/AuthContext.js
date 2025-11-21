@@ -40,6 +40,24 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const userData = await authService.getCurrentUser();
+          
+          // Fetch organization separately if not included
+          if (userData.organization_id && !userData.organization) {
+            try {
+              const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/organizations/${userData.organization_id}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              if (response.ok) {
+                const orgData = await response.json();
+                userData.organization = orgData;
+              }
+            } catch (orgError) {
+              console.error("Failed to fetch organization:", orgError);
+            }
+          }
+          
           setUser(userData);
         } catch (error) {
           // The api client throws an error on non-ok responses, which we catch here.

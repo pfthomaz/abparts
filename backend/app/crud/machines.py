@@ -719,15 +719,34 @@ def get_machine_hours(db: Session, machine_id: uuid.UUID, skip: int = 0, limit: 
             logger.warning(f"Machine not found for hours history: {machine_id}")
             raise HTTPException(status_code=404, detail="Machine not found")
         
-        # Get machine hours records ordered by recorded_date descending
-        hours_records = db.query(models.MachineHours).filter(
+        # Get machine hours records with user information
+        from sqlalchemy.orm import selectinload
+        hours_records = db.query(models.MachineHours).options(
+            selectinload(models.MachineHours.recorded_by_user)
+        ).filter(
             models.MachineHours.machine_id == machine_id
         ).order_by(
             desc(models.MachineHours.recorded_date)
         ).offset(skip).limit(limit).all()
         
-        logger.debug(f"Successfully retrieved {len(hours_records)} hours records for machine {machine_id}")
-        return hours_records
+        # Populate username for response
+        result = []
+        for record in hours_records:
+            record_dict = {
+                "id": record.id,
+                "machine_id": record.machine_id,
+                "recorded_by_user_id": record.recorded_by_user_id,
+                "hours_value": record.hours_value,
+                "recorded_date": record.recorded_date,
+                "notes": record.notes,
+                "created_at": record.created_at,
+                "updated_at": record.updated_at,
+                "recorded_by_username": record.recorded_by_user.username if record.recorded_by_user else "Unknown"
+            }
+            result.append(record_dict)
+        
+        logger.debug(f"Successfully retrieved {len(result)} hours records for machine {machine_id}")
+        return result
         
     except HTTPException:
         # Re-raise HTTP exceptions as-is

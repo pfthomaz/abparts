@@ -249,21 +249,18 @@ const Orders = () => {
     return order.status === 'Requested' || order.status === 'Pending' || order.status === 'Shipped';
   };
 
-  const canApproveOrder = (order) => {
-    return user && (user.role === 'admin' || user.role === 'super_admin') &&
+  const canShipOrder = (order) => {
+    // Receiver organization (Oraseas EE, BossServe, BossAqua) can ship Requested or Pending orders
+    // Check if current user's organization is the receiver (oraseas_organization_id)
+    return user && 
+      (user.role === 'admin' || user.role === 'super_admin') &&
+      order.oraseas_organization_id === user.organization_id &&
       (order.status === 'Requested' || order.status === 'Pending');
   };
 
-  const canShipOrder = (order) => {
-    // Oraseas EE users can ship Pending orders
-    return user && 
-      (user.organization_name?.includes('Oraseas') || user.organization_name?.includes('BossServ')) &&
-      (user.role === 'admin' || user.role === 'super_admin') &&
-      order.status === 'Pending';
-  };
-
   const canConfirmReceipt = (order) => {
-    // Customer users can confirm receipt of Shipped orders
+    // Customer organization can confirm receipt of Shipped orders
+    // Check if current user's organization is the customer (customer_organization_id)
     return user && 
       order.customer_organization_id === user.organization_id &&
       order.status === 'Shipped';
@@ -508,14 +505,6 @@ const Orders = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2 ml-4">
-                      {canApproveOrder(order) && (
-                        <button
-                          onClick={() => handleOrderStatusUpdate(order.id, 'customer', 'Pending')}
-                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
-                        >
-                          Approve
-                        </button>
-                      )}
                       {canShipOrder(order) && (
                         <button
                           onClick={() => handleShipOrder(order)}

@@ -32,6 +32,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
   const [parts, setParts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [selectedPartInventory, setSelectedPartInventory] = useState(null);
+  const [warehouseInventory, setWarehouseInventory] = useState([]);
 
   // Fetch supporting data
   useEffect(() => {
@@ -40,6 +41,15 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
       resetForm();
     }
   }, [isOpen, initialMachineId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch warehouse inventory when warehouse is selected
+  useEffect(() => {
+    if (formData.from_warehouse_id) {
+      fetchWarehouseInventory();
+    } else {
+      setWarehouseInventory([]);
+    }
+  }, [formData.from_warehouse_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch available inventory when part and warehouse are selected
   useEffect(() => {
@@ -52,18 +62,80 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
   const fetchSupportingData = async () => {
     try {
+      console.log('Fetching supporting data...');
       const [machinesData, partsData, warehousesData] = await Promise.all([
         machinesService.getMachines(),
         partsService.getParts(),
         warehouseService.getWarehouses()
       ]);
 
-      setMachines(machinesData);
-      setParts(partsData);
-      setWarehouses(warehousesData);
+      console.log('Raw parts data:', partsData);
+
+      // Ensure data is in array format
+      const machinesArray = Array.isArray(machinesData) ? machinesData : (machinesData?.data || machinesData?.items || []);
+      const partsArray = Array.isArray(partsData) ? partsData : (partsData?.data || partsData?.items || []);
+      const warehousesArray = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data || warehousesData?.items || []);
+      
+      console.log('Machines array:', machinesArray.length);
+      console.log('Parts array:', partsArray.length, partsArray);
+      console.log('Warehouses array:', warehousesArray.length);
+      
+      setMachines(machinesArray);
+      setParts(partsArray);
+      setWarehouses(warehousesArray);
+
+      // Auto-select if only one option available
+      if (warehousesArray.length === 1 && !formData.from_warehouse_id) {
+        setFormData(prev => ({ ...prev, from_warehouse_id: warehousesArray[0].id }));
+      }
+      if (machinesArray.length === 1 && !formData.machine_id && !initialMachineId) {
+        setFormData(prev => ({ ...prev, machine_id: machinesArray[0].id }));
+      }
     } catch (err) {
       console.error('Failed to fetch supporting data:', err);
       setError('Failed to load form data. Please try again.');
+    }
+  };
+
+  const fetchWarehouseInventory = async () => {
+    try {
+      console.log('Fetching inventory for warehouse:', formData.from_warehouse_id);
+      const inventory = await inventoryService.getInventory({
+        warehouse_id: formData.from_warehouse_id
+      });
+
+      console.log('Raw inventory response:', inventory);
+
+      // Handle different response formats
+      let inventoryArray = [];
+      if (Array.isArray(inventory)) {
+        inventoryArray = inventory;
+      } else if (inventory?.data && Array.isArray(inventory.data)) {
+        inventoryArray = inventory.data;
+      } else if (inventory?.items && Array.isArray(inventory.items)) {
+        inventoryArray = inventory.items;
+      }
+
+      console.log('Inventory array:', inventoryArray);
+
+      // Filter to only show parts with stock > 0
+      const availableInventory = inventoryArray.filter(item => {
+        const stock = item.current_stock || item.quantity || 0;
+        console.log(`Part ${item.part_id}: stock = ${stock}`);
+        return stock > 0;
+      });
+      
+      console.log('Available inventory (stock > 0):', availableInventory);
+      console.log('First inventory item structure:', availableInventory[0]);
+      setWarehouseInventory(availableInventory);
+
+      // Auto-select if only one part available
+      if (availableInventory.length === 1 && !formData.part_id) {
+        setFormData(prev => ({ ...prev, part_id: availableInventory[0].part_id }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch warehouse inventory:', err);
+      setWarehouseInventory([]);
     }
   };
 
@@ -77,11 +149,11 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
       if (inventory && inventory.length > 0) {
         setSelectedPartInventory(inventory[0]);
       } else {
-        setSelectedPartInventory({ quantity: 0 });
+        setSelectedPartInventory({ current_stock: 0, quantity: 0 });
       }
     } catch (err) {
       console.error('Failed to fetch inventory:', err);
-      setSelectedPartInventory({ quantity: 0 });
+      setSelectedPartInventory({ current_stock: 0, quantity: 0 });
     }
   };
 
@@ -150,6 +222,10 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
     setSuccess(null);
 
     try {
+      // Get the unit of measure from the selected part
+      const selectedPartData = Array.isArray(parts) ? parts.find(p => p.id === formData.part_id) : null;
+      const unitOfMeasure = selectedPartData?.unit_of_measure || selectedPartInventory?.unit_of_measure || 'pieces';
+
       // Create a consumption transaction
       const transactionData = {
         transaction_type: 'consumption',
@@ -157,13 +233,18 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         from_warehouse_id: formData.from_warehouse_id,
         machine_id: formData.machine_id,
         quantity: parseFloat(formData.quantity),
+        unit_of_measure: unitOfMeasure,
         transaction_date: new Date(formData.usage_date).toISOString(),
         notes: formData.notes || null,
         reference_number: formData.reference_number || null,
         performed_by_user_id: user.id
       };
 
+      console.log('Submitting transaction data:', transactionData);
+
       const result = await transactionService.createTransaction(transactionData);
+
+      console.log('Transaction created successfully:', result);
 
       setSuccess('Part usage recorded successfully');
 
@@ -171,34 +252,40 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         onUsageRecorded(result);
       }
 
-      // Reset form for next entry
+      // Close modal after short delay to show success message
       setTimeout(() => {
-        resetForm();
-        setSuccess(null);
-      }, 2000);
+        onClose();
+      }, 1500);
 
     } catch (err) {
-      setError(err.message || 'Failed to record part usage');
+      console.error('Transaction creation error:', err);
+      console.error('Error response:', err.response?.data);
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to record part usage';
+      setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedPart = parts.find(p => p.id === formData.part_id);
-  const selectedMachine = machines.find(m => m.id === formData.machine_id);
-  const selectedWarehouse = warehouses.find(w => w.id === formData.from_warehouse_id);
+  const selectedPart = Array.isArray(parts) ? parts.find(p => p.id === formData.part_id) : null;
+  const selectedMachine = Array.isArray(machines) ? machines.find(m => m.id === formData.machine_id) : null;
+  const selectedWarehouse = Array.isArray(warehouses) ? warehouses.find(w => w.id === formData.from_warehouse_id) : null;
 
   // Validate organizational boundaries
   const validateOrganizationalBoundary = () => {
     if (!selectedMachine || !selectedWarehouse) return true;
 
+    // Get the correct organization IDs
+    const machineOrgId = selectedMachine.customer_organization_id || selectedMachine.organization_id;
+    const warehouseOrgId = selectedWarehouse.organization_id;
+
     // Check if machine and warehouse belong to the same organization
-    if (selectedMachine.organization_id !== selectedWarehouse.organization_id) {
+    if (machineOrgId !== warehouseOrgId) {
       return false;
     }
 
     // Check if user has access to this organization
-    if (user.role !== 'super_admin' && user.organization_id !== selectedMachine.organization_id) {
+    if (user.role !== 'super_admin' && user.organization_id !== machineOrgId) {
       return false;
     }
 
@@ -238,55 +325,10 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
           </div>
         )}
 
-        <div>
-          <label htmlFor="machine_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Machine <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="machine_id"
-            name="machine_id"
-            value={formData.machine_id}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading}
-            required
-          >
-            <option value="">Select a machine</option>
-            {machines.map(machine => (
-              <option key={machine.id} value={machine.id}>
-                {machine.serial_number} - {machine.model}
-                {machine.name && ` (${machine.name})`}
-                {user.role === 'super_admin' && ` - ${machine.organization_name}`}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Part <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="part_id"
-            name="part_id"
-            value={formData.part_id}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading}
-            required
-          >
-            <option value="">Select a part</option>
-            {parts.map(part => (
-              <option key={part.id} value={part.id}>
-                {part.name} ({part.part_number}) - {part.unit_of_measure}
-              </option>
-            ))}
-          </select>
-        </div>
-
+        {/* Step 1: Select Warehouse */}
         <div>
           <label htmlFor="from_warehouse_id" className="block text-sm font-medium text-gray-700 mb-1">
-            From Warehouse <span className="text-red-500">*</span>
+            1. From Warehouse <span className="text-red-500">*</span>
           </label>
           <select
             id="from_warehouse_id"
@@ -297,14 +339,91 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
             disabled={loading}
             required
           >
-            <option value="">Select source warehouse</option>
-            {warehouses.map(warehouse => (
+            <option value="">Select warehouse first</option>
+            {Array.isArray(warehouses) && warehouses.map(warehouse => (
               <option key={warehouse.id} value={warehouse.id}>
-                {warehouse.name} ({warehouse.location || 'No location'})
-                {user.role === 'super_admin' && ` - ${warehouse.organization_name}`}
+                {warehouse.name}
+                {user.role === 'super_admin' && warehouse.organization_name && ` - ${warehouse.organization_name}`}
               </option>
             ))}
           </select>
+          <p className="text-xs text-gray-500 mt-1">Select the warehouse where the part is stored</p>
+        </div>
+
+        {/* Step 2: Select Part (only show parts available in selected warehouse) */}
+        <div>
+          <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
+            2. Part <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="part_id"
+            name="part_id"
+            value={formData.part_id}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            disabled={loading || !formData.from_warehouse_id}
+            required
+          >
+            <option value="">
+              {formData.from_warehouse_id 
+                ? (warehouseInventory.length > 0 ? 'Select a part' : 'No parts available in this warehouse')
+                : 'Select warehouse first'}
+            </option>
+            {warehouseInventory.map(inventoryItem => {
+              // Use part info from inventory item if available, otherwise lookup
+              const partInfo = inventoryItem.part_name ? {
+                id: inventoryItem.part_id,
+                part_number: inventoryItem.part_number || inventoryItem.part_id,
+                name: inventoryItem.part_name,
+                unit_of_measure: inventoryItem.unit_of_measure
+              } : (Array.isArray(parts) ? parts.find(p => p.id === inventoryItem.part_id) : null);
+              
+              if (!partInfo) {
+                console.log('Part info not available for:', inventoryItem.part_id);
+                return null;
+              }
+              
+              const stock = inventoryItem.current_stock || inventoryItem.quantity || 0;
+              return (
+                <option key={partInfo.id} value={partInfo.id}>
+                  {partInfo.part_number} - {partInfo.name} ({stock} {partInfo.unit_of_measure} available)
+                </option>
+              );
+            })}
+          </select>
+          {selectedPartInventory && (
+            <p className="text-xs text-gray-600 mt-1">
+              Available in stock: <span className="font-semibold">{selectedPartInventory.current_stock || selectedPartInventory.quantity || 0}</span> {selectedPart?.unit_of_measure}
+            </p>
+          )}
+        </div>
+
+        {/* Step 3: Select Machine */}
+        <div>
+          <label htmlFor="machine_id" className="block text-sm font-medium text-gray-700 mb-1">
+            3. To Machine <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="machine_id"
+            name="machine_id"
+            value={formData.machine_id}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            disabled={loading || !formData.part_id}
+            required
+          >
+            <option value="">
+              {formData.part_id ? 'Select destination machine' : 'Select part first'}
+            </option>
+            {Array.isArray(machines) && machines.map(machine => (
+              <option key={machine.id} value={machine.id}>
+                {machine.serial_number} - {machine.model}
+                {machine.name && ` (${machine.name})`}
+                {user.role === 'super_admin' && machine.organization_name && ` - ${machine.organization_name}`}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">Select the machine where the part will be used</p>
         </div>
 
         {/* Inventory availability display */}

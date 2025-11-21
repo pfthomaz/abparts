@@ -31,6 +31,7 @@ class OrganizationBase(BaseModel):
     country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
+    logo_url: Optional[str] = None
     is_active: bool = True
 
 class OrganizationCreate(OrganizationBase):
@@ -43,6 +44,7 @@ class OrganizationUpdate(BaseModel):
     country: Optional[CountryEnum] = None
     address: Optional[str] = None
     contact_info: Optional[str] = None
+    logo_url: Optional[str] = None
     is_active: Optional[bool] = None
 
 class OrganizationResponse(OrganizationBase):

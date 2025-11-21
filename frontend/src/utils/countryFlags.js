@@ -9,10 +9,35 @@ export const COUNTRY_FLAGS = {
     name: 'Greece',
     code: 'GR'
   },
-  KSA: {
-    flag: '🇸🇦',
-    name: 'Saudi Arabia',
-    code: 'KSA'
+  UK: {
+    flag: '🇬🇧',
+    name: 'United Kingdom',
+    code: 'UK'
+  },
+  NO: {
+    flag: '🇳🇴',
+    name: 'Norway',
+    code: 'NO'
+  },
+  CA: {
+    flag: '🇨🇦',
+    name: 'Canada',
+    code: 'CA'
+  },
+  NZ: {
+    flag: '🇳🇿',
+    name: 'New Zealand',
+    code: 'NZ'
+  },
+  TR: {
+    flag: '🇹🇷',
+    name: 'Turkey',
+    code: 'TR'
+  },
+  OM: {
+    flag: '🇴🇲',
+    name: 'Oman',
+    code: 'OM'
   },
   ES: {
     flag: '🇪🇸',
@@ -24,16 +49,16 @@ export const COUNTRY_FLAGS = {
     name: 'Cyprus',
     code: 'CY'
   },
-  OM: {
-    flag: '🇴🇲',
-    name: 'Oman',
-    code: 'OM'
+  SA: {
+    flag: '🇸🇦',
+    name: 'Saudi Arabia',
+    code: 'SA'
   }
 };
 
 /**
  * Get country flag emoji by country code
- * @param {string} countryCode - Country code (GR, KSA, ES, CY, OM)
+ * @param {string} countryCode - Country code (GR, UK, NO, CA, NZ, TR, OM, ES, CY, SA)
  * @returns {string} Flag emoji or empty string if not found
  */
 export const getCountryFlag = (countryCode) => {
@@ -42,7 +67,7 @@ export const getCountryFlag = (countryCode) => {
 
 /**
  * Get country name by country code
- * @param {string} countryCode - Country code (GR, KSA, ES, CY, OM)
+ * @param {string} countryCode - Country code (GR, UK, NO, CA, NZ, TR, OM, ES, CY, SA)
  * @returns {string} Country name or country code if not found
  */
 export const getCountryName = (countryCode) => {
@@ -51,7 +76,7 @@ export const getCountryName = (countryCode) => {
 
 /**
  * Get formatted country display (flag + name)
- * @param {string} countryCode - Country code (GR, KSA, ES, CY, OM)
+ * @param {string} countryCode - Country code (GR, UK, NO, CA, NZ, TR, OM, ES, CY, SA)
  * @returns {string} Formatted display string
  */
 export const getCountryDisplay = (countryCode) => {

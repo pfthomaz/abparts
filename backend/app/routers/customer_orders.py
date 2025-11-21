@@ -43,12 +43,21 @@ def read_customer_orders(
         selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part),
         selectinload(models.CustomerOrder.customer_organization),
         selectinload(models.CustomerOrder.oraseas_organization),
-        selectinload(models.CustomerOrder.ordered_by_user)
+        selectinload(models.CustomerOrder.ordered_by_user),
+        selectinload(models.CustomerOrder.shipped_by_user)
     )
     
-    # Filter based on user permissions
+    # Filter based on user permissions and organization type
     if not permission_checker.is_super_admin(current_user):
-        query = query.filter(models.CustomerOrder.customer_organization_id == current_user.organization_id)
+        # Get the user's organization to check its type
+        user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+        
+        if user_org and user_org.name in ['Oraseas EE', 'BossServ LLC', 'BossServ Ltd']:
+            # Oraseas EE users see orders placed TO them (where they are the receiver)
+            query = query.filter(models.CustomerOrder.oraseas_organization_id == current_user.organization_id)
+        else:
+            # Customer organizations see orders placed BY them (where they are the customer)
+            query = query.filter(models.CustomerOrder.customer_organization_id == current_user.organization_id)
     
     orders = query.order_by(models.CustomerOrder.order_date.desc()).offset(skip).limit(limit).all()
     
@@ -63,6 +72,7 @@ def read_customer_orders(
             "order_date": order.order_date,
             "expected_delivery_date": order.expected_delivery_date,
             "shipped_date": order.shipped_date,
+            "shipped_by_user_id": order.shipped_by_user_id,
             "actual_delivery_date": order.actual_delivery_date,
             "status": order.status,
             "ordered_by_user_id": order.ordered_by_user_id,
@@ -73,6 +83,7 @@ def read_customer_orders(
             "customer_organization_name": order.customer_organization.name if order.customer_organization else None,
             "oraseas_organization_name": order.oraseas_organization.name if order.oraseas_organization else None,
             "ordered_by_username": order.ordered_by_user.username if order.ordered_by_user else None,
+            "shipped_by_username": order.shipped_by_user.username if order.shipped_by_user else None,
             "items": []
         }
         
@@ -111,8 +122,16 @@ def update_customer_order(
     
     # Check permissions
     if not permission_checker.is_super_admin(current_user):
-        # Users can only update orders from their organization
-        if order.customer_organization_id != current_user.organization_id:
+        # Get the user's organization to check its type
+        user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+        
+        # Users can update orders if they are either:
+        # 1. The customer organization (who placed the order)
+        # 2. The Oraseas EE organization (who receives the order)
+        is_customer = order.customer_organization_id == current_user.organization_id
+        is_oraseas = order.oraseas_organization_id == current_user.organization_id
+        
+        if not (is_customer or is_oraseas):
             raise HTTPException(status_code=403, detail="Cannot update orders for other organizations")
     
     return crud.customer_orders.update_customer_order(db=db, order_id=order_id, order_update=order_update, current_user_id=current_user.user_id)
@@ -173,6 +192,7 @@ def ship_customer_order(
     # Update order
     order.status = 'Shipped'
     order.shipped_date = ship_request.shipped_date
+    order.shipped_by_user_id = current_user.user_id  # Record who shipped the order
     if ship_request.notes:
         order.notes = f"{order.notes}\n\nShipped: {ship_request.notes}" if order.notes else f"Shipped: {ship_request.notes}"
     

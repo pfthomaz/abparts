@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { OrganizationType, ORGANIZATION_TYPE_CONFIG, organizationsService } from '../services/organizationsService';
 import { getSupportedCountries, getCountryDisplay } from '../utils/countryFlags';
+import OrganizationLogoUpload from './OrganizationLogoUpload';
 
 function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
   const { user } = useAuth();
@@ -132,6 +133,20 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <strong className="font-bold">Error:</strong>
           <span className="block sm:inline ml-2">{error}</span>
+        </div>
+      )}
+
+      {/* Organization Logo Upload (only when editing) */}
+      {isEditing && initialData.id && (
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Organization Logo</h4>
+          <OrganizationLogoUpload
+            organizationId={initialData.id}
+            currentLogoUrl={formData.logo_url}
+            onLogoUpdated={(newUrl) => {
+              setFormData(prev => ({ ...prev, logo_url: newUrl }));
+            }}
+          />
         </div>
       )}
 

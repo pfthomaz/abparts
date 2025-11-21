@@ -285,6 +285,19 @@ const UserProfile = () => {
               isEditingProfile={isEditingProfile}
               setIsEditingProfile={setIsEditingProfile}
               handleProfileUpdate={handleProfileUpdate}
+              onPhotoUpdated={async (newUrl) => {
+                console.log('onPhotoUpdated called with:', newUrl);
+                console.log('Current profile before update:', profile);
+                // Update profile with new photo URL immediately for preview
+                setProfile(prev => {
+                  const updated = { ...prev, profile_photo_url: newUrl };
+                  console.log('Updated profile:', updated);
+                  return updated;
+                });
+                // Refresh profile data from server to ensure consistency
+                await fetchProfile();
+                console.log('Profile refreshed from server');
+              }}
             />
           )}
 

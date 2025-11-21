@@ -138,7 +138,7 @@ const getInvitationAuditLogs = (userId) => {
  * Get current user's profile
  */
 const getMyProfile = () => {
-  return api.get('/users/me/profile');
+  return api.get('/users/me/');
 };
 
 /**

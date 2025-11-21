@@ -10,6 +10,7 @@ import MachineForm from '../components/MachineForm';
 import MachineDetails from '../components/MachineDetails';
 import MachineTransferForm from '../components/MachineTransferForm';
 import SimpleMachineHoursButton from '../components/SimpleMachineHoursButton';
+import PartUsageRecorder from '../components/PartUsageRecorder';
 
 const Machines = () => {
   const [machines, setMachines] = useState([]);
@@ -24,6 +25,8 @@ const Machines = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferMachine, setTransferMachine] = useState(null);
+  const [showPartUsageModal, setShowPartUsageModal] = useState(false);
+  const [partUsageMachine, setPartUsageMachine] = useState(null);
 
   const { user } = useAuth();
   const permissions = getContextualPermissions(user, 'machines');
@@ -141,6 +144,21 @@ const Machines = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingMachine(null);
+  };
+
+  const openPartUsageModal = (machine) => {
+    setPartUsageMachine(machine);
+    setShowPartUsageModal(true);
+  };
+
+  const closePartUsageModal = () => {
+    setShowPartUsageModal(false);
+    setPartUsageMachine(null);
+  };
+
+  const handlePartUsageRecorded = () => {
+    // Refresh data after part usage is recorded
+    fetchData();
   };
 
   return (
@@ -270,6 +288,14 @@ const Machines = () => {
                   onHoursSaved={fetchData}
                 />
 
+                <button
+                  onClick={() => openPartUsageModal(machine)}
+                  className="bg-green-500 text-white py-1 px-3 rounded-md hover:bg-green-600 text-sm"
+                  title="Record part usage for this machine"
+                >
+                  Use Part
+                </button>
+
                 {permissions.canEdit && (
                   <button
                     onClick={() => openModal(machine)}
@@ -341,6 +367,14 @@ const Machines = () => {
           />
         )}
       </Modal>
+
+      {/* Part Usage Recorder Modal */}
+      <PartUsageRecorder
+        isOpen={showPartUsageModal}
+        onClose={closePartUsageModal}
+        onUsageRecorded={handlePartUsageRecorded}
+        initialMachineId={partUsageMachine?.id}
+      />
     </div>
   );
 };

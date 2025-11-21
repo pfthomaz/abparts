@@ -380,7 +380,9 @@ const TransactionHistory = () => {
                         {transaction.from_warehouse_name || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.to_warehouse_name || '-'}
+                        {transaction.transaction_type === 'consumption' && (transaction.machine_name || transaction.machine_serial)
+                          ? `Machine: ${transaction.machine_name || transaction.machine_serial}`
+                          : (transaction.to_warehouse_name || '-')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {transaction.performed_by_username}

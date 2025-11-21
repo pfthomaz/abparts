@@ -58,10 +58,12 @@ def get_transaction(db: Session, transaction_id: uuid.UUID):
     
     # Get machine serial if it exists
     machine_serial = None
+    machine_name = None
     if transaction_obj.machine_id:
         machine = db.query(models.Machine).filter(models.Machine.id == transaction_obj.machine_id).first()
         if machine:
-            machine_serial = machine.serial_number
+            machine_serial = machine.name or machine.serial_number  # Use name, fallback to serial
+            machine_name = machine.name
     
     # Create a dictionary with all the data
     result = {
@@ -71,6 +73,7 @@ def get_transaction(db: Session, transaction_id: uuid.UUID):
         "from_warehouse_name": from_warehouse_name,
         "to_warehouse_name": to_warehouse_name,
         "machine_serial": machine_serial,
+        "machine_name": machine_name,
         "performed_by_username": performed_by_username
     }
     
@@ -106,12 +109,14 @@ def get_transactions(db: Session, skip: int = 0, limit: int = 100):
             if to_warehouse:
                 to_warehouse_name = to_warehouse.name
         
-        # Get machine serial if it exists
+        # Get machine info if it exists
         machine_serial = None
+        machine_name = None
         if transaction.machine_id:
             machine = db.query(models.Machine).filter(models.Machine.id == transaction.machine_id).first()
             if machine:
-                machine_serial = machine.serial_number
+                machine_serial = machine.name or machine.serial_number
+                machine_name = machine.name
         
         # Create a dictionary with all the data
         result = {
@@ -121,6 +126,7 @@ def get_transactions(db: Session, skip: int = 0, limit: int = 100):
             "from_warehouse_name": from_warehouse_name,
             "to_warehouse_name": to_warehouse_name,
             "machine_serial": machine_serial,
+            "machine_name": machine_name,
             "performed_by_username": performed_by_username
         }
         
@@ -310,12 +316,14 @@ def search_transactions(db: Session, filters: schemas.TransactionFilter, skip: i
             if to_warehouse:
                 to_warehouse_name = to_warehouse.name
         
-        # Get machine serial if it exists
+        # Get machine info if it exists
         machine_serial = None
+        machine_name = None
         if transaction.machine_id:
             machine = db.query(models.Machine).filter(models.Machine.id == transaction.machine_id).first()
             if machine:
-                machine_serial = machine.serial_number
+                machine_serial = machine.name or machine.serial_number
+                machine_name = machine.name
         
         # Create a dictionary with all the data
         result = {
@@ -325,6 +333,7 @@ def search_transactions(db: Session, filters: schemas.TransactionFilter, skip: i
             "from_warehouse_name": from_warehouse_name,
             "to_warehouse_name": to_warehouse_name,
             "machine_serial": machine_serial,
+            "machine_name": machine_name,
             "performed_by_username": performed_by_username
         }
         

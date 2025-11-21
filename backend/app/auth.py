@@ -297,10 +297,44 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": session_token, "token_type": "bearer"}
 
 async def read_users_me(current_user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
-    user_db = db.query(models.User).filter(models.User.id == current_user.user_id).first()
+    from sqlalchemy.orm import joinedload
+    user_db = db.query(models.User).options(joinedload(models.User.organization)).filter(models.User.id == current_user.user_id).first()
     if not user_db:
         raise HTTPException(status_code=404, detail="User not found in DB")
-    return user_db
+    
+    # Manually construct response to ensure profile_photo_url is included
+    response_data = {
+        "id": user_db.id,
+        "username": user_db.username,
+        "email": user_db.email,
+        "name": user_db.name,
+        "profile_photo_url": user_db.profile_photo_url,  # Explicitly include this
+        "role": user_db.role.value if hasattr(user_db.role, 'value') else user_db.role,
+        "organization_id": user_db.organization_id,
+        "user_status": user_db.user_status.value if hasattr(user_db.user_status, 'value') else user_db.user_status,
+        "is_active": user_db.is_active,
+        "last_login": user_db.last_login,
+        "created_at": user_db.created_at,
+        "updated_at": user_db.updated_at,
+        "failed_login_attempts": user_db.failed_login_attempts,
+        "locked_until": user_db.locked_until,
+        "invitation_token": user_db.invitation_token,
+        "invitation_expires_at": user_db.invitation_expires_at,
+    }
+    
+    # Add organization if loaded
+    if user_db.organization:
+        response_data["organization"] = {
+            "id": user_db.organization.id,
+            "name": user_db.organization.name,
+            "organization_type": user_db.organization.organization_type.value if hasattr(user_db.organization.organization_type, 'value') else user_db.organization.organization_type,
+            "logo_url": user_db.organization.logo_url,
+            "is_active": user_db.organization.is_active,
+            "created_at": user_db.organization.created_at,
+            "updated_at": user_db.organization.updated_at,
+        }
+    
+    return response_data
 
 async def get_current_user_from_token(token: str, db: Session = None) -> TokenData:
     """

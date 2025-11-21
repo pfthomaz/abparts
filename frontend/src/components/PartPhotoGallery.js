@@ -29,12 +29,14 @@ const PartPhotoGallery = forwardRef(({
 
   // Initialize images from props - only when props change
   useEffect(() => {
+    console.log('PartPhotoGallery: images prop changed', images);
     if (Array.isArray(images)) {
       const processedImages = images.map((url, index) => ({
         id: `existing-${index}-${Date.now()}`,
         url: url,
         isExisting: true
       }));
+      console.log('PartPhotoGallery: processed images', processedImages);
       setCurrentImages(processedImages);
     }
   }, [images]);
@@ -103,69 +105,84 @@ const PartPhotoGallery = forwardRef(({
   };
 
   // Image modal component
-  const ImageModal = ({ imageUrl, onClose }) => (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <div className="max-w-4xl max-h-4xl p-4">
-        <img
-          src={imageUrl.startsWith('/static/images') ? `${API_BASE_URL}${imageUrl}` : imageUrl}
-          alt="Full size part"
-          className="max-w-full max-h-full object-contain"
-          onClick={(e) => e.stopPropagation()}
-        />
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"
-        >
-          ✕
-        </button>
+  const ImageModal = ({ imageUrl, onClose }) => {
+    console.log('ImageModal rendering with URL:', imageUrl);
+    return (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+        onClick={onClose}
+        style={{ zIndex: 9999 }}
+      >
+        <div className="relative max-w-4xl max-h-screen p-4">
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75 z-10"
+          >
+            ✕
+          </button>
+          <img
+            src={imageUrl.startsWith('/static/images') ? `${API_BASE_URL}${imageUrl}` : imageUrl}
+            alt="Full size part"
+            className="max-w-full max-h-screen object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Display mode - show images in a grid
   if (!isEditing) {
     return (
-      <div className={`part-photo-gallery ${className}`}>
-        {currentImages.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {currentImages.map((image, index) => (
-              <div key={image.id} className="relative group cursor-pointer">
-                <img
-                  src={image.url.startsWith('/static/images') ? `${API_BASE_URL}${image.url}` : image.url}
-                  alt={`Part ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-md shadow-sm hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedImageIndex(index)}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "https://placehold.co/100x100?text=Image+Error";
+      <>
+        <div className={`part-photo-gallery ${className}`}>
+          {currentImages.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {currentImages.map((image, index) => (
+                <div 
+                  key={image.id} 
+                  className="relative group cursor-pointer"
+                  onClick={() => {
+                    console.log('Image clicked, index:', index);
+                    setSelectedImageIndex(index);
                   }}
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-md flex items-center justify-center">
-                  <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to enlarge
-                  </span>
+                >
+                  <img
+                    src={image.url.startsWith('/static/images') ? `${API_BASE_URL}${image.url}` : image.url}
+                    alt={`Part ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-md shadow-sm hover:shadow-md transition-shadow"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://placehold.co/100x100?text=Image+Error";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-md flex items-center justify-center pointer-events-none">
+                    <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click to enlarge
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-2">📷</div>
-            <p>No images available</p>
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">📷</div>
+              <p>No images available</p>
+            </div>
+          )}
+        </div>
 
-        {/* Image modal */}
-        {selectedImageIndex !== null && (
+        {/* Image modal - render outside the container for proper z-index */}
+        {selectedImageIndex !== null && currentImages[selectedImageIndex] && (
           <ImageModal
-            imageUrl={currentImages[selectedImageIndex]?.url}
-            onClose={() => setSelectedImageIndex(null)}
+            imageUrl={currentImages[selectedImageIndex].url}
+            onClose={() => {
+              console.log('Closing modal');
+              setSelectedImageIndex(null);
+            }}
           />
         )}
-      </div>
+      </>
     );
   }
 

@@ -459,6 +459,7 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
         "organization_id": user.organization_id,
         "organization_name": organization.name,
         "organization_type": organization.organization_type.value,
+        "profile_photo_url": user.profile_photo_url,
         "last_login": user.last_login,
         "created_at": user.created_at,
         "updated_at": user.updated_at

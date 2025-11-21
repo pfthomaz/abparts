@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field, VERSION, validator, field_validator
 from enum import Enum
+from .schemas.organization import OrganizationResponse
 
 # --- Base Schemas with common fields ---
 class BaseSchema(BaseModel):
@@ -18,6 +19,11 @@ class BaseSchema(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat() if v else None
         }
+
+# --- Image Upload Schemas ---
+class ImageUploadResponse(BaseModel):
+    """Response schema for image uploads"""
+    url: str
 
 
 # --- Organization Schemas ---
@@ -146,6 +152,7 @@ class UserBase(BaseModel):
     username: str = Field(..., max_length=255)
     email: EmailStr = Field(..., max_length=255)
     name: Optional[str] = Field(None, max_length=255)
+    profile_photo_url: Optional[str] = None
     role: UserRoleEnum
     user_status: UserStatusEnum = UserStatusEnum.ACTIVE
     is_active: bool = True
@@ -158,6 +165,7 @@ class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = Field(None, max_length=255)
     name: Optional[str] = Field(None, max_length=255)
+    profile_photo_url: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8) # For password change
     role: Optional[UserRoleEnum] = None
     user_status: Optional[UserStatusEnum] = None
@@ -169,9 +177,13 @@ class UserResponse(UserBase, BaseSchema):
     last_login: Optional[datetime] = None
     invitation_token: Optional[str] = None
     invitation_expires_at: Optional[datetime] = None
+    organization: Optional['OrganizationResponse'] = None  # Include organization details
     
     class Config(BaseSchema.Config):
+        from_attributes = True
         exclude = {'password_hash', 'password_reset_token', 'password_reset_expires_at'} # Do not expose sensitive fields
+        # Ensure all fields are included even if None
+        use_enum_values = True
 
 
 # --- Token Schemas (for authentication) ---
@@ -234,6 +246,7 @@ class UserProfileUpdate(BaseModel):
     """Schema for user profile self-service updates"""
     name: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = Field(None, max_length=255)
+    profile_photo_url: Optional[str] = None
     preferred_language: Optional[str] = Field(None, max_length=5, description="Preferred language code (en, el, ar, es)")
     preferred_country: Optional[str] = Field(None, max_length=3, description="Preferred country code (GR, KSA, ES, CY, OM)")
     localization_preferences: Optional[str] = Field(None, description="JSON string for advanced localization preferences")
@@ -257,6 +270,7 @@ class UserProfileResponse(BaseModel):
     preferred_language: Optional[str] = None
     preferred_country: Optional[str] = None
     localization_preferences: Optional[str] = None
+    profile_photo_url: Optional[str] = None
     last_login: Optional[datetime]
     created_at: datetime
     updated_at: datetime
@@ -601,6 +615,7 @@ __all__ = [
     'WarehouseBase',
     'WarehouseCreate',
     'WarehouseUpdate',
+    'ImageUploadResponse',
 ]
 
 
@@ -754,10 +769,12 @@ if VERSION.startswith('1.'):
     SupplierOrderResponse.update_forward_refs()
     CustomerOrderResponse.update_forward_refs()
     OrganizationHierarchyNode.update_forward_refs()
+    UserResponse.update_forward_refs()
 else:
     SupplierOrderResponse.model_rebuild()
     CustomerOrderResponse.model_rebuild()
     OrganizationHierarchyNode.model_rebuild()
+    UserResponse.model_rebuild()
 
 # --- Part Usage Schemas ---
 class PartUsageBase(BaseModel):

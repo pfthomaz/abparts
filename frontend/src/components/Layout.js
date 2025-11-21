@@ -129,6 +129,26 @@ const Layout = () => {
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Organization Info */}
+              {user?.organization?.name && (
+                <div className="hidden md:flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm">
+                  {user.organization.logo_url && (
+                    <img
+                      src={user.organization.logo_url.startsWith('/static') 
+                        ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${user.organization.logo_url}`
+                        : user.organization.logo_url
+                      }
+                      alt={user.organization.name}
+                      className="w-12 h-12 rounded object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <span className="text-base font-bold text-gray-800">{user.organization.name}</span>
+                </div>
+              )}
+
               {/* Mobile menu button */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -145,7 +165,24 @@ const Layout = () => {
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
                 >
-                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  {user.profile_photo_url ? (
+                    <img
+                      src={user.profile_photo_url.startsWith('/static') 
+                        ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${user.profile_photo_url}`
+                        : user.profile_photo_url
+                      }
+                      alt={user.name || user.username}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center text-lg font-semibold"
+                    style={{ display: user.profile_photo_url ? 'none' : 'flex' }}
+                  >
                     {(user.name || user.username).charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left hidden sm:block">
@@ -170,9 +207,20 @@ const Layout = () => {
                     {/* User Info Header */}
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
-                          {(user.name || user.username).charAt(0).toUpperCase()}
-                        </div>
+                        {user.profile_photo_url ? (
+                          <img
+                            src={user.profile_photo_url.startsWith('/static') 
+                              ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${user.profile_photo_url}`
+                              : user.profile_photo_url
+                            }
+                            alt={user.name || user.username}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-blue-500"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                            {(user.name || user.username).charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <div className="font-medium text-gray-900">{user.name || user.username}</div>
                           <div className="text-sm text-gray-500">{user.email}</div>
