@@ -89,9 +89,7 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
     }
   };
 
-  const photoUrl = currentPhotoUrl?.startsWith('/static') 
-    ? `${API_BASE_URL}${currentPhotoUrl}`
-    : currentPhotoUrl;
+  const photoUrl = currentPhotoUrl;
 
   console.log('Rendering preview - currentPhotoUrl:', currentPhotoUrl, 'photoUrl:', photoUrl);
 

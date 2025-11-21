@@ -84,9 +84,7 @@ const OrganizationLogoUpload = ({ organizationId, currentLogoUrl, onLogoUpdated 
     }
   };
 
-  const logoUrl = currentLogoUrl?.startsWith('/static') 
-    ? `${API_BASE_URL}${currentLogoUrl}`
-    : currentLogoUrl;
+  const logoUrl = currentLogoUrl;
 
   return (
     <div className="space-y-4">
