@@ -51,8 +51,8 @@ const Orders = () => {
         ordersService.getSupplierOrders(),
         ordersService.getCustomerOrders(),
         organizationsService.getOrganizations({ for_orders: true }), // Fetching data for forms
-        api.get('/parts'),         // Fetching data for forms
-        api.get('/warehouses'),    // Fetching warehouses for fulfillment
+        api.get('/parts/'),         // Fetching data for forms
+        api.get('/warehouses/'),    // Fetching warehouses for fulfillment
       ]);
 
       setSupplierOrders(supplierOrdersData);
