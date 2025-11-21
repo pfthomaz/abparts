@@ -6,14 +6,14 @@ import { api } from './api';
  * Fetches all supplier orders.
  */
 const getSupplierOrders = () => {
-  return api.get('/supplier_orders');
+  return api.get('/supplier_orders/');
 };
 
 /**
  * Fetches all customer orders.
  */
 const getCustomerOrders = () => {
-  return api.get('/customer_orders');
+  return api.get('/customer_orders/');
 };
 
 /**
@@ -21,7 +21,7 @@ const getCustomerOrders = () => {
  * @param {object} orderData The data for the new supplier order.
  */
 const createSupplierOrder = (orderData) => {
-  return api.post('/supplier_orders', orderData);
+  return api.post('/supplier_orders/', orderData);
 };
 
 /**
@@ -29,7 +29,7 @@ const createSupplierOrder = (orderData) => {
  * @param {object} orderData The data for the new customer order.
  */
 const createCustomerOrder = (orderData) => {
-  return api.post('/customer_orders', orderData);
+  return api.post('/customer_orders/', orderData);
 };
 
 /**
