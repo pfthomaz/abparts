@@ -6,7 +6,7 @@ import { api } from './api';
  * Fetches all machines.
  */
 const getMachines = () => {
-  return api.get('/machines');
+  return api.get('/machines/');
 };
 
 /**
