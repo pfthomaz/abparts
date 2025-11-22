@@ -22,7 +22,7 @@ const getMachine = (machineId) => {
  * @param {object} machineData The data for the new machine.
  */
 const createMachine = (machineData) => {
-  return api.post('/machines', machineData);
+  return api.post('/machines/', machineData);
 };
 
 /**
