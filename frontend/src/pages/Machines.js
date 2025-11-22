@@ -37,7 +37,7 @@ const Machines = () => {
     try {
       const [machinesData, orgsData] = await Promise.all([
         machinesService.getMachines(),
-        api.get('/organizations'),
+        api.get('/organizations/'),
       ]);
       setMachines(machinesData);
       setOrganizations(orgsData);
