@@ -46,7 +46,7 @@ function App() {
       if (!token || !user) return;
       
       try {
-        const response = await api.get('/machines/check-hours-reminders');
+        const response = await api.get('/machines/check-hours-reminders/');
         
         if (response.is_reminder_day && response.machines_needing_update.length > 0) {
           setMachinesNeedingUpdate(response.machines_needing_update);
