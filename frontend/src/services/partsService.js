@@ -10,7 +10,7 @@ import { processError, logError } from '../utils/errorHandling';
  */
 const getParts = async () => {
   try {
-    const response = await api.get('/parts');
+    const response = await api.get('/parts/');
     return response;
   } catch (error) {
     logError(error, 'partsService.getParts');
@@ -26,7 +26,7 @@ const getParts = async () => {
  */
 const createPart = async (partData) => {
   try {
-    const response = await api.post('/parts', partData);
+    const response = await api.post('/parts/', partData);
     return response;
   } catch (error) {
     logError(error, 'partsService.createPart');
