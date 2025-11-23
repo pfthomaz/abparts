@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { transactionService } from '../services/transactionService';
-import { partsService } from '../services/partsService/';
-import { warehouseService } from '../services/warehouseService/';
-import { machinesService } from '../services/machinesService/';
-import { inventoryService } from '../services/inventoryService/';
+import { partsService } from '../services/partsService';
+import { warehouseService } from '../services/warehouseService';
+import { machinesService } from '../services/machinesService';
+import { inventoryService } from '../services/inventoryService';
 import QuantityInput from './QuantityInput';
 import Modal from './Modal';
 
