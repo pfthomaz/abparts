@@ -17,7 +17,7 @@ const PartUsageChart = ({ usageData }) => {
           unit: usage.unit_of_measure || 'units'
         };
       }
-      acc[partName].quantity += parseFloat(usage.quantity || 0);
+      acc[partName].quantity += parseFloat(usage.quantity_used || usage.quantity || 0);
       return acc;
     }, {});
 
@@ -39,7 +39,7 @@ const PartUsageChart = ({ usageData }) => {
           quantity: 0
         };
       }
-      acc[monthKey].quantity += parseFloat(usage.quantity || 0);
+      acc[monthKey].quantity += parseFloat(usage.quantity_used || usage.quantity || 0);
       return acc;
     }, {});
 
@@ -144,7 +144,7 @@ const PartUsageChart = ({ usageData }) => {
 
         <div className="bg-purple-50 p-4 rounded-lg">
           <div className="text-2xl font-bold text-purple-600">
-            {usageData.reduce((sum, usage) => sum + parseFloat(usage.quantity || 0), 0).toFixed(1)}
+            {usageData.reduce((sum, usage) => sum + parseFloat(usage.quantity_used || usage.quantity || 0), 0).toFixed(1)}
           </div>
           <div className="text-sm text-gray-600">Total Quantity Used</div>
         </div>

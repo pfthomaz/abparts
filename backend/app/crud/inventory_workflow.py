@@ -632,7 +632,7 @@ def complete_stocktake(db: Session, stocktake_id: uuid.UUID, current_user_id: uu
                 new_quantity = previous_quantity + quantity_change
                 
                 # Create adjustment record
-                adjustment = InventoryAdjustment(
+                adjustment = models.InventoryAdjustment(
                     warehouse_id=stocktake.warehouse_id,
                     part_id=item.part_id,
                     quantity_change=quantity_change,
@@ -785,7 +785,7 @@ def get_inventory_adjustments(db: Session, organization_id: Optional[uuid.UUID] 
                            skip: int = 0, limit: int = 100):
     """Get inventory adjustments with optional filtering."""
     query = db.query(
-        InventoryAdjustment,
+        models.InventoryAdjustment,
         models.Warehouse.name.label("warehouse_name"),
         models.Warehouse.organization_id.label("organization_id"),
         models.Organization.name.label("organization_name"),
@@ -795,31 +795,31 @@ def get_inventory_adjustments(db: Session, organization_id: Optional[uuid.UUID] 
         models.Part.unit_of_measure.label("unit_of_measure"),
         models.User.username.label("adjusted_by_username")
     ).join(
-        models.Warehouse, InventoryAdjustment.warehouse_id == models.Warehouse.id
+        models.Warehouse, models.InventoryAdjustment.warehouse_id == models.Warehouse.id
     ).join(
         models.Organization, models.Warehouse.organization_id == models.Organization.id
     ).join(
-        models.Part, InventoryAdjustment.part_id == models.Part.id
+        models.Part, models.InventoryAdjustment.part_id == models.Part.id
     ).join(
-        models.User, InventoryAdjustment.adjusted_by_user_id == models.User.id
+        models.User, models.InventoryAdjustment.adjusted_by_user_id == models.User.id
     )
     
     if organization_id:
         query = query.filter(models.Warehouse.organization_id == organization_id)
     
     if warehouse_id:
-        query = query.filter(InventoryAdjustment.warehouse_id == warehouse_id)
+        query = query.filter(models.InventoryAdjustment.warehouse_id == warehouse_id)
     
     if part_id:
-        query = query.filter(InventoryAdjustment.part_id == part_id)
+        query = query.filter(models.InventoryAdjustment.part_id == part_id)
     
     if adjusted_by_user_id:
-        query = query.filter(InventoryAdjustment.adjusted_by_user_id == adjusted_by_user_id)
+        query = query.filter(models.InventoryAdjustment.adjusted_by_user_id == adjusted_by_user_id)
     
     if stocktake_id:
-        query = query.filter(InventoryAdjustment.stocktake_id == stocktake_id)
+        query = query.filter(models.InventoryAdjustment.stocktake_id == stocktake_id)
     
-    adjustments = query.order_by(InventoryAdjustment.adjustment_date.desc()).offset(skip).limit(limit).all()
+    adjustments = query.order_by(models.InventoryAdjustment.adjustment_date.desc()).offset(skip).limit(limit).all()
     
     results = []
     for adjustment, warehouse_name, organization_id, organization_name, part_number, part_name, part_type, unit_of_measure, adjusted_by_username in adjustments:
@@ -888,7 +888,7 @@ def batch_create_inventory_adjustments(db: Session, batch_adjustment: schemas.Ba
                 continue
             
             # Create the adjustment record
-            db_adjustment = InventoryAdjustment(
+            db_adjustment = models.InventoryAdjustment(
                 warehouse_id=batch_adjustment.warehouse_id,
                 part_id=part_id,
                 quantity_change=quantity_change,

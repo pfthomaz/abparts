@@ -1359,26 +1359,21 @@ def get_machine_usage_history(db: Session, machine_id: uuid.UUID, skip: int = 0,
             logger.warning(f"Machine not found for usage history: {machine_id}")
             raise HTTPException(status_code=404, detail="Machine not found")
         
-        # Temporarily return empty list due to missing part_usage table columns
-        # TODO: Implement proper usage history when table schema is fixed
-        logger.info(f"Returning empty usage history for machine {machine_id} - table schema not aligned")
-        return []
-        
         # Get part usage records with left joins to handle missing data gracefully
-        # usage_records = db.query(
-        #     models.PartUsage,
-        #     models.Part.part_number.label("part_number"),
-        #     models.Part.name.label("part_name"),
-        #     models.User.username.label("recorded_by_username")
-        # ).outerjoin(
-        #     models.Part, models.PartUsage.part_id == models.Part.id
-        # ).outerjoin(
-        #     models.User, models.PartUsage.recorded_by_user_id == models.User.id
-        # ).filter(
-        #     models.PartUsage.machine_id == machine_id
-        # ).order_by(
-        #     desc(models.PartUsage.usage_date)
-        # ).offset(skip).limit(limit).all()
+        usage_records = db.query(
+            models.PartUsage,
+            models.Part.part_number.label("part_number"),
+            models.Part.name.label("part_name"),
+            models.User.username.label("recorded_by_username")
+        ).outerjoin(
+            models.Part, models.PartUsage.part_id == models.Part.id
+        ).outerjoin(
+            models.User, models.PartUsage.recorded_by_user_id == models.User.id
+        ).filter(
+            models.PartUsage.machine_id == machine_id
+        ).order_by(
+            desc(models.PartUsage.usage_date)
+        ).offset(skip).limit(limit).all()
         
         results = []
         for usage, part_number, part_name, recorded_by_username in usage_records:
@@ -1390,6 +1385,10 @@ def get_machine_usage_history(db: Session, machine_id: uuid.UUID, skip: int = 0,
                 "recorded_by_username": recorded_by_username or "Unknown User",
                 "machine_name": machine.name or "Unknown Machine"
             }
+            
+            # Map 'quantity' field to 'quantity_used' for schema compatibility
+            if 'quantity' in result:
+                result['quantity_used'] = result['quantity']
             
             # Remove SQLAlchemy internal attributes
             result.pop('_sa_instance_state', None)

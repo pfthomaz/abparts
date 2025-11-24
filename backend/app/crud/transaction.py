@@ -149,6 +149,10 @@ def create_transaction(db: Session, transaction: schemas.TransactionCreate):
         # Update inventory based on transaction type
         update_inventory_from_transaction(db, db_transaction)
         
+        # If this is a consumption transaction with a machine_id, also create a PartUsage record
+        if transaction.transaction_type == schemas.TransactionTypeEnum.CONSUMPTION and transaction.machine_id:
+            create_part_usage_from_transaction(db, db_transaction)
+        
         # Commit the transaction
         db.commit()
         db.refresh(db_transaction)
@@ -217,6 +221,46 @@ def update_inventory_from_transaction(db: Session, transaction: models.Transacti
     elif transaction.transaction_type == "adjustment":
         # Adjust inventory in from_warehouse (can be positive or negative)
         update_inventory(db, transaction.from_warehouse_id, transaction.part_id, transaction.quantity)
+
+def create_part_usage_from_transaction(db: Session, transaction: models.Transaction):
+    """Create a PartUsage record from a consumption transaction."""
+    try:
+        logger.info(f"Creating PartUsage record for transaction {transaction.id}, machine {transaction.machine_id}")
+        
+        # Get the machine to find its customer_organization_id
+        machine = db.query(models.Machine).filter(models.Machine.id == transaction.machine_id).first()
+        if not machine:
+            logger.warning(f"Machine {transaction.machine_id} not found when creating PartUsage record")
+            return  # Don't fail the transaction, just log the warning
+        
+        # Get the warehouse to verify it exists
+        warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == transaction.from_warehouse_id).first()
+        if not warehouse:
+            logger.warning(f"Warehouse {transaction.from_warehouse_id} not found when creating PartUsage record")
+            return
+        
+        # Create the PartUsage record
+        part_usage = models.PartUsage(
+            customer_organization_id=machine.customer_organization_id,
+            part_id=transaction.part_id,
+            usage_date=transaction.transaction_date,
+            quantity=transaction.quantity,
+            machine_id=transaction.machine_id,
+            recorded_by_user_id=transaction.performed_by_user_id,
+            warehouse_id=transaction.from_warehouse_id,
+            notes=transaction.notes
+        )
+        
+        db.add(part_usage)
+        logger.info(f"✅ Successfully created PartUsage record for machine {transaction.machine_id}, part {transaction.part_id}, quantity {transaction.quantity}")
+        
+    except Exception as e:
+        logger.error(f"❌ Error creating PartUsage record: {e}")
+        logger.error(f"Transaction details: machine_id={transaction.machine_id}, part_id={transaction.part_id}")
+        import traceback
+        logger.error(traceback.format_exc())
+        # Don't raise - we don't want to fail the transaction creation
+        return
 
 def update_inventory(db: Session, warehouse_id: uuid.UUID, part_id: uuid.UUID, quantity: Decimal):
     """Update inventory for a part in a warehouse."""

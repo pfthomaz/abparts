@@ -1,20 +1,19 @@
 // frontend/src/components/WarehouseDetailedView.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import WarehouseInventoryView from './WarehouseInventoryView';
 import InventoryTransferHistory from './InventoryTransferHistory';
 import WarehouseStockAdjustmentHistory from './WarehouseStockAdjustmentHistory';
 
 const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) => {
   const [activeTab, setActiveTab] = useState('inventory');
-  const [refreshInventory, setRefreshInventory] = useState(null);
-
-  // Pass the refresh function up to the parent when it's available
-  useEffect(() => {
-    if (refreshInventory && onInventoryRefresh) {
-      onInventoryRefresh(refreshInventory);
+  
+  // Use a callback ref instead of state to avoid re-render issues
+  const handleRefreshCallback = useCallback((refreshFn) => {
+    if (onInventoryRefresh) {
+      onInventoryRefresh(refreshFn);
     }
-  }, [refreshInventory, onInventoryRefresh]);
+  }, [onInventoryRefresh]);
 
   const tabs = [
     { id: 'inventory', label: 'Current Inventory', icon: '📦' },
@@ -29,7 +28,7 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
           <WarehouseInventoryView
             warehouseId={warehouseId}
             warehouse={warehouse}
-            onRefresh={setRefreshInventory}
+            onRefresh={handleRefreshCallback}
           />
         );
       case 'transfers':

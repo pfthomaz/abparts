@@ -33,7 +33,14 @@ const Inventory = () => {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
   const [viewMode, setViewMode] = useState('warehouse'); // 'warehouse', 'aggregated', 'analytics', 'reporting'
-  const [warehouseInventoryRefresh, setWarehouseInventoryRefresh] = useState(null);
+  
+  // Use a ref to store the refresh function instead of state to avoid re-render issues
+  const warehouseInventoryRefreshRef = React.useRef(null);
+  
+  // Callback to receive the refresh function from child component
+  const handleInventoryRefreshCallback = useCallback((refreshFn) => {
+    warehouseInventoryRefreshRef.current = refreshFn;
+  }, []);
 
 
 
@@ -133,9 +140,9 @@ const Inventory = () => {
       // Force refresh the warehouse inventory view if it's currently displayed
       // Use a longer delay to ensure the warehouse selection has time to update
       setTimeout(async () => {
-        if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+        if (warehouseInventoryRefreshRef.current && typeof warehouseInventoryRefreshRef.current === 'function') {
           try {
-            await warehouseInventoryRefresh();
+            await warehouseInventoryRefreshRef.current();
           } catch (refreshError) {
             console.error('Error refreshing warehouse inventory:', refreshError);
           }
@@ -144,9 +151,9 @@ const Inventory = () => {
 
       // Additional refresh after warehouse selection should be complete
       setTimeout(async () => {
-        if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+        if (warehouseInventoryRefreshRef.current && typeof warehouseInventoryRefreshRef.current === 'function') {
           try {
-            await warehouseInventoryRefresh();
+            await warehouseInventoryRefreshRef.current();
           } catch (refreshError) {
             console.error('Error refreshing warehouse inventory:', refreshError);
           }
@@ -180,11 +187,11 @@ const Inventory = () => {
       window.dispatchEvent(new CustomEvent('inventoryUpdated', { detail: eventDetail }));
 
       // Force refresh the warehouse inventory view with multiple attempts for reliability
-      if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+      if (warehouseInventoryRefreshRef.current && typeof warehouseInventoryRefreshRef.current === 'function') {
         // Use multiple refresh attempts to ensure it works
         setTimeout(async () => {
           try {
-            await warehouseInventoryRefresh();
+            await warehouseInventoryRefreshRef.current();
           } catch (refreshError) {
             console.error('Error refreshing warehouse inventory:', refreshError);
           }
@@ -192,7 +199,7 @@ const Inventory = () => {
 
         setTimeout(async () => {
           try {
-            await warehouseInventoryRefresh();
+            await warehouseInventoryRefreshRef.current();
           } catch (refreshError) {
             console.error('Error refreshing warehouse inventory:', refreshError);
           }
@@ -213,11 +220,11 @@ const Inventory = () => {
       await fetchData();
 
       // Force refresh the warehouse inventory view with a small delay to ensure backend consistency
-      if (warehouseInventoryRefresh && typeof warehouseInventoryRefresh === 'function') {
+      if (warehouseInventoryRefreshRef.current && typeof warehouseInventoryRefreshRef.current === 'function') {
         // Add a small delay to ensure database consistency
         setTimeout(async () => {
           try {
-            await warehouseInventoryRefresh();
+            await warehouseInventoryRefreshRef.current();
           } catch (refreshError) {
             console.error('Error refreshing warehouse inventory:', refreshError);
           }
@@ -410,7 +417,7 @@ const Inventory = () => {
               <WarehouseDetailedView
                 warehouseId={selectedWarehouseId}
                 warehouse={selectedWarehouse}
-                onInventoryRefresh={setWarehouseInventoryRefresh}
+                onInventoryRefresh={handleInventoryRefreshCallback}
               />
             ) : (
               <div className="text-center py-10 bg-white rounded-lg shadow-md">
