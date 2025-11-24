@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import SupplierOrderForm from '../components/SupplierOrderForm';
 import CustomerOrderForm from '../components/CustomerOrderForm';
 import OrderHistoryView from '../components/OrderHistoryView';
+import OrderCalendarView from '../components/OrderCalendarView';
 
 // A helper service to fetch data needed by forms, could be in its own file.
 import { api } from '../services/api';
@@ -35,6 +36,7 @@ const Orders = () => {
   const [filterOrderType, setFilterOrderType] = useState('all');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [activeView, setActiveView] = useState('list'); // 'list' or 'calendar'
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -306,6 +308,34 @@ const Orders = () => {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-md mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8 px-6">
+            <button
+              onClick={() => setActiveView('list')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'list'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📋 List View
+            </button>
+            <button
+              onClick={() => setActiveView('calendar')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'calendar'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📅 Calendar View
+            </button>
+          </nav>
+        </div>
+      </div>
+
       {/* Order Analytics Dashboard */}
       {showAnalytics && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
@@ -390,9 +420,22 @@ const Orders = () => {
         </div>
       </div>
 
-      {(filterOrderType === 'all' || filterOrderType === 'supplier') && (
-        <div>
-          <h2 className="text-2xl font-bold text-gray-700 mt-8 mb-4">Supplier Orders</h2>
+      {/* Calendar View */}
+      {activeView === 'calendar' && (
+        <OrderCalendarView
+          orders={[...filteredCustomerOrders, ...filteredSupplierOrders]}
+          onOrderClick={(order) => {
+            setExpandedOrderId(order.id === expandedOrderId ? null : order.id);
+          }}
+        />
+      )}
+
+      {/* List View */}
+      {activeView === 'list' && (
+        <>
+          {(filterOrderType === 'all' || filterOrderType === 'supplier') && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-700 mt-8 mb-4">Supplier Orders</h2>
           {filteredSupplierOrders.length > 0 ? (
             <div className="flex flex-col space-y-4 mb-12">
               {filteredSupplierOrders.map((order) => (
@@ -499,8 +542,8 @@ const Orders = () => {
                         {order.actual_delivery_date && (
                           <p><span className="font-medium">Received:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
                         )}
-                        {order.ordered_by_user_id && (
-                          <p><span className="font-medium">Ordered by:</span> User ID {order.ordered_by_user_id}</p>
+                        {order.ordered_by_username && (
+                          <p><span className="font-medium">Ordered by:</span> {order.ordered_by_username}</p>
                         )}
                       </div>
                     </div>
@@ -561,6 +604,8 @@ const Orders = () => {
             {supplierOrders.length > 0 || customerOrders.length > 0 ? 'Try adjusting your search or filter criteria.' : 'There are no orders in the system yet.'}
           </p>
         </div>
+      )}
+        </>
       )}
 
       <Modal isOpen={showSupplierOrderModal} onClose={() => setShowSupplierOrderModal(false)} title="Add Supplier Order" size="xl">

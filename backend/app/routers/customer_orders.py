@@ -82,8 +82,8 @@ def read_customer_orders(
             # Populate flat fields from relationships
             "customer_organization_name": order.customer_organization.name if order.customer_organization else None,
             "oraseas_organization_name": order.oraseas_organization.name if order.oraseas_organization else None,
-            "ordered_by_username": order.ordered_by_user.username if order.ordered_by_user else None,
-            "shipped_by_username": order.shipped_by_user.username if order.shipped_by_user else None,
+            "ordered_by_username": order.ordered_by_user.name if order.ordered_by_user and order.ordered_by_user.name else (order.ordered_by_user.username if order.ordered_by_user else None),
+            "shipped_by_username": order.shipped_by_user.name if order.shipped_by_user and order.shipped_by_user.name else (order.shipped_by_user.username if order.shipped_by_user else None),
             "items": []
         }
         

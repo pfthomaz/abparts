@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 import { partsService } from '../services/partsService';
+import PartSearchSelector from './PartSearchSelector';
 
 function CustomerOrderForm({ organizations = [], users = [], parts = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth(); // Current logged-in user
@@ -50,16 +51,26 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
     }
   }, [oraseasOrg, formData.oraseas_organization_id]);
 
-  // Effect to pre-fill customer data for customer users
+  // Effect to pre-fill customer data for non-super_admin users
   useEffect(() => {
-    if (user && (user.role === 'Customer Admin' || user.role === 'Customer User')) {
+    if (user && user.role !== 'super_admin' && !initialData.id) {
       setFormData(prevData => ({
         ...prevData,
         customer_organization_id: user.organization_id || '',
         ordered_by_user_id: user.id || ''
       }));
     }
-  }, [user]);
+  }, [user, initialData.id]);
+  
+  // Effect to pre-select current user if not already set
+  useEffect(() => {
+    if (user && !formData.ordered_by_user_id && !initialData.id) {
+      setFormData(prevData => ({
+        ...prevData,
+        ordered_by_user_id: user.id || ''
+      }));
+    }
+  }, [user, formData.ordered_by_user_id, initialData.id]);
 
   // Effect to load smart-sorted parts when customer organization changes
   useEffect(() => {
@@ -183,12 +194,30 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
   }, [organizations]);
 
   // Filter users based on the selected customer_organization_id
-  const filteredUsers = users.filter(usr => usr.organization_id === formData.customer_organization_id);
+  const filteredUsers = useMemo(() => {
+    if (!formData.customer_organization_id) return [];
+    const filtered = users.filter(usr => usr.organization_id === formData.customer_organization_id);
+    
+    // If current user is not in the filtered list but should be, add them
+    if (user && user.organization_id === formData.customer_organization_id) {
+      const userInList = filtered.find(u => u.id === user.id);
+      if (!userInList) {
+        filtered.unshift({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          organization_id: user.organization_id
+        });
+      }
+    }
+    
+    return filtered;
+  }, [users, formData.customer_organization_id, user]);
 
   // Determine if the organization dropdown should be disabled
-  const disableOrgSelection = loading || (user && (user.role === 'Customer Admin' || user.role === 'Customer User'));
-  // Determine if the user dropdown should be disabled
-  const disableUserSelection = loading || (user && (user.role === 'Customer Admin' || user.role === 'Customer User'));
+  // Non-super_admin users can only order for their own organization
+  const disableOrgSelection = loading || (user && user.role !== 'super_admin');
+  // User dropdown is always enabled (users can change who placed the order)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -314,10 +343,10 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
         <select
           id="ordered_by_user_id"
           name="ordered_by_user_id"
-          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${disableUserSelection ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           value={formData.ordered_by_user_id || ''}
           onChange={handleChange}
-          disabled={disableUserSelection}
+          disabled={loading}
         >
           <option value="">Select User (Optional)</option>
           {filteredUsers.map(u => (
@@ -336,27 +365,17 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
             <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
               Part
             </label>
-            <select
-              id="part_id"
-              name="part_id"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <PartSearchSelector
+              parts={safeParts}
               value={currentItem.part_id}
-              onChange={handleItemChange}
+              onChange={(partId) => setCurrentItem(prev => ({ ...prev, part_id: partId }))}
               disabled={loading || partsLoading}
-            >
-              <option value="">
-                {partsLoading ? 'Loading parts...' : 'Select Part'}
-              </option>
-              {safeParts.map(part => (
-                <option key={part.id} value={part.id}>
-                  {part.name} ({part.part_number})
-                </option>
-              ))}
-            </select>
+              placeholder={partsLoading ? 'Loading parts...' : 'Search by code, name, or description...'}
+            />
             <div className="h-5 mt-1">
               {smartParts.length > 0 && (
                 <p className="text-xs text-gray-500">
-                  Parts sorted by order frequency for this customer
+                  ✨ Parts sorted by order frequency for this customer
                 </p>
               )}
             </div>

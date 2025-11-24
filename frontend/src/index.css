@@ -3,6 +3,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Right-align number inputs globally */
+input[type="number"] {
+  text-align: right;
+}
+
+/* Keep search and text inputs left-aligned */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"] {
+  text-align: left;
+}
+
 /* RTL Support for Arabic regions (KSA, OM) */
 .rtl {
   direction: rtl;
