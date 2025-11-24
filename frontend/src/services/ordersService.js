@@ -79,7 +79,7 @@ const createSupplierOrderItem = (itemData) => {
  * @param {object} itemData The data for the new customer order item.
  */
 const createCustomerOrderItem = (itemData) => {
-  return api.post('/customer_order_items', itemData);
+  return api.post('/customer_order_items/', itemData);
 };
 
 /**
