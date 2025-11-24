@@ -100,11 +100,13 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
   const fetchWarehouseInventory = async () => {
     try {
       console.log('Fetching inventory for warehouse:', formData.from_warehouse_id);
-      const inventory = await inventoryService.getInventory({
-        warehouse_id: formData.from_warehouse_id
-      });
+      const inventory = await inventoryService.getWarehouseInventory(
+        formData.from_warehouse_id
+      );
 
       console.log('Raw inventory response:', inventory);
+      console.log('Response type:', typeof inventory);
+      console.log('Is array?', Array.isArray(inventory));
 
       // Handle different response formats
       let inventoryArray = [];
@@ -402,14 +404,15 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         <div>
           <label htmlFor="machine_id" className="block text-sm font-medium text-gray-700 mb-1">
             3. To Machine <span className="text-red-500">*</span>
+            {initialMachineId && <span className="text-blue-600 ml-2">(Pre-selected)</span>}
           </label>
           <select
             id="machine_id"
             name="machine_id"
             value={formData.machine_id}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading || !formData.part_id}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            disabled={loading || !formData.part_id || !!initialMachineId}
             required
           >
             <option value="">
@@ -423,7 +426,13 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-500 mt-1">Select the machine where the part will be used</p>
+          {initialMachineId ? (
+            <p className="text-xs text-blue-600 mt-1">
+              Machine pre-selected from Machines page and cannot be changed
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">Select the machine where the part will be used</p>
+          )}
         </div>
 
         {/* Inventory availability display */}
