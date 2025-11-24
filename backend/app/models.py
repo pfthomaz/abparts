@@ -744,6 +744,7 @@ class CustomerOrder(Base):
     ordered_by_user = relationship("User", foreign_keys=[ordered_by_user_id], back_populates="customer_orders_placed")
     shipped_by_user = relationship("User", foreign_keys=[shipped_by_user_id])
     items = relationship("CustomerOrderItem", back_populates="customer_order", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="customer_order")
 
     def __repr__(self):
         return f"<CustomerOrder(id={self.id}, customer_org_id={self.customer_organization_id}, status='{self.status}')>"
@@ -815,6 +816,7 @@ class Transaction(Base):
     from_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
     to_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
     machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
+    customer_order_id = Column(UUID(as_uuid=True), ForeignKey("customer_orders.id"), nullable=True)
     quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
     unit_of_measure = Column(String(50), nullable=False)
     performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -828,6 +830,7 @@ class Transaction(Base):
     from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id], back_populates="transactions_from")
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id], back_populates="transactions_to")
     machine = relationship("Machine")
+    customer_order = relationship("CustomerOrder", back_populates="transactions")
     performed_by_user = relationship("User", back_populates="transactions_performed")
     approvals = relationship("TransactionApproval", back_populates="transaction", cascade="all, delete-orphan")
 

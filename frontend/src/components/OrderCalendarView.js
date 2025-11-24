@@ -11,9 +11,25 @@ import {
   isSameDay,
   parseISO
 } from 'date-fns';
+import Modal from './Modal';
 
 const OrderCalendarView = ({ orders = [], onOrderClick }) => {
   const [centerDate, setCenterDate] = useState(new Date());
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+
+  const handleOrderClick = (order) => {
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+    if (onOrderClick) {
+      onOrderClick(order);
+    }
+  };
+
+  const closeModal = () => {
+    setShowOrderModal(false);
+    setSelectedOrder(null);
+  };
 
   // Calculate date range (15 days before center, 14 days after)
   const dateRange = useMemo(() => ({
@@ -156,7 +172,7 @@ const OrderCalendarView = ({ orders = [], onOrderClick }) => {
                     top: `${index * 50 + 20}px`,
                     minWidth: '60px'
                   }}
-                  onClick={() => onOrderClick && onOrderClick(order)}
+                  onClick={() => handleOrderClick(order)}
                   title={`Order #${order.id.slice(0, 8)}
 Customer: ${order.customer_organization_name || 'N/A'}
 Status: ${order.status}
@@ -166,6 +182,9 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                 >
                   <span className="truncate">
                     #{order.id.slice(0, 8)} - {order.customer_organization_name}
+                    {(order.status === 'Delivered' || order.status === 'Received') && order.receiving_warehouse_name && (
+                      <span className="ml-1">→ {order.receiving_warehouse_name}</span>
+                    )}
                   </span>
                 </div>
               );
@@ -198,6 +217,148 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
       <div className="mt-4 text-center text-gray-600 text-sm">
         Showing {visibleOrders.length} of {orders.length} orders
       </div>
+
+      {/* Order Details Modal */}
+      <Modal
+        isOpen={showOrderModal}
+        onClose={closeModal}
+        title={`Order #${selectedOrder?.id.slice(0, 8)}`}
+        size="lg"
+      >
+        {selectedOrder && (
+          <div className="space-y-4">
+            {/* Order Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-gray-800 mb-3">Order Information</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Customer:</span>
+                  <p className="font-medium">{selectedOrder.customer_organization_name}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Status:</span>
+                  <p className="font-medium">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      selectedOrder.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
+                      selectedOrder.status === 'Shipped' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedOrder.status === 'Delivered' || selectedOrder.status === 'Received' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedOrder.status}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Order Date:</span>
+                  <p className="font-medium">{format(parseISO(selectedOrder.order_date), 'MMM dd, yyyy')}</p>
+                </div>
+                {selectedOrder.expected_delivery_date && (
+                  <div>
+                    <span className="text-gray-600">Expected Delivery:</span>
+                    <p className="font-medium">{format(parseISO(selectedOrder.expected_delivery_date), 'MMM dd, yyyy')}</p>
+                  </div>
+                )}
+                {selectedOrder.shipped_date && (
+                  <div>
+                    <span className="text-gray-600">Shipped:</span>
+                    <p className="font-medium">{format(parseISO(selectedOrder.shipped_date), 'MMM dd, yyyy')}</p>
+                  </div>
+                )}
+                {selectedOrder.actual_delivery_date && (
+                  <div>
+                    <span className="text-gray-600">Delivered:</span>
+                    <p className="font-medium">{format(parseISO(selectedOrder.actual_delivery_date), 'MMM dd, yyyy')}</p>
+                  </div>
+                )}
+                {selectedOrder.receiving_warehouse_name && (
+                  <div>
+                    <span className="text-gray-600">Receiving Warehouse:</span>
+                    <p className="font-medium">{selectedOrder.receiving_warehouse_name}</p>
+                  </div>
+                )}
+                {selectedOrder.ordered_by_username && (
+                  <div>
+                    <span className="text-gray-600">Ordered By:</span>
+                    <p className="font-medium">{selectedOrder.ordered_by_username}</p>
+                  </div>
+                )}
+              </div>
+              {selectedOrder.notes && (
+                <div className="mt-3">
+                  <span className="text-gray-600">Notes:</span>
+                  <p className="text-sm text-gray-700 mt-1">{selectedOrder.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Order Items */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-3">Order Items</h3>
+              {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedOrder.items.map((item, index) => (
+                    <div key={item.id || index} className="bg-white border border-gray-200 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {item.part_name || 'Unknown Part'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Part #: {item.part_number || 'N/A'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">
+                            {item.quantity} {item.unit_of_measure || 'units'}
+                          </p>
+                          {item.unit_price && (
+                            <p className="text-sm text-gray-600">
+                              ${parseFloat(item.unit_price).toFixed(2)} each
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {item.unit_price && (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-sm text-gray-700 text-right">
+                            Subtotal: ${(parseFloat(item.quantity) * parseFloat(item.unit_price)).toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Total */}
+                  {selectedOrder.items.some(item => item.unit_price) && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-800">Order Total:</span>
+                        <span className="text-xl font-bold text-blue-600">
+                          ${selectedOrder.items.reduce((sum, item) => 
+                            sum + (parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0)), 0
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No items in this order</p>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-end pt-4 border-t border-gray-200">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

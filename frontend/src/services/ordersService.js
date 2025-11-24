@@ -71,7 +71,7 @@ const getOrderHistory = (filters = {}) => {
  * @param {object} itemData The data for the new supplier order item.
  */
 const createSupplierOrderItem = (itemData) => {
-  return api.post('/supplier_order_items', itemData);
+  return api.post('/supplier_order_items/', itemData);
 };
 
 /**

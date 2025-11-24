@@ -2,7 +2,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func
 from typing import List
+from datetime import datetime
 
 from .. import models, schemas, crud
 from ..database import get_db
@@ -13,6 +15,33 @@ from ..permissions import (
 )
 
 router = APIRouter()
+
+@router.get("/test-warehouse/{order_id}")
+def test_warehouse_lookup(order_id: str, db: Session = Depends(get_db)):
+    """Test endpoint to check warehouse lookup"""
+    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+    if not order:
+        return {"error": "Order not found"}
+    
+    txn = db.query(models.Transaction).filter(
+        models.Transaction.customer_order_id == order.id,
+        models.Transaction.to_warehouse_id.isnot(None)
+    ).first()
+    
+    if not txn:
+        return {"order_id": order_id, "status": order.status, "transaction": None}
+    
+    warehouse = db.query(models.Warehouse).filter(
+        models.Warehouse.id == txn.to_warehouse_id
+    ).first()
+    
+    return {
+        "order_id": order_id,
+        "status": order.status,
+        "transaction_id": str(txn.id),
+        "to_warehouse_id": str(txn.to_warehouse_id),
+        "warehouse_name": warehouse.name if warehouse else None
+    }
 
 @router.post("/", response_model=schemas.CustomerOrderResponse, status_code=201)
 def create_customer_order(
@@ -44,7 +73,8 @@ def read_customer_orders(
         selectinload(models.CustomerOrder.customer_organization),
         selectinload(models.CustomerOrder.oraseas_organization),
         selectinload(models.CustomerOrder.ordered_by_user),
-        selectinload(models.CustomerOrder.shipped_by_user)
+        selectinload(models.CustomerOrder.shipped_by_user),
+        selectinload(models.CustomerOrder.transactions).selectinload(models.Transaction.to_warehouse)
     )
     
     # Filter based on user permissions and organization type
@@ -86,6 +116,25 @@ def read_customer_orders(
             "shipped_by_username": order.shipped_by_user.name if order.shipped_by_user and order.shipped_by_user.name else (order.shipped_by_user.username if order.shipped_by_user else None),
             "items": []
         }
+        
+        # Get receiving warehouse from transactions (if order has been received)
+        receiving_warehouse_name = None
+        try:
+            if order.status in ['Received', 'Delivered']:
+                # Query for transaction with this order's customer_order_id
+                txn = db.query(models.Transaction).filter(
+                    models.Transaction.customer_order_id == order.id,
+                    models.Transaction.to_warehouse_id.isnot(None)
+                ).first()
+                if txn:
+                    warehouse = db.query(models.Warehouse).filter(
+                        models.Warehouse.id == txn.to_warehouse_id
+                    ).first()
+                    if warehouse:
+                        receiving_warehouse_name = warehouse.name
+        except Exception as e:
+            print(f"Error getting warehouse name for order {order.id}: {e}")
+        order_dict["receiving_warehouse_name"] = receiving_warehouse_name
         
         # Populate items with part information
         for item in order.items:
@@ -213,8 +262,10 @@ def confirm_order_receipt(
     Confirm receipt of a customer order (Customer organization only).
     Updates status to 'Received' and records the actual_delivery_date.
     """
-    # Get the order
-    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+    # Get the order with items and parts
+    order = db.query(models.CustomerOrder).options(
+        selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part)
+    ).filter(models.CustomerOrder.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Customer order not found")
     
@@ -241,8 +292,42 @@ def confirm_order_receipt(
     if receipt_request.notes:
         order.notes = f"{order.notes}\n\nReceived: {receipt_request.notes}" if order.notes else f"Received: {receipt_request.notes}"
     
-    # TODO: Update inventory in the receiving warehouse
-    # This would involve creating inventory transactions for each order item
+    # Create inventory transactions for each order item
+    for item in order.items:
+        # Create transaction record
+        transaction = models.Transaction(
+            transaction_type="creation",
+            part_id=item.part_id,
+            to_warehouse_id=receipt_request.receiving_warehouse_id,
+            customer_order_id=order.id,
+            quantity=item.quantity,
+            unit_of_measure=item.part.unit_of_measure if item.part else "units",
+            performed_by_user_id=current_user.user_id,
+            transaction_date=receipt_request.actual_delivery_date,
+            notes=f"Received from customer order #{str(order.id)[:8]}",
+            reference_number=str(order.id)
+        )
+        db.add(transaction)
+        
+        # Update inventory
+        inventory = db.query(models.Inventory).filter(
+            models.Inventory.part_id == item.part_id,
+            models.Inventory.warehouse_id == receipt_request.receiving_warehouse_id
+        ).first()
+        
+        if inventory:
+            inventory.current_stock += item.quantity
+            inventory.last_updated = datetime.now()
+        else:
+            # Create new inventory record
+            inventory = models.Inventory(
+                part_id=item.part_id,
+                warehouse_id=receipt_request.receiving_warehouse_id,
+                current_stock=item.quantity,
+                minimum_stock_recommendation=0,
+                unit_of_measure=item.part.unit_of_measure if item.part else "units"
+            )
+            db.add(inventory)
     
     db.commit()
     db.refresh(order)

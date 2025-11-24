@@ -730,6 +730,12 @@ class CustomerOrderUpdate(CustomerOrderBase):
 class CustomerOrderResponse(CustomerOrderBase, BaseSchema):
     items: List['CustomerOrderItemResponse'] = []
     customer_organization: Optional[OrganizationResponse] = None
+    # Flat fields for convenience
+    customer_organization_name: Optional[str] = None
+    oraseas_organization_name: Optional[str] = None
+    ordered_by_username: Optional[str] = None
+    shipped_by_username: Optional[str] = None
+    receiving_warehouse_name: Optional[str] = None
 
 # --- Customer Order Action Schemas ---
 class CustomerOrderShipRequest(BaseModel):

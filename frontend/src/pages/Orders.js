@@ -56,7 +56,7 @@ const Orders = () => {
         api.get('/parts/'),         // Fetching data for forms
         api.get('/warehouses/'),    // Fetching warehouses for fulfillment
       ]);
-
+      console.log('orders... :', ordersService.getCustomerOrders());
       setSupplierOrders(supplierOrdersData);
       setCustomerOrders(customerOrdersData);
       setOrganizations(orgsData);
@@ -99,9 +99,11 @@ const Orders = () => {
       .filter(order => {
         if (!searchTerm) return true;
         // Use the flat customer_organization_name field
+        console.log('All customer1 orders:', order.customer_organization_name?.toLowerCase().includes(searchTerm.toLowerCase()));
         return order.customer_organization_name?.toLowerCase().includes(searchTerm.toLowerCase());
       });
   }, [customerOrders, searchTerm, filterStatus]);
+  console.log('All customer2 orders:', filteredCustomerOrders);
 
   const noResultsMatch =
     !loading &&
@@ -545,6 +547,9 @@ const Orders = () => {
                         {order.ordered_by_username && (
                           <p><span className="font-medium">Ordered by:</span> {order.ordered_by_username}</p>
                         )}
+                        {order.receiving_warehouse_name && (order.status === 'Received' || order.status === 'Delivered') && (
+                          <p><span className="font-medium">Warehouse:</span> {order.receiving_warehouse_name}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2 ml-4">
@@ -828,6 +833,21 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Filter warehouses to only show those belonging to the customer organization
+  const customerWarehouses = warehouses.filter(
+    w => w.organization_id === order.customer_organization_id
+  );
+
+  // Auto-select warehouse if there's only one
+  useEffect(() => {
+    if (customerWarehouses.length === 1 && !formData.receiving_warehouse_id) {
+      setFormData(prev => ({
+        ...prev,
+        receiving_warehouse_id: customerWarehouses[0].id
+      }));
+    }
+  }, [customerWarehouses, formData.receiving_warehouse_id]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -849,11 +869,6 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
       setLoading(false);
     }
   };
-
-  // Filter warehouses to only show those belonging to the customer organization
-  const customerWarehouses = warehouses.filter(
-    w => w.organization_id === order.customer_organization_id
-  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -970,6 +985,21 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Filter warehouses to only show those belonging to the customer organization
+  const customerWarehouses = warehouses.filter(
+    w => w.organization_id === order.customer_organization_id
+  );
+
+  // Auto-select warehouse if there's only one
+  useEffect(() => {
+    if (customerWarehouses.length === 1 && !formData.receiving_warehouse_id) {
+      setFormData(prev => ({
+        ...prev,
+        receiving_warehouse_id: customerWarehouses[0].id
+      }));
+    }
+  }, [customerWarehouses, formData.receiving_warehouse_id]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -1044,12 +1074,15 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
           disabled={loading}
         >
           <option value="">Select Warehouse</option>
-          {warehouses.map(warehouse => (
+          {customerWarehouses.map(warehouse => (
             <option key={warehouse.id} value={warehouse.id}>
-              {warehouse.name} - {warehouse.organization?.name}
+              {warehouse.name}
             </option>
           ))}
         </select>
+        {customerWarehouses.length === 0 && (
+          <p className="mt-1 text-sm text-red-600">No warehouses found for this customer organization</p>
+        )}
       </div>
 
       <div>
