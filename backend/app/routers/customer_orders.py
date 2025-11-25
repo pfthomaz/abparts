@@ -1,10 +1,12 @@
 # backend/app/routers/customer_orders.py
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
 from typing import List
 from datetime import datetime
+import json
 
 from .. import models, schemas, crud
 from ..database import get_db
@@ -16,32 +18,49 @@ from ..permissions import (
 
 router = APIRouter()
 
-@router.get("/test-warehouse/{order_id}")
-def test_warehouse_lookup(order_id: str, db: Session = Depends(get_db)):
-    """Test endpoint to check warehouse lookup"""
-    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
-    if not order:
-        return {"error": "Order not found"}
-    
-    txn = db.query(models.Transaction).filter(
-        models.Transaction.customer_order_id == order.id,
-        models.Transaction.to_warehouse_id.isnot(None)
-    ).first()
-    
-    if not txn:
-        return {"order_id": order_id, "status": order.status, "transaction": None}
-    
-    warehouse = db.query(models.Warehouse).filter(
-        models.Warehouse.id == txn.to_warehouse_id
-    ).first()
-    
-    return {
-        "order_id": order_id,
-        "status": order.status,
-        "transaction_id": str(txn.id),
-        "to_warehouse_id": str(txn.to_warehouse_id),
-        "warehouse_name": warehouse.name if warehouse else None
-    }
+@router.get("/debug-warehouse/{order_id}")
+def debug_warehouse_lookup(order_id: str, db: Session = Depends(get_db)):
+    """Debug endpoint to check warehouse lookup - NO AUTH REQUIRED FOR TESTING"""
+    try:
+        order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+        if not order:
+            return {"error": "Order not found", "order_id": order_id}
+        
+        # Check for transactions
+        all_txns = db.query(models.Transaction).filter(
+            models.Transaction.customer_order_id == order.id
+        ).all()
+        
+        txn = db.query(models.Transaction).filter(
+            models.Transaction.customer_order_id == order.id,
+            models.Transaction.to_warehouse_id.isnot(None)
+        ).first()
+        
+        result = {
+            "order_id": order_id,
+            "status": order.status,
+            "total_transactions": len(all_txns),
+            "transactions_with_warehouse": len([t for t in all_txns if t.to_warehouse_id]),
+        }
+        
+        if txn:
+            warehouse = db.query(models.Warehouse).filter(
+                models.Warehouse.id == txn.to_warehouse_id
+            ).first()
+            
+            result.update({
+                "transaction_found": True,
+                "transaction_id": str(txn.id),
+                "to_warehouse_id": str(txn.to_warehouse_id),
+                "warehouse_found": warehouse is not None,
+                "warehouse_name": warehouse.name if warehouse else None
+            })
+        else:
+            result["transaction_found"] = False
+            
+        return result
+    except Exception as e:
+        return {"error": str(e), "order_id": order_id}
 
 @router.post("/", response_model=schemas.CustomerOrderResponse, status_code=201)
 def create_customer_order(
@@ -57,7 +76,7 @@ def create_customer_order(
     
     return crud.customer_orders.create_customer_order(db=db, order=order)
 
-@router.get("/", response_model=List[schemas.CustomerOrderResponse])
+@router.get("/")
 def read_customer_orders(
     skip: int = 0, 
     limit: int = 100, 
@@ -114,27 +133,41 @@ def read_customer_orders(
             "oraseas_organization_name": order.oraseas_organization.name if order.oraseas_organization else None,
             "ordered_by_username": order.ordered_by_user.name if order.ordered_by_user and order.ordered_by_user.name else (order.ordered_by_user.username if order.ordered_by_user else None),
             "shipped_by_username": order.shipped_by_user.name if order.shipped_by_user and order.shipped_by_user.name else (order.shipped_by_user.username if order.shipped_by_user else None),
+            "receiving_warehouse_name": None,
             "items": []
         }
         
         # Get receiving warehouse from transactions (if order has been received)
         receiving_warehouse_name = None
-        try:
-            if order.status in ['Received', 'Delivered']:
+        if order.status in ['Received', 'Delivered']:
+            try:
                 # Query for transaction with this order's customer_order_id
                 txn = db.query(models.Transaction).filter(
                     models.Transaction.customer_order_id == order.id,
                     models.Transaction.to_warehouse_id.isnot(None)
                 ).first()
+                
+                print(f"DEBUG Order {order.id}: status={order.status}, txn={txn is not None}")
+                
                 if txn:
+                    print(f"DEBUG: Found transaction {txn.id}, to_warehouse_id={txn.to_warehouse_id}")
                     warehouse = db.query(models.Warehouse).filter(
                         models.Warehouse.id == txn.to_warehouse_id
                     ).first()
                     if warehouse:
                         receiving_warehouse_name = warehouse.name
-        except Exception as e:
-            print(f"Error getting warehouse name for order {order.id}: {e}")
+                        print(f"DEBUG: Found warehouse name: {receiving_warehouse_name}")
+                    else:
+                        print(f"DEBUG: Warehouse not found for id {txn.to_warehouse_id}")
+                else:
+                    print(f"DEBUG: No transaction found for order {order.id}")
+            except Exception as e:
+                print(f"ERROR getting warehouse name for order {order.id}: {e}")
+                import traceback
+                traceback.print_exc()
+        
         order_dict["receiving_warehouse_name"] = receiving_warehouse_name
+        print(f"DEBUG: Final receiving_warehouse_name for order {order.id}: {receiving_warehouse_name}")
         
         # Populate items with part information
         for item in order.items:
