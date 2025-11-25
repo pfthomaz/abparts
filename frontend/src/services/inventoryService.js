@@ -33,6 +33,9 @@ const getWarehouseInventory = (warehouseId, filters = {}) => {
 
   // Add cache-busting timestamp
   queryParams.append('_t', Date.now().toString());
+  
+  // Set high limit to get all inventory items (backend max is 1000)
+  queryParams.append('limit', '1000');
 
   if (filters && typeof filters === 'object') {
     Object.keys(filters).forEach(key => {

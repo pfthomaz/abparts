@@ -149,6 +149,15 @@ const getWarehouseUtilization = (warehouseId) => {
   return api.get(`/warehouses/${warehouseId}/utilization`);
 };
 
+/**
+ * Reset stock levels for multiple parts in a warehouse
+ * @param {string} warehouseId Warehouse ID
+ * @param {object} resetData Stock reset data {adjustments, reason, notes}
+ */
+const resetStock = (warehouseId, resetData) => {
+  return api.post(`/warehouses/${warehouseId}/stock-reset`, resetData);
+};
+
 export const warehouseService = {
   getWarehouses,
   searchWarehouses,
@@ -162,4 +171,5 @@ export const warehouseService = {
   getOrganizationWarehouses,
   getWarehousePerformance,
   getWarehouseUtilization,
+  resetStock,
 };

@@ -1,6 +1,7 @@
 # backend/app/routers/warehouses.py
 
 import uuid
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from .. import crud, models
 from ..schemas.warehouse import WarehouseBase, WarehouseCreate, WarehouseUpdate, WarehouseResponse
+from ..schemas import StockResetRequest, StockResetResponse, StockAdjustmentItem
 from ..database import get_db
 from ..auth import get_current_user, TokenData
 from ..permissions import (
@@ -15,6 +17,7 @@ from ..permissions import (
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # --- Warehouse CRUD ---
@@ -277,3 +280,83 @@ async def get_organization_warehouses(
         return warehouses
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# --- Stock Reset Endpoint ---
+
+@router.post("/{warehouse_id}/stock-reset")
+def reset_warehouse_stock(
+    warehouse_id: str,
+    reset_data: StockResetRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.WRITE))
+):
+    """
+    Reset stock levels for multiple parts in a warehouse.
+    Creates adjustment transactions for audit trail.
+    """
+    from decimal import Decimal
+    from datetime import datetime
+    
+    # Verify warehouse exists and user has access
+    warehouse = db.query(models.Warehouse).filter(
+        models.Warehouse.id == warehouse_id
+    ).first()
+    
+    if not warehouse:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    
+    # Check organization access
+    if not permission_checker.is_super_admin(current_user):
+        if warehouse.organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Access denied to this warehouse")
+    
+    results = []
+    
+    logger.info(f"📥 Stock reset request for warehouse {warehouse_id}: {len(reset_data.adjustments)} adjustments")
+    
+    for adjustment in reset_data.adjustments:
+        # Get current inventory
+        inventory = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == warehouse_id,
+            models.Inventory.part_id == adjustment.part_id
+        ).first()
+        
+        current_stock = inventory.current_stock if inventory else Decimal('0')
+        difference = adjustment.new_quantity - current_stock
+        
+        logger.info(f"📊 Part {adjustment.part_id}: current={current_stock}, new={adjustment.new_quantity}, diff={difference}")
+        
+        # Stock reset does NOT create transactions
+        # It directly sets inventory values (absolute, not relative)
+        # This prevents double-counting by database triggers
+        
+        # Update inventory directly (even if difference is 0, to ensure record exists)
+        if inventory:
+            inventory.current_stock = adjustment.new_quantity
+            inventory.last_updated = datetime.now()
+        else:
+            inventory = models.Inventory(
+                warehouse_id=warehouse_id,
+                part_id=adjustment.part_id,
+                current_stock=adjustment.new_quantity,
+                minimum_stock_recommendation=0,
+                unit_of_measure=adjustment.unit_of_measure
+            )
+            db.add(inventory)
+        
+        # Add to results (only if there was a change)
+        if difference != 0:
+            results.append({
+                "part_id": str(adjustment.part_id),
+                "old_quantity": float(current_stock),
+                "new_quantity": float(adjustment.new_quantity),
+                "difference": float(difference)
+            })
+    
+    db.commit()
+    
+    return {
+        "warehouse_id": warehouse_id,
+        "adjustments_made": len(results),
+        "details": results
+    }

@@ -100,3 +100,23 @@ class WarehouseAnalyticsTrendsResponse(BaseModel):
     warehouse_id: uuid.UUID
     period: str = Field(description="Aggregation period: daily, weekly, or monthly")
     trends: List[TrendDataPoint] = Field(default_factory=list, description="Time series data points")
+
+
+# Stock Reset Schemas
+class StockAdjustmentItem(BaseModel):
+    """Individual part adjustment for stock reset"""
+    part_id: uuid.UUID
+    new_quantity: Decimal
+    unit_of_measure: str
+
+class StockResetRequest(BaseModel):
+    """Request to reset stock levels for multiple parts in a warehouse"""
+    adjustments: List[StockAdjustmentItem]
+    reason: str = Field(..., max_length=100)
+    notes: Optional[str] = None
+
+class StockResetResponse(BaseModel):
+    """Response after stock reset operation"""
+    warehouse_id: uuid.UUID
+    adjustments_made: int
+    details: List[dict]  # List of {part_id, old_quantity, new_quantity, difference}

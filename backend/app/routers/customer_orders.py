@@ -147,27 +147,17 @@ def read_customer_orders(
                     models.Transaction.to_warehouse_id.isnot(None)
                 ).first()
                 
-                print(f"DEBUG Order {order.id}: status={order.status}, txn={txn is not None}")
-                
                 if txn:
-                    print(f"DEBUG: Found transaction {txn.id}, to_warehouse_id={txn.to_warehouse_id}")
                     warehouse = db.query(models.Warehouse).filter(
                         models.Warehouse.id == txn.to_warehouse_id
                     ).first()
                     if warehouse:
                         receiving_warehouse_name = warehouse.name
-                        print(f"DEBUG: Found warehouse name: {receiving_warehouse_name}")
-                    else:
-                        print(f"DEBUG: Warehouse not found for id {txn.to_warehouse_id}")
-                else:
-                    print(f"DEBUG: No transaction found for order {order.id}")
             except Exception as e:
-                print(f"ERROR getting warehouse name for order {order.id}: {e}")
-                import traceback
-                traceback.print_exc()
+                # Log error but don't fail the request
+                print(f"Error getting warehouse name for order {order.id}: {e}")
         
         order_dict["receiving_warehouse_name"] = receiving_warehouse_name
-        print(f"DEBUG: Final receiving_warehouse_name for order {order.id}: {receiving_warehouse_name}")
         
         # Populate items with part information
         for item in order.items:

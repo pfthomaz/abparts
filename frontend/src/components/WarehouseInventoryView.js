@@ -96,14 +96,17 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
     try {
       if (!item) return false;
 
+      // Always exclude items with zero stock from the main inventory view
+      const currentStock = parseFloat(item.current_stock);
+      if (currentStock === 0) return false;
+
       const part = getPartDetails(item.part_id);
       const matchesSearch = !searchTerm ||
         part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         part.part_number?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesFilter = filterType === 'all' ||
-        (filterType === 'low_stock' && parseFloat(item.current_stock) <= parseFloat(item.minimum_stock_recommendation)) ||
-        (filterType === 'out_of_stock' && parseFloat(item.current_stock) === 0);
+        (filterType === 'low_stock' && currentStock <= parseFloat(item.minimum_stock_recommendation));
 
       return matchesSearch && matchesFilter;
     } catch (error) {
@@ -191,9 +194,8 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
             onChange={(e) => setFilterType(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="all">All Items</option>
+            <option value="all">All Items (In Stock)</option>
             <option value="low_stock">Low Stock</option>
-            <option value="out_of_stock">Out of Stock</option>
           </select>
         </div>
       </div>
@@ -215,10 +217,10 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Part
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Current Stock
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Min. Stock
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -246,12 +248,12 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-medium text-gray-900">
                         {parseFloat(item.current_stock).toLocaleString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm text-gray-900">
                         {parseFloat(item.minimum_stock_recommendation).toLocaleString()}
                       </div>
@@ -300,13 +302,13 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Out of Stock</div>
-          <div className="text-2xl font-bold text-red-600">
+          <div className="text-sm font-medium text-gray-500">Items In Stock</div>
+          <div className="text-2xl font-bold text-green-600">
             {safeFilter(inventoryItems, item => {
               try {
-                return item && parseFloat(item.current_stock) === 0;
+                return item && parseFloat(item.current_stock) > 0;
               } catch (error) {
-                console.error('Error calculating out of stock:', error, item);
+                console.error('Error calculating in stock:', error, item);
                 return false;
               }
             }, []).length}

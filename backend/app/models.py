@@ -59,6 +59,7 @@ class TransactionType(enum.Enum):
     TRANSFER = "transfer"
     CONSUMPTION = "consumption"
     ADJUSTMENT = "adjustment"
+    STOCK_RESET = "stock_reset"  # For stock reset operations - sets absolute values, not processed as adjustments
 
 
 class StockAdjustmentReason(enum.Enum):

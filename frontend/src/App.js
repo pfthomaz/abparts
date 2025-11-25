@@ -18,7 +18,6 @@ import { PERMISSIONS } from './utils/permissions'; // Import permissions
 import Dashboard from './pages/Dashboard';
 import Organizations from './pages/Organizations';
 import Parts from './pages/Parts';
-import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
 import Stocktake from './pages/Stocktake';
 import Machines from './pages/Machines'; // New: Import Machines page
@@ -143,24 +142,7 @@ function App() {
                 </PermissionErrorBoundary>
               }
             />
-            <Route
-              path="inventory"
-              element={
-                <PermissionErrorBoundary
-                  feature="Inventory Management"
-                  requiredPermission={PERMISSIONS.VIEW_INVENTORY}
-                  resource="inventory"
-                  action="view"
-                >
-                  <ProtectedRoute
-                    permission={PERMISSIONS.VIEW_INVENTORY}
-                    feature="Inventory Management"
-                  >
-                    <Inventory />
-                  </ProtectedRoute>
-                </PermissionErrorBoundary>
-              }
-            />
+            {/* Inventory route removed - functionality moved to Warehouses page */}
             <Route
               path="orders"
               element={

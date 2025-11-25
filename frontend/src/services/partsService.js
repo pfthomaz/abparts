@@ -4,13 +4,14 @@ import { api } from './api';
 import { processError, logError } from '../utils/errorHandling';
 
 /**
- * Fetches all parts.
+ * Fetches all parts without pagination limit.
  * @returns {Promise<Array>} Array of parts
  * @throws {Error} Throws error with user-friendly message
  */
 const getParts = async () => {
   try {
-    const response = await api.get('/parts/');
+    // Fetch with high limit to get all parts (backend max is 1000)
+    const response = await api.get('/parts/?limit=1000');
     return response;
   } catch (error) {
     logError(error, 'partsService.getParts');

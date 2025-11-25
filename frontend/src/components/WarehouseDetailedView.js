@@ -4,12 +4,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import WarehouseInventoryView from './WarehouseInventoryView';
 import InventoryTransferHistory from './InventoryTransferHistory';
 import WarehouseStockAdjustmentHistory from './WarehouseStockAdjustmentHistory';
+import StockResetTab from './StockResetTab';
 
 const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) => {
   const [activeTab, setActiveTab] = useState('inventory');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const inventoryRefreshFnRef = React.useRef(null);
   
   // Use a callback ref instead of state to avoid re-render issues
   const handleRefreshCallback = useCallback((refreshFn) => {
+    inventoryRefreshFnRef.current = refreshFn;
     if (onInventoryRefresh) {
       onInventoryRefresh(refreshFn);
     }
@@ -17,7 +21,8 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
 
   const tabs = [
     { id: 'inventory', label: 'Current Inventory', icon: '📦' },
-    { id: 'transfers', label: 'Transfer History', icon: '🔄' },
+    { id: 'stock-reset', label: 'Stock Reset', icon: '🔄' },
+    { id: 'transfers', label: 'Transfer History', icon: '↔️' },
     { id: 'adjustments', label: 'Stock Adjustments', icon: '⚖️' }
   ];
 
@@ -26,9 +31,26 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
       case 'inventory':
         return (
           <WarehouseInventoryView
+            key={`inventory-${refreshTrigger}`}
             warehouseId={warehouseId}
             warehouse={warehouse}
             onRefresh={handleRefreshCallback}
+          />
+        );
+      case 'stock-reset':
+        return (
+          <StockResetTab
+            warehouse={warehouse}
+            onSuccess={() => {
+              // Trigger inventory refresh
+              if (inventoryRefreshFnRef.current) {
+                inventoryRefreshFnRef.current();
+              }
+              // Increment refresh trigger to force re-render
+              setRefreshTrigger(prev => prev + 1);
+              // Switch to inventory tab to show updated data
+              setActiveTab('inventory');
+            }}
           />
         );
       case 'transfers':

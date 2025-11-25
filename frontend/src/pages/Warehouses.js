@@ -1,22 +1,28 @@
 // frontend/src/pages/Warehouses.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
 import { warehouseService } from '../services/warehouseService';
 import { organizationsService } from '../services/organizationsService';
+import { inventoryService } from '../services/inventoryService';
+import { partsService } from '../services/partsService';
 import Modal from '../components/Modal';
 import WarehouseForm from '../components/WarehouseForm';
 import WarehouseSelector from '../components/WarehouseSelector';
 import WarehousePerformanceDashboard from '../components/WarehousePerformanceDashboard';
 import WarehouseStockAdjustmentForm from '../components/WarehouseStockAdjustmentForm';
 import WarehouseDetailedView from '../components/WarehouseDetailedView';
-import { inventoryService } from '../services/inventoryService';
+import WarehouseInventoryAggregationView from '../components/WarehouseInventoryAggregationView';
+import WarehouseInventoryReporting from '../components/WarehouseInventoryReporting';
+import InventoryTransferForm from '../components/InventoryTransferForm';
+import InventoryForm from '../components/InventoryForm';
 
 const Warehouses = () => {
   const { user } = useAuth();
   const [warehouses, setWarehouses] = useState([]);
   const [warehouseSummaries, setWarehouseSummaries] = useState({});
   const [organizations, setOrganizations] = useState([]);
+  const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,12 +34,12 @@ const Warehouses = () => {
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showAddInventoryModal, setShowAddInventoryModal] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState(null);
   const [selectedWarehouseForInventory, setSelectedWarehouseForInventory] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
-  const [currentView, setCurrentView] = useState('list'); // 'list' or 'performance'
-
-
+  const [currentView, setCurrentView] = useState('warehouses'); // 'warehouses', 'aggregated', 'reports', 'performance'
 
   const fetchOrganizations = useCallback(async () => {
     try {
@@ -41,6 +47,17 @@ const Warehouses = () => {
       setOrganizations(data);
     } catch (err) {
       console.error('Failed to fetch organizations:', err);
+    }
+  }, []);
+
+  const fetchParts = useCallback(async () => {
+    try {
+      const response = await partsService.getPartsWithInventory({ limit: 1000 });
+      const partsData = response?.items || response || [];
+      setParts(Array.isArray(partsData) ? partsData : []);
+    } catch (err) {
+      console.error('Failed to fetch parts:', err);
+      setParts([]);
     }
   }, []);
 
@@ -90,7 +107,8 @@ const Warehouses = () => {
 
   useEffect(() => {
     fetchOrganizations();
-  }, [fetchOrganizations]);
+    fetchParts();
+  }, [fetchOrganizations, fetchParts]);
 
   useEffect(() => {
     handleSearch();
@@ -141,55 +159,82 @@ const Warehouses = () => {
 
   const handleDeleteWarehouse = async (warehouse) => {
     try {
-      // First, check if warehouse has inventory
       const summary = await warehouseService.getWarehouseSummary(warehouse.id);
 
       if (summary.total_inventory_items > 0) {
         const hasStock = summary.total_stock_quantity > 0;
         const message = hasStock
-          ? `Cannot delete warehouse "${warehouse.name}" because it contains ${summary.total_inventory_items} inventory items with stock (total quantity: ${summary.total_stock_quantity}). Please transfer all inventory to other warehouses or adjust stock levels to zero before deletion.`
-          : `Cannot delete warehouse "${warehouse.name}" because it contains ${summary.total_inventory_items} inventory items (even with zero stock). Please remove all inventory items before deletion.`;
-
+          ? `Cannot delete warehouse "${warehouse.name}" because it contains ${summary.total_inventory_items} inventory items with stock. Please transfer all inventory first.`
+          : `Cannot delete warehouse "${warehouse.name}" because it contains ${summary.total_inventory_items} inventory items. Please remove all inventory items first.`;
         setError(message);
         return;
       }
 
-      // Show confirmation dialog
-      const confirmMessage = `Are you sure you want to delete warehouse "${warehouse.name}"?\n\nThis action cannot be undone and will permanently remove:\n- The warehouse record\n- All associated data\n\nNote: This warehouse appears to have no inventory items.`;
-
-      if (!window.confirm(confirmMessage)) {
+      if (!window.confirm(`Are you sure you want to delete warehouse "${warehouse.name}"? This action cannot be undone.`)) {
         return;
       }
 
       await warehouseService.deleteWarehouse(warehouse.id);
       handleSearch();
-
-      // Show success message
-      setError(''); // Clear any previous errors
-
+      setError('');
     } catch (err) {
       console.error('Failed to delete warehouse:', err);
+      setError(`Failed to delete warehouse: ${err.response?.data?.detail || err.message}`);
+    }
+  };
 
-      // Handle specific error messages from backend
-      let errorMessage = `Failed to delete warehouse "${warehouse.name}".`;
-
-      if (err.response && err.response.data && err.response.data.detail) {
-        const detail = err.response.data.detail;
-
-        if (detail.includes('inventory stock')) {
-          errorMessage = `Cannot delete warehouse "${warehouse.name}" because it has inventory with stock. Please transfer all inventory to other warehouses or adjust stock levels to zero first.`;
-        } else if (detail.includes('transactions')) {
-          errorMessage = `Cannot delete warehouse "${warehouse.name}" because it has associated transactions. Consider deactivating the warehouse instead of deleting it.`;
-        } else if (detail.includes('stock adjustments')) {
-          errorMessage = `Cannot delete warehouse "${warehouse.name}" because it has stock adjustment history. Consider deactivating the warehouse instead of deleting it.`;
-        } else {
-          errorMessage = `Cannot delete warehouse "${warehouse.name}": ${detail}`;
+  const handleInventoryTransfer = async (transferData) => {
+    try {
+      await inventoryService.transferInventory(transferData);
+      setShowTransferModal(false);
+      handleSearch();
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', {
+        detail: {
+          warehouseId: transferData.from_warehouse_id,
+          toWarehouseId: transferData.to_warehouse_id,
+          partId: transferData.part_id
         }
-      } else if (err.message) {
-        errorMessage = `Cannot delete warehouse "${warehouse.name}": ${err.message}`;
-      }
+      }));
+    } catch (err) {
+      console.error("Error creating inventory transfer:", err);
+      throw err;
+    }
+  };
 
-      setError(errorMessage);
+  const handleCreateInventory = async (inventoryData) => {
+    try {
+      await inventoryService.createInventoryItem(inventoryData);
+      setShowAddInventoryModal(false);
+      handleSearch();
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', {
+        detail: {
+          warehouseId: inventoryData.warehouse_id,
+          partId: inventoryData.part_id,
+          action: 'create'
+        }
+      }));
+    } catch (err) {
+      console.error("Error creating inventory item:", err);
+      throw err;
+    }
+  };
+
+  const handleStockAdjustment = async (adjustmentData) => {
+    try {
+      await inventoryService.createWarehouseStockAdjustment(selectedWarehouseForInventory.id, adjustmentData);
+      setShowAdjustmentModal(false);
+      setSelectedWarehouseForInventory(null);
+      await handleSearch();
+      window.dispatchEvent(new CustomEvent('inventoryUpdated', {
+        detail: {
+          warehouseId: selectedWarehouseForInventory.id,
+          partId: adjustmentData.part_id,
+          adjustment: adjustmentData.quantity_change
+        }
+      }));
+    } catch (err) {
+      console.error("Error creating stock adjustment:", err);
+      throw err;
     }
   };
 
@@ -213,38 +258,11 @@ const Warehouses = () => {
     setShowAdjustmentModal(true);
   };
 
-  const handleStockAdjustment = async (adjustmentData) => {
-    try {
-      await inventoryService.createWarehouseStockAdjustment(selectedWarehouseForInventory.id, adjustmentData);
-
-      // Close modal first
-      setShowAdjustmentModal(false);
-      setSelectedWarehouseForInventory(null);
-
-      // Refresh warehouse data
-      await handleSearch();
-
-      // Dispatch inventory update event for other components
-      window.dispatchEvent(new CustomEvent('inventoryUpdated', {
-        detail: {
-          warehouseId: selectedWarehouseForInventory.id,
-          partId: adjustmentData.part_id,
-          adjustment: adjustmentData.quantity_change
-        }
-      }));
-
-    } catch (err) {
-      console.error("Error creating stock adjustment:", err);
-      throw err;
-    }
-  };
-
   const getOrganizationName = (organizationId) => {
     const org = organizations.find(o => o.id === organizationId);
     return org ? org.name : 'Unknown Organization';
   };
 
-  // Filter organizations for super_admin view
   const availableOrganizations = user?.role === 'super_admin'
     ? organizations
     : organizations.filter(org => org.id === user?.organization_id);
@@ -254,33 +272,23 @@ const Warehouses = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warehouse Management</h1>
-          <p className="text-gray-600">Manage warehouse locations and monitor performance</p>
+          <h1 className="text-2xl font-bold text-gray-900">Warehouse & Inventory Management</h1>
+          <p className="text-gray-600">Manage warehouses, inventory, and monitor performance</p>
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* View Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setCurrentView('list')}
-              className={`px-3 py-1 rounded text-sm font-medium ${currentView === 'list'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              List View
-            </button>
-            <button
-              onClick={() => setCurrentView('performance')}
-              className={`px-3 py-1 rounded text-sm font-medium ${currentView === 'performance'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              Performance
-            </button>
-          </div>
-
+          <button
+            onClick={() => setShowTransferModal(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            Transfer Inventory
+          </button>
+          <button
+            onClick={() => setShowAddInventoryModal(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            Add Inventory Item
+          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -296,37 +304,32 @@ const Warehouses = () => {
         </div>
       )}
 
-      {/* Performance View */}
-      {currentView === 'performance' && (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="flex items-center space-x-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Warehouse for Performance Analysis
-                </label>
-                <WarehouseSelector
-                  selectedWarehouseId={selectedWarehouse?.id}
-                  onWarehouseChange={(warehouseId, warehouse) => setSelectedWarehouse(warehouse)}
-                  organizationId={selectedOrganization}
-                  includeInactive={includeInactive}
-                  placeholder="Choose a warehouse to view performance"
-                />
-              </div>
-            </div>
-          </div>
+      {/* View Mode Tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+          {[
+            { id: 'warehouses', label: 'Warehouses', icon: '🏭' },
+            { id: 'aggregated', label: 'Aggregated Inventory', icon: '📊' },
+            { id: 'reports', label: 'Reports', icon: '📈' },
+            { id: 'performance', label: 'Performance', icon: '⚡' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentView(tab.id)}
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${currentView === tab.id
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
 
-          {selectedWarehouse && (
-            <WarehousePerformanceDashboard
-              warehouseId={selectedWarehouse.id}
-              warehouse={selectedWarehouse}
-            />
-          )}
-        </div>
-      )}
-
-      {/* List View */}
-      {currentView === 'list' && (
+      {/* Warehouses View */}
+      {currentView === 'warehouses' && (
         <>
           {/* Filters */}
           <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -379,155 +382,170 @@ const Warehouses = () => {
             </div>
           </div>
 
-          {/* Warehouses Table */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            {loading ? (
-              <div className="p-8 text-center">
-                <div className="text-gray-500">Loading warehouses...</div>
+          {/* Warehouses Card Grid */}
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-500">Loading warehouses...</div>
+            </div>
+          ) : warehouses.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-lg border border-gray-200">
+              <div className="text-gray-500">
+                {searchQuery ? 'No warehouses found matching your search.' : 'No warehouses found.'}
               </div>
-            ) : warehouses.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="text-gray-500">
-                  {searchQuery ? 'No warehouses found matching your search.' : 'No warehouses found.'}
-                </div>
-              </div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Warehouse
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Organization
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Inventory
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {warehouses.map((warehouse) => (
-                    <tr key={warehouse.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {warehouses.map((warehouse) => (
+                <div
+                  key={warehouse.id}
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {/* Card Header */}
+                  <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {warehouse.name}
+                      </h3>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${warehouse.is_active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}>
+                        {warehouse.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    {warehouse.description && (
+                      <p className="text-sm text-gray-600 mb-2">{warehouse.description}</p>
+                    )}
+                    <div className="text-sm text-gray-500">
+                      <div>📍 {warehouse.location || 'Not specified'}</div>
+                      <div>🏢 {getOrganizationName(warehouse.organization_id)}</div>
+                    </div>
+                  </div>
+
+                  {/* Card Stats */}
+                  <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    {warehouseSummaries[warehouse.id] ? (
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {warehouse.name}
+                          <div className="text-xs text-gray-500">Inventory Items</div>
+                          <div className="text-lg font-semibold text-gray-900">
+                            {warehouseSummaries[warehouse.id].total_inventory_items}
                           </div>
-                          {warehouse.description && (
-                            <div className="text-sm text-gray-500">
-                              {warehouse.description}
-                            </div>
-                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {getOrganizationName(warehouse.organization_id)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {warehouse.location || 'Not specified'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${warehouse.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                          }`}>
-                          {warehouse.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {warehouseSummaries[warehouse.id] ? (
-                          <div className="text-sm">
-                            <div className="text-gray-900">
-                              {warehouseSummaries[warehouse.id].total_inventory_items} items
-                            </div>
-                            {warehouseSummaries[warehouse.id].total_stock_quantity > 0 && (
-                              <div className="text-red-600 text-xs">
-                                Stock: {warehouseSummaries[warehouse.id].total_stock_quantity}
-                              </div>
-                            )}
+                        <div>
+                          <div className="text-xs text-gray-500">Total Stock</div>
+                          <div className="text-lg font-semibold text-gray-900">
+                            {warehouseSummaries[warehouse.id].total_stock_quantity}
                           </div>
-                        ) : (
-                          <div className="text-sm text-gray-400">Loading...</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => openInventoryModal(warehouse)}
-                            className="text-purple-600 hover:text-purple-900"
-                            title="View inventory"
-                          >
-                            Inventory
-                          </button>
-                          <button
-                            onClick={() => openAdjustmentModal(warehouse)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Adjust stock levels"
-                          >
-                            Adjust Stock
-                          </button>
-                          <button
-                            onClick={() => openPerformanceModal(warehouse)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Performance
-                          </button>
-                          <button
-                            onClick={() => openEditModal(warehouse)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleToggleWarehouseStatus(warehouse)}
-                            className={`${warehouse.is_active
-                              ? 'text-orange-600 hover:text-orange-900'
-                              : 'text-green-600 hover:text-green-900'
-                              }`}
-                          >
-                            {warehouse.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteWarehouse(warehouse)}
-                            disabled={warehouseSummaries[warehouse.id]?.total_inventory_items > 0}
-                            className={`${warehouseSummaries[warehouse.id]?.total_inventory_items > 0
-                                ? 'text-gray-400 cursor-not-allowed'
-                                : 'text-red-600 hover:text-red-900'
-                              }`}
-                            title={
-                              warehouseSummaries[warehouse.id]?.total_inventory_items > 0
-                                ? 'Cannot delete warehouse with inventory items'
-                                : 'Delete warehouse'
-                            }
-                          >
-                            Delete
-                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400">Loading stats...</div>
+                    )}
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="p-4 space-y-2">
+                    <button
+                      onClick={() => openInventoryModal(warehouse)}
+                      className="w-full px-3 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 text-sm font-medium"
+                    >
+                      📦 View Inventory
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => openAdjustmentModal(warehouse)}
+                        className="px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100 text-sm font-medium"
+                      >
+                        ⚖️ Adjust Stock
+                      </button>
+                      <button
+                        onClick={() => openPerformanceModal(warehouse)}
+                        className="px-3 py-2 bg-purple-50 text-purple-700 rounded-md hover:bg-purple-100 text-sm font-medium"
+                      >
+                        ⚡ Performance
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200">
+                      <button
+                        onClick={() => openEditModal(warehouse)}
+                        className="px-2 py-1 text-indigo-600 hover:text-indigo-900 text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleWarehouseStatus(warehouse)}
+                        className={`px-2 py-1 text-xs ${warehouse.is_active
+                          ? 'text-orange-600 hover:text-orange-900'
+                          : 'text-green-600 hover:text-green-900'
+                          }`}
+                      >
+                        {warehouse.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteWarehouse(warehouse)}
+                        disabled={warehouseSummaries[warehouse.id]?.total_inventory_items > 0}
+                        className={`px-2 py-1 text-xs ${warehouseSummaries[warehouse.id]?.total_inventory_items > 0
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-red-600 hover:text-red-900'
+                          }`}
+                        title={
+                          warehouseSummaries[warehouse.id]?.total_inventory_items > 0
+                            ? 'Cannot delete warehouse with inventory'
+                            : 'Delete warehouse'
+                        }
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
-      {/* Create Warehouse Modal */}
+      {/* Aggregated View */}
+      {currentView === 'aggregated' && (
+        <WarehouseInventoryAggregationView
+          organizationId={user.organization_id}
+        />
+      )}
+
+      {/* Reports View */}
+      {currentView === 'reports' && (
+        <WarehouseInventoryReporting
+          organizationId={user.organization_id}
+        />
+      )}
+
+      {/* Performance View */}
+      {currentView === 'performance' && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Warehouse for Performance Analysis
+            </label>
+            <WarehouseSelector
+              selectedWarehouseId={selectedWarehouse?.id}
+              onWarehouseChange={(_, warehouse) => setSelectedWarehouse(warehouse)}
+              organizationId={selectedOrganization}
+              includeInactive={includeInactive}
+              placeholder="Choose a warehouse to view performance"
+            />
+          </div>
+
+          {selectedWarehouse && (
+            <WarehousePerformanceDashboard
+              warehouseId={selectedWarehouse.id}
+              warehouse={selectedWarehouse}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -541,7 +559,6 @@ const Warehouses = () => {
         />
       </Modal>
 
-      {/* Edit Warehouse Modal */}
       <Modal
         isOpen={showEditModal}
         onClose={() => {
@@ -562,7 +579,6 @@ const Warehouses = () => {
         />
       </Modal>
 
-      {/* Performance Modal */}
       <Modal
         isOpen={showPerformanceModal}
         onClose={() => {
@@ -580,7 +596,6 @@ const Warehouses = () => {
         )}
       </Modal>
 
-      {/* Inventory Modal */}
       <Modal
         isOpen={showInventoryModal}
         onClose={() => {
@@ -598,7 +613,6 @@ const Warehouses = () => {
         )}
       </Modal>
 
-      {/* Stock Adjustment Modal */}
       <Modal
         isOpen={showAdjustmentModal}
         onClose={() => {
@@ -619,6 +633,35 @@ const Warehouses = () => {
             }}
           />
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        title="Transfer Inventory Between Warehouses"
+        size="lg"
+      >
+        <InventoryTransferForm
+          onSubmit={handleInventoryTransfer}
+          onCancel={() => setShowTransferModal(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showAddInventoryModal}
+        onClose={() => setShowAddInventoryModal(false)}
+        title="Add New Inventory Item"
+        size="lg"
+      >
+        <InventoryForm
+          initialData={{}}
+          organizations={organizations}
+          warehouses={warehouses}
+          parts={parts}
+          onSubmit={handleCreateInventory}
+          onClose={() => setShowAddInventoryModal(false)}
+          isEditMode={false}
+        />
       </Modal>
     </div>
   );
