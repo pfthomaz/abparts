@@ -4,7 +4,7 @@
 services:
   # PostgreSQL Database Service
   db:
-    image: postgres:15
+    image: postgres:16
     container_name: abparts_db
     ports:
       - "5432:5432" # Expose PostgreSQL port to the host
@@ -142,7 +142,7 @@ services:
 
   # Test Database Service (separate from development database)
   test_db:
-    image: postgres:15
+    image: postgres:16
     container_name: abparts_test_db
     ports:
       - "5433:5432" # Different port to avoid conflicts with main db
