@@ -13,6 +13,7 @@ const getStockStatus = (currentStock) => {
 
 const transformValuationData = (rawData) => {
   const items = rawData.map(item => ({
+    warehouse_id: item.warehouse_id,  // Include warehouse_id for filtering
     warehouse_name: item.warehouse_name,
     part_number: item.part_number,
     part_name: item.part_name,
@@ -32,8 +33,9 @@ const transformValuationData = (rawData) => {
   // Group by warehouse for breakdown
   const warehouseGroups = {};
   items.forEach(item => {
-    if (!warehouseGroups[item.warehouse_name]) {
-      warehouseGroups[item.warehouse_name] = {
+    if (!warehouseGroups[item.warehouse_id]) {
+      warehouseGroups[item.warehouse_id] = {
+        warehouse_id: item.warehouse_id,  // Include warehouse_id
         warehouse_name: item.warehouse_name,
         total_items: 0,
         total_value: 0,
@@ -41,7 +43,7 @@ const transformValuationData = (rawData) => {
         out_of_stock_items: 0
       };
     }
-    const group = warehouseGroups[item.warehouse_name];
+    const group = warehouseGroups[item.warehouse_id];
     group.total_items++;
     group.total_value += item.estimated_value || 0;
     if (item.stock_status === 'low_stock') group.low_stock_items++;
@@ -149,15 +151,37 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
         ...filters
       };
 
-      // Filter warehouse_ids to only include selected warehouses
-      if (selectedWarehouses.length > 0) {
-        reportParams.warehouse_id = selectedWarehouses[0]; // Backend expects single warehouse_id
-      }
-
       const rawData = await inventoryService.getInventoryReport(reportParams);
-
+      
       // Transform the backend response to match frontend expectations
-      const transformedData = transformReportData(rawData, reportType);
+      let transformedData = transformReportData(rawData, reportType);
+      
+      // Frontend filter: Backend returns all warehouses, so filter here
+      if (selectedWarehouses.length > 0 && transformedData.items) {
+        const filteredItems = transformedData.items.filter(item => 
+          selectedWarehouses.includes(item.warehouse_id)
+        );
+        
+        const filteredBreakdown = transformedData.warehouse_breakdown.filter(wh =>
+          selectedWarehouses.includes(wh.warehouse_id)
+        );
+        
+        // Recalculate summary
+        const filteredSummary = {
+          total_items: filteredItems.length,
+          total_value: filteredItems.reduce((sum, item) => sum + (item.estimated_value || 0), 0),
+          low_stock_items: filteredItems.filter(item => item.stock_status === 'low_stock').length,
+          out_of_stock_items: filteredItems.filter(item => item.stock_status === 'out_of_stock').length
+        };
+        
+        transformedData = {
+          items: filteredItems,
+          summary: filteredSummary,
+          warehouse_breakdown: filteredBreakdown
+        };
+        
+      }
+      
       setReportData(transformedData);
     } catch (err) {
       setError('Failed to generate report');
@@ -176,6 +200,9 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
   useEffect(() => {
     if (organizationId && selectedWarehouses.length > 0) {
       generateReport();
+    } else if (organizationId && selectedWarehouses.length === 0) {
+      // Clear report data when no warehouses are selected
+      setReportData(null);
     }
   }, [organizationId, selectedWarehouses, reportType, dateRange, filters, generateReport]);
 
@@ -240,6 +267,7 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       item.stock_status,
       item.estimated_value || 0
     ]);
+    console.log('rows: ',rows);
 
     return [headers, ...rows].map(row => row.join(',')).join('\n');
   };
@@ -412,28 +440,28 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
         <div className="space-y-6">
           {/* Summary Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div key="total-items" className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="text-sm font-medium text-gray-500">Total Items</div>
               <div className="text-2xl font-bold text-gray-900">
                 {formatNumber(reportData.summary?.total_items || 0)}
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div key="total-value" className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="text-sm font-medium text-gray-500">Total Value</div>
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(reportData.summary?.total_value || 0)}
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div key="low-stock" className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="text-sm font-medium text-gray-500">Low Stock Items</div>
               <div className="text-2xl font-bold text-orange-600">
                 {formatNumber(reportData.summary?.low_stock_items || 0)}
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <div key="out-of-stock" className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="text-sm font-medium text-gray-500">Out of Stock</div>
               <div className="text-2xl font-bold text-red-600">
                 {formatNumber(reportData.summary?.out_of_stock_items || 0)}
@@ -520,8 +548,8 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h4 className="text-md font-medium text-gray-900 mb-4">Warehouse Breakdown</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {reportData.warehouse_breakdown.map((warehouse) => (
-                  <div key={warehouse.warehouse_id} className="border border-gray-200 rounded-lg p-4">
+                {reportData.warehouse_breakdown.map((warehouse, index) => (
+                  <div key={`warehouse-${warehouse.warehouse_id}-${index}`} className="border border-gray-200 rounded-lg p-4">
                     <h5 className="font-medium text-gray-900 mb-2">{warehouse.warehouse_name}</h5>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">

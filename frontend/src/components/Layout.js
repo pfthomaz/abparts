@@ -139,7 +139,7 @@ const Layout = () => {
                         : user.organization.logo_url
                       }
                       alt={user.organization.name}
-                      className="w-12 h-12 rounded object-contain"
+                      className="w-18 h-18 rounded object-contain"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}

@@ -73,18 +73,17 @@ async def get_inventory_reports_compatibility(
     This redirects to the proper inventory-reports endpoints.
     """
     try:
-        # For now, just use the first warehouse ID and call the valuation endpoint
+        # Use ALL warehouse IDs provided
         if not warehouse_ids:
             raise HTTPException(status_code=400, detail="At least one warehouse ID is required")
         
-        warehouse_id = warehouse_ids[0]
-        
-        # Check if user can access this warehouse
-        if not check_warehouse_access(current_user, warehouse_id, db):
-            raise HTTPException(status_code=403, detail="Not authorized to view this warehouse's reports")
+        # Check if user can access these warehouses
+        for wh_id in warehouse_ids:
+            if not check_warehouse_access(current_user, wh_id, db):
+                raise HTTPException(status_code=403, detail=f"Not authorized to view warehouse {wh_id}")
         
         # Get valuation data directly from the database
-        # Get all inventory items in the specified warehouse
+        # Get all inventory items in the specified warehouses
         inventory_query = db.query(
             models.Inventory,
             models.Part,
@@ -94,7 +93,7 @@ async def get_inventory_reports_compatibility(
         ).join(
             models.Warehouse, models.Inventory.warehouse_id == models.Warehouse.id
         ).filter(
-            models.Inventory.warehouse_id == warehouse_id
+            models.Inventory.warehouse_id.in_(warehouse_ids)
         )
         
         inventory_results = inventory_query.all()
@@ -140,6 +139,7 @@ async def get_inventory_reports_compatibility(
         items = []
         for item in valuation_data:
             items.append({
+                "warehouse_id": str(item.get("warehouse_id")),  # Include warehouse_id for filtering
                 "warehouse_name": item.get("warehouse_name", "Unknown"),
                 "part_number": item.get("part_number", ""),
                 "part_name": item.get("part_name", ""),
@@ -156,6 +156,20 @@ async def get_inventory_reports_compatibility(
         low_stock_items = sum(1 for item in items if item["stock_status"] == "low_stock")
         out_of_stock_items = sum(1 for item in items if item["stock_status"] == "out_of_stock")
         
+        # Generate warehouse breakdown
+        warehouse_breakdown = []
+        for wh_id in warehouse_ids:
+            wh_items = [item for item in items if item["warehouse_id"] == str(wh_id)]
+            if wh_items:
+                warehouse_breakdown.append({
+                    "warehouse_id": str(wh_id),
+                    "warehouse_name": wh_items[0]["warehouse_name"],
+                    "total_items": len(wh_items),
+                    "total_value": sum(item["estimated_value"] for item in wh_items),
+                    "low_stock_items": sum(1 for item in wh_items if item["stock_status"] == "low_stock"),
+                    "out_of_stock_items": sum(1 for item in wh_items if item["stock_status"] == "out_of_stock")
+                })
+        
         return {
             "items": items,
             "summary": {
@@ -164,7 +178,7 @@ async def get_inventory_reports_compatibility(
                 "low_stock_items": low_stock_items,
                 "out_of_stock_items": out_of_stock_items
             },
-            "warehouse_breakdown": []
+            "warehouse_breakdown": warehouse_breakdown
         }
         
     except HTTPException:

@@ -209,16 +209,16 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
 
       const startTime = Date.now();
 
-      const [aggregatedData, warehousesData, partsData] = await Promise.all([
+      const [aggregatedData, warehousesData, partsResponse] = await Promise.all([
         inventoryService.getOrganizationInventoryAggregation(organizationId),
         warehouseService.getOrganizationWarehouses(organizationId),
-        partsService.getParts({ limit: 200 })
+        partsService.getParts()
       ]);
 
       const fetchDuration = Date.now() - startTime;
 
       // Validate API responses
-      if (!aggregatedData && !warehousesData && !partsData) {
+      if (!aggregatedData && !warehousesData && !partsResponse) {
         throw new Error('All API endpoints returned empty responses');
       }
 
@@ -237,13 +237,21 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
       }
       setWarehouses(validatedWarehouses);
 
-      // Validate and set parts data
+      // Extract parts data from response (could be array or object with parts property)
+      let partsData = partsResponse;
+      if (partsResponse && typeof partsResponse === 'object' && !Array.isArray(partsResponse)) {
+        // If response is an object, try to extract parts array
+        partsData = partsResponse.parts || partsResponse.data || partsResponse.items || [];
+      }
+
+      // Validate parts data
       const validatedParts = Array.isArray(partsData) ? partsData : [];
+      
       if (!Array.isArray(partsData)) {
         logErrorWithContext(
-          new Error('Parts data is not an array'),
+          new Error('Parts data is not an array after extraction'),
           'data_processing',
-          { receivedType: typeof partsData, dataLength: partsData?.length }
+          { receivedType: typeof partsData, responseType: typeof partsResponse }
         );
       }
       setParts(validatedParts);
@@ -692,16 +700,16 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Part
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total Stock
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Min. Stock
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Warehouses
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -716,7 +724,6 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                       if (!item) return null;
 
                       const partId = safePropertyAccess(item, 'part_id', 'unknown');
-                      const part = getPartDetails(partId);
                       const stockStatus = getStockStatus(
                         safePropertyAccess(item, 'total_stock'),
                         safePropertyAccess(item, 'min_stock_recommendation')
@@ -725,25 +732,29 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                       const totalStock = safeParseFloat(safePropertyAccess(item, 'total_stock'), 0);
                       const minStock = safeParseFloat(safePropertyAccess(item, 'min_stock_recommendation'), 0);
                       const warehouseCount = safeParseFloat(safePropertyAccess(item, 'warehouse_count'), 0);
+                      
+                      // Use part info from aggregated inventory (already included in response)
+                      const partName = safePropertyAccess(item, 'part_name', 'Unknown Part');
+                      const partNumber = safePropertyAccess(item, 'part_number', 'N/A');
 
                       return (
                         <tr key={partId} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {safePropertyAccess(part, 'name', 'Unknown Part')}
+                                {partName}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {safePropertyAccess(part, 'part_number', 'N/A')}
+                                {partNumber}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
                             <div className="text-sm font-medium text-gray-900">
                               {totalStock.toLocaleString()}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
                             <div className="text-sm text-gray-900">
                               {minStock.toLocaleString()}
                             </div>
@@ -753,7 +764,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                               {getStockStatusLabel(safePropertyAccess(stockStatus, 'status', 'unknown'))}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
                             <div className="text-sm text-gray-900">
                               {warehouseCount} warehouse{warehouseCount !== 1 ? 's' : ''}
                             </div>

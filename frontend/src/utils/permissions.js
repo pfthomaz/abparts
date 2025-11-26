@@ -289,18 +289,7 @@ export const getNavigationItems = (user) => {
     });
   }
 
-  // Inventory - all users can view
-  if (hasPermission(user, PERMISSIONS.VIEW_INVENTORY)) {
-    items.push({
-      path: '/inventory',
-      label: 'Inventory',
-      icon: 'inventory',
-      permission: PERMISSIONS.VIEW_INVENTORY,
-      description: 'View and manage inventory levels',
-      category: 'core',
-      accessScope: isSuperAdmin(user) ? 'global' : 'organization'
-    });
-  }
+  // Inventory menu removed - functionality consolidated into Warehouses page
 
   // Orders - all users can view/create
   if (hasPermission(user, PERMISSIONS.ORDER_PARTS)) {
