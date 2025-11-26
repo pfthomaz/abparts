@@ -1,35 +1,46 @@
-# Part Images Fix Guide
+# Part Images Fix Guide - PRODUCTION
 
 ## Problem
-Part images are stored in `/var/www/abparts_images/` on the server, but Docker is looking for them in `/app/static/images/` inside the container using a Docker volume.
+Part images are stored in `/var/www/abparts_images/` on the server, but the production Docker configuration was pointing to `/var/lib/abparts/images/` instead.
 
-## Solution: Mount Server Directory into Docker
+## Solution: Update Production Docker Configuration
 
-### Step 1: Update docker-compose.yml
+### Step 1: Update docker-compose.prod.yml
 
-Find the `api` service volumes section and **replace** this line:
+The file has been updated. The change was:
+
+**OLD (incorrect):**
 ```yaml
-- api_static_images:/app/static/images # New: Volume for static images
+- /var/lib/abparts/images:/app/static/images
 ```
 
-**With this line:**
+**NEW (correct):**
 ```yaml
-- /var/www/abparts_images:/app/static/images:ro # Mount server images (read-only)
+- /var/www/abparts_images:/app/static/images:ro
 ```
 
 The `:ro` flag makes it read-only for safety.
 
-### Step 2: Restart the API Container
+### Step 2: Deploy to Production Server
+
+On your production server, run:
 
 ```bash
-docker-compose restart api
+cd ~/abparts
+git pull
+sudo docker compose -f docker-compose.prod.yml restart api
+```
+
+Or use the automated script:
+```bash
+bash fix_production_images.sh
 ```
 
 ### Step 3: Verify Images Are Accessible
 
 Check if Docker can see the images:
 ```bash
-docker exec abparts_api ls -lh /app/static/images | head -20
+sudo docker exec abparts_api_prod ls -lh /app/static/images | head -20
 ```
 
 You should see your image files listed.
@@ -38,17 +49,17 @@ You should see your image files listed.
 
 Try accessing an image directly:
 ```bash
-curl -I http://your-server-ip/static/images/your-image-filename.jpg
+curl -I https://abparts.oraseas.com/static/images/your-image-filename.jpg
 ```
 
-Or visit in browser: `http://your-server-ip/static/images/your-image-filename.jpg`
+Or visit in browser: `https://abparts.oraseas.com/static/images/your-image-filename.jpg`
 
 ## Checking Database Image Paths
 
 The database stores image URLs. Check what format they're in:
 
 ```bash
-docker exec abparts_api python -c "
+sudo docker exec abparts_api_prod python -c "
 from app.database import SessionLocal
 from app.models import Part
 db = SessionLocal()

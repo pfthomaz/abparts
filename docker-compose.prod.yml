@@ -62,7 +62,7 @@ services:
       FORCE_HTTPS: ${FORCE_HTTPS}
     volumes:
       #- api_static_images_prod:/app/static/images
-      - /var/lib/abparts/images:/app/static/images
+      - /var/www/abparts_images:/app/static/images:ro
       # No source code mounting in production
     depends_on:
       db:
