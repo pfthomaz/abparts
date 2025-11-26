@@ -1,0 +1,33 @@
+# Replace the api service environment section in docker-compose.yml with this:
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD:-abparts_pass}@db:5432/${POSTGRES_DB:-abparts_dev}
+      REDIS_URL: redis://redis:6379/0
+      # Email configuration
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      # CORS configuration - THIS LINE WAS BROKEN
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - ./backend:/app
+      - api_static_images:/app/static/images
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude /app/static/images
