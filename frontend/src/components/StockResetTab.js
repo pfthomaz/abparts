@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import PartSearchSelector from './PartSearchSelector';
 import { warehouseService } from '../services/warehouseService';
 import { api } from '../services/api';
+import WarehouseStockAdjustmentHistory from './WarehouseStockAdjustmentHistory';
 
 const StockResetTab = ({ warehouse, onSuccess }) => {
   const [adjustments, setAdjustments] = useState([]);
@@ -477,6 +478,15 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
           </div>
         </div>
       )}
+
+      {/* Adjustment History Section */}
+      <div className="mt-8 border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Adjustment History</h3>
+        <WarehouseStockAdjustmentHistory 
+          warehouseId={warehouse.id} 
+          warehouse={warehouse}
+        />
+      </div>
     </div>
   );
 };

@@ -281,7 +281,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-sm font-medium text-gray-500">Total Items</div>
           <div className="text-2xl font-bold text-gray-900">
-            {Array.isArray(inventoryItems) ? inventoryItems.length : 0}
+            {Array.isArray(inventoryItems) ? inventoryItems.filter(item => parseFloat(item.current_stock || 0) > 0).length : 0}
           </div>
         </div>
 

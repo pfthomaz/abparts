@@ -209,9 +209,11 @@ def get_warehouse_inventory_summary(db: Session, warehouse_id: uuid.UUID) -> dic
     # Get inventory statistics
     inventory_items = db.query(models.Inventory).filter(models.Inventory.warehouse_id == warehouse_id).all()
     
-    total_items = len(inventory_items)
+    # Only count items with stock > 0
+    items_with_stock = [item for item in inventory_items if item.current_stock > 0]
+    total_items = len(items_with_stock)
     total_stock_value = sum(item.current_stock for item in inventory_items)
-    low_stock_items = sum(1 for item in inventory_items if item.current_stock <= item.minimum_stock_recommendation)
+    low_stock_items = sum(1 for item in inventory_items if item.current_stock <= item.minimum_stock_recommendation and item.current_stock > 0)
     
     return {
         "warehouse_id": warehouse_id,

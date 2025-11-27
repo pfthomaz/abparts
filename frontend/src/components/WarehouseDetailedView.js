@@ -21,9 +21,8 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
 
   const tabs = [
     { id: 'inventory', label: 'Current Inventory', icon: '📦' },
-    { id: 'stock-reset', label: 'Stock Reset', icon: '🔄' },
-    { id: 'transfers', label: 'Transfer History', icon: '↔️' },
-    { id: 'adjustments', label: 'Stock Adjustments', icon: '⚖️' }
+    { id: 'adjustments', label: 'Stock Adjustments', icon: '⚖️' },
+    { id: 'transfers', label: 'Transfer History', icon: '↔️' }
   ];
 
   const renderTabContent = () => {
@@ -37,7 +36,7 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
             onRefresh={handleRefreshCallback}
           />
         );
-      case 'stock-reset':
+      case 'adjustments':
         return (
           <StockResetTab
             warehouse={warehouse}
@@ -56,13 +55,6 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
       case 'transfers':
         return (
           <InventoryTransferHistory
-            warehouseId={warehouseId}
-            warehouse={warehouse}
-          />
-        );
-      case 'adjustments':
-        return (
-          <WarehouseStockAdjustmentHistory
             warehouseId={warehouseId}
             warehouse={warehouse}
           />
