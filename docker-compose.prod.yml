@@ -107,7 +107,7 @@ services:
         REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-/api}
     container_name: abparts_web_prod
     ports:
-      - "80:80" # Nginx serving on port 80, exposed as 81
+      - "3001:80" # Docker nginx on port 80, exposed as 3001 on host
     depends_on:
       api:
         condition: service_started
