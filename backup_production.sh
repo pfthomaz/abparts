@@ -16,8 +16,23 @@ echo ""
 sudo mkdir -p "${BACKUP_PATH}"
 
 echo "1. Backing up database..."
-sudo docker exec abparts_db_prod pg_dump -U abparts_user abparts_prod | sudo tee "${BACKUP_PATH}/database.sql" > /dev/null
-echo "   ✅ Database backed up ($(du -h "${BACKUP_PATH}/database.sql" | cut -f1))"
+# Try both possible container names
+if sudo docker ps --format '{{.Names}}' | grep -q "abparts_db_prod"; then
+    DB_CONTAINER="abparts_db_prod"
+elif sudo docker ps --format '{{.Names}}' | grep -q "abparts_db"; then
+    DB_CONTAINER="abparts_db"
+else
+    echo "   ❌ Database container not found"
+    DB_CONTAINER=""
+fi
+
+if [ -n "$DB_CONTAINER" ]; then
+    sudo docker exec $DB_CONTAINER pg_dump -U abparts_user abparts_prod | sudo tee "${BACKUP_PATH}/database.sql" > /dev/null
+    echo "   ✅ Database backed up from $DB_CONTAINER ($(du -h "${BACKUP_PATH}/database.sql" | cut -f1))"
+else
+    echo "   ⚠️  Skipping database backup - container not running"
+    echo "" | sudo tee "${BACKUP_PATH}/database.sql" > /dev/null
+fi
 
 echo ""
 echo "2. Backing up images..."
@@ -33,7 +48,7 @@ echo "   ✅ Configuration backed up"
 
 echo ""
 echo "4. Creating backup manifest..."
-cat > "${BACKUP_PATH}/MANIFEST.txt" << EOF
+sudo bash -c "cat > '${BACKUP_PATH}/MANIFEST.txt'" << EOF
 ABParts Backup
 Created: $(date)
 Hostname: $(hostname)
