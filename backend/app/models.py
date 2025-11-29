@@ -3,7 +3,7 @@
 import uuid
 import enum
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint, Enum
+from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint, Enum, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -86,7 +86,8 @@ class Organization(Base):
     # country = Column(Enum(CountryCode), nullable=True)  # Country field - commented until DB migration runs
     address = Column(Text)
     contact_info = Column(Text)
-    logo_url = Column(String(500), nullable=True)  # Organization logo - commented until DB migration runs
+    logo_url = Column(String(500), nullable=True)  # Organization logo (legacy)
+    logo_data = Column(LargeBinary, nullable=True)  # Binary image storage
     is_active = Column(Boolean, nullable=False, server_default='true')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -196,7 +197,8 @@ class User(Base):
     password_hash = Column(Text, nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255))
-    profile_photo_url = Column(String(500), nullable=True)  # User profile photo
+    profile_photo_url = Column(String(500), nullable=True)  # User profile photo (legacy)
+    profile_photo_data = Column(LargeBinary, nullable=True)  # Binary image storage
     role = Column(ENUM(UserRole, name='userrole'), nullable=False)
     user_status = Column(ENUM(UserStatus, name='userstatus'), nullable=False)
     failed_login_attempts = Column(Integer, nullable=False, server_default='0')
@@ -582,7 +584,8 @@ class Part(Base):
     manufacturer_part_number = Column(String(255), nullable=True)
     manufacturer_delivery_time_days = Column(Integer)
     local_supplier_delivery_time_days = Column(Integer)
-    image_urls = Column(ARRAY(Text)) # Array of strings
+    image_urls = Column(ARRAY(Text))  # Array of strings (legacy)
+    image_data = Column(ARRAY(LargeBinary))  # Binary image storage
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -592,6 +595,7 @@ class Part(Base):
     customer_order_items = relationship("CustomerOrderItem", back_populates="part", cascade="all, delete-orphan")
     part_usage_records = relationship("PartUsage", back_populates="part", cascade="all, delete-orphan")
     stocktake_items = relationship("StocktakeItem", back_populates="part", cascade="all, delete-orphan")
+    videos = relationship("PartVideo", back_populates="part", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Part(id={self.id}, part_number='{self.part_number}', name='{self.name}')>"
@@ -1490,3 +1494,49 @@ class StocktakeItem(Base):
 
     def __repr__(self):
         return f"<StocktakeItem(id={self.id}, stocktake_id={self.stocktake_id}, part_id={self.part_id})>"
+
+
+class SupportVideo(Base):
+    """
+    SQLAlchemy model for the 'support_videos' table.
+    Stores customer support and training videos.
+    """
+    __tablename__ = "support_videos"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String(50), nullable=False)  # 'machine_setup', 'maintenance', 'troubleshooting'
+    file_path = Column(String(500), nullable=False)  # Relative path: /videos/support/filename.mp4
+    file_size_mb = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    thumbnail_data = Column(LargeBinary, nullable=True)  # Small thumbnail stored in DB
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<SupportVideo(id={self.id}, title='{self.title}', category='{self.category}')>"
+
+
+class PartVideo(Base):
+    """
+    SQLAlchemy model for the 'part_videos' table.
+    Stores demonstration and installation videos for parts.
+    """
+    __tablename__ = "part_videos"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id", ondelete="CASCADE"), nullable=False)
+    video_type = Column(String(50), nullable=False)  # 'demo', 'installation', 'maintenance'
+    file_path = Column(String(500), nullable=False)
+    file_size_mb = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    thumbnail_data = Column(LargeBinary, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    part = relationship("Part", back_populates="videos")
+
+    def __repr__(self):
+        return f"<PartVideo(id={self.id}, part_id={self.part_id}, type='{self.video_type}')>"

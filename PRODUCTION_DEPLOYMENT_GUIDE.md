@@ -1,265 +1,392 @@
-# Production Deployment Guide - ABParts
+# Production Deployment Guide
 
-## Database Changes Summary (Last 2 Weeks)
+## Overview
 
-### New Columns Added:
+Deploy hybrid storage solution to production using git push/pull workflow.
 
-1. **`users` table**
-   - `profile_photo_url` (VARCHAR(500)) - Stores path to user profile photos
+## Prerequisites
 
-2. **`organizations` table**
-   - `logo_url` (VARCHAR(500)) - Stores path to organization logos
+- Development tested and working
+- SSH access as `diogo` user
+- Sudo access on production server
+- Git repository set up
 
-3. **`customer_orders` table**
-   - `shipped_by_user_id` (UUID, FK to users) - Tracks who marked order as shipped
+## Step 1: Commit and Push Changes
 
-### No New Tables
-All other tables (machines, warehouses, parts, inventory, transactions, etc.) already exist from previous migrations.
-
----
-
-## Deployment Steps
-
-### Step 1: Backup Production Database
+### On Your Local Machine
 
 ```bash
-# Create a backup before making any changes
-pg_dump -U your_db_user -d your_db_name > backup_$(date +%Y%m%d_%H%M%S).sql
+# 1. Check what's changed
+git status
 
-# Verify backup was created
-ls -lh backup_*.sql
+# 2. Add all changes
+git add .
+
+# 3. Commit with descriptive message
+git commit -m "feat: implement hybrid storage solution for images
+
+- Store images in PostgreSQL database as binary data
+- Automatic WebP compression (max 500KB per image)
+- Add image serving endpoints
+- Migrate existing file-based images to database
+- Add video infrastructure for future use
+- Fixes recurring image sync issues between dev/prod
+
+Changes:
+- Added binary storage columns to users, organizations, parts tables
+- Created image_utils.py for compression
+- Created images router for serving from database
+- Updated uploads router to use database storage
+- Added Pillow dependency
+- Created migration scripts and documentation"
+
+# 4. Push to repository
+git push origin main  # or your branch name
 ```
 
-### Step 2: Run Database Migration
+## Step 2: Backup Production Database
+
+### SSH to Production
 
 ```bash
-# Connect to production database
-psql -U your_db_user -d your_db_name
+# SSH as diogo
+ssh diogo@46.62.153.166
 
-# Run the migration script
-\i PRODUCTION_DATABASE_MIGRATION.sql
+# Switch to root
+sudo su -
 
-# Verify changes
-\d users
-\d organizations
-\d customer_orders
+# Navigate to project
+cd /root/abparts
+
+# Create backup
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U abparts_user abparts_prod | gzip > /var/backups/abparts_pre_hybrid_$(date +%Y%m%d_%H%M%S).sql.gz
+
+# Verify backup
+ls -lh /var/backups/abparts_pre_hybrid_*.sql.gz
+
+# Exit root
+exit
 ```
 
-**OR** use the SQL file directly:
+## Step 3: Pull Changes and Deploy
+
+### Still on Production Server (as diogo)
 
 ```bash
-psql -U your_db_user -d your_db_name -f PRODUCTION_DATABASE_MIGRATION.sql
-```
+# Switch to root
+sudo su -
 
-### Step 3: Create Static Files Directory
+# Navigate to project
+cd /root/abparts
 
-```bash
-# On your production server
-cd /path/to/abparts/backend
-mkdir -p static/images
-chmod 755 static/images
-
-# Set ownership to your web server user (adjust as needed)
-chown -R www-data:www-data static/
-# OR for nginx
-chown -R nginx:nginx static/
-# OR for your app user
-chown -R your_app_user:your_app_user static/
-```
-
-### Step 4: Update Backend Code
-
-```bash
-# Pull latest code
+# Pull latest changes
 git pull origin main
 
-# Restart backend service
-# For Docker:
-docker-compose restart api
+# Stop containers
+docker compose -f docker-compose.prod.yml down
 
-# For systemd:
-sudo systemctl restart abparts-api
+# Rebuild API container (includes new dependencies)
+docker compose -f docker-compose.prod.yml build --no-cache api
 
-# For PM2:
-pm2 restart abparts-api
+# Start database and redis
+docker compose -f docker-compose.prod.yml up -d db redis
+
+# Wait for database
+sleep 10
+
+# Start API
+docker compose -f docker-compose.prod.yml up -d api
+
+# Wait for API
+sleep 10
+
+# Run database migration
+docker compose -f docker-compose.prod.yml exec api alembic upgrade heads
+
+# Copy migration script to container
+docker compose -f docker-compose.prod.yml cp migrate_images_to_db.py api:/tmp/migrate_images_to_db.py
+
+# Run image migration
+docker compose -f docker-compose.prod.yml exec api python /tmp/migrate_images_to_db.py
+
+# Start all services
+docker compose -f docker-compose.prod.yml up -d
+
+# Restart nginx
+systemctl restart nginx
+
+# Check services
+docker compose -f docker-compose.prod.yml ps
+
+# Check logs
+docker compose -f docker-compose.prod.yml logs --tail=50 api
+
+# Exit root
+exit
+
+# Exit SSH
+exit
 ```
 
-### Step 5: Update Frontend Code
+## Step 4: Verify Production Deployment
+
+### From Your Local Machine
 
 ```bash
-# Build frontend
-cd frontend
-npm install  # if there are new dependencies
-npm run build
+# Test API
+curl https://abparts.oraseas.com/docs
 
-# Deploy build files to your web server
-# Copy build/ directory to your nginx/apache document root
+# Test image endpoint (if you have a user ID)
+curl -I https://abparts.oraseas.com/images/users/{user-id}/profile
 ```
 
-### Step 6: Verify Deployment
+### In Browser
 
-1. **Test Profile Photo Upload**
-   - Login to the application
-   - Go to "My Profile"
-   - Upload a profile photo
-   - Verify it appears in the header
+1. Open https://abparts.oraseas.com
+2. Login
+3. Check if existing images display
+4. Upload a new profile photo
+5. Upload a new organization logo
+6. Verify images display correctly
 
-2. **Test Organization Logo Upload**
-   - Go to "Organizations" page
-   - Edit an organization (as admin)
-   - Upload a logo
-   - Verify it appears in the header
+## Step 5: Verify Images in Database
 
-3. **Test Part Usage**
-   - Go to "Machines" page
-   - Click "Use Part" on a machine
-   - Select warehouse, part, and quantity
-   - Submit and verify transaction appears in Transactions page
-   - Verify "TO" column shows machine name (not serial number)
-
-4. **Check API Health**
-   ```bash
-   curl http://your-domain/api/health
-   ```
-
----
-
-## Configuration Changes
-
-### Environment Variables
-
-Ensure these are set in your production `.env` file:
+### SSH to Production Again
 
 ```bash
-# API Base URL
-REACT_APP_API_BASE_URL=http://your-domain:8000
+ssh diogo@46.62.153.166
+sudo su -
+cd /root/abparts
 
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/abparts_prod
+# Check image counts
+docker compose -f docker-compose.prod.yml exec db psql -U abparts_user abparts_prod -c "
+SELECT 
+  (SELECT COUNT(*) FROM users WHERE profile_photo_data IS NOT NULL) as users_with_photos,
+  (SELECT COUNT(*) FROM organizations WHERE logo_data IS NOT NULL) as orgs_with_logos,
+  (SELECT COUNT(*) FROM parts WHERE image_data IS NOT NULL) as parts_with_images;
+"
 
-# Static files path (backend)
-STATIC_FILES_PATH=/path/to/backend/static
+# Check database size
+docker compose -f docker-compose.prod.yml exec db psql -U abparts_user abparts_prod -c "
+SELECT pg_size_pretty(pg_database_size('abparts_prod')) as database_size;
+"
 ```
 
-### Nginx Configuration (if using Nginx)
+## Alternative: Automated Script for Diogo User
 
-Add static files serving:
+Create this script on your local machine:
 
-```nginx
-location /static/ {
-    alias /path/to/abparts/backend/static/;
-    expires 30d;
-    add_header Cache-Control "public, immutable";
-}
+```bash
+# deploy_prod_as_diogo.sh
+#!/bin/bash
+
+SERVER="diogo@46.62.153.166"
+
+echo "============================================================"
+echo "PRODUCTION DEPLOYMENT (via diogo user)"
+echo "============================================================"
+echo ""
+
+echo "Step 1: Commit and push changes"
+echo "------------------------------------------------------------"
+read -p "Have you committed and pushed all changes? (yes/no): " confirm
+if [ "$confirm" != "yes" ]; then
+    echo "Please commit and push first, then run this script again."
+    exit 1
+fi
+
+echo ""
+echo "Step 2: Deploy to production"
+echo "------------------------------------------------------------"
+ssh $SERVER << 'ENDSSH'
+# Switch to root
+sudo su - << 'ENDROOT'
+
+cd /root/abparts
+
+# Backup database
+echo "Backing up database..."
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U abparts_user abparts_prod | gzip > /var/backups/abparts_pre_hybrid_$(date +%Y%m%d_%H%M%S).sql.gz
+
+# Pull changes
+echo "Pulling latest changes..."
+git pull origin main
+
+# Stop containers
+echo "Stopping containers..."
+docker compose -f docker-compose.prod.yml down
+
+# Rebuild
+echo "Rebuilding API container..."
+docker compose -f docker-compose.prod.yml build --no-cache api
+
+# Start database
+echo "Starting database..."
+docker compose -f docker-compose.prod.yml up -d db redis
+sleep 10
+
+# Start API
+echo "Starting API..."
+docker compose -f docker-compose.prod.yml up -d api
+sleep 10
+
+# Run migration
+echo "Running database migration..."
+docker compose -f docker-compose.prod.yml exec api alembic upgrade heads
+
+# Migrate images
+echo "Migrating images to database..."
+docker compose -f docker-compose.prod.yml cp migrate_images_to_db.py api:/tmp/migrate_images_to_db.py
+docker compose -f docker-compose.prod.yml exec api python /tmp/migrate_images_to_db.py
+
+# Start all services
+echo "Starting all services..."
+docker compose -f docker-compose.prod.yml up -d
+
+# Restart nginx
+echo "Restarting nginx..."
+systemctl restart nginx
+
+# Show status
+echo ""
+echo "Deployment complete! Services status:"
+docker compose -f docker-compose.prod.yml ps
+
+ENDROOT
+ENDSSH
+
+echo ""
+echo "============================================================"
+echo "DEPLOYMENT COMPLETE!"
+echo "============================================================"
+echo ""
+echo "Test at: https://abparts.oraseas.com"
+echo ""
 ```
 
----
+## Troubleshooting
+
+### Permission Issues
+
+If you get permission errors:
+```bash
+# Make sure diogo can sudo
+ssh diogo@46.62.153.166
+sudo -v
+
+# If that works, you're good
+```
+
+### Git Pull Fails
+
+```bash
+# On production server as root
+cd /root/abparts
+
+# Check git status
+git status
+
+# If there are local changes, stash them
+git stash
+
+# Pull again
+git pull origin main
+
+# Reapply stashed changes if needed
+git stash pop
+```
+
+### Migration Fails
+
+```bash
+# Check migration status
+docker compose -f docker-compose.prod.yml exec api alembic current
+
+# Check for multiple heads
+docker compose -f docker-compose.prod.yml exec api alembic heads
+
+# If multiple heads, merge them
+docker compose -f docker-compose.prod.yml exec api alembic merge heads -m "merge_heads"
+docker compose -f docker-compose.prod.yml exec api alembic upgrade heads
+```
+
+### Images Not Migrating
+
+```bash
+# Check if images directory exists
+docker compose -f docker-compose.prod.yml exec api ls -la /app/static/images/
+
+# Run migration manually with verbose output
+docker compose -f docker-compose.prod.yml exec api python /tmp/migrate_images_to_db.py
+```
 
 ## Rollback Procedure
 
 If something goes wrong:
 
-### 1. Restore Database Backup
-
 ```bash
-# Stop the application
-docker-compose stop api  # or your stop command
+ssh diogo@46.62.153.166
+sudo su -
+cd /root/abparts
+
+# Stop containers
+docker compose -f docker-compose.prod.yml down
 
 # Restore database
-psql -U your_db_user -d your_db_name < backup_YYYYMMDD_HHMMSS.sql
+gunzip < /var/backups/abparts_pre_hybrid_YYYYMMDD_HHMMSS.sql.gz | \
+  docker compose -f docker-compose.prod.yml exec -T db psql -U abparts_user abparts_prod
 
-# Restart application
-docker-compose start api
+# Checkout previous version
+git log --oneline -5  # Find previous commit
+git checkout <previous-commit-hash>
+
+# Restart
+docker compose -f docker-compose.prod.yml up -d
+systemctl restart nginx
 ```
-
-### 2. Revert Code Changes
-
-```bash
-git log  # find the commit before deployment
-git revert <commit-hash>
-# OR
-git reset --hard <previous-commit-hash>
-git push origin main --force  # only if safe to do so
-```
-
----
-
-## Troubleshooting
-
-### Issue: Profile photos not showing
-
-**Check:**
-1. Static directory exists and has correct permissions
-2. API can write to static/images directory
-3. Nginx/Apache is serving /static/ path correctly
-4. Browser console for 404 errors
-
-**Fix:**
-```bash
-chmod 755 backend/static/images
-chown www-data:www-data backend/static/images
-```
-
-### Issue: Database migration fails
-
-**Check:**
-1. Database user has ALTER TABLE permissions
-2. No conflicting column names
-3. Database connection is working
-
-**Fix:**
-```sql
--- Grant permissions
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO your_db_user;
-```
-
-### Issue: Part usage not recording
-
-**Check:**
-1. Inventory has stock > 0
-2. User has permission to record part usage
-3. Machine belongs to same organization as warehouse
-
-**Fix:**
-- Check browser console for errors
-- Check API logs: `docker-compose logs api`
-
----
 
 ## Post-Deployment Checklist
 
-- [ ] Database backup created
-- [ ] Migration script executed successfully
-- [ ] Static files directory created with correct permissions
-- [ ] Backend code updated and restarted
-- [ ] Frontend code built and deployed
-- [ ] Profile photo upload tested
-- [ ] Organization logo upload tested
-- [ ] Part usage workflow tested
-- [ ] Transaction history displays correctly
-- [ ] No errors in browser console
-- [ ] No errors in API logs
-- [ ] All users can login successfully
+- [ ] All containers running
+- [ ] No errors in logs
+- [ ] API responding at https://abparts.oraseas.com/docs
+- [ ] Frontend loads at https://abparts.oraseas.com
+- [ ] Existing images display correctly
+- [ ] New uploads work
+- [ ] Images stored in database (verified with SQL)
+- [ ] No 404 errors in browser console
+- [ ] Database backup includes images
 
----
+## Monitoring
 
-## Support
+### Check Logs
+```bash
+ssh diogo@46.62.153.166
+sudo su -
+cd /root/abparts
+docker compose -f docker-compose.prod.yml logs -f api
+```
 
-If you encounter issues:
+### Check Database
+```bash
+docker compose -f docker-compose.prod.yml exec db psql -U abparts_user abparts_prod
+```
 
-1. Check API logs: `docker-compose logs api --tail=100`
-2. Check database logs: `docker-compose logs db --tail=100`
-3. Check browser console (F12)
-4. Verify all environment variables are set correctly
-5. Ensure all services are running: `docker-compose ps`
+### Check Services
+```bash
+docker compose -f docker-compose.prod.yml ps
+```
 
----
+## Summary
 
-## Summary of Changes
+**Workflow:**
+1. Commit and push from local
+2. SSH to production as diogo
+3. Sudo to root
+4. Pull changes
+5. Run deployment commands
+6. Verify
 
-**Database:** 3 new columns (profile_photo_url, logo_url, shipped_by_user_id)
-**Backend:** Image upload endpoints, part usage improvements, transaction display fixes
-**Frontend:** Profile photo UI, organization logo UI, part usage recorder, transaction history updates
-**Infrastructure:** Static files directory for image storage
+**Time:** ~10-15 minutes
 
-**No breaking changes** - All changes are backward compatible. Existing data will not be affected.
+**Risk:** Low (database backed up, can rollback)

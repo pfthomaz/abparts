@@ -1,46 +1,47 @@
-feat: Add profile photos, org logos, and improve part usage workflow
+feat: implement hybrid storage solution for images
 
-## Features
-- User profile photo upload and display
-- Organization logo upload and display
-- Enhanced part usage workflow with better UX
-- Transaction history shows machine names instead of codes
+Store images in PostgreSQL database to permanently solve recurring
+image sync issues between development and production environments.
 
-## Backend Changes
-- Added profile_photo_url to users table
-- Added logo_url to organizations table
-- Created image upload endpoints (/uploads/users/profile-photo, /uploads/organizations/{id}/logo)
-- Fixed /users/me/ endpoint to return profile_photo_url and full organization
-- Updated transaction responses to include machine_name
-- Added static file serving for uploaded images
+Key Changes:
+- Add binary storage columns (BYTEA) to users, organizations, and parts tables
+- Implement automatic WebP compression (max 500KB per image)
+- Create new image serving endpoints (/images/*)
+- Update upload endpoints to use database storage
+- Add image migration script for existing file-based images
+- Add video infrastructure tables for future use
+- Add Pillow dependency for image processing
 
-## Frontend Changes
-- Created ProfilePhotoUpload and OrganizationLogoUpload components
-- Improved PartUsageRecorder: Warehouse → Part → Machine workflow
-- Added auto-select for single options
-- Filter parts by warehouse inventory (stock > 0)
-- Added "Use Part" button to machine cards
-- Display machine names in transaction history "TO" column
-- Increased header photo/logo sizes (32px → 48px)
-- Fixed data format issues in part usage component
+Technical Details:
+- Images automatically compressed to WebP format
+- Multiple quality levels tried (85, 75, 60, 50, 40) to meet size limit
+- Images served with proper cache headers (1-24 hours)
+- Handles RGBA/PNG transparency by converting to RGB
+- Supports multiple images per part (array of BYTEA)
 
-## Database Schema
-- users.profile_photo_url VARCHAR(500)
-- organizations.logo_url VARCHAR(500)
-- customer_orders.shipped_by_user_id UUID (FK to users)
+Benefits:
+- Images automatically sync with database backups/restores
+- No more manual file copying between environments
+- Transactional safety for image operations
+- Simplified deployment and operations
+- Better performance with WebP compression
 
-## Documentation
-- Added PRODUCTION_DATABASE_MIGRATION.sql
-- Added PRODUCTION_DEPLOYMENT_GUIDE.md
-- Includes backup, rollback, and troubleshooting procedures
+Files Added:
+- backend/app/image_utils.py - Image compression utilities
+- backend/app/routers/images.py - Image serving endpoints
+- backend/alembic/versions/add_hybrid_media_storage.py - Database migration
+- migrate_images_to_db.py - Migration script for existing images
+- Multiple deployment and documentation files
 
-## Countries Added
-- UK, Norway, Canada, New Zealand, Turkey (frontend only, no DB changes)
+Files Modified:
+- backend/app/models.py - Added binary storage columns and video models
+- backend/app/routers/uploads.py - Updated to use database storage
+- backend/app/main.py - Registered images router
+- backend/requirements.txt - Added Pillow
 
-## Breaking Changes
-None - All changes are backward compatible
+Migration:
+- Run: alembic upgrade heads
+- Run: python migrate_images_to_db.py
+- Existing file-based images automatically migrated to database
 
-## Migration Required
-Run PRODUCTION_DATABASE_MIGRATION.sql before deploying
-
-See COMMIT_MESSAGE.md for detailed changes and PRODUCTION_DEPLOYMENT_GUIDE.md for deployment instructions.
+Fixes: #recurring-image-sync-issues

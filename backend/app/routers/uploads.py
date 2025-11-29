@@ -11,50 +11,13 @@ from .. import schemas, models
 from ..database import get_db
 from ..auth import get_current_user, TokenData
 from ..permissions import require_admin, permission_checker
+from ..image_utils import compress_and_optimize_image, validate_image_file, image_to_data_url
 
 router = APIRouter()
 
-# Upload directory configuration
+# Legacy upload directory (for migration only)
 UPLOAD_DIRECTORY = "/app/static/images"
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-
-# Ensure upload directory exists
 os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
-
-
-def validate_image_file(file: UploadFile) -> None:
-    """Validate uploaded image file"""
-    # Check file extension
-    file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-
-
-async def save_uploaded_file(file: UploadFile, prefix: str = "upload") -> str:
-    """Save uploaded file and return the URL path"""
-    validate_image_file(file)
-    
-    # Generate unique filename
-    file_ext = Path(file.filename).suffix.lower()
-    unique_filename = f"{prefix}_{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIRECTORY, unique_filename)
-    
-    # Save file
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}"
-        )
-    
-    # Return relative URL path
-    return f"/static/images/{unique_filename}"
 
 
 @router.post("/users/profile-photo", response_model=schemas.ImageUploadResponse, tags=["Users"])
@@ -65,20 +28,25 @@ async def upload_user_profile_photo(
 ):
     """
     Upload a profile photo for the current user.
-    Users can only upload their own profile photo.
+    Image is compressed and stored in database.
     """
-    # Save the file
-    photo_url = await save_uploaded_file(file, prefix="profile")
+    validate_image_file(file)
     
-    # Update user's profile_photo_url
+    # Compress and optimize image
+    image_bytes = await compress_and_optimize_image(file, max_size_kb=500)
+    
+    # Update user's profile photo in database
     user = db.query(models.User).filter(models.User.id == current_user.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user.profile_photo_url = photo_url
+    user.profile_photo_data = image_bytes
+    user.profile_photo_url = None  # Clear legacy URL
     db.commit()
     
-    return schemas.ImageUploadResponse(url=photo_url)
+    # Return data URL for immediate display
+    data_url = image_to_data_url(image_bytes)
+    return schemas.ImageUploadResponse(url=data_url)
 
 
 @router.delete("/users/profile-photo", tags=["Users"])
@@ -93,15 +61,7 @@ async def delete_user_profile_photo(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Delete the file if it exists
-    if user.profile_photo_url:
-        file_path = os.path.join("/app", user.profile_photo_url.lstrip("/"))
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                print(f"Failed to delete file: {e}")
-    
+    user.profile_photo_data = None
     user.profile_photo_url = None
     db.commit()
     
@@ -117,8 +77,10 @@ async def upload_organization_logo(
 ):
     """
     Upload a logo for an organization.
-    Only admins of the organization or super admins can upload logos.
+    Image is compressed and stored in database.
     """
+    validate_image_file(file)
+    
     # Check if organization exists
     organization = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
     if not organization:
@@ -137,14 +99,17 @@ async def upload_organization_logo(
             detail="Only organization admins can upload organization logos"
         )
     
-    # Save the file
-    logo_url = await save_uploaded_file(file, prefix="org_logo")
+    # Compress and optimize image
+    image_bytes = await compress_and_optimize_image(file, max_size_kb=500)
     
-    # Update organization's logo_url
-    organization.logo_url = logo_url
+    # Update organization's logo in database
+    organization.logo_data = image_bytes
+    organization.logo_url = None  # Clear legacy URL
     db.commit()
     
-    return schemas.ImageUploadResponse(url=logo_url)
+    # Return data URL for immediate display
+    data_url = image_to_data_url(image_bytes)
+    return schemas.ImageUploadResponse(url=data_url)
 
 
 @router.delete("/organizations/{organization_id}/logo", tags=["Organizations"])
@@ -155,7 +120,6 @@ async def delete_organization_logo(
 ):
     """
     Remove the logo for an organization.
-    Only admins of the organization or super admins can remove logos.
     """
     # Check if organization exists
     organization = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
@@ -175,15 +139,7 @@ async def delete_organization_logo(
             detail="Only organization admins can remove organization logos"
         )
     
-    # Delete the file if it exists
-    if organization.logo_url:
-        file_path = os.path.join("/app", organization.logo_url.lstrip("/"))
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                print(f"Failed to delete file: {e}")
-    
+    organization.logo_data = None
     organization.logo_url = None
     db.commit()
     

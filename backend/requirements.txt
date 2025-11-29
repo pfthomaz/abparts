@@ -15,6 +15,7 @@ passlib==1.7.4
 bcrypt==3.2.0
 python-multipart # For handling file uploads
 email-validator # For validating email addresses
+Pillow==10.1.0 # For image processing and compression
 pytest==7.3.1
 pytest-asyncio==0.21.0
 pytest-cov==4.1.0
