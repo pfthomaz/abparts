@@ -33,6 +33,36 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('authToken');
   }, []);
 
+  // Function to refresh user data (useful after profile/logo updates)
+  const refreshUser = useCallback(async () => {
+    if (token) {
+      try {
+        const userData = await authService.getCurrentUser();
+        
+        // Fetch organization separately if not included
+        if (userData.organization_id && !userData.organization) {
+          try {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/organizations/${userData.organization_id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (response.ok) {
+              const orgData = await response.json();
+              userData.organization = orgData;
+            }
+          } catch (orgError) {
+            console.error("Failed to fetch organization:", orgError);
+          }
+        }
+        
+        setUser(userData);
+      } catch (error) {
+        console.error("Failed to refresh user details:", error);
+      }
+    }
+  }, [token]);
+
   // Effect to fetch user details when token changes
   useEffect(() => {
     const fetchUser = async () => {
@@ -77,7 +107,7 @@ export const AuthProvider = ({ children }) => {
   }, [token, logout]);
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, loadingUser }}>
+    <AuthContext.Provider value={{ token, user, login, logout, loadingUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

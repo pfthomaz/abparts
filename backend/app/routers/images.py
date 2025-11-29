@@ -15,12 +15,12 @@ router = APIRouter()
 @router.get("/images/users/{user_id}/profile", tags=["Images"])
 async def get_user_profile_photo(
     user_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Serve user profile photo from database.
     Returns WebP image or 404 if not found.
+    Public endpoint - no authentication required.
     """
     user = db.query(models.User).filter(models.User.id == user_id).first()
     
@@ -34,7 +34,7 @@ async def get_user_profile_photo(
         content=user.profile_photo_data,
         media_type="image/webp",
         headers={
-            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+            "Cache-Control": "public, max-age=31536000, immutable",  # Cache for 1 year (safe with cache-busting)
             "Content-Disposition": f'inline; filename="profile_{user_id}.webp"'
         }
     )
@@ -43,11 +43,11 @@ async def get_user_profile_photo(
 @router.get("/images/organizations/{org_id}/logo", tags=["Images"])
 async def get_organization_logo(
     org_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Serve organization logo from database.
+    Public endpoint - no authentication required.
     Returns WebP image or 404 if not found.
     """
     org = db.query(models.Organization).filter(models.Organization.id == org_id).first()
@@ -62,7 +62,7 @@ async def get_organization_logo(
         content=org.logo_data,
         media_type="image/webp",
         headers={
-            "Cache-Control": "public, max-age=3600",
+            "Cache-Control": "public, max-age=31536000, immutable",  # Cache for 1 year (safe with cache-busting)
             "Content-Disposition": f'inline; filename="logo_{org_id}.webp"'
         }
     )
@@ -72,12 +72,12 @@ async def get_organization_logo(
 async def get_part_image(
     part_id: uuid.UUID,
     index: int = Query(0, ge=0, description="Image index (0-based)"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Serve part image from database by index.
     Returns WebP image or 404 if not found.
+    Public endpoint - no authentication required.
     """
     part = db.query(models.Part).filter(models.Part.id == part_id).first()
     
@@ -100,11 +100,11 @@ async def get_part_image(
 @router.get("/images/parts/{part_id}/count", tags=["Images"])
 async def get_part_image_count(
     part_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Get the number of images available for a part.
+    Public endpoint - no authentication required.
     """
     part = db.query(models.Part).filter(models.Part.id == part_id).first()
     

@@ -25,7 +25,7 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.excluded_paths = {
-            "/docs", "/redoc", "/openapi.json", "/health", "/token", "/static"
+            "/docs", "/redoc", "/openapi.json", "/health", "/token", "/static", "/images"
         }
         self.sensitive_endpoints = {
             "/organizations", "/users", "/machines", "/warehouses", 
@@ -208,6 +208,10 @@ class OrganizationalIsolationMiddleware(BaseHTTPMiddleware):
         ]
     
     async def dispatch(self, request: Request, call_next):
+        # Skip public image endpoints
+        if request.url.path.startswith("/images") or request.url.path.startswith("/static"):
+            return await call_next(request)
+        
         # Check if this is a protected endpoint
         is_protected = any(
             request.url.path.startswith(endpoint) 

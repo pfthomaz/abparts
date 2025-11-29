@@ -76,6 +76,11 @@ async def get_organizations(
             query = query.filter(models.Organization.is_active == True)
         
         organizations = query.all()
+        
+        # Add logo URLs with cache-busting to all organizations
+        for org in organizations:
+            _add_logo_url_to_organization(org)
+        
         return organizations
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -346,6 +351,16 @@ async def initialize_default_organizations(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to initialize default organizations")
 
+def _add_logo_url_to_organization(org):
+    """Helper to add logo_url with cache-busting to organization response."""
+    if org.logo_data:
+        try:
+            cache_buster = int(org.updated_at.timestamp()) if org.updated_at else 0
+        except (AttributeError, TypeError):
+            cache_buster = 0
+        org.logo_url = f"/images/organizations/{org.id}/logo?v={cache_buster}"
+    return org
+
 @router.get("/{org_id}", response_model=schemas.OrganizationResponse)
 async def get_organization(
     org_id: uuid.UUID,
@@ -361,6 +376,9 @@ async def get_organization(
         # Check if user can access this organization
         if not check_organization_access(current_user, org_id, db):
             raise HTTPException(status_code=403, detail="Not authorized to view this organization's details")
+        
+        # Add logo URL with cache-busting
+        organization = _add_logo_url_to_organization(organization)
         
         return organization
     except ValueError as e:
@@ -404,7 +422,10 @@ async def update_organization(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to update organization")
+        # Log the actual error for debugging
+        import logging
+        logging.error(f"Error updating organization {org_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update organization: {str(e)}")
 
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(

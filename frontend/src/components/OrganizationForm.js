@@ -97,6 +97,9 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
         contact_info: formData.contact_info || undefined
       };
 
+      // Remove logo_url from submission - logos are handled separately via upload endpoint
+      delete cleanedData.logo_url;
+
       // Call the onSubmit prop function (passed from parent component)
       await onSubmit(cleanedData);
     } catch (err) {

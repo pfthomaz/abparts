@@ -69,6 +69,7 @@ class OrganizationUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class OrganizationResponse(OrganizationBase, BaseSchema):
+    logo_url: Optional[str] = None  # URL to organization logo (from database or legacy)
     parent_organization: Optional['OrganizationResponse'] = None
     child_organizations: List['OrganizationResponse'] = []
 

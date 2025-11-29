@@ -1,9 +1,11 @@
 // frontend/src/components/ProfilePhotoUpload.js
 
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
 import { API_BASE_URL } from '../services/api';
 
 const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
+  const { refreshUser } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -51,6 +53,9 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
       const data = await response.json();
       console.log('Upload successful, new URL:', data.url);
       onPhotoUpdated(data.url);
+      
+      // Refresh user context to update header photo
+      await refreshUser();
     } catch (err) {
       console.error('Upload error:', err);
       setError('Failed to upload photo. Please try again.');

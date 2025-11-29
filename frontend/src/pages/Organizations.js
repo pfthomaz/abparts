@@ -77,8 +77,10 @@ const Organizations = () => {
   const handleCreateOrUpdate = async (orgData) => {
     try {
       if (editingOrganization) {
-        const response = await organizationsService.updateOrganization(editingOrganization.id, orgData);
-        const updatedOrg = response.data || response;
+        await organizationsService.updateOrganization(editingOrganization.id, orgData);
+        // Refetch the updated organization to get the latest logo_url with cache-busting
+        const updatedOrgResponse = await organizationsService.getOrganization(editingOrganization.id);
+        const updatedOrg = updatedOrgResponse.data || updatedOrgResponse;
         setOrganizations(prev =>
           prev.map(org => org.id === editingOrganization.id ? updatedOrg : org)
         );
@@ -279,7 +281,24 @@ const Organizations = () => {
               return (
                 <div key={org.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-xl font-semibold text-gray-900 flex-1">{org.name}</h3>
+                    <div className="flex items-center space-x-3 flex-1">
+                      {/* Organization Logo */}
+                      {org.logo_url ? (
+                        <img
+                          src={org.logo_url}
+                          alt={`${org.name} logo`}
+                          className="w-12 h-12 rounded-lg object-contain border border-gray-200 bg-white flex-shrink-0"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 border border-gray-200">
+                          <span className="text-gray-400 text-xs">No Logo</span>
+                        </div>
+                      )}
+                      <h3 className="text-xl font-semibold text-gray-900">{org.name}</h3>
+                    </div>
                     <span className="text-2xl">{config.icon}</span>
                   </div>
 

@@ -1,9 +1,11 @@
 // frontend/src/components/OrganizationLogoUpload.js
 
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
 import { API_BASE_URL } from '../services/api';
 
 const OrganizationLogoUpload = ({ organizationId, currentLogoUrl, onLogoUpdated }) => {
+  const { refreshUser } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -46,6 +48,9 @@ const OrganizationLogoUpload = ({ organizationId, currentLogoUrl, onLogoUpdated 
 
       const data = await response.json();
       onLogoUpdated(data.url);
+      
+      // Refresh user context to update header logo
+      await refreshUser();
     } catch (err) {
       console.error('Upload error:', err);
       setError(err.message || 'Failed to upload logo. Please try again.');

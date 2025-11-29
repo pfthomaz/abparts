@@ -34,40 +34,31 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 
 # --- Image Upload Endpoint ---
-@router.post("/upload-image", response_model=schemas.ImageUploadResponse, tags=["Images"]) # Define a new schema for this response
+@router.post("/upload-image", response_model=schemas.ImageUploadResponse, tags=["Images"])
 async def upload_image(
     file: UploadFile = File(...),
-    current_user: TokenData = Depends(require_super_admin()) # Only super admins can upload images
+    current_user: TokenData = Depends(require_super_admin())
 ):
     """
-    Uploads an image file and returns its URL.
-    This is a temporary local storage solution for development.
-    In production, files should be stored on a cloud storage service (e.g., AWS S3).
+    Uploads an image file, compresses it, and returns a data URL.
+    Images are compressed to WebP format (max 500KB) for optimal storage.
+    This endpoint returns a data URL that can be used immediately in the frontend.
+    The actual image will be stored in the database when the part is created/updated.
     """
+    from ..image_utils import compress_and_optimize_image, validate_image_file, image_to_data_url
+    
     try:
         # Validate file type
-        if not file.content_type or not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="File must be an image")
+        validate_image_file(file)
         
-        # Validate file size (10MB limit)
-        if file.size and file.size > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+        # Compress and optimize image for database storage
+        image_bytes = await compress_and_optimize_image(file, max_size_kb=500)
         
-        # Ensure upload directory exists
-        os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+        # Return data URL for immediate display
+        # The frontend will include this in the part data when creating/updating
+        data_url = image_to_data_url(image_bytes)
+        return {"url": data_url}
         
-        # Generate a unique filename
-        filename = f"{uuid.uuid4()}_{file.filename}"
-        file_path = os.path.join(UPLOAD_DIRECTORY, filename)
-
-        # Save the file locally
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # Construct the URL (assuming /static/images is served)
-        # This assumes your FastAPI app serves static files from /static
-        image_url = f"/static/images/{filename}"
-        return {"url": image_url}
     except HTTPException:
         # Re-raise HTTP exceptions
         raise

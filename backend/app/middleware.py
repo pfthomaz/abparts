@@ -236,8 +236,8 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
         if path in self.public_endpoints:
             return False
         
-        # Skip static files
-        if path.startswith("/static"):
+        # Skip static files and images (public access)
+        if path.startswith("/static") or path.startswith("/images"):
             return False
         
         # Skip Swagger UI files

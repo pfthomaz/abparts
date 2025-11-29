@@ -303,12 +303,25 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user), db:
         raise HTTPException(status_code=404, detail="User not found in DB")
     
     # Manually construct response to ensure profile_photo_url is included
+    # If user has binary photo data, return URL to image serving endpoint
+    profile_photo_url = None
+    if user_db.profile_photo_data:
+        # Add cache-busting parameter using updated_at timestamp
+        try:
+            cache_buster = int(user_db.updated_at.timestamp()) if user_db.updated_at else 0
+        except (AttributeError, TypeError):
+            cache_buster = 0
+        profile_photo_url = f"/images/users/{user_db.id}/profile?v={cache_buster}"
+    elif user_db.profile_photo_url:
+        # Fallback to legacy URL if exists
+        profile_photo_url = user_db.profile_photo_url
+    
     response_data = {
         "id": user_db.id,
         "username": user_db.username,
         "email": user_db.email,
         "name": user_db.name,
-        "profile_photo_url": user_db.profile_photo_url,  # Explicitly include this
+        "profile_photo_url": profile_photo_url,
         "role": user_db.role.value if hasattr(user_db.role, 'value') else user_db.role,
         "organization_id": user_db.organization_id,
         "user_status": user_db.user_status.value if hasattr(user_db.user_status, 'value') else user_db.user_status,
@@ -324,11 +337,24 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user), db:
     
     # Add organization if loaded
     if user_db.organization:
+        # If organization has binary logo data, return URL to image serving endpoint
+        logo_url = None
+        if user_db.organization.logo_data:
+            # Add cache-busting parameter using updated_at timestamp
+            try:
+                cache_buster = int(user_db.organization.updated_at.timestamp()) if user_db.organization.updated_at else 0
+            except (AttributeError, TypeError):
+                cache_buster = 0
+            logo_url = f"/images/organizations/{user_db.organization.id}/logo?v={cache_buster}"
+        elif user_db.organization.logo_url:
+            # Fallback to legacy URL if exists
+            logo_url = user_db.organization.logo_url
+            
         response_data["organization"] = {
             "id": user_db.organization.id,
             "name": user_db.organization.name,
             "organization_type": user_db.organization.organization_type.value if hasattr(user_db.organization.organization_type, 'value') else user_db.organization.organization_type,
-            "logo_url": user_db.organization.logo_url,
+            "logo_url": logo_url,
             "is_active": user_db.organization.is_active,
             "created_at": user_db.organization.created_at,
             "updated_at": user_db.organization.updated_at,
