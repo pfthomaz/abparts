@@ -3,15 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
+import { stockAdjustmentsService } from '../services/stockAdjustmentsService';
+import StockAdjustmentDetailsModal from './StockAdjustmentDetailsModal';
 
 const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
   const [adjustments, setAdjustments] = useState([]);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedAdjustment, setSelectedAdjustment] = useState(null);
   const [filters, setFilters] = useState({
-    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end_date: new Date().toISOString().split('T')[0],
+    start_date: '',  // No default date filter - show all
+    end_date: '',    // No default date filter - show all
     reason: 'all',
     adjustment_type: 'all' // 'all', 'increase', 'decrease'
   });
@@ -72,19 +75,15 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
     return parts.find(p => p.id === partId) || {};
   };
 
+  // New API returns adjustment headers, not individual items
+  // Filter adjustments based on search and type
   const filteredAdjustments = adjustments.filter(adjustment => {
-    const part = getPartDetails(adjustment.part_id);
     const matchesSearch = !searchTerm ||
-      part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.part_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       adjustment.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      adjustment.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+      adjustment.username?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType = filters.adjustment_type === 'all' ||
-      (filters.adjustment_type === 'increase' && parseFloat(adjustment.quantity_change) > 0) ||
-      (filters.adjustment_type === 'decrease' && parseFloat(adjustment.quantity_change) < 0);
-
-    return matchesSearch && matchesType;
+    // For the new format, we just show all adjustments
+    return matchesSearch;
   });
 
   const handleFilterChange = (field, value) => {
@@ -106,6 +105,16 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
 
   const formatNumber = (value) => {
     return new Intl.NumberFormat('en-US').format(value || 0);
+  };
+
+  const handleViewDetails = async (adjustmentId) => {
+    try {
+      const details = await stockAdjustmentsService.getById(adjustmentId);
+      setSelectedAdjustment(details);
+    } catch (err) {
+      console.error('Failed to fetch adjustment details:', err);
+      setError('Failed to load adjustment details');
+    }
   };
 
   const getAdjustmentType = (quantityChange) => {
@@ -345,36 +354,42 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Performed By
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAdjustments.map((adjustment) => {
-                const part = getPartDetails(adjustment.part_id);
-                const adjustmentType = getAdjustmentType(adjustment.quantity_change);
+                // New API format: adjustment headers with total_items_adjusted
+                const adjustmentTypeLabel = adjustment.adjustment_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN';
 
                 return (
                   <tr key={adjustment.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(adjustment.created_at)}
+                      {formatDate(adjustment.adjustment_date || adjustment.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {part.name || 'Unknown Part'}
+                          {adjustment.total_items_adjusted} {adjustment.total_items_adjusted === 1 ? 'part' : 'parts'} adjusted
                         </div>
                         <div className="text-sm text-gray-500">
-                          {part.part_number}
+                          {adjustmentTypeLabel}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <span className={parseFloat(adjustment.quantity_change) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {parseFloat(adjustment.quantity_change) >= 0 ? '+' : ''}{adjustment.quantity_change} {adjustment.unit_of_measure}
-                      </span>
+                      <button
+                        onClick={() => handleViewDetails(adjustment.id)}
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                      >
+                        {adjustment.total_items_adjusted} items
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${adjustmentType.color}`}>
-                        {adjustmentType.label}
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {adjustmentTypeLabel}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -386,7 +401,15 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {adjustment.performed_by_user_name || 'Unknown'}
+                      {adjustment.username || 'Unknown'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => handleViewDetails(adjustment.id)}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        View Details
+                      </button>
                     </td>
                   </tr>
                 );
@@ -394,6 +417,14 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Details Modal */}
+      {selectedAdjustment && (
+        <StockAdjustmentDetailsModal
+          adjustment={selectedAdjustment}
+          onClose={() => setSelectedAdjustment(null)}
+        />
       )}
     </div>
   );

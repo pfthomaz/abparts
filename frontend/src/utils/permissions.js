@@ -318,6 +318,20 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Stock Adjustments - admin and above
+  if (hasPermission(user, PERMISSIONS.ADJUST_INVENTORY)) {
+    items.push({
+      path: '/stock-adjustments',
+      label: 'Stock Adjustments',
+      icon: 'stock-adjustments',
+      permission: PERMISSIONS.ADJUST_INVENTORY,
+      description: 'Record and track inventory adjustments',
+      adminOnly: true,
+      category: 'inventory',
+      accessScope: isSuperAdmin(user) ? 'global' : 'organization'
+    });
+  }
+
   // Machines - all users can view their org's machines
   if (hasPermission(user, PERMISSIONS.VIEW_ORG_MACHINES) || hasPermission(user, PERMISSIONS.VIEW_ALL_MACHINES)) {
     items.push({

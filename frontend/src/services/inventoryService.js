@@ -121,18 +121,21 @@ const createWarehouseStockAdjustment = (warehouseId, adjustmentData) => {
  */
 const getWarehouseStockAdjustments = (warehouseId, filters = {}) => {
   const queryParams = new URLSearchParams();
+  
+  // Add warehouse filter
+  queryParams.append('warehouse_id', warehouseId);
+  
+  // Add other filters
   if (filters && typeof filters === 'object') {
     Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '' && filters[key] !== 'all') {
         queryParams.append(key, filters[key]);
       }
     });
   }
 
   const queryString = queryParams.toString();
-  const endpoint = queryString
-    ? `/inventory/warehouse/${warehouseId}/adjustments?${queryString}`
-    : `/inventory/warehouse/${warehouseId}/adjustments`;
+  const endpoint = `/stock-adjustments?${queryString}`;
 
   return api.get(endpoint);
 };

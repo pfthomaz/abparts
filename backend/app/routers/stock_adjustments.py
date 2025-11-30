@@ -1,136 +1,119 @@
 # backend/app/routers/stock_adjustments.py
 
 import uuid
-from typing import List
-
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from typing import List, Optional
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from .. import schemas, crud, models # Import schemas, CRUD functions, and models
-from ..database import get_db # Import DB session dependency
-from ..auth import get_current_user, TokenData # Import authentication dependencies
-from ..permissions import (
-    ResourceType, PermissionType, require_permission, require_admin,
-    OrganizationScopedQueries, check_organization_access, permission_checker
-)
+from .. import schemas, models
+from ..database import get_db
+from ..auth import get_current_user, TokenData
+from ..crud import stock_adjustments as crud
 
-router = APIRouter(
-    prefix="/stock_adjustments", # Prefix for all routes in this router
-    tags=["Stock Adjustments"] # Tag for OpenAPI documentation
-)
+router = APIRouter()
 
-# Endpoint to create a stock adjustment for a specific inventory item
-@router.post("/inventory/{inventory_id}", response_model=schemas.StockAdjustmentResponse, status_code=status.HTTP_201_CREATED)
-async def create_new_stock_adjustment(
-    adjustment_in: schemas.StockAdjustmentCreate,
-    inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item to adjust"),
+
+@router.post("/", response_model=schemas.StockAdjustmentResponse, status_code=status.HTTP_201_CREATED)
+async def create_stock_adjustment(
+    adjustment: schemas.StockAdjustmentCreate,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.WRITE))
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
-    Create a new stock adjustment for a given inventory item.
-    - **inventory_id**: UUID of the inventory item.
-    - **adjustment_in**: Data for the stock adjustment.
-    \f
-    :param inventory_id: The ID of the inventory item.
-    :param adjustment_in: The stock adjustment creation schema.
-    :param db: Database session.
-    :param current_user: Authenticated user data.
-    :return: The created stock adjustment.
+    Create a new stock adjustment with line items.
+    
+    This will:
+    1. Create the adjustment record
+    2. Create line items for each part
+    3. Update inventory quantities
+    4. Create transaction records for audit trail
     """
-    # Check if the inventory item belongs to an organization that Oraseas Admin/Manager can manage.
-    # For simplicity, we assume Oraseas personnel can manage any inventory.
-    # A more detailed check might involve ensuring the inventory's organization_id is Oraseas EE
-    # or if they have specific permissions for other organizations.
+    try:
+        result = crud.create_stock_adjustment(
+            db=db,
+            adjustment_data=adjustment,
+            current_user_id=current_user.user_id
+        )
+        
+        # Get full details for response
+        adjustment_detail = crud.get_stock_adjustment_by_id(db, result.id)
+        return adjustment_detail
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create stock adjustment: {str(e)}")
 
-    inventory_item = crud.inventory.get_inventory_item(db, inventory_id=inventory_id)
-    if not inventory_item:
-        raise HTTPException(status_code=404, detail=f"Inventory item with ID {inventory_id} not found.")
 
-    # Check if user can adjust inventory for this warehouse using the permission system
-    warehouse = inventory_item.warehouse if hasattr(inventory_item, 'warehouse') else None
-    if warehouse and not permission_checker.can_adjust_inventory(current_user, warehouse.id, db):
-        raise HTTPException(status_code=403, detail="Not authorized to adjust stock for this inventory item.")
-
-
-    created_adjustment = crud.stock_adjustments.create_stock_adjustment(
-        db=db,
-        inventory_id=inventory_id,
-        adjustment_in=adjustment_in,
-        user_id=current_user.user_id
-    )
-    return created_adjustment
-
-# Endpoint to get all adjustments for a specific inventory item
-@router.get("/inventory/{inventory_id}", response_model=List[schemas.StockAdjustmentResponse])
-async def list_adjustments_for_inventory_item(
-    inventory_id: uuid.UUID = Path(..., description="The ID of the inventory item"),
-    skip: int = 0,
-    limit: int = 100,
+@router.get("/", response_model=List[schemas.StockAdjustmentListResponse])
+async def list_stock_adjustments(
+    warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by warehouse"),
+    adjustment_type: Optional[str] = Query(None, description="Filter by adjustment type"),
+    user_id: Optional[uuid.UUID] = Query(None, description="Filter by user who made adjustment"),
+    start_date: Optional[datetime] = Query(None, description="Filter by start date"),
+    end_date: Optional[datetime] = Query(None, description="Filter by end date"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.READ))
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
-    Get all stock adjustments for a specific inventory item with proper access control.
+    List stock adjustments with optional filtering.
+    Returns basic info without full item details for performance.
     """
-    inventory_item = crud.inventory.get_inventory_item(db, inventory_id=inventory_id)
-    if not inventory_item:
-        raise HTTPException(status_code=404, detail=f"Inventory item with ID {inventory_id} not found.")
+    try:
+        adjustments = crud.get_stock_adjustments(
+            db=db,
+            warehouse_id=warehouse_id,
+            adjustment_type=adjustment_type,
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+            skip=skip,
+            limit=limit
+        )
+        return adjustments
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch adjustments: {str(e)}")
 
-    # Check if user can access this inventory item's organization
-    warehouse = inventory_item.warehouse if hasattr(inventory_item, 'warehouse') else None
-    if warehouse and not check_organization_access(current_user, warehouse.organization_id, db):
-        raise HTTPException(status_code=403, detail="Not authorized to view adjustments for this inventory item.")
 
-    adjustments = crud.stock_adjustments.get_stock_adjustments_for_inventory_item(
-        db=db, inventory_id=inventory_id, skip=skip, limit=limit
-    )
-    return adjustments
-
-# Endpoint to get a specific stock adjustment by its ID
 @router.get("/{adjustment_id}", response_model=schemas.StockAdjustmentResponse)
-async def get_specific_stock_adjustment(
-    adjustment_id: uuid.UUID = Path(..., description="The ID of the stock adjustment"),
+async def get_stock_adjustment(
+    adjustment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.INVENTORY, PermissionType.READ))
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
-    Get a specific stock adjustment by its ID with proper access control.
+    Get a single stock adjustment with full details including all line items.
     """
-    adjustment = crud.stock_adjustments.get_stock_adjustment(db, adjustment_id=adjustment_id)
+    adjustment = crud.get_stock_adjustment_by_id(db, adjustment_id)
+    
     if not adjustment:
-        raise HTTPException(status_code=404, detail=f"Stock adjustment with ID {adjustment_id} not found.")
-
-    # Authorization: User must be able to view the inventory item linked to the adjustment.
-    inventory_item = crud.inventory.get_inventory_item(db, inventory_id=adjustment.inventory_id)
-    if not inventory_item:
-        raise HTTPException(status_code=404, detail="Associated inventory item not found.")
-
-    # Check if user can access this inventory item's organization
-    warehouse = inventory_item.warehouse if hasattr(inventory_item, 'warehouse') else None
-    if warehouse and not check_organization_access(current_user, warehouse.organization_id, db):
-        raise HTTPException(status_code=403, detail="Not authorized to view this stock adjustment.")
-
+        raise HTTPException(status_code=404, detail="Stock adjustment not found")
+    
     return adjustment
 
-# Endpoint for super admins to see ALL stock adjustments (for audit purposes)
-@router.get("/", response_model=List[schemas.StockAdjustmentResponse])
-async def list_all_stock_adjustments(
-    skip: int = 0,
-    limit: int = 100,
+
+@router.get("/parts/{part_id}/history", response_model=List[dict])
+async def get_part_adjustment_history(
+    part_id: uuid.UUID,
+    warehouse_id: Optional[uuid.UUID] = Query(None, description="Filter by warehouse"),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.AUDIT_LOG, PermissionType.READ))
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
-    Get all stock adjustments across the system with organization-scoped filtering.
-    Super admins see all adjustments, regular users see only their organization's adjustments.
+    Get adjustment history for a specific part.
+    Useful for tracking how a part's quantity has changed over time.
     """
-    # Apply organization-scoped filtering for audit logs
-    if permission_checker.is_super_admin(current_user):
-        adjustments = crud.stock_adjustments.get_all_stock_adjustments(db=db, skip=skip, limit=limit)
-    else:
-        # For non-super admins, filter to their organization's adjustments only
-        adjustments = crud.stock_adjustments.get_stock_adjustments_by_organization(
-            db=db, organization_id=current_user.organization_id, skip=skip, limit=limit
+    try:
+        history = crud.get_adjustment_history_for_part(
+            db=db,
+            part_id=part_id,
+            warehouse_id=warehouse_id,
+            limit=limit
         )
-    return adjustments
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")

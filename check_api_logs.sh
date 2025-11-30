@@ -1,3 +1,3 @@
 #!/bin/bash
 echo "Checking API logs for errors..."
-docker-compose logs --tail=100 api | tail -50
+docker-compose logs api --tail=50 | grep -A 10 "stock-adjustments"

@@ -628,6 +628,7 @@ class Warehouse(Base):
     transactions_from = relationship("Transaction", foreign_keys="[Transaction.from_warehouse_id]", back_populates="from_warehouse")
     transactions_to = relationship("Transaction", foreign_keys="[Transaction.to_warehouse_id]", back_populates="to_warehouse")
     stocktakes = relationship("Stocktake", back_populates="warehouse", cascade="all, delete-orphan")
+    stock_adjustments = relationship("StockAdjustment", back_populates="warehouse", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Warehouse(id={self.id}, name='{self.name}', organization_id={self.organization_id})>"
@@ -659,7 +660,7 @@ class Inventory(Base):
     # Relationships
     warehouse = relationship("Warehouse", back_populates="inventory_items")
     part = relationship("Part", back_populates="inventory_items")
-    adjustments = relationship("StockAdjustment", order_by="StockAdjustment.adjustment_date", back_populates="inventory_item", cascade="all, delete-orphan")
+    # Note: Stock adjustments are now tracked at warehouse level, not inventory item level
 
     def __repr__(self):
         return f"<Inventory(id={self.id}, warehouse_id={self.warehouse_id}, part_id={self.part_id}, stock={self.current_stock})>"
@@ -874,29 +875,67 @@ class TransactionApproval(Base):
 
 
 
+class AdjustmentType(enum.Enum):
+    """Types of stock adjustments"""
+    stock_take = "stock_take"  # Stock take / physical count
+    damage = "damage"  # Damaged goods write-off
+    loss = "loss"  # Lost/stolen items
+    found = "found"  # Found items (increase)
+    correction = "correction"  # Error correction
+    return_item = "return"  # Returned items
+    other = "other"  # Other reasons
+
+
 class StockAdjustment(Base):
     """
     SQLAlchemy model for the 'stock_adjustments' table.
-    Logs changes to inventory levels.
+    Header record for stock adjustments with line items in stock_adjustment_items.
     """
     __tablename__ = "stock_adjustments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    inventory_id = Column(UUID(as_uuid=True), ForeignKey("inventory.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False) # User who performed the adjustment
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    adjustment_type = Column(Enum(AdjustmentType), nullable=False)
+    reason = Column(Text, nullable=True)  # Overall reason for adjustment
+    notes = Column(Text, nullable=True)  # Additional notes
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)  # User who performed the adjustment
     adjustment_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    quantity_adjusted = Column(DECIMAL(precision=10, scale=3), nullable=False) # Positive for increase, negative for decrease
-    reason_code = Column(String(100), nullable=False) # From StockAdjustmentReason enum
-    notes = Column(Text, nullable=True)
+    total_items_adjusted = Column(Integer, nullable=False, server_default='0')  # Count of line items
+    reason_code = Column(String(100), nullable=True)  # Legacy field, kept for compatibility
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
-    inventory_item = relationship("Inventory", back_populates="adjustments")
+    warehouse = relationship("Warehouse", back_populates="stock_adjustments")
     user = relationship("User", back_populates="stock_adjustments")
+    items = relationship("StockAdjustmentItem", back_populates="adjustment", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<StockAdjustment(id={self.id}, inventory_id={self.inventory_id}, qty_adj={self.quantity_adjusted}, reason='{self.reason_code}')>"
+        return f"<StockAdjustment(id={self.id}, warehouse_id={self.warehouse_id}, type={self.adjustment_type.value}, items={self.total_items_adjusted})>"
+
+
+class StockAdjustmentItem(Base):
+    """
+    SQLAlchemy model for the 'stock_adjustment_items' table.
+    Line items for stock adjustments - tracks individual part adjustments.
+    """
+    __tablename__ = "stock_adjustment_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stock_adjustment_id = Column(UUID(as_uuid=True), ForeignKey("stock_adjustments.id", ondelete="CASCADE"), nullable=False)
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
+    quantity_before = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    quantity_after = Column(DECIMAL(precision=10, scale=3), nullable=False)
+    quantity_change = Column(DECIMAL(precision=10, scale=3), nullable=False)  # Calculated: after - before
+    reason = Column(Text, nullable=True)  # Specific reason for this part
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    adjustment = relationship("StockAdjustment", back_populates="items")
+    part = relationship("Part")
+
+    def __repr__(self):
+        return f"<StockAdjustmentItem(id={self.id}, part_id={self.part_id}, change={self.quantity_change})>"
 
 
 class InvitationAuditLog(Base):

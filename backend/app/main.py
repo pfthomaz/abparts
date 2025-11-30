@@ -233,7 +233,7 @@ app.include_router(part_usage_router, prefix="/part_usage", tags=["Part Usage"])
 app.include_router(machines_router, prefix="/machines", tags=["Machines"])
 app.include_router(predictive_maintenance_router, prefix="/predictive-maintenance", tags=["Predictive Maintenance"])
 app.include_router(part_order_router, prefix="/part-orders", tags=["Part Orders"])
-app.include_router(stock_adjustments_router, prefix="/stock_adjustments", tags=["Stock Adjustments"])
+app.include_router(stock_adjustments_router, prefix="/stock-adjustments", tags=["Stock Adjustments"])
 # app.include_router(stocktake_router, prefix="/stocktake", tags=["Stocktake"])  # Replaced by inventory_workflow_router
 app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])

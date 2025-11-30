@@ -1,184 +1,274 @@
 # backend/app/crud/stock_adjustments.py
 
 import uuid
-import logging
+from decimal import Decimal
 from typing import List, Optional
+from datetime import datetime
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, or_, desc
 
-from sqlalchemy.orm import Session
-from sqlalchemy import func # for sum and now()
-from fastapi import HTTPException, status
-
-from .. import models, schemas # Import models and schemas
-from ..models import StockAdjustmentReason # Import the enum
-
-logger = logging.getLogger(__name__)
-
-def create_stock_adjustment(db: Session, inventory_id: uuid.UUID, adjustment_in: schemas.StockAdjustmentCreate, user_id: uuid.UUID):
-    """
-    Create a new stock adjustment and update the inventory's current_stock.
-    """
-    # Validate reason_code
-    try:
-        StockAdjustmentReason(adjustment_in.reason_code)
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid reason_code: {adjustment_in.reason_code}. Must be one of {[r.value for r in StockAdjustmentReason]}")
-
-    # Begin a transaction
-    try:
-        # Fetch the inventory item
-        inventory_item = db.query(models.Inventory).filter(models.Inventory.id == inventory_id).first()
-        if not inventory_item:
-            raise HTTPException(status_code=404, detail="Inventory item not found")
-
-        # Create the stock adjustment record
-        db_adjustment = models.StockAdjustment(
-            inventory_id=inventory_id,
-            user_id=user_id,
-            quantity_adjusted=adjustment_in.quantity_adjusted,
-            reason_code=adjustment_in.reason_code,
-            notes=adjustment_in.notes
-            # adjustment_date is server_default
-        )
-        db.add(db_adjustment)
-
-        # Update the current stock in the inventory item
-        old_stock = inventory_item.current_stock
-        inventory_item.current_stock += adjustment_in.quantity_adjusted
-        inventory_item.last_updated = func.now()  # Update timestamp
-
-        # Log the stock change for debugging
-        logger.info(f"Stock adjustment: Inventory {inventory_id}, "
-                   f"old stock: {old_stock}, adjustment: {adjustment_in.quantity_adjusted}, "
-                   f"new stock: {inventory_item.current_stock}")
-
-        # Sanity check: stock should not go below zero if not allowed by business logic (not enforced here yet)
-        # if inventory_item.current_stock < 0:
-        #     raise HTTPException(status_code=400, detail="Stock cannot go below zero.")
-
-        db.add(inventory_item)
-
-        db.commit()
-        db.refresh(db_adjustment)
-        db.refresh(inventory_item) # Refresh to get updated inventory
-
-        logger.info(f"Stock adjustment completed successfully: {db_adjustment.id}")
-        return db_adjustment
-
-    except HTTPException: # Re-raise HTTPExceptions
-        db.rollback()
-        raise
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating stock adjustment: {e}")
-        raise HTTPException(status_code=500, detail="Error creating stock adjustment")
+from .. import models, schemas
 
 
-def get_stock_adjustment(db: Session, adjustment_id: uuid.UUID) -> Optional[models.StockAdjustment]:
-    """Retrieve a single stock adjustment by ID."""
-    return db.query(models.StockAdjustment).filter(models.StockAdjustment.id == adjustment_id).first()
-
-
-def get_stock_adjustments_for_inventory_item(
+def create_stock_adjustment(
     db: Session,
-    inventory_id: uuid.UUID,
-    skip: int = 0,
-    limit: int = 100
-) -> List[models.StockAdjustment]:
-    """Retrieve a list of stock adjustments for a specific inventory item."""
-    return db.query(models.StockAdjustment)\
-        .filter(models.StockAdjustment.inventory_id == inventory_id)\
-        .order_by(models.StockAdjustment.adjustment_date.desc())\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
-
-def get_all_stock_adjustments(db: Session, skip: int = 0, limit: int = 100) -> List[models.StockAdjustment]:
-    """Retrieve all stock adjustments (admin use)."""
-    return db.query(models.StockAdjustment)\
-        .order_by(models.StockAdjustment.adjustment_date.desc())\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
-
-def get_stock_adjustments_by_organization(
-    db: Session, 
-    organization_id: uuid.UUID, 
-    skip: int = 0, 
-    limit: int = 100
-) -> List[models.StockAdjustment]:
-    """Retrieve stock adjustments for a specific organization."""
-    return db.query(models.StockAdjustment)\
-        .join(models.Inventory, models.StockAdjustment.inventory_id == models.Inventory.id)\
-        .join(models.Warehouse, models.Inventory.warehouse_id == models.Warehouse.id)\
-        .filter(models.Warehouse.organization_id == organization_id)\
-        .order_by(models.StockAdjustment.adjustment_date.desc())\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
-
-def create_stock_adjustment_with_frontend_schema(
-    db: Session, 
-    inventory_id: uuid.UUID, 
-    adjustment_in: schemas.StockAdjustmentCreate, 
-    user_id: uuid.UUID
-):
+    adjustment_data: schemas.StockAdjustmentCreate,
+    current_user_id: uuid.UUID
+) -> models.StockAdjustment:
     """
-    Create a stock adjustment using frontend-compatible schema.
-    Maps frontend field names to database field names.
+    Create a new stock adjustment with line items.
+    Updates inventory quantities and creates transaction records.
     """
-    # Map frontend schema to database schema
-    db_adjustment_data = {
-        "quantity_adjusted": adjustment_in.quantity_change,
-        "reason_code": adjustment_in.reason,
-        "notes": adjustment_in.notes
-    }
+    # Verify warehouse exists
+    warehouse = db.query(models.Warehouse).filter(
+        models.Warehouse.id == adjustment_data.warehouse_id
+    ).first()
     
-    # Create a temporary schema object with database field names
-    class TempAdjustmentCreate:
-        def __init__(self, quantity_adjusted, reason_code, notes):
-            self.quantity_adjusted = quantity_adjusted
-            self.reason_code = reason_code
-            self.notes = notes
+    if not warehouse:
+        raise ValueError(f"Warehouse {adjustment_data.warehouse_id} not found")
     
-    temp_adjustment = TempAdjustmentCreate(
-        quantity_adjusted=adjustment_in.quantity_change,
-        reason_code=adjustment_in.reason,
-        notes=adjustment_in.notes
+    # Create the adjustment header
+    adjustment = models.StockAdjustment(
+        warehouse_id=adjustment_data.warehouse_id,
+        adjustment_type=models.AdjustmentType(adjustment_data.adjustment_type.value),
+        reason=adjustment_data.reason,
+        notes=adjustment_data.notes,
+        user_id=current_user_id,
+        total_items_adjusted=len(adjustment_data.items)
     )
     
-    # Validate reason (skip enum validation for now since frontend uses free text)
-    # We'll store the reason as-is for now
+    db.add(adjustment)
+    db.flush()  # Get the adjustment ID
     
-    try:
-        # Fetch the inventory item
-        inventory_item = db.query(models.Inventory).filter(models.Inventory.id == inventory_id).first()
-        if not inventory_item:
-            raise HTTPException(status_code=404, detail="Inventory item not found")
-
-        # Create the stock adjustment record
-        db_adjustment = models.StockAdjustment(
-            inventory_id=inventory_id,
-            user_id=user_id,
-            quantity_adjusted=adjustment_in.quantity_change,
-            reason_code=adjustment_in.reason,
-            notes=adjustment_in.notes
+    # Process each line item
+    for item_data in adjustment_data.items:
+        # Get current inventory
+        inventory = db.query(models.Inventory).filter(
+            and_(
+                models.Inventory.warehouse_id == adjustment_data.warehouse_id,
+                models.Inventory.part_id == item_data.part_id
+            )
+        ).first()
+        
+        if not inventory:
+            # Create inventory record if it doesn't exist
+            part = db.query(models.Part).filter(models.Part.id == item_data.part_id).first()
+            if not part:
+                raise ValueError(f"Part {item_data.part_id} not found")
+            
+            inventory = models.Inventory(
+                warehouse_id=adjustment_data.warehouse_id,
+                part_id=item_data.part_id,
+                current_stock=Decimal('0'),
+                unit_of_measure=part.unit_of_measure or 'units'
+            )
+            db.add(inventory)
+            db.flush()
+        
+        quantity_before = inventory.current_stock
+        quantity_after = item_data.quantity_after
+        quantity_change = quantity_after - quantity_before
+        
+        # Create adjustment item
+        adjustment_item = models.StockAdjustmentItem(
+            stock_adjustment_id=adjustment.id,
+            part_id=item_data.part_id,
+            quantity_before=quantity_before,
+            quantity_after=quantity_after,
+            quantity_change=quantity_change,
+            reason=item_data.reason
         )
-        db.add(db_adjustment)
+        db.add(adjustment_item)
+        
+        # DON'T update inventory directly - let the trigger handle it
+        # The trigger will update inventory when we create the transaction
+        
+        # Create transaction record for audit trail (only if there was a change)
+        # The trigger expects 'adjustment' type to use to_warehouse_id and will ADD the quantity
+        # So for decreases, we need to use negative quantity
+        if quantity_change != 0:
+            transaction = models.Transaction(
+                part_id=item_data.part_id,
+                from_warehouse_id=None,  # Not used for adjustments
+                to_warehouse_id=adjustment_data.warehouse_id,  # Always the warehouse being adjusted
+                quantity=quantity_change,  # Use signed quantity (positive for increase, negative for decrease)
+                unit_of_measure=inventory.unit_of_measure,
+                performed_by_user_id=current_user_id,
+                transaction_type='adjustment',
+                transaction_date=datetime.utcnow(),
+                notes=f"Stock adjustment: {adjustment_data.adjustment_type.value} - {item_data.reason or adjustment_data.reason or 'No reason provided'}"
+            )
+            db.add(transaction)
+    
+    db.commit()
+    db.refresh(adjustment)
+    
+    return adjustment
 
-        # Update the current stock in the inventory item
-        inventory_item.current_stock += adjustment_in.quantity_change
 
-        db.add(inventory_item)
-        db.commit()
-        db.refresh(db_adjustment)
-        db.refresh(inventory_item)
+def get_stock_adjustments(
+    db: Session,
+    warehouse_id: Optional[uuid.UUID] = None,
+    adjustment_type: Optional[str] = None,
+    user_id: Optional[uuid.UUID] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    skip: int = 0,
+    limit: int = 100
+) -> List[dict]:
+    """
+    Get stock adjustments with optional filtering.
+    Returns list of adjustments with basic info (without full item details).
+    """
+    query = db.query(
+        models.StockAdjustment,
+        models.Warehouse.name.label("warehouse_name"),
+        models.User.username.label("username")
+    ).join(
+        models.Warehouse,
+        models.StockAdjustment.warehouse_id == models.Warehouse.id
+    ).join(
+        models.User,
+        models.StockAdjustment.user_id == models.User.id
+    )
+    
+    # Apply filters
+    if warehouse_id:
+        query = query.filter(models.StockAdjustment.warehouse_id == warehouse_id)
+    
+    if adjustment_type:
+        query = query.filter(models.StockAdjustment.adjustment_type == adjustment_type)
+    
+    if user_id:
+        query = query.filter(models.StockAdjustment.user_id == user_id)
+    
+    if start_date:
+        query = query.filter(models.StockAdjustment.adjustment_date >= start_date)
+    
+    if end_date:
+        query = query.filter(models.StockAdjustment.adjustment_date <= end_date)
+    
+    # Order by most recent first
+    query = query.order_by(desc(models.StockAdjustment.adjustment_date))
+    
+    # Pagination
+    results = query.offset(skip).limit(limit).all()
+    
+    # Format results
+    adjustments = []
+    for adj, warehouse_name, username in results:
+        adjustments.append({
+            "id": adj.id,
+            "warehouse_id": adj.warehouse_id,
+            "warehouse_name": warehouse_name,
+            "adjustment_type": adj.adjustment_type.value,  # Convert enum to string value
+            "reason": adj.reason,
+            "user_id": adj.user_id,
+            "username": username,
+            "adjustment_date": adj.adjustment_date,
+            "total_items_adjusted": adj.total_items_adjusted,
+            "created_at": adj.created_at
+        })
+    
+    return adjustments
 
-        return db_adjustment
 
-    except HTTPException:
-        db.rollback()
-        raise
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating stock adjustment: {e}")
-        raise HTTPException(status_code=500, detail="Error creating stock adjustment")
+def get_stock_adjustment_by_id(
+    db: Session,
+    adjustment_id: uuid.UUID
+) -> Optional[dict]:
+    """
+    Get a single stock adjustment with full details including line items.
+    """
+    adjustment = db.query(models.StockAdjustment).options(
+        joinedload(models.StockAdjustment.items).joinedload(models.StockAdjustmentItem.part),
+        joinedload(models.StockAdjustment.warehouse),
+        joinedload(models.StockAdjustment.user)
+    ).filter(
+        models.StockAdjustment.id == adjustment_id
+    ).first()
+    
+    if not adjustment:
+        return None
+    
+    # Format response with items
+    items = []
+    for item in adjustment.items:
+        items.append({
+            "id": item.id,
+            "stock_adjustment_id": item.stock_adjustment_id,
+            "part_id": item.part_id,
+            "part_number": item.part.part_number,
+            "part_name": item.part.name,
+            "quantity_before": item.quantity_before,
+            "quantity_after": item.quantity_after,
+            "quantity_change": item.quantity_change,
+            "reason": item.reason,
+            "created_at": item.created_at
+        })
+    
+    return {
+        "id": adjustment.id,
+        "warehouse_id": adjustment.warehouse_id,
+        "warehouse_name": adjustment.warehouse.name,
+        "adjustment_type": adjustment.adjustment_type.value,  # Convert enum to string value
+        "reason": adjustment.reason,
+        "notes": adjustment.notes,
+        "user_id": adjustment.user_id,
+        "username": adjustment.user.username,
+        "adjustment_date": adjustment.adjustment_date,
+        "total_items_adjusted": adjustment.total_items_adjusted,
+        "items": items,
+        "created_at": adjustment.created_at,
+        "updated_at": adjustment.updated_at
+    }
+
+
+def get_adjustment_history_for_part(
+    db: Session,
+    part_id: uuid.UUID,
+    warehouse_id: Optional[uuid.UUID] = None,
+    limit: int = 50
+) -> List[dict]:
+    """
+    Get adjustment history for a specific part.
+    """
+    query = db.query(
+        models.StockAdjustmentItem,
+        models.StockAdjustment,
+        models.Warehouse.name.label("warehouse_name"),
+        models.User.username.label("username")
+    ).join(
+        models.StockAdjustment,
+        models.StockAdjustmentItem.stock_adjustment_id == models.StockAdjustment.id
+    ).join(
+        models.Warehouse,
+        models.StockAdjustment.warehouse_id == models.Warehouse.id
+    ).join(
+        models.User,
+        models.StockAdjustment.user_id == models.User.id
+    ).filter(
+        models.StockAdjustmentItem.part_id == part_id
+    )
+    
+    if warehouse_id:
+        query = query.filter(models.StockAdjustment.warehouse_id == warehouse_id)
+    
+    query = query.order_by(desc(models.StockAdjustment.adjustment_date))
+    results = query.limit(limit).all()
+    
+    history = []
+    for item, adj, warehouse_name, username in results:
+        history.append({
+            "adjustment_id": adj.id,
+            "adjustment_date": adj.adjustment_date,
+            "adjustment_type": adj.adjustment_type,
+            "warehouse_name": warehouse_name,
+            "username": username,
+            "quantity_before": item.quantity_before,
+            "quantity_after": item.quantity_after,
+            "quantity_change": item.quantity_change,
+            "reason": item.reason or adj.reason
+        })
+    
+    return history

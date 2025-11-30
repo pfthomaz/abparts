@@ -1,0 +1,102 @@
+// frontend/src/components/StockAdjustmentsList.js
+
+import React from 'react';
+import { formatDate } from '../utils';
+
+const adjustmentTypeLabels = {
+  stock_take: 'Stock Take',
+  damage: 'Damage',
+  loss: 'Loss',
+  found: 'Found',
+  correction: 'Correction',
+  return: 'Return',
+  other: 'Other'
+};
+
+const adjustmentTypeColors = {
+  stock_take: 'bg-blue-100 text-blue-800',
+  damage: 'bg-red-100 text-red-800',
+  loss: 'bg-orange-100 text-orange-800',
+  found: 'bg-green-100 text-green-800',
+  correction: 'bg-yellow-100 text-yellow-800',
+  return: 'bg-purple-100 text-purple-800',
+  other: 'bg-gray-100 text-gray-800'
+};
+
+const StockAdjustmentsList = ({ adjustments, onViewDetails }) => {
+  if (adjustments.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+        No stock adjustments found
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Date
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Warehouse
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Type
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Items
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              User
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Reason
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {adjustments.map((adjustment) => (
+            <tr key={adjustment.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {formatDate(adjustment.adjustment_date)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {adjustment.warehouse_name}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 py-1 text-xs font-medium rounded ${adjustmentTypeColors[adjustment.adjustment_type]}`}>
+                  {adjustmentTypeLabels[adjustment.adjustment_type]}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {adjustment.total_items_adjusted}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {adjustment.username}
+              </td>
+              <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                {adjustment.reason || '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <button
+                  onClick={() => onViewDetails(adjustment.id)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  View Details
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default StockAdjustmentsList;

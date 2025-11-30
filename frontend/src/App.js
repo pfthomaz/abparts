@@ -29,6 +29,7 @@ import Warehouses from './pages/Warehouses'; // New: Import Warehouses page
 import Transactions from './pages/Transactions'; // New: Import Transactions page
 import OrganizationManagement from './pages/OrganizationManagement'; // New: Import OrganizationManagement page
 import Configuration from './pages/Configuration'; // New: Import Configuration page
+import StockAdjustments from './pages/StockAdjustments'; // New: Import StockAdjustments page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
 import { useState, useEffect } from 'react';
@@ -243,6 +244,26 @@ function App() {
                     feature="Warehouse Management"
                   >
                     <Warehouses />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="stock-adjustments"
+              element={
+                <PermissionErrorBoundary
+                  feature="Stock Adjustments"
+                  requiredPermission={PERMISSIONS.ADJUST_INVENTORY}
+                  requiredRole="admin"
+                  resource="inventory"
+                  action="adjust"
+                >
+                  <ProtectedRoute
+                    permission={PERMISSIONS.ADJUST_INVENTORY}
+                    requiredRole="admin"
+                    feature="Stock Adjustments"
+                  >
+                    <StockAdjustments />
                   </ProtectedRoute>
                 </PermissionErrorBoundary>
               }
