@@ -2,7 +2,9 @@
 
 import { processError } from '../utils/errorHandling';
 
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+// Use relative path in production (works with nginx proxy), absolute in development
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
 
 /**
  * A generic request handler that abstracts the fetch API.
