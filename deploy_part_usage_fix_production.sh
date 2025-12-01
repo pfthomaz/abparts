@@ -32,7 +32,7 @@ echo ""
 BACKUP_FILE="backup_before_updated_at_$(date +%Y%m%d_%H%M%S).sql"
 echo "Creating backup: $BACKUP_FILE"
 
-docker-compose -f docker-compose.prod.yml exec -T db pg_dump -U abparts_user abparts_prod > "$BACKUP_FILE"
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U abparts_user abparts_prod > "$BACKUP_FILE"
 
 if [ $? -eq 0 ]; then
     echo "✓ Backup created: $BACKUP_FILE"
@@ -47,7 +47,7 @@ echo "Step 2: Apply Database Migration"
 echo "========================================="
 echo ""
 
-docker-compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod << 'EOSQL'
+docker compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod << 'EOSQL'
 
 -- Create the trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -136,10 +136,10 @@ echo "========================================="
 echo ""
 
 echo "Rebuilding API..."
-docker-compose -f docker-compose.prod.yml build api
+docker compose -f docker-compose.prod.yml build api
 
 echo "Rebuilding Frontend..."
-docker-compose -f docker-compose.prod.yml build web
+docker compose -f docker-compose.prod.yml build web
 
 echo ""
 echo "========================================="
@@ -148,7 +148,7 @@ echo "========================================="
 echo ""
 
 echo "Restarting services..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 echo "Waiting for services to start..."
 sleep 10
@@ -160,7 +160,7 @@ echo "========================================="
 echo ""
 
 # Check API
-if docker-compose -f docker-compose.prod.yml exec api curl -f http://localhost:8000/health > /dev/null 2>&1; then
+if docker compose -f docker-compose.prod.yml exec api curl -f http://localhost:8000/health > /dev/null 2>&1; then
     echo "✓ API is running"
 else
     echo "⚠ API health check failed"
@@ -169,7 +169,7 @@ fi
 # Check database
 echo ""
 echo "Verifying database changes..."
-docker-compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod -c "SELECT COUNT(*) as tables_with_updated_at FROM information_schema.columns WHERE column_name = 'updated_at' AND table_name IN ('transactions', 'customer_orders', 'part_usage_records');"
+docker compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod -c "SELECT COUNT(*) as tables_with_updated_at FROM information_schema.columns WHERE column_name = 'updated_at' AND table_name IN ('transactions', 'customer_orders', 'part_usage_records');"
 
 echo ""
 echo "========================================="
@@ -184,9 +184,9 @@ echo "  - Added auto-update triggers"
 echo "  - Updated UI to reload after edits"
 echo ""
 echo "Monitor logs:"
-echo "  docker-compose -f docker-compose.prod.yml logs -f api"
-echo "  docker-compose -f docker-compose.prod.yml logs -f web"
+echo "  docker compose -f docker-compose.prod.yml logs -f api"
+echo "  docker compose -f docker-compose.prod.yml logs -f web"
 echo ""
 echo "If issues occur, restore from backup:"
-echo "  docker-compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod < $BACKUP_FILE"
+echo "  docker compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod < $BACKUP_FILE"
 echo ""
