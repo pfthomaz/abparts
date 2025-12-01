@@ -596,7 +596,7 @@ async def get_transaction(
 async def delete_transaction(
     transaction_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.DELETE))
 ):
     """
     Delete a transaction.

@@ -1,8 +1,8 @@
 """add updated_at columns to all tables
 
-Revision ID: add_updated_at_cols
-Revises: 
-Create Date: 2024-12-01 00:00:00.000000
+Revision ID: 01_add_updated_at
+Revises: 00_baseline
+Create Date: 2024-12-01 19:50:00.000000
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'add_updated_at_cols'
-down_revision = None  # Set this to your latest migration
+revision = '01_add_updated_at'
+down_revision = '00_baseline'
 branch_labels = None
 depends_on = None
 

@@ -288,6 +288,14 @@ class PermissionChecker:
                     return organizational_isolation.validate_organization_access(user, source_org_id, db)
                 
                 return self.is_user(user)  # Basic transaction creation
+            elif permission == PermissionType.DELETE:
+                # Admins and super_admins can delete transactions in their organization
+                if not self.is_admin(user):
+                    return False
+                org_id = context.get("organization_id")
+                if org_id and db:
+                    return organizational_isolation.validate_organization_access(user, org_id, db)
+                return self.is_admin(user)
         
         elif resource == ResourceType.PART:
             if permission == PermissionType.READ:

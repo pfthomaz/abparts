@@ -37,10 +37,19 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
 
   const handleEditClick = async (usage) => {
     setEditingUsage(usage);
+    
+    // Format quantity based on unit of measure
+    const isConsumable = usage.unit_of_measure === 'pieces' || 
+                        usage.unit_of_measure === 'units' || 
+                        usage.unit_of_measure === 'pcs';
+    const formattedQuantity = isConsumable 
+      ? Math.round(parseFloat(usage.quantity)) 
+      : parseFloat(usage.quantity);
+    
     setEditForm({
-      quantity: usage.quantity,
+      quantity: formattedQuantity,
       notes: usage.notes || '',
-      part_type: usage.part_type || 'consumable' // Default to consumable if not available
+      part_type: usage.part_type || 'consumable'
     });
   };
 
@@ -115,6 +124,16 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
     return new Date(dateString).toLocaleString();
   };
 
+  const formatQuantity = (quantity, unitOfMeasure) => {
+    const qty = parseFloat(quantity);
+    // For pieces/units (consumables), show as integer
+    if (unitOfMeasure === 'pieces' || unitOfMeasure === 'units' || unitOfMeasure === 'pcs') {
+      return Math.round(qty);
+    }
+    // For other units (liters, kg, etc.), show with decimals
+    return qty.toFixed(3).replace(/\.?0+$/, ''); // Remove trailing zeros
+  };
+
   if (loading) {
     return <div className="text-center py-4">Loading usage history...</div>;
   }
@@ -137,7 +156,7 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Part</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Warehouse</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -153,8 +172,8 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
                   <div className="font-medium text-gray-900">{usage.part_name || 'Unknown'}</div>
                   <div className="text-gray-500">{usage.part_number || usage.part_id}</div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
-                  {usage.quantity} {usage.unit_of_measure}
+                <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                  {formatQuantity(usage.quantity, usage.unit_of_measure)} {usage.unit_of_measure}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-500">
                   {usage.from_warehouse_name || usage.from_warehouse_id}
@@ -205,7 +224,13 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
                 id="edit-quantity"
                 value={editForm.quantity}
                 onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })}
-                step={editForm.part_type === 'consumable' ? '1' : '0.001'}
+                step={
+                  editingUsage.unit_of_measure === 'pieces' || 
+                  editingUsage.unit_of_measure === 'units' || 
+                  editingUsage.unit_of_measure === 'pcs' 
+                    ? '1' 
+                    : '0.001'
+                }
                 min="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 disabled={saving}
@@ -253,7 +278,7 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
         isOpen={!!deleteConfirm}
         onClose={() => !deleting && setDeleteConfirm(null)}
         title="Delete Part Usage"
-        size="md"
+        size="small"
       >
         {deleteConfirm && (
           <div className="space-y-4">
