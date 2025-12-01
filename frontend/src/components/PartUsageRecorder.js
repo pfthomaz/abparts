@@ -229,6 +229,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
       const unitOfMeasure = selectedPartData?.unit_of_measure || selectedPartInventory?.unit_of_measure || 'pieces';
 
       // Create a consumption transaction
+      // Use current timestamp for transaction_date to ensure proper ordering with adjustments
       const transactionData = {
         transaction_type: 'consumption',
         part_id: formData.part_id,
@@ -236,7 +237,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         machine_id: formData.machine_id,
         quantity: parseFloat(formData.quantity),
         unit_of_measure: unitOfMeasure,
-        transaction_date: new Date(formData.usage_date).toISOString(),
+        transaction_date: new Date().toISOString(), // Use current timestamp, not midnight
         notes: formData.notes || null,
         reference_number: formData.reference_number || null,
         performed_by_user_id: user.id

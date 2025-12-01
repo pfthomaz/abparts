@@ -50,7 +50,7 @@ from .routers.security import router as security_router # New: Import security r
 from .routers.performance import router as performance_router # New: Import performance router
 from .routers.uploads import router as uploads_router # Import uploads router
 from .routers.images import router as images_router # New: Import images router
-from .routers.uploads import router as uploads_router # New: Import uploads router - commented until DB migration runs
+from .routers.inventory_calculator import router as inventory_calculator_router # New: Import inventory calculator router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -245,6 +245,7 @@ app.include_router(security_router, tags=["Security"])
 app.include_router(performance_router, prefix="/performance", tags=["Performance"])
 app.include_router(uploads_router, prefix="/uploads", tags=["Uploads"])
 app.include_router(images_router, tags=["Images"])
+app.include_router(inventory_calculator_router, tags=["Inventory Calculator"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)

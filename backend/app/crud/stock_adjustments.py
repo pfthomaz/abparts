@@ -40,9 +40,12 @@ def create_stock_adjustment(
     db.add(adjustment)
     db.flush()  # Get the adjustment ID
     
+    # Import the calculator to get actual current stock
+    from .inventory_calculator import calculate_current_stock
+    
     # Process each line item
     for item_data in adjustment_data.items:
-        # Get current inventory
+        # Get current inventory record (or create if doesn't exist)
         inventory = db.query(models.Inventory).filter(
             and_(
                 models.Inventory.warehouse_id == adjustment_data.warehouse_id,
@@ -65,7 +68,8 @@ def create_stock_adjustment(
             db.add(inventory)
             db.flush()
         
-        quantity_before = inventory.current_stock
+        # Calculate actual current stock from transactions and previous adjustments
+        quantity_before = calculate_current_stock(db, adjustment_data.warehouse_id, item_data.part_id)
         quantity_after = item_data.quantity_after
         quantity_change = quantity_after - quantity_before
         
@@ -80,25 +84,10 @@ def create_stock_adjustment(
         )
         db.add(adjustment_item)
         
-        # DON'T update inventory directly - let the trigger handle it
-        # The trigger will update inventory when we create the transaction
-        
-        # Create transaction record for audit trail (only if there was a change)
-        # The trigger expects 'adjustment' type to use to_warehouse_id and will ADD the quantity
-        # So for decreases, we need to use negative quantity
-        if quantity_change != 0:
-            transaction = models.Transaction(
-                part_id=item_data.part_id,
-                from_warehouse_id=None,  # Not used for adjustments
-                to_warehouse_id=adjustment_data.warehouse_id,  # Always the warehouse being adjusted
-                quantity=quantity_change,  # Use signed quantity (positive for increase, negative for decrease)
-                unit_of_measure=inventory.unit_of_measure,
-                performed_by_user_id=current_user_id,
-                transaction_type='adjustment',
-                transaction_date=datetime.utcnow(),
-                notes=f"Stock adjustment: {adjustment_data.adjustment_type.value} - {item_data.reason or adjustment_data.reason or 'No reason provided'}"
-            )
-            db.add(transaction)
+        # Don't update inventory.current_stock directly
+        # Stock levels are calculated from adjustments and transactions
+        # Just update the timestamp
+        inventory.last_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(adjustment)

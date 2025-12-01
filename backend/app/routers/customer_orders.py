@@ -318,6 +318,7 @@ def confirm_order_receipt(
     # Create inventory transactions for each order item
     for item in order.items:
         # Create transaction record
+        # Use current timestamp for transaction_date to ensure proper ordering with adjustments
         transaction = models.Transaction(
             transaction_type="creation",
             part_id=item.part_id,
@@ -326,7 +327,7 @@ def confirm_order_receipt(
             quantity=item.quantity,
             unit_of_measure=item.part.unit_of_measure if item.part else "units",
             performed_by_user_id=current_user.user_id,
-            transaction_date=receipt_request.actual_delivery_date,
+            transaction_date=datetime.utcnow(),  # Use actual timestamp, not midnight
             notes=f"Received from customer order #{str(order.id)[:8]}",
             reference_number=str(order.id)
         )

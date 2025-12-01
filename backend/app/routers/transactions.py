@@ -590,3 +590,129 @@ async def get_transaction(
             raise HTTPException(status_code=403, detail="Not authorized to view this transaction")
     
     return transaction
+
+# --- Delete Transaction ---
+@router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_transaction(
+    transaction_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Delete a transaction.
+    With calculated inventory, deleting transactions is safe - inventory will automatically recalculate.
+    Users can only delete transactions involving their organization's warehouses.
+    """
+    # Get the transaction
+    transaction = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Check permissions
+    if not permission_checker.is_super_admin(current_user):
+        # Get all warehouses for the user's organization
+        warehouses = db.query(models.Warehouse).filter(
+            models.Warehouse.organization_id == current_user.organization_id
+        ).all()
+        warehouse_ids = [w.id for w in warehouses]
+        
+        # Check if transaction involves the organization's warehouses
+        if transaction.from_warehouse_id not in warehouse_ids and transaction.to_warehouse_id not in warehouse_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this transaction")
+    
+    # Delete the transaction
+    # Note: Inventory will automatically recalculate without this transaction
+    db.delete(transaction)
+    db.commit()
+    
+    return None
+
+
+# --- Update Transaction ---
+@router.put("/{transaction_id}", response_model=schemas.TransactionResponse)
+async def update_transaction(
+    transaction_id: uuid.UUID,
+    transaction_update: schemas.TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
+):
+    """
+    Update a transaction.
+    With calculated inventory, updating transactions is safe - inventory will automatically recalculate.
+    Users can only update transactions involving their organization's warehouses.
+    
+    Note: If this transaction is linked to a PartUsageItem, that will also be updated.
+    """
+    # Get the transaction
+    transaction = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Store old quantity for part_usage_item update
+    old_quantity = transaction.quantity
+    
+    # Check permissions for the existing transaction
+    if not permission_checker.is_super_admin(current_user):
+        warehouses = db.query(models.Warehouse).filter(
+            models.Warehouse.organization_id == current_user.organization_id
+        ).all()
+        warehouse_ids = [w.id for w in warehouses]
+        
+        # Check existing transaction
+        if transaction.from_warehouse_id not in warehouse_ids and transaction.to_warehouse_id not in warehouse_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to update this transaction")
+        
+        # Check new warehouse IDs
+        if transaction_update.from_warehouse_id and transaction_update.from_warehouse_id not in warehouse_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to update to this warehouse")
+        
+        if transaction_update.to_warehouse_id and transaction_update.to_warehouse_id not in warehouse_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to update to this warehouse")
+    
+    # Update the transaction fields
+    for field, value in transaction_update.dict(exclude_unset=True).items():
+        setattr(transaction, field, value)
+    
+    # Validate the updated transaction
+    try:
+        crud.transaction.validate_transaction_data(transaction_update)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    # If this is a consumption transaction with a machine_id, check for linked PartUsageItem
+    # and update it as well to keep the records in sync
+    if transaction.transaction_type == 'consumption' and transaction.machine_id:
+        # Find any PartUsageItem that might be linked to this transaction
+        # We match by: machine_id, part_id, and quantity (within a small time window)
+        from datetime import timedelta
+        time_window_start = transaction.transaction_date - timedelta(minutes=5)
+        time_window_end = transaction.transaction_date + timedelta(minutes=5)
+        
+        # Find part_usage_records in the time window for this machine
+        usage_records = db.query(models.PartUsageRecord).filter(
+            models.PartUsageRecord.machine_id == transaction.machine_id,
+            models.PartUsageRecord.usage_date >= time_window_start,
+            models.PartUsageRecord.usage_date <= time_window_end
+        ).all()
+        
+        # Find matching part_usage_item
+        for usage_record in usage_records:
+            usage_item = db.query(models.PartUsageItem).filter(
+                models.PartUsageItem.usage_record_id == usage_record.id,
+                models.PartUsageItem.part_id == transaction.part_id,
+                models.PartUsageItem.quantity == old_quantity
+            ).first()
+            
+            if usage_item:
+                # Update the part_usage_item to match the transaction
+                usage_item.quantity = transaction.quantity
+                if transaction_update.notes:
+                    usage_item.notes = transaction_update.notes
+                break
+    
+    db.commit()
+    db.refresh(transaction)
+    
+    return transaction

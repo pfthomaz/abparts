@@ -143,7 +143,9 @@ def get_stocktake_worksheet_items(db: Session, organization_id: uuid.UUID) -> Li
 # --- Warehouse-specific inventory functions ---
 
 def get_inventory_by_warehouse(db: Session, warehouse_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[dict]:
-    """Get all inventory items for a specific warehouse with part details."""
+    """Get all inventory items for a specific warehouse with part details and CALCULATED stock."""
+    from .inventory_calculator import calculate_current_stock
+    
     # Join with Part to get part details
     results = db.query(
         models.Inventory,
@@ -154,14 +156,17 @@ def get_inventory_by_warehouse(db: Session, warehouse_id: uuid.UUID, skip: int =
         models.Inventory.warehouse_id == warehouse_id
     ).offset(skip).limit(limit).all()
     
-    # Convert to response format
+    # Convert to response format with CALCULATED stock
     inventory_items = []
     for inventory, part in results:
+        # Calculate actual current stock from transactions and adjustments
+        calculated_stock = calculate_current_stock(db, warehouse_id, inventory.part_id)
+        
         item_dict = {
             "id": inventory.id,
             "warehouse_id": inventory.warehouse_id,
             "part_id": inventory.part_id,
-            "current_stock": float(inventory.current_stock),
+            "current_stock": float(calculated_stock),  # Use calculated value, not cached
             "minimum_stock_recommendation": float(inventory.minimum_stock_recommendation),
             "unit_of_measure": inventory.unit_of_measure,
             "reorder_threshold_set_by": inventory.reorder_threshold_set_by,
@@ -186,40 +191,63 @@ def get_inventory_by_organization(db: Session, organization_id: uuid.UUID, skip:
 
 
 def get_inventory_aggregation_by_organization(db: Session, organization_id: uuid.UUID) -> List[dict]:
-    """Get inventory aggregated by part across all warehouses for an organization."""
+    """Get inventory aggregated by part across all warehouses for an organization with CALCULATED stock."""
     from sqlalchemy import func
+    from .inventory_calculator import calculate_current_stock
     
-    results = db.query(
-        models.Part.id.label('part_id'),
+    # Get all warehouses for this organization
+    warehouses = db.query(models.Warehouse).filter(
+        models.Warehouse.organization_id == organization_id
+    ).all()
+    
+    # Get all unique parts across these warehouses
+    parts_query = db.query(
+        models.Part.id,
         models.Part.part_number,
-        models.Part.name.label('part_name'),
-        models.Part.unit_of_measure,
-        func.sum(models.Inventory.current_stock).label('total_stock'),
-        func.count(models.Inventory.id).label('warehouse_count'),
-        func.sum(models.Inventory.minimum_stock_recommendation).label('total_min_stock')
+        models.Part.name,
+        models.Part.unit_of_measure
     ).join(
         models.Inventory, models.Part.id == models.Inventory.part_id
     ).join(
         models.Warehouse, models.Inventory.warehouse_id == models.Warehouse.id
     ).filter(
         models.Warehouse.organization_id == organization_id
-    ).group_by(
-        models.Part.id, models.Part.part_number, models.Part.name, models.Part.unit_of_measure
-    ).order_by(models.Part.part_number).all()
+    ).distinct().order_by(models.Part.part_number).all()
     
-    return [
-        {
-            'part_id': str(row.part_id),
-            'part_number': row.part_number,
-            'part_name': row.part_name,
-            'unit_of_measure': row.unit_of_measure,
-            'total_stock': float(row.total_stock),
-            'warehouse_count': row.warehouse_count,
-            'total_minimum_stock': float(row.total_min_stock),
-            'is_low_stock': float(row.total_stock) <= float(row.total_min_stock)
-        }
-        for row in results
-    ]
+    # Calculate total stock for each part across all warehouses
+    results = []
+    for part in parts_query:
+        total_stock = Decimal('0')
+        warehouse_count = 0
+        
+        for warehouse in warehouses:
+            stock = calculate_current_stock(db, warehouse.id, part.id)
+            if stock > 0:
+                total_stock += stock
+                warehouse_count += 1
+        
+        # Get minimum stock recommendation (sum from inventory records)
+        min_stock_sum = db.query(
+            func.sum(models.Inventory.minimum_stock_recommendation)
+        ).join(
+            models.Warehouse
+        ).filter(
+            models.Inventory.part_id == part.id,
+            models.Warehouse.organization_id == organization_id
+        ).scalar() or Decimal('0')
+        
+        results.append({
+            'part_id': str(part.id),
+            'part_number': part.part_number,
+            'part_name': part.name,
+            'unit_of_measure': part.unit_of_measure,
+            'total_stock': float(total_stock),
+            'warehouse_count': warehouse_count,
+            'total_minimum_stock': float(min_stock_sum),
+            'is_low_stock': total_stock <= min_stock_sum
+        })
+    
+    return results
 
 
 def transfer_inventory_between_warehouses(db: Session, from_warehouse_id: uuid.UUID, 

@@ -830,6 +830,7 @@ class Transaction(Base):
     notes = Column(Text, nullable=True)
     reference_number = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     part = relationship("Part")

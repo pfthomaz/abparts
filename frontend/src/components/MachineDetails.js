@@ -8,6 +8,7 @@ import Modal from './Modal';
 import MaintenanceForm from './MaintenanceForm';
 import PartUsageChart from './PartUsageChart';
 import MaintenanceSchedule from './MaintenanceSchedule';
+import PartUsageHistory from './PartUsageHistory';
 
 const MachineDetails = ({ machineId, onClose }) => {
   const [machine, setMachine] = useState(null);
@@ -349,32 +350,20 @@ const MachineDetails = ({ machineId, onClose }) => {
 
           {/* Parts Usage Tab */}
           {activeTab === 'usage' && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Parts Usage History</h3>
-              {usageHistory.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No parts usage records found
-                </div>
-              ) : (
-                <>
+            <div className="space-y-6">
+              {/* Chart */}
+              {usageHistory.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Usage Chart</h3>
                   <PartUsageChart usageData={usageHistory} />
-                  <div className="mt-6 space-y-4">
-                    {usageHistory.map((usage) => (
-                      <div key={usage.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold text-gray-800">{usage.part_name}</h4>
-                            <p className="text-sm text-gray-600">{formatDate(usage.usage_date)}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-medium">{usage.quantity} {usage.unit_of_measure}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
+                </div>
               )}
+              
+              {/* Detailed History with Delete */}
+              <PartUsageHistory 
+                machineId={machineId} 
+                onUsageDeleted={fetchMachineData}
+              />
             </div>
           )}
 

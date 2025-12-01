@@ -263,39 +263,35 @@ def create_part_usage_from_transaction(db: Session, transaction: models.Transact
         return
 
 def update_inventory(db: Session, warehouse_id: uuid.UUID, part_id: uuid.UUID, quantity: Decimal):
-    """Update inventory for a part in a warehouse."""
+    """
+    Ensure inventory record exists for tracking purposes.
+    The actual stock level is calculated from transactions, not stored here.
+    This just ensures we have a record to cache calculated values later.
+    """
     # Get the inventory item
     inventory_item = db.query(models.Inventory).filter(
         models.Inventory.warehouse_id == warehouse_id,
         models.Inventory.part_id == part_id
     ).first()
     
-    if inventory_item:
-        # Update existing inventory
-        inventory_item.current_stock += quantity
-        inventory_item.last_updated = datetime.now()
-        
-        # Ensure stock doesn't go below zero
-        if inventory_item.current_stock < 0:
-            raise ValueError(f"Insufficient stock for part {part_id} in warehouse {warehouse_id}")
-    else:
-        # Create new inventory item if it doesn't exist (only for positive quantities)
-        if quantity <= 0:
-            raise ValueError(f"Cannot create inventory with negative quantity for part {part_id} in warehouse {warehouse_id}")
-        
+    if not inventory_item:
+        # Create inventory record if it doesn't exist
         # Get part details for unit_of_measure
         part = db.query(models.Part).filter(models.Part.id == part_id).first()
         if not part:
             raise ValueError(f"Part {part_id} not found")
         
-        # Create new inventory item
+        # Create new inventory item with zero stock (will be calculated)
         inventory_item = models.Inventory(
             warehouse_id=warehouse_id,
             part_id=part_id,
-            current_stock=quantity,
+            current_stock=Decimal('0'),  # Will be calculated from transactions
             unit_of_measure=part.unit_of_measure
         )
         db.add(inventory_item)
+    
+    # Update the last_updated timestamp
+    inventory_item.last_updated = datetime.now()
 
 def search_transactions(db: Session, filters: schemas.TransactionFilter, skip: int = 0, limit: int = 100):
     """Search transactions with filters."""

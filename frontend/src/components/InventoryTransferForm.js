@@ -59,16 +59,23 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
     }
   };
 
-  const validateQuantity = (value, availableStock) => {
+  const validateQuantity = (value, availableStock, partType) => {
     const quantity = parseFloat(value);
     if (isNaN(quantity) || quantity <= 0) {
       return { valid: false, error: 'Quantity must be a positive number' };
     }
 
-    // Check decimal precision (max 3 decimal places)
-    const decimalPlaces = (value.toString().split('.')[1] || '').length;
-    if (decimalPlaces > 3) {
-      return { valid: false, error: 'Quantity precision cannot exceed 3 decimal places' };
+    // For consumable parts, enforce integer values
+    if (partType === 'consumable' && !Number.isInteger(quantity)) {
+      return { valid: false, error: 'Consumable parts must be transferred in whole units' };
+    }
+
+    // Check decimal precision (max 3 decimal places) for non-consumable parts
+    if (partType !== 'consumable') {
+      const decimalPlaces = (value.toString().split('.')[1] || '').length;
+      if (decimalPlaces > 3) {
+        return { valid: false, error: 'Quantity precision cannot exceed 3 decimal places' };
+      }
     }
 
     if (quantity > availableStock) {
@@ -109,12 +116,14 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
       return;
     }
 
-    // Get available stock for validation
+    // Get available stock and part details for validation
     const inventoryItem = fromWarehouseInventory.find(item => item.part_id === formData.part_id);
     const availableStock = inventoryItem ? parseFloat(inventoryItem.current_stock) : 0;
+    const partDetails = getPartDetails(formData.part_id);
+    const partType = partDetails?.part_type;
 
     // Validate quantity with enhanced checks
-    const quantityValidation = validateQuantity(formData.quantity, availableStock);
+    const quantityValidation = validateQuantity(formData.quantity, availableStock, partType);
     if (!quantityValidation.valid) {
       setError(quantityValidation.error);
       setLoading(false);
@@ -282,7 +291,7 @@ const InventoryTransferForm = ({ onSubmit, onCancel, initialData = {} }) => {
               </label>
               <input
                 type="number"
-                step="0.001"
+                step={getPartDetails(formData.part_id)?.part_type === 'consumable' ? '1' : '0.001'}
                 id="quantity"
                 name="quantity"
                 value={formData.quantity}
