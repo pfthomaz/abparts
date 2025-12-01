@@ -135,7 +135,7 @@ const getWarehouseStockAdjustments = (warehouseId, filters = {}) => {
   }
 
   const queryString = queryParams.toString();
-  const endpoint = `/stock-adjustments?${queryString}`;
+  const endpoint = `/stock-adjustments/?${queryString}`;
 
   return api.get(endpoint);
 };

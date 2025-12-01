@@ -13,7 +13,7 @@ export const stockAdjustmentsService = {
     if (filters.user_id) params.append('user_id', filters.user_id);
     
     const queryString = params.toString();
-    const endpoint = `/stock-adjustments${queryString ? '?' + queryString : ''}`;
+    const endpoint = `/stock-adjustments/${queryString ? '?' + queryString : ''}`;
     
     return api.get(endpoint);
   },
