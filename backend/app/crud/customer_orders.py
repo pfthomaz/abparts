@@ -44,7 +44,7 @@ def create_customer_order(db: Session, order: schemas.CustomerOrderCreate):
         logger.error(f"Error creating customer order: {e}")
         raise HTTPException(status_code=400, detail="Error creating customer order")
 
-def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schemas.CustomerOrderUpdate, current_user_id: uuid.UUID = None):
+def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schemas.CustomerOrderUpdate, current_user_id: uuid.UUID = None, items_data: list = None):
     """Update an existing customer order and handle inventory updates on fulfillment."""
     db_order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
     if not db_order:
@@ -55,8 +55,15 @@ def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schema
     
     update_data = order_update.dict(exclude_unset=True)
     full_update_data = order_update.dict()  # Get all fields including None values
+    
+    # Add items to full_update_data if provided
+    if items_data is not None:
+        full_update_data['items'] = items_data
+        logger.info(f"Items data added to full_update_data: {len(items_data)} items")
+    
     for key, value in update_data.items():
-        setattr(db_order, key, value)
+        if key != 'items':  # Don't try to set items on the order object
+            setattr(db_order, key, value)
     
     try:
         # Re-validate FKs if IDs are updated
@@ -90,6 +97,34 @@ def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schema
             _update_inventory_on_fulfillment(db, db_order, full_update_data['receiving_warehouse_id'], current_user_id)
         else:
             logger.info(f"Inventory update conditions not met for order {db_order.id}")
+
+        # Update order items if provided
+        logger.info(f"Checking for items update - 'items' in full_update_data: {'items' in full_update_data}")
+        logger.info(f"Full update data keys: {full_update_data.keys()}")
+        if 'items' in full_update_data:
+            logger.info(f"Items value: {full_update_data['items']}")
+        
+        if 'items' in full_update_data and full_update_data['items'] is not None:
+            logger.info(f"Updating order items for order {db_order.id} - {len(full_update_data['items'])} items")
+            # Delete existing items
+            deleted_count = db.query(models.CustomerOrderItem).filter(
+                models.CustomerOrderItem.customer_order_id == order_id
+            ).delete()
+            logger.info(f"Deleted {deleted_count} existing items")
+            
+            # Add new items
+            for idx, item_data in enumerate(full_update_data['items']):
+                logger.info(f"Adding item {idx}: part_id={item_data.get('part_id')}, quantity={item_data.get('quantity')}")
+                new_item = models.CustomerOrderItem(
+                    customer_order_id=order_id,
+                    part_id=item_data['part_id'],
+                    quantity=item_data['quantity'],
+                    unit_price=item_data.get('unit_price')
+                )
+                db.add(new_item)
+            logger.info(f"Added {len(full_update_data['items'])} new items")
+        else:
+            logger.info(f"No items to update for order {db_order.id}")
 
         db.add(db_order)
         db.commit()

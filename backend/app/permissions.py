@@ -323,6 +323,9 @@ class PermissionChecker:
                         return False
                 
                 return self.is_user(user)
+            elif permission == PermissionType.DELETE:
+                # Only admins can delete orders
+                return self.is_admin(user)
         
         elif resource == ResourceType.DASHBOARD:
             if permission == PermissionType.READ:
@@ -722,7 +725,7 @@ class RoleBasedAccessMatrix:
                 ResourceType.INVENTORY: [PermissionType.READ, PermissionType.WRITE],  # Can adjust inventory
                 ResourceType.MACHINE: [PermissionType.READ, PermissionType.WRITE],  # Can manage machines in own org
                 ResourceType.TRANSACTION: [PermissionType.READ, PermissionType.WRITE],  # Can create transactions
-                ResourceType.ORDER: [PermissionType.READ, PermissionType.WRITE],  # Can manage orders
+                ResourceType.ORDER: [PermissionType.READ, PermissionType.WRITE, PermissionType.DELETE],  # Can manage and delete orders
                 ResourceType.DASHBOARD: [PermissionType.READ],
                 ResourceType.AUDIT_LOG: [PermissionType.READ]  # Can view own org audit logs
             },

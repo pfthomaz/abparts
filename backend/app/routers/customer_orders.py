@@ -1,6 +1,6 @@
 # backend/app/routers/customer_orders.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
@@ -180,24 +180,48 @@ def read_customer_orders(
     return response_orders
 
 @router.put("/{order_id}", response_model=schemas.CustomerOrderResponse)
-def update_customer_order(
+async def update_customer_order(
     order_id: str,
-    order_update: schemas.CustomerOrderUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
-    """Update a customer order with organization access control."""
+    """Update a customer order. Only admins can edit Pending orders."""
+    import logging
+    import json
+    logger = logging.getLogger(__name__)
+    
+    # Get raw request body and parse manually
+    body = await request.body()
+    body_json = json.loads(body.decode('utf-8'))
+    
+    # Extract items before Pydantic validation (workaround for Pydantic issue)
+    items_data = body_json.pop('items', None)
+    logger.info(f"Extracted items from request: {items_data}")
+    
+    # Now parse the rest with Pydantic
+    order_update = schemas.CustomerOrderUpdate(**body_json)
+    logger.info(f"Order update parsed successfully")
+    
+    # Only admins can update orders
+    if not permission_checker.is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can edit orders")
+    
     # Get the existing order
     order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Customer order not found")
     
-    # Check permissions
+    # Only allow editing Pending orders
+    if order.status != 'Pending':
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot edit order with status '{order.status}'. Only orders in 'Pending' status can be edited."
+        )
+    
+    # Check organization access for non-super-admins
     if not permission_checker.is_super_admin(current_user):
-        # Get the user's organization to check its type
-        user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
-        
-        # Users can update orders if they are either:
+        # Admins can update orders if they are either:
         # 1. The customer organization (who placed the order)
         # 2. The Oraseas EE organization (who receives the order)
         is_customer = order.customer_organization_id == current_user.organization_id
@@ -206,7 +230,13 @@ def update_customer_order(
         if not (is_customer or is_oraseas):
             raise HTTPException(status_code=403, detail="Cannot update orders for other organizations")
     
-    return crud.customer_orders.update_customer_order(db=db, order_id=order_id, order_update=order_update, current_user_id=current_user.user_id)
+    return crud.customer_orders.update_customer_order(
+        db=db, 
+        order_id=order_id, 
+        order_update=order_update, 
+        current_user_id=current_user.user_id,
+        items_data=items_data  # Pass items separately
+    )
 
 @router.get("/{order_id}", response_model=schemas.CustomerOrderResponse)
 def get_customer_order(
@@ -357,3 +387,49 @@ def confirm_order_receipt(
     db.refresh(order)
     
     return order
+
+
+@router.delete("/{order_id}", status_code=204)
+def delete_customer_order(
+    order_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.DELETE))
+):
+    """Delete a customer order. Only admins can delete orders."""
+    # Only admins can delete orders
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Delete order attempt - User: {current_user.user_id}, Role: {current_user.role}, Org: {current_user.organization_id}")
+    
+    if not permission_checker.is_admin(current_user):
+        logger.warning(f"Delete denied - User {current_user.user_id} with role {current_user.role} is not admin")
+        raise HTTPException(status_code=403, detail=f"Only admins can delete orders. Your role: {current_user.role}")
+    
+    # Get the existing order
+    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Customer order not found")
+    
+    # Check organization access for non-super-admins
+    if not permission_checker.is_super_admin(current_user):
+        # Admins can delete orders if they are either:
+        # 1. The customer organization (who placed the order)
+        # 2. The Oraseas EE organization (who receives the order)
+        is_customer = order.customer_organization_id == current_user.organization_id
+        is_oraseas = order.oraseas_organization_id == current_user.organization_id
+        
+        if not (is_customer or is_oraseas):
+            raise HTTPException(status_code=403, detail="Cannot delete orders for other organizations")
+    
+    # Check if order can be deleted (only if not yet shipped/received)
+    if order.status in ['Shipped', 'Received', 'Delivered']:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete order with status '{order.status}'. Only orders in 'Requested' or 'Pending' status can be deleted."
+        )
+    
+    # Delete the order (cascade will delete items and transactions)
+    db.delete(order)
+    db.commit()
+    
+    return None

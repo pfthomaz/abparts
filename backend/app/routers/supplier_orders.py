@@ -102,15 +102,26 @@ def update_supplier_order(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
-    """Update a supplier order with organization access control."""
+    """Update a supplier order. Only admins can edit Pending orders."""
+    # Only admins can update orders
+    if not permission_checker.is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can edit orders")
+    
     # Get the existing order
     order = db.query(models.SupplierOrder).filter(models.SupplierOrder.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Supplier order not found")
     
-    # Check permissions
+    # Only allow editing Pending orders
+    if order.status != 'Pending':
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot edit order with status '{order.status}'. Only orders in 'Pending' status can be edited."
+        )
+    
+    # Check organization access for non-super-admins
     if not permission_checker.is_super_admin(current_user):
-        # Users can only update orders from their organization
+        # Admins can only update orders from their organization
         if order.ordering_organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Cannot update orders for other organizations")
     
@@ -137,3 +148,40 @@ def get_supplier_order(
             raise HTTPException(status_code=403, detail="Access denied to this order")
     
     return order
+
+
+
+@router.delete("/{order_id}", status_code=204)
+def delete_supplier_order(
+    order_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.DELETE))
+):
+    """Delete a supplier order. Only admins can delete orders."""
+    # Only admins can delete orders
+    if not permission_checker.is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can delete orders")
+    
+    # Get the existing order
+    order = db.query(models.SupplierOrder).filter(models.SupplierOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Supplier order not found")
+    
+    # Check organization access for non-super-admins
+    if not permission_checker.is_super_admin(current_user):
+        # Admins can only delete orders from their organization
+        if order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot delete orders for other organizations")
+    
+    # Check if order can be deleted (only if not yet shipped/received)
+    if order.status in ['Shipped', 'Received', 'Delivered']:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete order with status '{order.status}'. Only orders in 'Requested' or 'Pending' status can be deleted."
+        )
+    
+    # Delete the order (cascade will delete items)
+    db.delete(order)
+    db.commit()
+    
+    return None

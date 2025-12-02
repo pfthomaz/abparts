@@ -100,6 +100,22 @@ const confirmCustomerOrderReceipt = (orderId, receiptData) => {
   return api.patch(`/customer_orders/${orderId}/confirm-receipt`, receiptData);
 };
 
+/**
+ * Deletes a supplier order.
+ * @param {string} orderId The ID of the supplier order to delete.
+ */
+const deleteSupplierOrder = (orderId) => {
+  return api.delete(`/supplier_orders/${orderId}`);
+};
+
+/**
+ * Deletes a customer order.
+ * @param {string} orderId The ID of the customer order to delete.
+ */
+const deleteCustomerOrder = (orderId) => {
+  return api.delete(`/customer_orders/${orderId}`);
+};
+
 export const ordersService = {
   getSupplierOrders,
   getCustomerOrders,
@@ -107,6 +123,8 @@ export const ordersService = {
   createCustomerOrder,
   updateSupplierOrder,
   updateCustomerOrder,
+  deleteSupplierOrder,
+  deleteCustomerOrder,
   getOrderAnalytics,
   getOrderHistory,
   createSupplierOrderItem,

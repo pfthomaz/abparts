@@ -13,18 +13,56 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
   const [partsLoading, setPartsLoading] = useState(false);
 
   // Initialize form data with a function to avoid recreating the object
-  const [formData, setFormData] = useState(() => ({
-    customer_organization_id: '',
-    oraseas_organization_id: '',
-    order_date: new Date().toISOString().split('T')[0],
-    expected_delivery_date: '',
-    actual_delivery_date: '',
-    status: 'Pending',
-    ordered_by_user_id: '',
-    notes: '',
-    items: [],
-    ...initialData,
-  }));
+  const [formData, setFormData] = useState(() => {
+    const baseData = {
+      customer_organization_id: '',
+      oraseas_organization_id: '',
+      order_date: new Date().toISOString().split('T')[0],
+      expected_delivery_date: '',
+      actual_delivery_date: '',
+      status: 'Pending',
+      ordered_by_user_id: '',
+      notes: '',
+      items: [],
+      ...initialData,
+    };
+    
+    // Format dates for input fields (YYYY-MM-DD format)
+    if (initialData.order_date) {
+      baseData.order_date = new Date(initialData.order_date).toISOString().split('T')[0];
+    }
+    if (initialData.expected_delivery_date) {
+      baseData.expected_delivery_date = new Date(initialData.expected_delivery_date).toISOString().split('T')[0];
+    }
+    if (initialData.actual_delivery_date) {
+      baseData.actual_delivery_date = new Date(initialData.actual_delivery_date).toISOString().split('T')[0];
+    }
+    
+    // Normalize items if they exist in initialData
+    // API returns items with nested part object, but form expects part at same level
+    if (initialData.items && initialData.items.length > 0) {
+      baseData.items = initialData.items.map(item => {
+        const unitOfMeasure = item.part?.unit_of_measure || item.unit_of_measure || 'units';
+        const quantity = unitOfMeasure === 'units' 
+          ? Math.floor(parseFloat(item.quantity)) 
+          : parseFloat(item.quantity);
+        
+        return {
+          part_id: item.part_id,
+          quantity: quantity,
+          unit_price: item.unit_price,
+          part: item.part || {
+            id: item.part_id,
+            name: item.part_name || 'Unknown Part',
+            part_number: item.part_number || '',
+            unit_of_measure: unitOfMeasure
+          }
+        };
+      });
+    }
+    
+    return baseData;
+  });
 
   // State for adding new items
   const [currentItem, setCurrentItem] = useState({
@@ -167,15 +205,29 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
     }
 
     try {
-      // Convert date strings to ISO 8601 format or set to null if empty
+      // Build data object with only the fields that should be sent
       const dataToSend = {
-        ...formData,
+        customer_organization_id: formData.customer_organization_id,
+        oraseas_organization_id: formData.oraseas_organization_id,
         order_date: formData.order_date ? new Date(formData.order_date).toISOString() : null,
         expected_delivery_date: formData.expected_delivery_date ? new Date(formData.expected_delivery_date).toISOString() : null,
         actual_delivery_date: formData.actual_delivery_date ? new Date(formData.actual_delivery_date).toISOString() : null,
-        // Ensure ordered_by_user_id is null if empty string
+        status: formData.status,
         ordered_by_user_id: formData.ordered_by_user_id || null,
+        notes: formData.notes || '',
+        // Format items to only include necessary fields
+        items: formData.items.map(item => ({
+          part_id: item.part_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price
+        }))
       };
+
+      console.log('=== SUBMITTING ORDER DATA ===');
+      console.log('Form data items:', formData.items);
+      console.log('Items count:', dataToSend.items.length);
+      console.log('Items:', JSON.stringify(dataToSend.items, null, 2));
+      console.log('Full dataToSend:', JSON.stringify(dataToSend, null, 2));
 
       await onSubmit(dataToSend);
       onClose(); // Close modal on successful submission
@@ -442,23 +494,63 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           <div className="space-y-2">
             <h4 className="font-medium text-gray-800">Order Items:</h4>
             {formData.items.map((item, index) => (
-              <div key={index} className="flex items-center justify-between bg-white p-3 rounded border">
-                <div className="flex-1">
-                  <span className="font-medium">{item.part.name}</span>
-                  <span className="text-gray-500 ml-2">({item.part.part_number})</span>
-                  <div className="text-sm text-gray-600">
-                    Quantity: {item.quantity} {item.part.unit_of_measure}
-                    {item.unit_price && ` • Price: ${item.unit_price}`}
+              <div key={index} className="bg-white p-3 rounded border">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <span className="font-medium">{item.part.name}</span>
+                    <span className="text-gray-500 ml-2">({item.part.part_number})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(index)}
+                    className="text-red-600 hover:text-red-800 font-semibold ml-2"
+                    disabled={loading}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Quantity ({item.part.unit_of_measure})
+                    </label>
+                    <input
+                      type="number"
+                      step={item.part.part_type === 'bulk_material' ? '0.001' : '1'}
+                      min="0"
+                      value={item.part.part_type === 'bulk_material' ? item.quantity : Math.floor(item.quantity)}
+                      onChange={(e) => {
+                        const newItems = [...formData.items];
+                        if (item.part.part_type === 'bulk_material') {
+                          newItems[index].quantity = parseFloat(e.target.value) || 0;
+                        } else {
+                          newItems[index].quantity = parseInt(e.target.value) || 0;
+                        }
+                        setFormData(prev => ({ ...prev, items: newItems }));
+                      }}
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Unit Price (optional)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.unit_price || ''}
+                      onChange={(e) => {
+                        const newItems = [...formData.items];
+                        newItems[index].unit_price = e.target.value ? parseFloat(e.target.value) : null;
+                        setFormData(prev => ({ ...prev, items: newItems }));
+                      }}
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeItem(index)}
-                  className="text-red-600 hover:text-red-800 font-semibold"
-                  disabled={loading}
-                >
-                  Remove
-                </button>
               </div>
             ))}
           </div>

@@ -44,12 +44,34 @@ def update_supplier_order(db: Session, order_id: uuid.UUID, order_update: schema
         return None # Indicate not found
 
     update_data = order_update.dict(exclude_unset=True)
+    full_update_data = order_update.dict()
+    
     for key, value in update_data.items():
-        setattr(db_order, key, value)
+        if key != 'items':  # Don't try to set items on the order object
+            setattr(db_order, key, value)
+    
     try:
         if "ordering_organization_id" in update_data:
             organization = db.query(models.Organization).filter(models.Organization.id == db_order.ordering_organization_id).first()
             if not organization: raise HTTPException(status_code=400, detail="Ordering Organization ID not found")
+
+        # Update order items if provided
+        if 'items' in full_update_data and full_update_data['items'] is not None:
+            logger.info(f"Updating order items for supplier order {order_id}")
+            # Delete existing items
+            db.query(models.SupplierOrderItem).filter(
+                models.SupplierOrderItem.supplier_order_id == order_id
+            ).delete()
+            
+            # Add new items
+            for item_data in full_update_data['items']:
+                new_item = models.SupplierOrderItem(
+                    supplier_order_id=order_id,
+                    part_id=item_data['part_id'],
+                    quantity=item_data['quantity'],
+                    unit_price=item_data.get('unit_price')
+                )
+                db.add(new_item)
 
         db.add(db_order)
         db.commit()

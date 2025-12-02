@@ -617,6 +617,8 @@ __all__ = [
     'WarehouseCreate',
     'WarehouseUpdate',
     'ImageUploadResponse',
+    'CustomerOrderItemInline',
+    'SupplierOrderItemInline',
 ]
 
 
@@ -655,6 +657,13 @@ class InventoryTransferRequest(BaseModel):
     notes: Optional[str] = Field(None, max_length=500, description="Optional notes for the transfer")
 
 
+# --- Supplier Order Item Inline Schema (defined early for use in SupplierOrderUpdate) ---
+class SupplierOrderItemInline(BaseModel):
+    """Schema for order items sent inline with order create/update (no supplier_order_id needed)"""
+    part_id: uuid.UUID
+    quantity: Decimal = Field(default=1, decimal_places=3)
+    unit_price: Optional[Decimal] = Field(None, decimal_places=2)
+
 # --- Supplier Order Schemas ---
 class SupplierOrderBase(BaseModel):
     ordering_organization_id: uuid.UUID
@@ -668,7 +677,8 @@ class SupplierOrderBase(BaseModel):
 class SupplierOrderCreate(SupplierOrderBase):
     pass
 
-class SupplierOrderUpdate(SupplierOrderBase):
+class SupplierOrderUpdate(BaseModel):
+    # Don't inherit from SupplierOrderBase to avoid field conflicts
     ordering_organization_id: Optional[uuid.UUID] = None
     supplier_name: Optional[str] = Field(None, max_length=255)
     order_date: Optional[datetime] = None
@@ -676,6 +686,7 @@ class SupplierOrderUpdate(SupplierOrderBase):
     actual_delivery_date: Optional[datetime] = None
     status: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = None
+    items: Optional[List[SupplierOrderItemInline]] = None
 
 class SupplierOrderResponse(SupplierOrderBase, BaseSchema):
     items: List['SupplierOrderItemResponse'] = []
@@ -701,6 +712,13 @@ class SupplierOrderItemResponse(SupplierOrderItemBase, BaseSchema):
     part: PartResponse
 
 
+# --- Customer Order Item Inline Schema (defined early for use in CustomerOrderUpdate) ---
+class CustomerOrderItemInline(BaseModel):
+    """Schema for order items sent inline with order create/update (no customer_order_id needed)"""
+    part_id: uuid.UUID
+    quantity: Decimal = Field(default=1, decimal_places=3)
+    unit_price: Optional[Decimal] = Field(None, decimal_places=2)
+
 # --- Customer Order Schemas ---
 class CustomerOrderBase(BaseModel):
     customer_organization_id: uuid.UUID
@@ -716,7 +734,8 @@ class CustomerOrderBase(BaseModel):
 class CustomerOrderCreate(CustomerOrderBase):
     pass
 
-class CustomerOrderUpdate(CustomerOrderBase):
+class CustomerOrderUpdate(BaseModel):
+    # Don't inherit from CustomerOrderBase to avoid field conflicts
     customer_organization_id: Optional[uuid.UUID] = None
     oraseas_organization_id: Optional[uuid.UUID] = None
     order_date: Optional[datetime] = None
@@ -727,6 +746,7 @@ class CustomerOrderUpdate(CustomerOrderBase):
     ordered_by_user_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
     receiving_warehouse_id: Optional[uuid.UUID] = None
+    items: Optional[List[CustomerOrderItemInline]] = None
 
 class CustomerOrderResponse(CustomerOrderBase, BaseSchema):
     items: List['CustomerOrderItemResponse'] = []
@@ -778,12 +798,19 @@ class CustomerOrderItemResponse(CustomerOrderItemBase, BaseSchema):
 # This handles compatibility between Pydantic v1 and v2.
 if VERSION.startswith('1.'):
     SupplierOrderResponse.update_forward_refs()
+    SupplierOrderUpdate.update_forward_refs()
     CustomerOrderResponse.update_forward_refs()
+    CustomerOrderUpdate.update_forward_refs()
     OrganizationHierarchyNode.update_forward_refs()
     UserResponse.update_forward_refs()
 else:
+    # Rebuild models with forward references
+    SupplierOrderItemInline.model_rebuild()
+    CustomerOrderItemInline.model_rebuild()
     SupplierOrderResponse.model_rebuild()
+    SupplierOrderUpdate.model_rebuild()
     CustomerOrderResponse.model_rebuild()
+    CustomerOrderUpdate.model_rebuild()
     OrganizationHierarchyNode.model_rebuild()
     UserResponse.model_rebuild()
 

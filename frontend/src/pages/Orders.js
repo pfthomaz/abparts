@@ -31,6 +31,10 @@ const Orders = () => {
   const [selectedOrderForFulfillment, setSelectedOrderForFulfillment] = useState(null);
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null);
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [editOrderType, setEditOrderType] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterOrderType, setFilterOrderType] = useState('all');
@@ -183,6 +187,32 @@ const Orders = () => {
     }
   };
 
+  const handleUpdateSupplierOrder = async (orderData) => {
+    try {
+      await ordersService.updateSupplierOrder(editingOrder.id, orderData);
+      await fetchData(); // Refresh all data
+      setShowSupplierOrderModal(false);
+      setEditingOrder(null);
+      setEditOrderType(null);
+    } catch (err) {
+      console.error("Error updating supplier order:", err);
+      throw err;
+    }
+  };
+
+  const handleUpdateCustomerOrder = async (orderData) => {
+    try {
+      await ordersService.updateCustomerOrder(editingOrder.id, orderData);
+      await fetchData(); // Refresh all data
+      setShowCustomerOrderModal(false);
+      setEditingOrder(null);
+      setEditOrderType(null);
+    } catch (err) {
+      console.error("Error updating customer order:", err);
+      throw err;
+    }
+  };
+
 
 
   const handleOrderStatusUpdate = async (orderId, orderType, newStatus, fulfillmentData = null) => {
@@ -249,6 +279,45 @@ const Orders = () => {
     }
   };
 
+  const handleEditOrder = (order, orderType) => {
+    setEditingOrder(order);
+    setEditOrderType(orderType);
+    if (orderType === 'customer') {
+      setShowCustomerOrderModal(true);
+    } else {
+      setShowSupplierOrderModal(true);
+    }
+  };
+
+  const handleDeleteOrder = (order, orderType) => {
+    setOrderToDelete({ order, orderType });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      const { order, orderType } = orderToDelete;
+      if (orderType === 'customer') {
+        await ordersService.deleteCustomerOrder(order.id);
+      } else {
+        await ordersService.deleteSupplierOrder(order.id);
+      }
+      await fetchData(); // Refresh all data
+      setShowDeleteConfirm(false);
+      setOrderToDelete(null);
+    } catch (err) {
+      console.error("Error deleting order:", err);
+      setError(err.message || "Failed to delete order");
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setOrderToDelete(null);
+  };
+
   const canFulfillOrder = (order) => {
     return order.status === 'Requested' || order.status === 'Pending' || order.status === 'Shipped';
   };
@@ -268,6 +337,20 @@ const Orders = () => {
     return user && 
       order.customer_organization_id === user.organization_id &&
       order.status === 'Shipped';
+  };
+
+  const canEditOrder = (order) => {
+    // Only admins can edit orders, and only if status is Pending
+    return user && 
+      (user.role === 'admin' || user.role === 'super_admin') &&
+      order.status === 'Pending';
+  };
+
+  const canDeleteOrder = (order) => {
+    // Only admins can delete orders, and only if status is Requested or Pending
+    return user && 
+      (user.role === 'admin' || user.role === 'super_admin') &&
+      (order.status === 'Requested' || order.status === 'Pending');
   };
 
   return (
@@ -477,6 +560,22 @@ const Orders = () => {
                           Fulfill Order
                         </button>
                       )}
+                      {canEditOrder(order) && (
+                        <button
+                          onClick={() => handleEditOrder(order, 'supplier')}
+                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {canDeleteOrder(order) && (
+                        <button
+                          onClick={() => handleDeleteOrder(order, 'supplier')}
+                          className="text-sm bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
                       <button
                         onClick={() => toggleOrderItems(order.id)}
                         className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-md transition-colors"
@@ -569,6 +668,22 @@ const Orders = () => {
                           Confirm Receipt
                         </button>
                       )}
+                      {canEditOrder(order) && (
+                        <button
+                          onClick={() => handleEditOrder(order, 'customer')}
+                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {canDeleteOrder(order) && (
+                        <button
+                          onClick={() => handleDeleteOrder(order, 'customer')}
+                          className="text-sm bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
                       <button
                         onClick={() => toggleOrderItems(order.id)}
                         className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-md transition-colors"
@@ -613,12 +728,86 @@ const Orders = () => {
         </>
       )}
 
-      <Modal isOpen={showSupplierOrderModal} onClose={() => setShowSupplierOrderModal(false)} title="Add Supplier Order" size="xl">
-        <SupplierOrderForm onSubmit={handleCreateSupplierOrder} onClose={() => setShowSupplierOrderModal(false)} organizations={organizations} parts={parts} />
+      <Modal 
+        isOpen={showSupplierOrderModal} 
+        onClose={() => {
+          setShowSupplierOrderModal(false);
+          setEditingOrder(null);
+          setEditOrderType(null);
+        }} 
+        title={editingOrder && editOrderType === 'supplier' ? "Edit Supplier Order" : "Add Supplier Order"} 
+        size="xl"
+      >
+        <SupplierOrderForm 
+          onSubmit={editingOrder && editOrderType === 'supplier' ? handleUpdateSupplierOrder : handleCreateSupplierOrder} 
+          onClose={() => {
+            setShowSupplierOrderModal(false);
+            setEditingOrder(null);
+            setEditOrderType(null);
+          }} 
+          organizations={organizations} 
+          parts={parts}
+          initialData={(editingOrder && editOrderType === 'supplier') ? editingOrder : {}}
+          editMode={!!(editingOrder && editOrderType === 'supplier')}
+        />
       </Modal>
 
-      <Modal isOpen={showCustomerOrderModal} onClose={() => setShowCustomerOrderModal(false)} title="Add Customer Order" size="xl">
-        <CustomerOrderForm onSubmit={handleCreateCustomerOrder} onClose={() => setShowCustomerOrderModal(false)} organizations={organizations} parts={parts} />
+      <Modal 
+        isOpen={showCustomerOrderModal} 
+        onClose={() => {
+          setShowCustomerOrderModal(false);
+          setEditingOrder(null);
+          setEditOrderType(null);
+        }} 
+        title={editingOrder && editOrderType === 'customer' ? "Edit Customer Order" : "Add Customer Order"} 
+        size="xl"
+      >
+        <CustomerOrderForm 
+          onSubmit={editingOrder && editOrderType === 'customer' ? handleUpdateCustomerOrder : handleCreateCustomerOrder} 
+          onClose={() => {
+            setShowCustomerOrderModal(false);
+            setEditingOrder(null);
+            setEditOrderType(null);
+          }} 
+          organizations={organizations} 
+          parts={parts}
+          initialData={(editingOrder && editOrderType === 'customer') ? editingOrder : {}}
+          editMode={!!(editingOrder && editOrderType === 'customer')}
+        />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        title="Confirm Delete"
+      >
+        <div className="p-4">
+          <p className="text-gray-700 mb-4">
+            Are you sure you want to delete this order? This action cannot be undone.
+          </p>
+          {orderToDelete && (
+            <div className="bg-gray-50 p-3 rounded mb-4">
+              <p className="text-sm"><span className="font-medium">Order Type:</span> {orderToDelete.orderType === 'customer' ? 'Customer Order' : 'Supplier Order'}</p>
+              <p className="text-sm"><span className="font-medium">Status:</span> {orderToDelete.order.status}</p>
+              <p className="text-sm"><span className="font-medium">Date:</span> {new Date(orderToDelete.order.order_date).toLocaleDateString()}</p>
+            </div>
+          )}
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={cancelDelete}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteOrder}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+            >
+              Delete Order
+            </button>
+          </div>
+        </div>
       </Modal>
 
 
