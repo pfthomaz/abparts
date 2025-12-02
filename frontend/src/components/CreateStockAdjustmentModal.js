@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { partsService } from '../services/partsService';
 import PartSearchSelector from './PartSearchSelector';
 
-const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
+const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = false, initialData = null }) => {
   const [formData, setFormData] = useState({
     warehouse_id: '',
     adjustment_type: 'stock_take',
@@ -20,12 +20,37 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
     loadParts();
   }, []);
 
+  // Initialize form with existing data when editing
+  useEffect(() => {
+    if (editMode && initialData) {
+      setFormData({
+        warehouse_id: initialData.warehouse_id,
+        adjustment_type: initialData.adjustment_type,
+        reason: initialData.reason || '',
+        notes: initialData.notes || '',
+        items: initialData.items.map(item => ({
+          part_id: item.part_id,
+          part_number: item.part_number,
+          part_name: item.part_name,
+          unit_of_measure: item.unit_of_measure || 'units',
+          quantity_before: item.quantity_before,
+          quantity_after: item.quantity_after,
+          reason: item.reason || ''
+        }))
+      });
+    }
+  }, [editMode, initialData]);
+
   const loadParts = async () => {
     try {
-      const data = await partsService.list();
-      setParts(data);
+      const data = await partsService.getParts();
+      // Handle different response formats
+      const partsArray = Array.isArray(data) ? data : (data?.items || data?.data || []);
+      setParts(partsArray);
     } catch (err) {
+      console.error('Failed to load parts:', err);
       setError('Failed to load parts');
+      setParts([]); // Ensure parts is always an array
     }
   };
 
@@ -44,6 +69,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
           part_id: part.id,
           part_number: part.part_number,
           part_name: part.name,
+          unit_of_measure: part.unit_of_measure,
           quantity_after: 0,
           reason: ''
         }
@@ -98,11 +124,18 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
         adjustment_type: formData.adjustment_type,
         reason: formData.reason || null,
         notes: formData.notes || null,
-        items: formData.items.map(item => ({
-          part_id: item.part_id,
-          quantity_after: parseFloat(item.quantity_after),
-          reason: item.reason || null
-        }))
+        items: formData.items.map(item => {
+          const itemData = {
+            part_id: item.part_id,
+            quantity_after: parseFloat(item.quantity_after),
+            reason: item.reason || null
+          };
+          // Only include quantity_before in edit mode
+          if (editMode && item.quantity_before !== undefined) {
+            itemData.quantity_before = parseFloat(item.quantity_before);
+          }
+          return itemData;
+        })
       };
 
       await onSubmit(submitData);
@@ -118,7 +151,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Create Stock Adjustment</h2>
+            <h2 className="text-2xl font-bold">{editMode ? 'Edit Stock Adjustment' : 'Create Stock Adjustment'}</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
@@ -245,9 +278,18 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
                           </label>
                           <input
                             type="number"
-                            step="0.01"
+                            step={item.unit_of_measure === 'units' ? '1' : '0.01'}
+                            min="0"
                             value={item.quantity_after}
-                            onChange={(e) => handleItemChange(index, 'quantity_after', e.target.value)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // For consumables, ensure integer values
+                              if (item.unit_of_measure === 'units') {
+                                handleItemChange(index, 'quantity_after', value ? Math.floor(parseFloat(value)) : 0);
+                              } else {
+                                handleItemChange(index, 'quantity_after', value);
+                              }
+                            }}
                             className="w-full border border-gray-300 rounded px-3 py-2"
                             required
                           />
@@ -287,7 +329,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
                 disabled={loading}
               >
-                {loading ? 'Creating...' : 'Create Adjustment'}
+                {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Adjustment' : 'Create Adjustment')}
               </button>
             </div>
           </form>

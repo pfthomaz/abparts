@@ -23,7 +23,7 @@ const adjustmentTypeColors = {
   other: 'bg-gray-100 text-gray-800'
 };
 
-const StockAdjustmentsList = ({ adjustments, onViewDetails }) => {
+const StockAdjustmentsList = ({ adjustments, onViewDetails, onEdit, onDelete }) => {
   if (adjustments.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
@@ -83,13 +83,29 @@ const StockAdjustmentsList = ({ adjustments, onViewDetails }) => {
               <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                 {adjustment.reason || '-'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-right space-x-3">
                 <button
                   onClick={() => onViewDetails(adjustment.id)}
-                  className="text-blue-600 hover:text-blue-800"
+                  className="text-blue-600 hover:text-blue-900 font-medium"
                 >
-                  View Details
+                  View
                 </button>
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(adjustment)}
+                    className="text-green-600 hover:text-green-900 font-medium"
+                  >
+                    Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(adjustment)}
+                    className="text-red-600 hover:text-red-900 font-medium"
+                  >
+                    Delete
+                  </button>
+                )}
               </td>
             </tr>
           ))}

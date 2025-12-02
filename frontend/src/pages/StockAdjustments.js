@@ -14,6 +14,7 @@ const StockAdjustments = () => {
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAdjustment, setSelectedAdjustment] = useState(null);
+  const [editingAdjustment, setEditingAdjustment] = useState(null);
   const [filters, setFilters] = useState({
     warehouse_id: '',
     adjustment_type: '',
@@ -44,11 +45,20 @@ const StockAdjustments = () => {
     }
   };
 
-  const handleCreateAdjustment = async (adjustmentData) => {
+  const handleSaveAdjustment = async (adjustmentData) => {
     try {
-      await stockAdjustmentsService.create(adjustmentData);
-      setShowCreateModal(false);
-      loadData();
+      if (editingAdjustment) {
+        // Update existing adjustment
+        await stockAdjustmentsService.update(editingAdjustment.id, adjustmentData);
+        setEditingAdjustment(null);
+        alert('Stock adjustment updated successfully. Page will reload.');
+        window.location.reload();
+      } else {
+        // Create new adjustment
+        await stockAdjustmentsService.create(adjustmentData);
+        setShowCreateModal(false);
+        loadData();
+      }
     } catch (err) {
       throw err;
     }
@@ -60,6 +70,30 @@ const StockAdjustments = () => {
       setSelectedAdjustment(details);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleEdit = async (adjustment) => {
+    try {
+      // Fetch full details including items
+      const details = await stockAdjustmentsService.getById(adjustment.id);
+      setEditingAdjustment(details);
+    } catch (err) {
+      alert('Failed to load adjustment details: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDelete = async (adjustment) => {
+    if (!window.confirm(`Are you sure you want to delete this stock adjustment?\n\nDate: ${adjustment.adjustment_date}\nWarehouse: ${adjustment.warehouse_name}\nType: ${adjustment.adjustment_type}`)) {
+      return;
+    }
+
+    try {
+      await stockAdjustmentsService.delete(adjustment.id);
+      alert('Stock adjustment deleted successfully. Page will reload.');
+      window.location.reload();
+    } catch (err) {
+      alert('Failed to delete stock adjustment: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -179,16 +213,23 @@ const StockAdjustments = () => {
         <StockAdjustmentsList
           adjustments={adjustments}
           onViewDetails={handleViewDetails}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
           onRefresh={loadData}
         />
       )}
 
-      {/* Create Modal */}
-      {showCreateModal && (
+      {/* Create/Edit Modal */}
+      {(showCreateModal || editingAdjustment) && (
         <CreateStockAdjustmentModal
           warehouses={warehouses}
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateAdjustment}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingAdjustment(null);
+          }}
+          onSubmit={handleSaveAdjustment}
+          editMode={!!editingAdjustment}
+          initialData={editingAdjustment}
         />
       )}
 

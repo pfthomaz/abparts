@@ -31,5 +31,10 @@ export const stockAdjustmentsService = {
   // Delete a stock adjustment
   delete(id) {
     return api.delete(`/stock-adjustments/${id}`);
+  },
+
+  // Update a stock adjustment
+  update(id, adjustmentData) {
+    return api.put(`/stock-adjustments/${id}`, adjustmentData);
   }
 };

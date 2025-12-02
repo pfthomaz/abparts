@@ -522,10 +522,10 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatNumber(item.current_stock)} {item.unit_of_measure}
+                          {formatNumber(item.current_stock, item.unit_of_measure)} {item.unit_of_measure}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatNumber(item.minimum_stock_recommendation)}
+                          {formatNumber(item.minimum_stock_recommendation, item.unit_of_measure)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatusColor(item.stock_status)}`}>

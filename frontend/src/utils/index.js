@@ -59,10 +59,20 @@ export const formatDate = (dateString) => {
   });
 };
 
-export const formatNumber = (value) => {
+export const formatNumber = (value, unitOfMeasure = null) => {
   if (value === null || value === undefined) return '-';
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
+  
+  // For consumables (units), show as integer without decimals
+  if (unitOfMeasure === 'units') {
+    return Math.floor(num).toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+  
+  // For liquids or other measures, show with up to 2 decimals
   return num.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2

@@ -97,6 +97,7 @@ const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
                     const change = parseFloat(item.quantity_change);
                     const isIncrease = change > 0;
                     const isDecrease = change < 0;
+                    const unitOfMeasure = item.unit_of_measure || 'units';
                     
                     return (
                       <tr key={item.id}>
@@ -107,16 +108,16 @@ const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
                           {item.part_name}
                         </td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900">
-                          {formatNumber(item.quantity_before)}
+                          {formatNumber(item.quantity_before, unitOfMeasure)}
                         </td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900">
-                          {formatNumber(item.quantity_after)}
+                          {formatNumber(item.quantity_after, unitOfMeasure)}
                         </td>
                         <td className={`px-4 py-3 text-sm text-right font-medium ${
                           isIncrease ? 'text-green-600' : isDecrease ? 'text-red-600' : 'text-gray-900'
                         }`}>
                           {isIncrease && '+'}
-                          {formatNumber(item.quantity_change)}
+                          {formatNumber(item.quantity_change, unitOfMeasure)}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {item.reason || '-'}

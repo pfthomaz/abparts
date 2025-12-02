@@ -1130,6 +1130,7 @@ class AdjustmentTypeEnum(str, Enum):
 class StockAdjustmentItemCreate(BaseModel):
     """Schema for creating a stock adjustment line item"""
     part_id: uuid.UUID
+    quantity_before: Optional[Decimal] = Field(None, description="Quantity before adjustment (for updates)")
     quantity_after: Decimal = Field(..., description="New quantity after adjustment")
     reason: Optional[str] = Field(None, description="Specific reason for this part adjustment")
 

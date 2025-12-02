@@ -189,6 +189,7 @@ def get_stock_adjustment_by_id(
             "part_id": item.part_id,
             "part_number": item.part.part_number,
             "part_name": item.part.name,
+            "unit_of_measure": item.part.unit_of_measure or 'units',
             "quantity_before": item.quantity_before,
             "quantity_after": item.quantity_after,
             "quantity_change": item.quantity_change,
