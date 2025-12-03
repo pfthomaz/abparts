@@ -69,8 +69,13 @@ const Layout = () => {
         <nav className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-8">
-              <Link to="/" className="text-2xl font-bold text-gray-800">
-                ABParts
+              <Link to="/" className="flex items-center">
+                <img 
+                  src="/logo.png" 
+                  alt="ABParts - Intelligent Parts Management" 
+                  style={{ height: '6rem' }}
+                  className="w-auto"
+                />
               </Link>
 
               {/* Desktop Navigation */}
