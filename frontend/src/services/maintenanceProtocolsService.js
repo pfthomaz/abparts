@@ -19,7 +19,7 @@ export const getProtocol = async (protocolId) => {
 };
 
 export const createProtocol = async (protocolData) => {
-  return api.post('/maintenance-protocols', protocolData);
+  return api.post('/maintenance-protocols/', protocolData);
 };
 
 export const updateProtocol = async (protocolId, protocolData) => {
@@ -63,11 +63,11 @@ export const getProtocolsForMachine = async (machineId) => {
 };
 
 export const getExecutions = async (skip = 0, limit = 100) => {
-  return api.get(`/maintenance-protocols/executions?skip=${skip}&limit=${limit}`);
+  return api.get(`/maintenance-protocols/executions/?skip=${skip}&limit=${limit}`);
 };
 
 export const createExecution = async (executionData) => {
-  return api.post('/maintenance-protocols/executions', executionData);
+  return api.post('/maintenance-protocols/executions/', executionData);
 };
 
 export const completeChecklistItem = async (executionId, itemId, completionData) => {
@@ -83,7 +83,7 @@ export const getExecutionsForMachine = async (machineId, skip = 0, limit = 50) =
 };
 
 export const getPendingReminders = async () => {
-  return api.get('/maintenance-protocols/reminders/pending');
+  return api.get('/maintenance-protocols/reminders/pending/');
 };
 
 export const acknowledgeReminder = async (reminderId) => {
