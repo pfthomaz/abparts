@@ -1,13 +1,6 @@
 // frontend/src/services/maintenanceProtocolsService.js
 
-// Always use relative path - nginx will proxy to the correct backend
-const API_BASE_URL = '/api';
-
-// Get auth token from localStorage
-const getAuthHeader = () => {
-  const token = localStorage.getItem('authToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
+import { api } from './api';
 
 // Protocol Management
 
@@ -18,17 +11,7 @@ export const listProtocols = async (filters = {}) => {
   if (filters.is_active !== undefined) params.append('is_active', filters.is_active);
   if (filters.search) params.append('search', filters.search);
   
-  const response = await fetch(
-    `${API_BASE_URL}/maintenance-protocols?${params}`,
-    {
-      headers: {
-        ...getAuthHeader(),
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-  
-  if (!response.ok) {
+  return api.get(`/maintenance-protocols?${params}`);
     throw new Error(`Failed to fetch protocols: ${response.statusText}`);
   }
   
