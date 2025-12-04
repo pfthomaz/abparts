@@ -67,7 +67,7 @@ export const getExecutions = async (skip = 0, limit = 100) => {
 };
 
 export const createExecution = async (executionData) => {
-  return api.post('/maintenance-protocols/executions/', executionData);
+  return api.post('/maintenance-protocols/executions', executionData);
 };
 
 export const completeChecklistItem = async (executionId, itemId, completionData) => {
