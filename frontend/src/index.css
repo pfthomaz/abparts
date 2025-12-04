@@ -231,6 +231,8 @@ input[type="password"] {
 /* You can add any custom global CSS here */
 html {
   overflow-y: scroll; /* Always show scrollbar to prevent layout shift */
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+  -webkit-touch-callout: none; /* Disable callout on long press */
 }
 
 body {
@@ -238,6 +240,26 @@ body {
   /* Recommended font as per instructions */
   margin: 0;
   padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh */
+  touch-action: manipulation; /* Improve touch responsiveness */
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+  body {
+    /* Add safe area padding for notched devices */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent text selection on buttons and interactive elements */
+button, a, .clickable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Hide scrollbar for mobile tab navigation */
