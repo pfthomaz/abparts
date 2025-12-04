@@ -11,7 +11,7 @@ export const listProtocols = async (filters = {}) => {
   if (filters.is_active !== undefined) params.append('is_active', filters.is_active);
   if (filters.search) params.append('search', filters.search);
   
-  return api.get(`/maintenance-protocols?${params}`);
+  return api.get(`/maintenance-protocols/?${params}`);
 };
 
 export const getProtocol = async (protocolId) => {
