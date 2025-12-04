@@ -1,6 +1,7 @@
 // frontend/src/services/maintenanceProtocolsService.js
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
 
 // Get auth token from localStorage
 const getAuthHeader = () => {
