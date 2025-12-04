@@ -63,7 +63,7 @@ export const getProtocolsForMachine = async (machineId) => {
 };
 
 export const getExecutions = async (skip = 0, limit = 100) => {
-  return api.get(`/maintenance-protocols/executions/?skip=${skip}&limit=${limit}`);
+  return api.get(`/maintenance-protocols/executions?skip=${skip}&limit=${limit}`);
 };
 
 export const createExecution = async (executionData) => {
