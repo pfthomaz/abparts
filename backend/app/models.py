@@ -3,7 +3,7 @@
 import uuid
 import enum
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Text, ARRAY, DECIMAL, UniqueConstraint, Enum, LargeBinary
+from sqlalchemy import Column, String, Boolean, Integer, ForeignKey, DateTime, Date, Text, ARRAY, DECIMAL, UniqueConstraint, Enum, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -1062,6 +1062,7 @@ class MachineMaintenance(Base):
     cost = Column(DECIMAL(precision=10, scale=2), nullable=True)
     next_maintenance_date = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
+    execution_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_executions.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -1069,6 +1070,7 @@ class MachineMaintenance(Base):
     machine = relationship("Machine", back_populates="maintenance_records")
     performed_by_user = relationship("User")
     parts_used = relationship("MaintenancePartUsage", back_populates="maintenance_record", cascade="all, delete-orphan")
+    execution = relationship("MaintenanceExecution", back_populates="maintenance_records")
 
     def __repr__(self):
         return f"<MachineMaintenance(id={self.id}, machine_id={self.machine_id}, type='{self.maintenance_type.value}')>"
@@ -1221,6 +1223,178 @@ class MaintenanceRecommendation(Base):
 
     def __repr__(self):
         return f"<MaintenanceRecommendation(id={self.id}, machine_id={self.machine_id}, priority='{self.priority.value}')>"
+
+
+# Maintenance Protocol Models
+class ProtocolType(enum.Enum):
+    """Types of maintenance protocols"""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    SCHEDULED = "scheduled"
+    CUSTOM = "custom"
+
+
+class ChecklistItemType(enum.Enum):
+    """Types of checklist items"""
+    CHECK = "check"
+    SERVICE = "service"
+    REPLACEMENT = "replacement"
+
+
+class MaintenanceExecutionStatus(enum.Enum):
+    """Status of maintenance execution"""
+    SCHEDULED = "scheduled"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    PARTIAL = "partial"
+    SKIPPED = "skipped"
+
+
+class ReminderStatus(enum.Enum):
+    """Status of maintenance reminders"""
+    PENDING = "pending"
+    ACKNOWLEDGED = "acknowledged"
+    COMPLETED = "completed"
+    DISMISSED = "dismissed"
+
+
+class MaintenanceProtocol(Base):
+    """
+    Maintenance protocol templates defining service procedures.
+    Can be model-specific or apply to all models.
+    """
+    __tablename__ = "maintenance_protocols"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    protocol_type = Column(Enum(ProtocolType, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    service_interval_hours = Column(DECIMAL(precision=10, scale=2), nullable=True)  # NULL for daily/weekly
+    is_recurring = Column(Boolean, default=False)  # True for recurring services, False for one-time
+    machine_model = Column(String(50), nullable=True)  # NULL means all models
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    checklist_items = relationship("ProtocolChecklistItem", back_populates="protocol", cascade="all, delete-orphan", order_by="ProtocolChecklistItem.item_order")
+    executions = relationship("MaintenanceExecution", back_populates="protocol")
+    reminders = relationship("MaintenanceReminder", back_populates="protocol")
+
+    def __repr__(self):
+        return f"<MaintenanceProtocol(id={self.id}, name='{self.name}', type='{self.protocol_type.value}')>"
+
+
+class ProtocolChecklistItem(Base):
+    """
+    Individual checklist items within a maintenance protocol.
+    Can be checks, services, or part replacements.
+    """
+    __tablename__ = "protocol_checklist_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    protocol_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_protocols.id", ondelete="CASCADE"), nullable=False)
+    item_order = Column(Integer, nullable=False)
+    item_description = Column(Text, nullable=False)
+    item_type = Column(Enum(ChecklistItemType, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    item_category = Column(String(100), nullable=True)  # inspection, cleaning, lubrication, etc.
+    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id", ondelete="SET NULL"), nullable=True)
+    estimated_quantity = Column(DECIMAL(precision=10, scale=3), nullable=True)
+    is_critical = Column(Boolean, default=False)
+    estimated_duration_minutes = Column(Integer, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    protocol = relationship("MaintenanceProtocol", back_populates="checklist_items")
+    part = relationship("Part")
+    completions = relationship("MaintenanceChecklistCompletion", back_populates="checklist_item")
+
+    def __repr__(self):
+        return f"<ProtocolChecklistItem(id={self.id}, protocol_id={self.protocol_id}, order={self.item_order})>"
+
+
+class MaintenanceExecution(Base):
+    """
+    Records of actual maintenance service executions.
+    Links to protocols and tracks completion.
+    """
+    __tablename__ = "maintenance_executions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id", ondelete="CASCADE"), nullable=False)
+    protocol_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_protocols.id", ondelete="SET NULL"), nullable=True)
+    performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    performed_date = Column(DateTime(timezone=True), nullable=True)
+    machine_hours_at_service = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    next_service_due_hours = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    status = Column(Enum(MaintenanceExecutionStatus, values_callable=lambda x: [e.value for e in x]), default=MaintenanceExecutionStatus.COMPLETED)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    machine = relationship("Machine")
+    protocol = relationship("MaintenanceProtocol", back_populates="executions")
+    performed_by = relationship("User")
+    checklist_completions = relationship("MaintenanceChecklistCompletion", back_populates="execution", cascade="all, delete-orphan")
+    maintenance_records = relationship("MachineMaintenance", back_populates="execution")
+
+    def __repr__(self):
+        return f"<MaintenanceExecution(id={self.id}, machine_id={self.machine_id}, date={self.performed_date})>"
+
+
+class MaintenanceChecklistCompletion(Base):
+    """
+    Tracks completion of individual checklist items during maintenance execution.
+    Links to part usage if parts were used.
+    """
+    __tablename__ = "maintenance_checklist_completions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    execution_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_executions.id", ondelete="CASCADE"), nullable=False)
+    checklist_item_id = Column(UUID(as_uuid=True), ForeignKey("protocol_checklist_items.id", ondelete="CASCADE"), nullable=False)
+    is_completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    part_usage_id = Column(UUID(as_uuid=True), ForeignKey("part_usage.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    execution = relationship("MaintenanceExecution", back_populates="checklist_completions")
+    checklist_item = relationship("ProtocolChecklistItem", back_populates="completions")
+    part_usage = relationship("PartUsage")
+
+    def __repr__(self):
+        return f"<MaintenanceChecklistCompletion(id={self.id}, execution_id={self.execution_id}, completed={self.is_completed})>"
+
+
+class MaintenanceReminder(Base):
+    """
+    Automated reminders for upcoming or overdue maintenance.
+    """
+    __tablename__ = "maintenance_reminders"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id", ondelete="CASCADE"), nullable=False)
+    protocol_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_protocols.id", ondelete="CASCADE"), nullable=False)
+    reminder_type = Column(String(50), nullable=False)  # daily, weekly, hours_based, overdue
+    due_date = Column(Date, nullable=True)
+    due_hours = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    status = Column(Enum(ReminderStatus, values_callable=lambda x: [e.value for e in x]), default=ReminderStatus.PENDING)
+    acknowledged_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    machine = relationship("Machine")
+    protocol = relationship("MaintenanceProtocol", back_populates="reminders")
+    acknowledged_by = relationship("User")
+
+    def __repr__(self):
+        return f"<MaintenanceReminder(id={self.id}, machine_id={self.machine_id}, type='{self.reminder_type}')>"
+
 
 # Part Order Models
 class OrderStatus(enum.Enum):

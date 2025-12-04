@@ -31,6 +31,7 @@ class ResourceType(str, Enum):
     ORDER = "order"
     DASHBOARD = "dashboard"
     AUDIT_LOG = "audit_log"
+    MAINTENANCE = "maintenance"
 
 class PermissionType(str, Enum):
     """Types of permissions that can be granted."""

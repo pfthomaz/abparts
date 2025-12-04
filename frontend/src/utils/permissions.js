@@ -332,6 +332,32 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Maintenance Protocols - super admin only
+  if (isSuperAdmin(user)) {
+    items.push({
+      path: '/maintenance-protocols',
+      label: 'Maintenance Protocols',
+      icon: 'maintenance',
+      permission: null,
+      description: 'Manage maintenance protocol templates',
+      adminOnly: true,
+      superAdminOnly: true,
+      category: 'administration',
+      accessScope: 'global'
+    });
+  }
+
+  // Maintenance Executions - all users can execute maintenance
+  items.push({
+    path: '/maintenance-executions',
+    label: 'Maintenance',
+    icon: 'maintenance',
+    permission: null,
+    description: 'Perform and track maintenance',
+    category: 'operations',
+    accessScope: 'organization'
+  });
+
   // Machines - all users can view their org's machines
   if (hasPermission(user, PERMISSIONS.VIEW_ORG_MACHINES) || hasPermission(user, PERMISSIONS.VIEW_ALL_MACHINES)) {
     items.push({

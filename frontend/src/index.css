@@ -229,9 +229,15 @@ input[type="password"] {
 }
 
 /* You can add any custom global CSS here */
+html {
+  overflow-y: scroll; /* Always show scrollbar to prevent layout shift */
+}
+
 body {
   font-family: 'Inter', sans-serif;
   /* Recommended font as per instructions */
+  margin: 0;
+  padding: 0;
 }
 
 /* Hide scrollbar for mobile tab navigation */

@@ -19,3 +19,22 @@ from .session import *
 from .invitation import *
 from .dashboard import *
 from .inventory_workflow import *
+from .maintenance_protocol import *
+
+# Rebuild maintenance protocol schemas with forward references
+from .maintenance_protocol import (
+    ProtocolChecklistItemResponse,
+    MaintenanceProtocolResponse,
+    MaintenanceExecutionCreate,
+    MaintenanceExecutionResponse,
+    MaintenanceChecklistCompletionResponse,
+    MaintenanceReminderResponse
+)
+
+# Rebuild models to resolve forward references
+ProtocolChecklistItemResponse.model_rebuild()
+MaintenanceProtocolResponse.model_rebuild()
+MaintenanceExecutionCreate.model_rebuild()
+MaintenanceExecutionResponse.model_rebuild()
+MaintenanceChecklistCompletionResponse.model_rebuild()
+MaintenanceReminderResponse.model_rebuild()

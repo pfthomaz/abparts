@@ -1,0 +1,261 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { machinesService } from '../services/machinesService';
+import { listProtocols, getExecutions } from '../services/maintenanceProtocolsService';
+
+const DailyOperations = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [machines, setMachines] = useState([]);
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [startProtocol, setStartProtocol] = useState(null);
+  const [endProtocol, setEndProtocol] = useState(null);
+  const [todayExecutions, setTodayExecutions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sessionStatus, setSessionStatus] = useState(null); // 'not_started', 'in_progress', 'completed'
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Handle returning from maintenance execution with preselected machine
+  useEffect(() => {
+    if (location.state?.selectedMachineId && machines.length > 0) {
+      const machine = machines.find(m => m.id === location.state.selectedMachineId);
+      if (machine) {
+        setSelectedMachine(machine);
+      }
+      // Clear the state so it doesn't persist on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, machines]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [machinesData, protocolsData, executionsData] = await Promise.all([
+        machinesService.getMachines(),
+        listProtocols(),
+        getExecutions()
+      ]);
+
+      setMachines(machinesData);
+
+      // Find start and end of day protocols
+      const start = protocolsData.find(p => 
+        p.protocol_type === 'daily' && 
+        p.name.toLowerCase().includes('start') || p.name.toLowerCase().includes('pre-operation')
+      );
+      const end = protocolsData.find(p => 
+        p.protocol_type === 'daily' && 
+        p.name.toLowerCase().includes('end') || p.name.toLowerCase().includes('post-operation')
+      );
+
+      setStartProtocol(start);
+      setEndProtocol(end);
+
+      // Filter today's executions
+      const today = new Date().toISOString().split('T')[0];
+      const todayExecs = executionsData.filter(exec => {
+        const execDate = new Date(exec.performed_date || exec.created_at).toISOString().split('T')[0];
+        return execDate === today;
+      });
+      setTodayExecutions(todayExecs);
+
+    } catch (err) {
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedMachine || !todayExecutions.length) {
+      setSessionStatus('not_started');
+      return;
+    }
+
+    const machineExecs = todayExecutions.filter(e => e.machine_id === selectedMachine.id);
+    const hasStart = machineExecs.some(e => 
+      e.protocol?.name.toLowerCase().includes('start') || 
+      e.protocol?.name.toLowerCase().includes('pre-operation')
+    );
+    const hasEnd = machineExecs.some(e => 
+      e.protocol?.name.toLowerCase().includes('end') || 
+      e.protocol?.name.toLowerCase().includes('post-operation')
+    );
+
+    if (hasEnd) {
+      setSessionStatus('completed');
+    } else if (hasStart) {
+      setSessionStatus('in_progress');
+    } else {
+      setSessionStatus('not_started');
+    }
+  }, [selectedMachine, todayExecutions]);
+
+  const handleStartDay = () => {
+    if (!selectedMachine || !startProtocol) return;
+    navigate('/maintenance-executions', {
+      state: {
+        preselectedMachine: selectedMachine,
+        preselectedProtocol: startProtocol,
+        sessionType: 'start_of_day'
+      }
+    });
+  };
+
+  const handleEndDay = () => {
+    if (!selectedMachine || !endProtocol) return;
+    navigate('/maintenance-executions', {
+      state: {
+        preselectedMachine: selectedMachine,
+        preselectedProtocol: endProtocol,
+        sessionType: 'end_of_day'
+      }
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg shadow-lg p-8 text-white mb-6">
+        <h1 className="text-3xl font-bold mb-2">🌊 Let's Wash Nets!</h1>
+        <p className="text-cyan-100">Daily operations workflow - Start and end your day right</p>
+      </div>
+      
+      <div className="space-y-6">
+
+      {/* Machine Selection */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Your Machine
+        </label>
+        <select
+          value={selectedMachine?.id || ''}
+          onChange={(e) => {
+            const machine = machines.find(m => m.id === e.target.value);
+            setSelectedMachine(machine);
+          }}
+          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        >
+          <option value="">-- Select a machine --</option>
+          {machines.map(machine => (
+            <option key={machine.id} value={machine.id}>
+              {machine.name || machine.model} ({machine.serial_number})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedMachine && (
+        <>
+          {/* Session Status */}
+          <div className={`rounded-lg shadow p-6 ${
+            sessionStatus === 'completed' ? 'bg-green-50 border-2 border-green-200' :
+            sessionStatus === 'in_progress' ? 'bg-yellow-50 border-2 border-yellow-200' :
+            'bg-gray-50 border-2 border-gray-200'
+          }`}>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">
+                {sessionStatus === 'completed' ? '✅' :
+                 sessionStatus === 'in_progress' ? '⚙️' : '🔵'}
+              </span>
+              <h2 className="text-xl font-bold text-gray-900">
+                {sessionStatus === 'completed' ? 'Day Completed!' :
+                 sessionStatus === 'in_progress' ? 'Operations In Progress' :
+                 'Ready to Start'}
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              {sessionStatus === 'completed' ? 'All daily checks completed for this machine today.' :
+               sessionStatus === 'in_progress' ? 'Start of day checks completed. Remember to complete end of day checks.' :
+               'Begin your day by completing the start of day checks.'}
+            </p>
+          </div>
+
+          {/* Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Start of Day */}
+            <div className={`bg-white rounded-lg shadow-lg p-6 ${
+              sessionStatus === 'not_started' ? 'ring-2 ring-cyan-500' : ''
+            }`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🌅</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Start of Day</h3>
+                  <p className="text-sm text-gray-500">Pre-operation checks</p>
+                </div>
+              </div>
+              
+              {sessionStatus === 'not_started' ? (
+                <button
+                  onClick={handleStartDay}
+                  disabled={!startProtocol}
+                  className="w-full px-4 py-3 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 font-medium disabled:bg-gray-400"
+                >
+                  {startProtocol ? 'Begin Start of Day Checks' : 'No protocol configured'}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 text-green-600">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Completed</span>
+                </div>
+              )}
+            </div>
+
+            {/* End of Day */}
+            <div className={`bg-white rounded-lg shadow-lg p-6 ${
+              sessionStatus === 'in_progress' ? 'ring-2 ring-orange-500' : ''
+            }`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🌇</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">End of Day</h3>
+                  <p className="text-sm text-gray-500">Post-operation checks</p>
+                </div>
+              </div>
+              
+              {sessionStatus === 'completed' ? (
+                <div className="flex items-center gap-2 text-green-600">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Completed</span>
+                </div>
+              ) : sessionStatus === 'in_progress' ? (
+                <button
+                  onClick={handleEndDay}
+                  disabled={!endProtocol}
+                  className="w-full px-4 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium disabled:bg-gray-400"
+                >
+                  {endProtocol ? 'Complete End of Day Checks' : 'No protocol configured'}
+                </button>
+              ) : (
+                <div className="text-gray-500 text-sm">
+                  Complete start of day checks first
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+      </div>
+    </>
+  );
+};
+
+export default DailyOperations;

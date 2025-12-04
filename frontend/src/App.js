@@ -30,6 +30,9 @@ import Transactions from './pages/Transactions'; // New: Import Transactions pag
 import OrganizationManagement from './pages/OrganizationManagement'; // New: Import OrganizationManagement page
 import Configuration from './pages/Configuration'; // New: Import Configuration page
 import StockAdjustments from './pages/StockAdjustments'; // New: Import StockAdjustments page
+import MaintenanceProtocols from './pages/MaintenanceProtocols'; // New: Import MaintenanceProtocols page
+import MaintenanceExecutions from './pages/MaintenanceExecutions'; // New: Import MaintenanceExecutions page
+import DailyOperations from './pages/DailyOperations'; // New: Import DailyOperations page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
 import { useState, useEffect } from 'react';
@@ -266,6 +269,53 @@ function App() {
                     <StockAdjustments />
                   </ProtectedRoute>
                 </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="maintenance-protocols"
+              element={
+                <PermissionErrorBoundary
+                  feature="Maintenance Protocols"
+                  requiredRole="super_admin"
+                  resource="maintenance"
+                  action="manage"
+                >
+                  <ProtectedRoute
+                    requiredRole="super_admin"
+                    feature="Maintenance Protocols"
+                  >
+                    <MaintenanceProtocols />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="maintenance-executions"
+              element={
+                <PermissionErrorBoundary
+                  feature="Maintenance Executions"
+                  requiredRole="user"
+                  resource="maintenance"
+                  action="execute"
+                >
+                  <ProtectedRoute
+                    requiredRole="user"
+                    feature="Maintenance Executions"
+                  >
+                    <MaintenanceExecutions />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="daily-operations"
+              element={
+                <ProtectedRoute
+                  requiredRole="user"
+                  feature="Daily Operations"
+                >
+                  <DailyOperations />
+                </ProtectedRoute>
               }
             />
             <Route
