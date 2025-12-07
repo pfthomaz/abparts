@@ -465,7 +465,7 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
         "preferred_language": user.preferred_language,
         "preferred_country": user.preferred_country if hasattr(user, 'preferred_country') else None,
         "localization_preferences": user.localization_preferences if hasattr(user, 'localization_preferences') else None,
-        "profile_photo_url": user.profile_photo_url,
+        "profile_photo_url": f"/images/users/{user.id}/profile" if user.profile_photo_data else None,
         "last_login": user.last_login,
         "created_at": user.created_at,
         "updated_at": user.updated_at
