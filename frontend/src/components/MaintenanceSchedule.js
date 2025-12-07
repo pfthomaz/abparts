@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { getContextualPermissions } from '../utils/permissions';
 
 const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) => {
@@ -9,17 +10,18 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
   // const [showScheduleForm, setShowScheduleForm] = useState(false);
 
   const { user } = useAuth();
+  const { t } = useTranslation();
   const permissions = getContextualPermissions(user, 'machines');
 
   // Helper function to get maintenance descriptions
   const getMaintenanceDescription = (type) => {
     const descriptions = {
-      routine: 'Basic cleaning, lubrication, and visual inspection',
-      preventive: 'Comprehensive system check, filter replacement, calibration',
-      inspection: 'Detailed safety and performance inspection',
-      deep_clean: 'Complete disassembly, deep cleaning, and component replacement'
+      routine: t('maintenanceSchedule.descriptions.routine'),
+      preventive: t('maintenanceSchedule.descriptions.preventive'),
+      inspection: t('maintenanceSchedule.descriptions.inspection'),
+      deep_clean: t('maintenanceSchedule.descriptions.deepClean')
     };
-    return descriptions[type] || 'Standard maintenance procedure';
+    return descriptions[type] || t('maintenanceSchedule.descriptions.standard');
   };
 
   // Calculate maintenance recommendations based on history and machine type
@@ -89,11 +91,11 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
 
   const getStatusText = (recommendation) => {
     if (recommendation.isOverdue) {
-      return `Overdue by ${Math.abs(recommendation.daysDiff)} days`;
+      return t('maintenanceSchedule.overdueBy', { days: Math.abs(recommendation.daysDiff) });
     } else if (recommendation.isDueSoon) {
-      return `Due in ${recommendation.daysDiff} days`;
+      return t('maintenanceSchedule.dueIn', { days: recommendation.daysDiff });
     } else {
-      return `Due in ${recommendation.daysDiff} days`;
+      return t('maintenanceSchedule.dueIn', { days: recommendation.daysDiff });
     }
   };
 
@@ -101,25 +103,25 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
     <div className="space-y-6">
       {/* Schedule Overview */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Maintenance Schedule Overview</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('maintenanceSchedule.scheduleOverview')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">
               {maintenanceRecommendations.filter(r => r.isOverdue).length}
             </div>
-            <div className="text-sm text-gray-600">Overdue</div>
+            <div className="text-sm text-gray-600">{t('maintenanceSchedule.overdue')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600">
               {maintenanceRecommendations.filter(r => r.isDueSoon).length}
             </div>
-            <div className="text-sm text-gray-600">Due Soon</div>
+            <div className="text-sm text-gray-600">{t('maintenanceSchedule.dueSoon')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
               {maintenanceRecommendations.filter(r => r.priority === 'low').length}
             </div>
-            <div className="text-sm text-gray-600">Scheduled</div>
+            <div className="text-sm text-gray-600">{t('maintenanceSchedule.scheduled')}</div>
           </div>
         </div>
       </div>
@@ -127,13 +129,13 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
       {/* Maintenance Recommendations */}
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Upcoming Maintenance</h3>
+          <h3 className="text-lg font-semibold text-gray-800">{t('maintenanceSchedule.upcomingMaintenance')}</h3>
           {permissions.canManage && (
             <button
               onClick={() => {/* setShowScheduleForm(true) */ }}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
             >
-              Schedule Maintenance
+              {t('maintenanceSchedule.scheduleMaintenance')}
             </button>
           )}
         </div>
@@ -152,14 +154,14 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
                       recommendation.isDueSoon ? 'bg-yellow-200 text-yellow-800' :
                         'bg-blue-200 text-blue-800'
                       }`}>
-                      {recommendation.isOverdue ? 'OVERDUE' :
-                        recommendation.isDueSoon ? 'DUE SOON' : 'SCHEDULED'}
+                      {recommendation.isOverdue ? t('maintenanceSchedule.overdueLabel') :
+                        recommendation.isDueSoon ? t('maintenanceSchedule.dueSoonLabel') : t('maintenanceSchedule.scheduledLabel')}
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 mb-2">{recommendation.description}</p>
                   <div className="flex items-center space-x-4 text-sm">
-                    <span><strong>Due Date:</strong> {formatDate(recommendation.dueDate)}</span>
-                    <span><strong>Status:</strong> {getStatusText(recommendation)}</span>
+                    <span><strong>{t('maintenanceSchedule.dueDate')}:</strong> {formatDate(recommendation.dueDate)}</span>
+                    <span><strong>{t('common.status')}:</strong> {getStatusText(recommendation)}</span>
                   </div>
                 </div>
                 {permissions.canManage && (
@@ -168,13 +170,13 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
                       onClick={() => {/* setSelectedSchedule(recommendation) */ }}
                       className="bg-white text-gray-700 px-3 py-1 rounded border hover:bg-gray-50 text-sm"
                     >
-                      Schedule
+                      {t('maintenanceSchedule.schedule')}
                     </button>
                     <button
                       onClick={() => {/* Handle mark as complete */ }}
                       className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
                     >
-                      Complete
+                      {t('maintenanceSchedule.complete')}
                     </button>
                   </div>
                 )}
@@ -186,10 +188,10 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
 
       {/* Recent Maintenance History */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Maintenance History</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('maintenanceSchedule.recentHistory')}</h3>
         {maintenanceHistory.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No maintenance history available
+            {t('maintenanceSchedule.noHistoryAvailable')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -198,7 +200,7 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-medium text-gray-800">
-                      {record.maintenance_type?.toUpperCase() || 'MAINTENANCE'}
+                      {record.maintenance_type?.toUpperCase() || t('maintenanceSchedule.maintenance')}
                     </h4>
                     <p className="text-sm text-gray-600">{formatDate(new Date(record.maintenance_date))}</p>
                     {record.description && (
@@ -215,7 +217,7 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
             {maintenanceHistory.length > 5 && (
               <div className="text-center">
                 <button className="text-blue-600 hover:text-blue-800 text-sm">
-                  View all {maintenanceHistory.length} records
+                  {t('maintenanceSchedule.viewAllRecords', { count: maintenanceHistory.length })}
                 </button>
               </div>
             )}
@@ -225,13 +227,13 @@ const MaintenanceSchedule = ({ machine, maintenanceHistory, onScheduleUpdate }) 
 
       {/* Maintenance Tips */}
       <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Maintenance Tips</h3>
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">{t('maintenanceSchedule.maintenanceTips')}</h3>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Regular cleaning prevents buildup and extends machine life</li>
-          <li>• Check filters monthly and replace when dirty</li>
-          <li>• Monitor unusual noises or vibrations during operation</li>
-          <li>• Keep maintenance logs for warranty and troubleshooting</li>
-          <li>• Use only approved parts and cleaning solutions</li>
+          <li>• {t('maintenanceSchedule.tips.regularCleaning')}</li>
+          <li>• {t('maintenanceSchedule.tips.checkFilters')}</li>
+          <li>• {t('maintenanceSchedule.tips.monitorNoises')}</li>
+          <li>• {t('maintenanceSchedule.tips.keepLogs')}</li>
+          <li>• {t('maintenanceSchedule.tips.useApprovedParts')}</li>
         </ul>
       </div>
     </div>

@@ -1,6 +1,7 @@
 // frontend/src/components/PartCategoryBadge.js
 
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 /**
  * PartCategoryBadge component for visual consumable/bulk material indicators
@@ -14,12 +15,14 @@ const PartCategoryBadge = ({
   showLabel = true,
   className = ''
 }) => {
+  const { t } = useTranslation();
+  
   // Part type configurations
   const partTypeConfig = {
     consumable: {
-      label: 'Consumable',
-      shortLabel: 'CONS',
-      description: 'Whole units (pieces, sets, boxes)',
+      label: t('partForm.categories.consumable'),
+      shortLabel: t('partForm.categories.consumableShort'),
+      description: t('partForm.categories.consumableDesc'),
       icon: '📦',
       bgColor: 'bg-blue-100',
       textColor: 'text-blue-800',
@@ -27,9 +30,9 @@ const PartCategoryBadge = ({
       dotColor: 'bg-blue-500'
     },
     bulk_material: {
-      label: 'Bulk Material',
-      shortLabel: 'BULK',
-      description: 'Measurable quantities (liters, kg, meters)',
+      label: t('partForm.categories.bulkMaterial'),
+      shortLabel: t('partForm.categories.bulkMaterialShort'),
+      description: t('partForm.categories.bulkMaterialDesc'),
       icon: '⚖️',
       bgColor: 'bg-green-100',
       textColor: 'text-green-800',
@@ -45,7 +48,7 @@ const PartCategoryBadge = ({
     borderColor: 'border-purple-200',
     dotColor: 'bg-purple-500',
     icon: '🔒',
-    label: 'BossAqua'
+    label: t('partForm.categories.bossAqua')
   };
 
   // Size configurations
@@ -155,17 +158,19 @@ export const PartCategorySelector = ({
   required = false,
   className = ''
 }) => {
+  const { t } = useTranslation();
+  
   const options = [
     {
       value: 'consumable',
-      label: 'Consumable',
-      description: 'Whole units (pieces, sets, boxes)',
+      label: t('partForm.categories.consumable'),
+      description: t('partForm.categories.consumableDesc'),
       icon: '📦'
     },
     {
       value: 'bulk_material',
-      label: 'Bulk Material',
-      description: 'Measurable quantities (liters, kg, meters)',
+      label: t('partForm.categories.bulkMaterial'),
+      description: t('partForm.categories.bulkMaterialDesc'),
       icon: '⚖️'
     }
   ];
@@ -227,10 +232,12 @@ export const PartCategoryFilter = ({
   showAll = true,
   className = ''
 }) => {
+  const { t } = useTranslation();
+  
   const options = [
-    ...(showAll ? [{ value: 'all', label: 'All Types', icon: '📋' }] : []),
-    { value: 'consumable', label: 'Consumable', icon: '📦' },
-    { value: 'bulk_material', label: 'Bulk Material', icon: '⚖️' }
+    ...(showAll ? [{ value: 'all', label: t('partForm.categories.allTypes'), icon: '📋' }] : []),
+    { value: 'consumable', label: t('partForm.categories.consumable'), icon: '📦' },
+    { value: 'bulk_material', label: t('partForm.categories.bulkMaterial'), icon: '⚖️' }
   ];
 
   return (

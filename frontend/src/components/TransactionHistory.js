@@ -1,15 +1,17 @@
 // frontend/src/components/TransactionHistory.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { transactionService } from '../services/transactionService';
 import { partsService } from '../services/partsService';
 import { warehouseService } from '../services/warehouseService';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import PermissionGuard from './PermissionGuard';
 import { PERMISSIONS } from '../utils/permissions';
 
 const TransactionHistory = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -152,29 +154,23 @@ const TransactionHistory = () => {
   };
 
   const getTransactionTypeLabel = (type) => {
-    switch (type) {
-      case 'creation': return 'Creation';
-      case 'transfer': return 'Transfer';
-      case 'consumption': return 'Consumption';
-      case 'adjustment': return 'Adjustment';
-      default: return type;
-    }
+    return t(`transactionHistory.types.${type}`, type);
   };
 
   return (
     <PermissionGuard permission={PERMISSIONS.VIEW_ORG_TRANSACTIONS}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800">Transaction History</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{t('transactionHistory.title')}</h2>
         </div>
 
         {/* Filters */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('transactionHistory.filters')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label htmlFor="transaction_type" className="block text-sm font-medium text-gray-700 mb-1">
-                Transaction Type
+                {t('transactionHistory.transactionType')}
               </label>
               <select
                 id="transaction_type"
@@ -183,17 +179,17 @@ const TransactionHistory = () => {
                 onChange={handleFilterChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">All Types</option>
-                <option value="creation">Creation</option>
-                <option value="transfer">Transfer</option>
-                <option value="consumption">Consumption</option>
-                <option value="adjustment">Adjustment</option>
+                <option value="">{t('transactionHistory.allTypes')}</option>
+                <option value="creation">{t('transactionHistory.types.creation')}</option>
+                <option value="transfer">{t('transactionHistory.types.transfer')}</option>
+                <option value="consumption">{t('transactionHistory.types.consumption')}</option>
+                <option value="adjustment">{t('transactionHistory.types.adjustment')}</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
-                Part
+                {t('transactionHistory.part')}
               </label>
               <select
                 id="part_id"
@@ -202,7 +198,7 @@ const TransactionHistory = () => {
                 onChange={handleFilterChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">All Parts</option>
+                <option value="">{t('transactionHistory.allParts')}</option>
                 {Array.isArray(parts) && parts.map(part => (
                   <option key={part.id} value={part.id}>
                     {part.name} ({part.part_number})
@@ -213,7 +209,7 @@ const TransactionHistory = () => {
 
             <div>
               <label htmlFor="from_warehouse_id" className="block text-sm font-medium text-gray-700 mb-1">
-                From Warehouse
+                {t('transactionHistory.fromWarehouse')}
               </label>
               <select
                 id="from_warehouse_id"
@@ -222,7 +218,7 @@ const TransactionHistory = () => {
                 onChange={handleFilterChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">All Warehouses</option>
+                <option value="">{t('transactionHistory.allWarehouses')}</option>
                 {Array.isArray(warehouses) && warehouses.map(warehouse => (
                   <option key={warehouse.id} value={warehouse.id}>
                     {warehouse.name}
@@ -233,7 +229,7 @@ const TransactionHistory = () => {
 
             <div>
               <label htmlFor="to_warehouse_id" className="block text-sm font-medium text-gray-700 mb-1">
-                To Warehouse
+                {t('transactionHistory.toWarehouse')}
               </label>
               <select
                 id="to_warehouse_id"
@@ -242,7 +238,7 @@ const TransactionHistory = () => {
                 onChange={handleFilterChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">All Warehouses</option>
+                <option value="">{t('transactionHistory.allWarehouses')}</option>
                 {Array.isArray(warehouses) && warehouses.map(warehouse => (
                   <option key={warehouse.id} value={warehouse.id}>
                     {warehouse.name}
@@ -253,7 +249,7 @@ const TransactionHistory = () => {
 
             <div>
               <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date
+                {t('transactionHistory.startDate')}
               </label>
               <input
                 type="date"
@@ -267,7 +263,7 @@ const TransactionHistory = () => {
 
             <div>
               <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                End Date
+                {t('transactionHistory.endDate')}
               </label>
               <input
                 type="date"
@@ -281,7 +277,7 @@ const TransactionHistory = () => {
 
             <div>
               <label htmlFor="reference_number" className="block text-sm font-medium text-gray-700 mb-1">
-                Reference Number
+                {t('transactionHistory.referenceNumber')}
               </label>
               <input
                 type="text"
@@ -289,7 +285,7 @@ const TransactionHistory = () => {
                 name="reference_number"
                 value={filters.reference_number}
                 onChange={handleFilterChange}
-                placeholder="Enter reference number"
+                placeholder={t('transactionHistory.referenceNumberPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -300,13 +296,13 @@ const TransactionHistory = () => {
               onClick={handleClearFilters}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
-              Clear Filters
+              {t('transactionHistory.clearFilters')}
             </button>
             <button
               onClick={handleSearch}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Search
+              {t('transactionHistory.search')}
             </button>
           </div>
         </div>
@@ -322,37 +318,37 @@ const TransactionHistory = () => {
         {/* Transaction List */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {loading && transactions.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Loading transactions...</div>
+            <div className="p-6 text-center text-gray-500">{t('transactionHistory.loading')}</div>
           ) : transactions.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">No transactions found.</div>
+            <div className="p-6 text-center text-gray-500">{t('transactionHistory.noTransactionsFound')}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      {t('transactionHistory.tableHeaders.date')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      {t('transactionHistory.tableHeaders.type')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Part
+                      {t('transactionHistory.tableHeaders.part')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Quantity
+                      {t('transactionHistory.tableHeaders.quantity')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      From
+                      {t('transactionHistory.tableHeaders.from')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      To
+                      {t('transactionHistory.tableHeaders.to')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Performed By
+                      {t('transactionHistory.tableHeaders.performedBy')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reference
+                      {t('transactionHistory.tableHeaders.reference')}
                     </th>
                   </tr>
                 </thead>
@@ -381,7 +377,7 @@ const TransactionHistory = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {transaction.transaction_type === 'consumption' && (transaction.machine_name || transaction.machine_serial)
-                          ? `Machine: ${transaction.machine_name || transaction.machine_serial}`
+                          ? `${t('transactionHistory.machine')}: ${transaction.machine_name || transaction.machine_serial}`
                           : (transaction.to_warehouse_name || '-')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -404,14 +400,14 @@ const TransactionHistory = () => {
                 onClick={loadMore}
                 className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                Load More
+                {t('transactionHistory.loadMore')}
               </button>
             </div>
           )}
 
           {loading && transactions.length > 0 && (
             <div className="p-4 text-center border-t border-gray-200 text-gray-500">
-              Loading more transactions...
+              {t('transactionHistory.loadingMore')}
             </div>
           )}
         </div>

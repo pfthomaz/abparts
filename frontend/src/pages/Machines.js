@@ -1,9 +1,10 @@
 // c:/abparts/frontend/src/pages/Machines.js
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { machinesService } from '../services/machinesService';
 import { api } from '../services/api'; // For fetching organizations
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { getContextualPermissions } from '../utils/permissions';
 import Modal from '../components/Modal';
 import MachineForm from '../components/MachineForm';
@@ -29,6 +30,7 @@ const Machines = () => {
   const [partUsageMachine, setPartUsageMachine] = useState(null);
 
   const { user } = useAuth();
+  const { t } = useTranslation();
   const permissions = getContextualPermissions(user, 'machines');
 
   const fetchData = useCallback(async () => {
@@ -103,7 +105,7 @@ const Machines = () => {
   };
 
   const handleDelete = async (machineId) => {
-    if (!window.confirm("Are you sure you want to delete this machine?")) {
+    if (!window.confirm(t('machines.confirmDelete'))) {
       return;
     }
     setError(null);
@@ -111,7 +113,7 @@ const Machines = () => {
       await machinesService.deleteMachine(machineId);
       await fetchData();
     } catch (err) {
-      setError(err.message || 'Failed to delete machine.');
+      setError(err.message || t('machines.failedToDelete'));
     }
   };
 
@@ -164,23 +166,23 @@ const Machines = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Machines</h1>
+        <h1 className="text-3xl font-bold text-gray-800">{t('machines.title')}</h1>
         <div className="flex space-x-2">
           {permissions.canRegister && (
             <button
               onClick={() => openModal()}
               className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold"
             >
-              Register Machine
+              {t('machines.registerMachine')}
             </button>
           )}
         </div>
       </div>
 
-      {loading && <p className="text-gray-500">Loading machines...</p>}
+      {loading && <p className="text-gray-500">{t('machines.loading')}</p>}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
+          <strong className="font-bold">{t('common.error')}: </strong>
           <span className="block sm:inline">{error}</span>
         </div>
       )}
@@ -189,25 +191,25 @@ const Machines = () => {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Search Machine</label>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">{t('machines.searchMachine')}</label>
             <input
               type="text"
               id="search"
-              placeholder="Name, model, or serial..."
+              placeholder={t('machines.searchPlaceholder')}
               className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="filterOrganization" className="block text-sm font-medium text-gray-700">Filter by Owner</label>
+            <label htmlFor="filterOrganization" className="block text-sm font-medium text-gray-700">{t('machines.filterByOwner')}</label>
             <select
               id="filterOrganization"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={filterOrgId}
               onChange={(e) => setFilterOrgId(e.target.value)}
             >
-              <option value="all">All Owners</option>
+              <option value="all">{t('machines.allOwners')}</option>
               {organizations
                 .filter(org => org.organization_type === 'customer')
                 .map(org => (
@@ -220,9 +222,9 @@ const Machines = () => {
 
       {!loading && filteredMachines.length === 0 ? (
         <div className="text-center py-10 bg-white rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-700">No Machines Found</h3>
+          <h3 className="text-xl font-semibold text-gray-700">{t('machines.noMachinesFound')}</h3>
           <p className="text-gray-500 mt-2">
-            {machines.length > 0 ? 'Try adjusting your search or filter criteria.' : 'There are no machines in the system yet.'}
+            {machines.length > 0 ? t('machines.tryAdjustingFilters') : t('machines.noMachinesYet')}
           </p>
         </div>
       ) : (
@@ -236,14 +238,14 @@ const Machines = () => {
                     machine.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
                       'bg-red-100 text-red-800'
                   }`}>
-                  {machine.status || 'Active'}
+                  {t(`machines.status.${machine.status || 'active'}`)}
                 </span>
               </div>
 
               <div className="space-y-2 mb-4">
-                <p className="text-gray-600"><span className="font-medium">Model:</span> {machine.model_type}</p>
-                <p className="text-gray-600"><span className="font-medium">Serial:</span> {machine.serial_number}</p>
-                <p className="text-gray-600"><span className="font-medium">Owner:</span> {machine.organizationName}</p>
+                <p className="text-gray-600"><span className="font-medium">{t('machines.model')}:</span> {machine.model_type}</p>
+                <p className="text-gray-600"><span className="font-medium">{t('machines.serial')}:</span> {machine.serial_number}</p>
+                <p className="text-gray-600"><span className="font-medium">{t('machines.owner')}:</span> {machine.organizationName}</p>
                 
                 {/* Debug: Log machine data */}
                 {console.log('Machine data:', machine.name, 'latest_hours:', machine.latest_hours, 'type:', typeof machine.latest_hours)}
@@ -252,23 +254,23 @@ const Machines = () => {
                 {machine.latest_hours !== null && machine.latest_hours !== undefined ? (
                   <div className="bg-blue-50 border border-blue-200 rounded p-2 mt-2">
                     <p className="text-blue-900 text-sm">
-                      <span className="font-semibold">Latest Hours:</span> {machine.latest_hours.toLocaleString()} hrs
+                      <span className="font-semibold">{t('machines.latestHours')}:</span> {machine.latest_hours.toLocaleString()} {t('machines.hrs')}
                     </p>
                     {machine.latest_hours_date && (
                       <p className="text-blue-700 text-xs mt-1">
-                        Recorded: {new Date(machine.latest_hours_date).toLocaleDateString()} at {new Date(machine.latest_hours_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {t('machines.recorded')}: {new Date(machine.latest_hours_date).toLocaleDateString()} {t('machines.at')} {new Date(machine.latest_hours_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     )}
                   </div>
                 ) : (
                   <div className="bg-gray-50 border border-gray-200 rounded p-2 mt-2">
-                    <p className="text-gray-600 text-sm italic">No hours recorded yet</p>
+                    <p className="text-gray-600 text-sm italic">{t('machines.noHoursRecorded')}</p>
                   </div>
                 )}
                 
                 {machine.last_maintenance_date && (
                   <p className="text-gray-600">
-                    <span className="font-medium">Last Maintenance:</span> {' '}
+                    <span className="font-medium">{t('machines.lastMaintenance')}:</span> {' '}
                     {new Date(machine.last_maintenance_date).toLocaleDateString()}
                   </p>
                 )}
@@ -279,7 +281,7 @@ const Machines = () => {
                   onClick={() => openMachineDetails(machine)}
                   className="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 text-sm flex-1"
                 >
-                  View Details
+                  {t('machines.viewDetails')}
                 </button>
 
                 <SimpleMachineHoursButton 
@@ -291,9 +293,9 @@ const Machines = () => {
                 <button
                   onClick={() => openPartUsageModal(machine)}
                   className="bg-green-500 text-white py-1 px-3 rounded-md hover:bg-green-600 text-sm"
-                  title="Record part usage for this machine"
+                  title={t('machines.recordPartUsage')}
                 >
-                  Use Part
+                  {t('machines.usePart')}
                 </button>
 
                 {permissions.canEdit && (
@@ -301,7 +303,7 @@ const Machines = () => {
                     onClick={() => openModal(machine)}
                     className="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 text-sm"
                   >
-                    Edit
+                    {t('common.edit')}
                   </button>
                 )}
 
@@ -310,7 +312,7 @@ const Machines = () => {
                     onClick={() => openTransferModal(machine)}
                     className="bg-purple-500 text-white py-1 px-3 rounded-md hover:bg-purple-600 text-sm"
                   >
-                    Transfer
+                    {t('machines.transfer')}
                   </button>
                 )}
 
@@ -319,7 +321,7 @@ const Machines = () => {
                     onClick={() => handleDelete(machine.id)}
                     className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 )}
               </div>
@@ -329,7 +331,7 @@ const Machines = () => {
       )}
 
       {/* Machine Form Modal */}
-      <Modal isOpen={showModal} onClose={closeModal} title={editingMachine ? "Edit Machine" : "Register New Machine"}>
+      <Modal isOpen={showModal} onClose={closeModal} title={editingMachine ? t('machines.editMachine') : t('machines.registerNewMachine')}>
         <MachineForm
           initialData={editingMachine || {}}
           organizations={organizations.filter(org => org.organization_type === 'customer')}
@@ -342,7 +344,7 @@ const Machines = () => {
       <Modal
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        title="Machine Details"
+        title={t('machines.machineDetails')}
         size="large"
       >
         {selectedMachine && (
@@ -357,7 +359,7 @@ const Machines = () => {
       <Modal
         isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}
-        title="Transfer Machine"
+        title={t('machines.transferMachine')}
       >
         {transferMachine && (
           <MachineTransferForm

@@ -1,7 +1,8 @@
 // frontend/src/components/PartUsageRecorder.js
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { transactionService } from '../services/transactionService';
 import { partsService } from '../services/partsService';
 import { warehouseService } from '../services/warehouseService';
@@ -12,6 +13,7 @@ import Modal from './Modal';
 
 const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId = null }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -93,7 +95,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
       }
     } catch (err) {
       console.error('Failed to fetch supporting data:', err);
-      setError('Failed to load form data. Please try again.');
+      setError(t('partUsage.failedToLoadData'));
     }
   };
 
@@ -184,28 +186,28 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
   const validateForm = () => {
     if (!formData.machine_id) {
-      setError('Please select a machine');
+      setError(t('partUsage.pleaseSelectMachine'));
       return false;
     }
 
     if (!formData.part_id) {
-      setError('Please select a part');
+      setError(t('partUsage.pleaseSelectPart'));
       return false;
     }
 
     if (!formData.from_warehouse_id) {
-      setError('Please select a warehouse');
+      setError(t('partUsage.pleaseSelectWarehouse'));
       return false;
     }
 
     if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
-      setError('Please enter a valid quantity');
+      setError(t('partUsage.pleaseEnterValidQuantity'));
       return false;
     }
 
     // Check if sufficient inventory is available
     if (selectedPartInventory && parseFloat(formData.quantity) > selectedPartInventory.quantity) {
-      setError(`Insufficient inventory. Available: ${selectedPartInventory.quantity}`);
+      setError(t('partUsage.insufficientInventory', { available: selectedPartInventory.quantity }));
       return false;
     }
 
@@ -249,7 +251,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
       console.log('Transaction created successfully:', result);
 
-      setSuccess('Part usage recorded successfully');
+      setSuccess(t('partUsage.recordedSuccessfully'));
 
       if (onUsageRecorded) {
         onUsageRecorded(result);
@@ -263,7 +265,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
     } catch (err) {
       console.error('Transaction creation error:', err);
       console.error('Error response:', err.response?.data);
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to record part usage';
+      const errorMessage = err.response?.data?.detail || err.message || t('partUsage.failedToRecord');
       setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
     } finally {
       setLoading(false);
@@ -301,29 +303,29 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Record Part Usage"
+      title={t('partUsage.title')}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <strong className="font-bold">Error:</strong>
+            <strong className="font-bold">{t('common.error')}:</strong>
             <span className="block sm:inline ml-2">{error}</span>
           </div>
         )}
 
         {success && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <strong className="font-bold">Success:</strong>
+            <strong className="font-bold">{t('common.success')}:</strong>
             <span className="block sm:inline ml-2">{success}</span>
           </div>
         )}
 
         {!organizationalBoundaryValid && selectedMachine && selectedWarehouse && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
-            <strong className="font-bold">Warning:</strong>
+            <strong className="font-bold">{t('common.warning')}:</strong>
             <span className="block sm:inline ml-2">
-              Selected machine and warehouse belong to different organizations. Please ensure you have proper authorization.
+              {t('partUsage.organizationMismatchWarning')}
             </span>
           </div>
         )}
@@ -331,7 +333,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         {/* Step 1: Select Warehouse */}
         <div>
           <label htmlFor="from_warehouse_id" className="block text-sm font-medium text-gray-700 mb-1">
-            1. From Warehouse <span className="text-red-500">*</span>
+            {t('partUsage.step1FromWarehouse')} <span className="text-red-500">*</span>
           </label>
           <select
             id="from_warehouse_id"
@@ -342,7 +344,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
             disabled={loading}
             required
           >
-            <option value="">Select warehouse first</option>
+            <option value="">{t('partUsage.selectWarehouseFirst')}</option>
             {Array.isArray(warehouses) && warehouses.map(warehouse => (
               <option key={warehouse.id} value={warehouse.id}>
                 {warehouse.name}
@@ -350,13 +352,13 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-500 mt-1">Select the warehouse where the part is stored</p>
+          <p className="text-xs text-gray-500 mt-1">{t('partUsage.selectWarehouseHelp')}</p>
         </div>
 
         {/* Step 2: Select Part (only show parts available in selected warehouse) */}
         <div>
           <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
-            2. Part <span className="text-red-500">*</span>
+            {t('partUsage.step2Part')} <span className="text-red-500">*</span>
           </label>
           <select
             id="part_id"
@@ -369,8 +371,8 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
           >
             <option value="">
               {formData.from_warehouse_id 
-                ? (warehouseInventory.length > 0 ? 'Select a part' : 'No parts available in this warehouse')
-                : 'Select warehouse first'}
+                ? (warehouseInventory.length > 0 ? t('partUsage.selectAPart') : t('partUsage.noPartsAvailable'))
+                : t('partUsage.selectWarehouseFirst')}
             </option>
             {warehouseInventory.map(inventoryItem => {
               // Use part info from inventory item if available, otherwise lookup
@@ -389,14 +391,14 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
               const stock = inventoryItem.current_stock || inventoryItem.quantity || 0;
               return (
                 <option key={partInfo.id} value={partInfo.id}>
-                  {partInfo.part_number} - {partInfo.name} ({stock} {partInfo.unit_of_measure} available)
+                  {partInfo.part_number} - {partInfo.name} ({stock} {partInfo.unit_of_measure} {t('partUsage.available')})
                 </option>
               );
             })}
           </select>
           {selectedPartInventory && (
             <p className="text-xs text-gray-600 mt-1">
-              Available in stock: <span className="font-semibold">{selectedPartInventory.current_stock || selectedPartInventory.quantity || 0}</span> {selectedPart?.unit_of_measure}
+              {t('partUsage.availableInStock')}: <span className="font-semibold">{selectedPartInventory.current_stock || selectedPartInventory.quantity || 0}</span> {selectedPart?.unit_of_measure}
             </p>
           )}
         </div>
@@ -404,8 +406,8 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         {/* Step 3: Select Machine */}
         <div>
           <label htmlFor="machine_id" className="block text-sm font-medium text-gray-700 mb-1">
-            3. To Machine <span className="text-red-500">*</span>
-            {initialMachineId && <span className="text-blue-600 ml-2">(Pre-selected)</span>}
+            {t('partUsage.step3ToMachine')} <span className="text-red-500">*</span>
+            {initialMachineId && <span className="text-blue-600 ml-2">{t('partUsage.preSelected')}</span>}
           </label>
           <select
             id="machine_id"
@@ -417,7 +419,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
             required
           >
             <option value="">
-              {formData.part_id ? 'Select destination machine' : 'Select part first'}
+              {formData.part_id ? t('partUsage.selectDestinationMachine') : t('partUsage.selectPartFirst')}
             </option>
             {Array.isArray(machines) && machines.map(machine => (
               <option key={machine.id} value={machine.id}>
@@ -429,10 +431,10 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
           </select>
           {initialMachineId ? (
             <p className="text-xs text-blue-600 mt-1">
-              Machine pre-selected from Machines page and cannot be changed
+              {t('partUsage.machinePreSelectedHelp')}
             </p>
           ) : (
-            <p className="text-xs text-gray-500 mt-1">Select the machine where the part will be used</p>
+            <p className="text-xs text-gray-500 mt-1">{t('partUsage.selectMachineHelp')}</p>
           )}
         </div>
 
@@ -444,9 +446,9 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
               <span className="text-sm text-blue-800">
-                <strong>Available Inventory:</strong> {selectedPartInventory.quantity} {selectedPart?.unit_of_measure}
+                <strong>{t('partUsage.availableInventory')}:</strong> {selectedPartInventory.quantity} {selectedPart?.unit_of_measure}
                 {selectedPartInventory.quantity === 0 && (
-                  <span className="text-red-600 ml-2">(No stock available)</span>
+                  <span className="text-red-600 ml-2">{t('partUsage.noStockAvailable')}</span>
                 )}
               </span>
             </div>
@@ -455,10 +457,10 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
         <div>
           <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-            Quantity Used <span className="text-red-500">*</span>
+            {t('partUsage.quantityUsed')} <span className="text-red-500">*</span>
             {selectedPart && (
               <span className="text-sm text-gray-500 ml-2">
-                ({selectedPart.part_type === 'consumable' ? 'Whole units' : 'Decimal quantities allowed'})
+                ({selectedPart.part_type === 'consumable' ? t('partUsage.wholeUnits') : t('partUsage.decimalAllowed')})
               </span>
             )}
           </label>
@@ -477,7 +479,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
         <div>
           <label htmlFor="usage_date" className="block text-sm font-medium text-gray-700 mb-1">
-            Usage Date <span className="text-red-500">*</span>
+            {t('partUsage.usageDate')} <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -493,7 +495,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
         <div>
           <label htmlFor="reference_number" className="block text-sm font-medium text-gray-700 mb-1">
-            Reference Number
+            {t('partUsage.referenceNumber')}
           </label>
           <input
             type="text"
@@ -501,7 +503,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
             name="reference_number"
             value={formData.reference_number}
             onChange={handleChange}
-            placeholder="Work order, service ticket, etc."
+            placeholder={t('partUsage.referenceNumberPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             disabled={loading}
           />
@@ -509,7 +511,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+            {t('partUsage.notes')}
           </label>
           <textarea
             id="notes"
@@ -517,7 +519,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
             rows="3"
             value={formData.notes}
             onChange={handleChange}
-            placeholder="Additional details about this part usage"
+            placeholder={t('partUsage.notesPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             disabled={loading}
           />
@@ -526,22 +528,22 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         {/* Summary section */}
         {formData.machine_id && formData.part_id && formData.quantity && (
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Usage Summary</h4>
+            <h4 className="font-medium text-gray-900 mb-2">{t('partUsage.usageSummary')}</h4>
             <div className="text-sm text-gray-700 space-y-1">
               <div>
-                <strong>Machine:</strong> {selectedMachine?.serial_number} - {selectedMachine?.model}
+                <strong>{t('partUsage.machine')}:</strong> {selectedMachine?.serial_number} - {selectedMachine?.model}
               </div>
               <div>
-                <strong>Part:</strong> {selectedPart?.name} ({selectedPart?.part_number})
+                <strong>{t('partUsage.part')}:</strong> {selectedPart?.name} ({selectedPart?.part_number})
               </div>
               <div>
-                <strong>Quantity:</strong> {formData.quantity} {selectedPart?.unit_of_measure}
+                <strong>{t('partUsage.quantity')}:</strong> {formData.quantity} {selectedPart?.unit_of_measure}
               </div>
               <div>
-                <strong>From:</strong> {selectedWarehouse?.name}
+                <strong>{t('partUsage.from')}:</strong> {selectedWarehouse?.name}
               </div>
               <div>
-                <strong>Date:</strong> {new Date(formData.usage_date).toLocaleDateString()}
+                <strong>{t('partUsage.date')}:</strong> {new Date(formData.usage_date).toLocaleDateString()}
               </div>
             </div>
           </div>
@@ -554,14 +556,14 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             disabled={loading}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             disabled={loading || !organizationalBoundaryValid || (selectedPartInventory && selectedPartInventory.quantity === 0)}
           >
-            {loading ? 'Recording...' : 'Record Usage'}
+            {loading ? t('partUsage.recording') : t('partUsage.recordUsage')}
           </button>
         </div>
       </form>

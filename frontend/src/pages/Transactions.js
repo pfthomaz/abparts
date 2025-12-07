@@ -1,7 +1,8 @@
 // frontend/src/pages/Transactions.js
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import PermissionGuard from '../components/PermissionGuard';
 import { PERMISSIONS, isAdmin } from '../utils/permissions';
 import TransactionHistory from '../components/TransactionHistory';
@@ -17,6 +18,7 @@ import { transactionService } from '../services/transactionService';
 
 const Transactions = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('history');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showOrderWizard, setShowOrderWizard] = useState(false);
@@ -36,38 +38,38 @@ const Transactions = () => {
   const tabs = [
     {
       id: 'history',
-      label: 'Transaction History',
+      label: t('transactions.tabs.history'),
       icon: '📋',
-      description: 'View and search transaction records',
+      description: t('transactions.tabs.historyDesc'),
       permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS
     },
     {
       id: 'audit-log',
-      label: 'Audit Trail',
+      label: t('transactions.tabs.auditTrail'),
       icon: '🔍',
-      description: 'Detailed transaction audit log with filters',
+      description: t('transactions.tabs.auditTrailDesc'),
       permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS
     },
     {
       id: 'analytics',
-      label: 'Analytics & Reports',
+      label: t('transactions.tabs.analytics'),
       icon: '📊',
-      description: 'Transaction analytics and reporting',
+      description: t('transactions.tabs.analyticsDesc'),
       permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS
     },
     {
       id: 'approvals',
-      label: 'Approvals',
+      label: t('transactions.tabs.approvals'),
       icon: '✅',
-      description: 'Manage transaction approvals',
+      description: t('transactions.tabs.approvalsDesc'),
       permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS,
       adminOnly: true
     },
     {
       id: 'reversals',
-      label: 'Reversals & Corrections',
+      label: t('transactions.tabs.reversals'),
       icon: '↩️',
-      description: 'Reverse or correct transactions',
+      description: t('transactions.tabs.reversalsDesc'),
       permission: PERMISSIONS.VIEW_ORG_TRANSACTIONS,
       adminOnly: true
     }
@@ -101,9 +103,9 @@ const Transactions = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Transaction Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('transactions.title')}</h1>
             <p className="text-gray-600 mt-1 text-sm sm:text-base">
-              Manage and track all inventory transactions across your organization
+              {t('transactions.subtitle')}
             </p>
           </div>
 
@@ -114,7 +116,7 @@ const Transactions = () => {
                 onClick={() => setShowOrderWizard(true)}
                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
-                Create Order
+                {t('transactions.createOrder')}
               </button>
             </PermissionGuard>
 
@@ -123,7 +125,7 @@ const Transactions = () => {
                 onClick={() => setShowPartUsageRecorder(true)}
                 className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
               >
-                Record Usage
+                {t('transactions.recordUsage')}
               </button>
             </PermissionGuard>
 
@@ -131,7 +133,7 @@ const Transactions = () => {
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Create Transaction
+              {t('transactions.createTransaction')}
             </button>
           </div>
 
@@ -142,7 +144,7 @@ const Transactions = () => {
                 onClick={() => setShowOrderWizard(true)}
                 className="flex-shrink-0 px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
-                Create Order
+                {t('transactions.createOrder')}
               </button>
             </PermissionGuard>
 
@@ -151,7 +153,7 @@ const Transactions = () => {
                 onClick={() => setShowPartUsageRecorder(true)}
                 className="flex-shrink-0 px-3 py-2 text-xs font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
               >
-                Record Usage
+                {t('transactions.recordUsage')}
               </button>
             </PermissionGuard>
 
@@ -159,7 +161,7 @@ const Transactions = () => {
               onClick={() => setShowCreateModal(true)}
               className="flex-shrink-0 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Create Transaction
+              {t('transactions.createTransaction')}
             </button>
           </div>
         </div>
@@ -182,7 +184,7 @@ const Transactions = () => {
                   <span>{tab.label}</span>
                   {tab.adminOnly && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      Admin
+                      {t('common.admin')}
                     </span>
                   )}
                 </button>
@@ -205,7 +207,7 @@ const Transactions = () => {
                     <span className="text-xs whitespace-nowrap">{tab.label}</span>
                     {tab.adminOnly && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                        Admin
+                        {t('common.admin')}
                       </span>
                     )}
                   </button>
@@ -244,7 +246,7 @@ const Transactions = () => {
         <Modal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
-          title="Create New Transaction"
+          title={t('transactions.createNewTransaction')}
           size="lg"
         >
           <TransactionForm
