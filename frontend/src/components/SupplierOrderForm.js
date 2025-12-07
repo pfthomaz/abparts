@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { partsService } from '../services/partsService';
 
 function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [smartParts, setSmartParts] = useState([]);
@@ -371,8 +373,8 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
             </select>
             <div className="h-5 mt-1">
               {smartParts.length > 0 && (
-                <p className="text-xs text-gray-500">
-                  Parts sorted by order frequency for this supplier
+                <p className="text-[10px] text-gray-500 leading-tight">
+                  ✨ {t('orders.partsSortedNoteSupplier')}
                 </p>
               )}
             </div>
@@ -380,7 +382,7 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
 
           <div>
             <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity
+              {t('orders.quantity')}
             </label>
             <input
               type="number"
@@ -404,7 +406,7 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
 
           <div>
             <label htmlFor="unit_price" className="block text-sm font-medium text-gray-700 mb-1">
-              Unit Price (Optional)
+              {t('orders.unitPrice')} ({t('common.optional')})
             </label>
             <input
               type="number"
@@ -428,7 +430,7 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
               className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-semibold"
               disabled={loading}
             >
-              Add Item
+              {t('orders.addItem')}
             </button>
             <div className="h-5 mt-1"></div>
           </div>
@@ -437,7 +439,7 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
         {/* Items List */}
         {formData.items.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium text-gray-800">Order Items:</h4>
+            <h4 className="font-medium text-gray-800">{t('orders.orderItems')}:</h4>
             {formData.items.map((item, index) => (
               <div key={index} className="bg-white p-3 rounded border">
                 <div className="flex items-start justify-between mb-2">
@@ -451,13 +453,13 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
                     className="text-red-600 hover:text-red-800 font-semibold ml-2"
                     disabled={loading}
                   >
-                    Remove
+                    {t('orders.removeItem')}
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Quantity ({item.part.unit_of_measure})
+                      {t('orders.quantity')} ({item.part.unit_of_measure})
                     </label>
                     <input
                       type="number"
@@ -479,7 +481,7 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Unit Price (optional)
+                      {t('orders.unitPrice')} ({t('common.optional')})
                     </label>
                     <input
                       type="number"

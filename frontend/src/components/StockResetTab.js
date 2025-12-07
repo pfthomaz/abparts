@@ -5,8 +5,10 @@ import PartSearchSelector from './PartSearchSelector';
 import { warehouseService } from '../services/warehouseService';
 import { api } from '../services/api';
 import WarehouseStockAdjustmentHistory from './WarehouseStockAdjustmentHistory';
+import { useTranslation } from '../hooks/useTranslation';
 
 const StockResetTab = ({ warehouse, onSuccess }) => {
+  const { t } = useTranslation();
   const [adjustments, setAdjustments] = useState([]);
   const [allParts, setAllParts] = useState([]);
   const [selectedPartId, setSelectedPartId] = useState('');
@@ -226,7 +228,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
           </div>
           <div className="ml-3">
             <p className="text-sm text-yellow-700">
-              <strong>Warning:</strong> This will adjust inventory quantities. Use for initial setup, stocktake corrections, or system reconciliation.
+              <strong>{t('warehouses.stockReset.warning')}:</strong> {t('warehouses.stockReset.warningMessage')}
             </p>
           </div>
         </div>
@@ -241,50 +243,50 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
       {/* Part Search */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Add Part to Adjustment List
+          {t('warehouses.stockReset.addPartToList')}
         </label>
         <div className="relative">
           <PartSearchSelector
             parts={allParts}
             value={selectedPartId}
             onChange={handleAddPart}
-            placeholder="Search by part number, name, or description..."
+            placeholder={t('warehouses.stockReset.searchPlaceholder')}
             disabled={loading}
             className="relative z-10"
           />
         </div>
         {allParts.length === 0 && (
-          <p className="text-sm text-red-500 mt-1">⚠️ No parts loaded. Check console for errors.</p>
+          <p className="text-sm text-red-500 mt-1">⚠️ {t('warehouses.stockReset.noPartsLoaded')}</p>
         )}
         {allParts.length > 0 && (
-          <p className="text-sm text-green-600 mt-1">✓ {allParts.length} parts available for search</p>
+          <p className="text-sm text-green-600 mt-1">✓ {allParts.length} {t('warehouses.stockReset.partsAvailable')}</p>
         )}
       </div>
 
       {/* Adjustments Table */}
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Stock Adjustments ({adjustments.length} parts)</h3>
+        <h3 className="text-lg font-medium mb-3">{t('warehouses.stockReset.stockAdjustments')} ({adjustments.length} {t('warehouses.stockReset.parts')})</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 border">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Part Number
+                  {t('warehouses.stockReset.partNumber')}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Part Name
+                  {t('warehouses.stockReset.partName')}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Current
+                  {t('warehouses.stockReset.current')}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  New Quantity
+                  {t('warehouses.stockReset.newQuantity')}
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Δ
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  {t('warehouses.stockReset.actions')}
                 </th>
               </tr>
             </thead>
@@ -292,7 +294,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
               {adjustments.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                    No parts in adjustment list. Use the search above to add parts.
+                    {t('warehouses.stockReset.noPartsInList')}
                   </td>
                 </tr>
               ) : (
@@ -332,7 +334,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
                           className="text-red-600 hover:text-red-800 text-sm"
                           disabled={loading}
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </td>
                     </tr>
@@ -348,7 +350,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Reason <span className="text-red-500">*</span>
+            {t('warehouses.stockReset.reason')} <span className="text-red-500">*</span>
           </label>
           <select
             value={reason}
@@ -356,24 +358,24 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             disabled={loading}
           >
-            <option value="Initial Stock Entry">Initial Stock Entry</option>
-            <option value="Physical Stocktake Correction">Physical Stocktake Correction</option>
-            <option value="System Reconciliation">System Reconciliation</option>
-            <option value="Damaged Goods Write-off">Damaged Goods Write-off</option>
-            <option value="Found Stock">Found Stock</option>
-            <option value="Other">Other</option>
+            <option value="Initial Stock Entry">{t('warehouses.stockReset.reasons.initialStockEntry')}</option>
+            <option value="Physical Stocktake Correction">{t('warehouses.stockReset.reasons.physicalStocktake')}</option>
+            <option value="System Reconciliation">{t('warehouses.stockReset.reasons.systemReconciliation')}</option>
+            <option value="Damaged Goods Write-off">{t('warehouses.stockReset.reasons.damagedGoods')}</option>
+            <option value="Found Stock">{t('warehouses.stockReset.reasons.foundStock')}</option>
+            <option value="Other">{t('warehouses.stockReset.reasons.other')}</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+            {t('warehouses.stockReset.notes')}
           </label>
           <input
             type="text"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Optional notes..."
+            placeholder={t('warehouses.stockReset.notesPlaceholder')}
             disabled={loading}
           />
         </div>
@@ -382,19 +384,19 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
       {/* Summary */}
       {summary.totalChanges > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h4 className="font-medium text-blue-900 mb-2">Summary</h4>
+          <h4 className="font-medium text-blue-900 mb-2">{t('warehouses.stockReset.summary')}</h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="text-blue-700">Parts to adjust:</span>
+              <span className="text-blue-700">{t('warehouses.stockReset.partsToAdjust')}:</span>
               <span className="ml-2 font-semibold text-blue-900">{summary.totalChanges}</span>
             </div>
             <div>
-              <span className="text-green-700">Total increase:</span>
-              <span className="ml-2 font-semibold text-green-900">{summary.totalIncrease} units</span>
+              <span className="text-green-700">{t('warehouses.stockReset.totalIncrease')}:</span>
+              <span className="ml-2 font-semibold text-green-900">{summary.totalIncrease} {t('warehouses.stockReset.units')}</span>
             </div>
             <div>
-              <span className="text-red-700">Total decrease:</span>
-              <span className="ml-2 font-semibold text-red-900">{summary.totalDecrease} units</span>
+              <span className="text-red-700">{t('warehouses.stockReset.totalDecrease')}:</span>
+              <span className="ml-2 font-semibold text-red-900">{summary.totalDecrease} {t('warehouses.stockReset.units')}</span>
             </div>
           </div>
         </div>
@@ -407,14 +409,14 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
           disabled={loading || summary.totalChanges === 0}
           className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Preview Changes
+          {t('warehouses.stockReset.previewChanges')}
         </button>
         <button
           onClick={handleSubmit}
           disabled={loading || summary.totalChanges === 0}
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Applying...' : 'Apply Stock Reset'}
+          {loading ? t('warehouses.stockReset.applying') : t('warehouses.stockReset.applyStockReset')}
         </button>
       </div>
 
@@ -422,10 +424,10 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
       {showPreview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Confirm Stock Reset</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('warehouses.stockReset.confirmStockReset')}</h3>
             
             <p className="text-gray-700 mb-4">
-              You are about to adjust <strong>{summary.totalChanges} parts</strong> in <strong>{warehouse.name}</strong>:
+              {t('warehouses.stockReset.aboutToAdjust')} <strong>{summary.totalChanges} {t('warehouses.stockReset.parts')}</strong> {t('warehouses.stockReset.in')} <strong>{warehouse.name}</strong>:
             </p>
 
             <div className="bg-gray-50 rounded p-4 mb-4 max-h-60 overflow-y-auto">
@@ -444,18 +446,18 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600"><strong>Reason:</strong> {reason}</p>
-              {notes && <p className="text-sm text-gray-600"><strong>Notes:</strong> {notes}</p>}
+              <p className="text-sm text-gray-600"><strong>{t('warehouses.stockReset.reason')}:</strong> {reason}</p>
+              {notes && <p className="text-sm text-gray-600"><strong>{t('warehouses.stockReset.notes')}:</strong> {notes}</p>}
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
               <p className="text-sm text-blue-800">
-                <strong>This action will:</strong>
+                <strong>{t('warehouses.stockReset.thisActionWill')}:</strong>
               </p>
               <ul className="text-sm text-blue-700 mt-2 space-y-1">
-                <li>✓ Create adjustment transactions for audit trail</li>
-                <li>✓ Update inventory quantities</li>
-                <li>✓ Log changes with reason and notes</li>
+                <li>✓ {t('warehouses.stockReset.createAdjustmentTransactions')}</li>
+                <li>✓ {t('warehouses.stockReset.updateInventoryQuantities')}</li>
+                <li>✓ {t('warehouses.stockReset.logChanges')}</li>
               </ul>
             </div>
 
@@ -465,14 +467,14 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 disabled={loading}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSubmit}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                 disabled={loading}
               >
-                {loading ? 'Applying...' : 'Confirm Reset'}
+                {loading ? t('warehouses.stockReset.applying') : t('warehouses.stockReset.confirmReset')}
               </button>
             </div>
           </div>
@@ -481,7 +483,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
 
       {/* Adjustment History Section */}
       <div className="mt-8 border-t pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Adjustment History</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 {t('warehouses.stockReset.adjustmentHistory')}</h3>
         <WarehouseStockAdjustmentHistory 
           warehouseId={warehouse.id} 
           warehouse={warehouse}

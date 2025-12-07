@@ -2,24 +2,17 @@
 
 import React from 'react';
 import { formatDate, formatNumber } from '../utils';
-
-const adjustmentTypeLabels = {
-  stock_take: 'Stock Take',
-  damage: 'Damage',
-  loss: 'Loss',
-  found: 'Found',
-  correction: 'Correction',
-  return: 'Return',
-  other: 'Other'
-};
+import { useTranslation } from '../hooks/useTranslation';
 
 const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Stock Adjustment Details</h2>
+            <h2 className="text-2xl font-bold">{t('stockAdjustments.adjustmentDetails')}</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -32,30 +25,30 @@ const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="text-sm text-gray-600">Warehouse</div>
+                <div className="text-sm text-gray-600">{t('stockAdjustments.warehouse')}</div>
                 <div className="font-medium">{adjustment.warehouse_name}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-600">Type</div>
-                <div className="font-medium">{adjustmentTypeLabels[adjustment.adjustment_type]}</div>
+                <div className="text-sm text-gray-600">{t('stockAdjustments.type')}</div>
+                <div className="font-medium">{t(`stockAdjustments.types.${adjustment.adjustment_type.replace('_', '')}`)}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-600">Date</div>
+                <div className="text-sm text-gray-600">{t('stockAdjustments.date')}</div>
                 <div className="font-medium">{formatDate(adjustment.adjustment_date)}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-600">User</div>
+                <div className="text-sm text-gray-600">{t('stockAdjustments.user')}</div>
                 <div className="font-medium">{adjustment.username}</div>
               </div>
               {adjustment.reason && (
                 <div className="md:col-span-2">
-                  <div className="text-sm text-gray-600">Reason</div>
+                  <div className="text-sm text-gray-600">{t('stockAdjustments.reason')}</div>
                   <div className="font-medium">{adjustment.reason}</div>
                 </div>
               )}
               {adjustment.notes && (
                 <div className="md:col-span-2">
-                  <div className="text-sm text-gray-600">Notes</div>
+                  <div className="text-sm text-gray-600">{t('stockAdjustments.notes')}</div>
                   <div className="font-medium">{adjustment.notes}</div>
                 </div>
               )}
@@ -65,7 +58,7 @@ const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
           {/* Items */}
           <div>
             <h3 className="text-lg font-semibold mb-3">
-              Adjusted Items ({adjustment.items.length})
+              {t('stockAdjustments.adjustedItems')} ({adjustment.items.length})
             </h3>
             
             <div className="overflow-x-auto">
@@ -73,22 +66,22 @@ const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Part Number
+                      {t('stockAdjustments.partNumber')}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Part Name
+                      {t('stockAdjustments.partName')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Before
+                      {t('stockAdjustments.before')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      After
+                      {t('stockAdjustments.after')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Change
+                      {t('stockAdjustments.change')}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Reason
+                      {t('stockAdjustments.reason')}
                     </th>
                   </tr>
                 </thead>
@@ -134,13 +127,13 @@ const StockAdjustmentDetailsModal = ({ adjustment, onClose }) => {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Created: {formatDate(adjustment.created_at)}
+                {t('stockAdjustments.created')}: {formatDate(adjustment.created_at)}
               </div>
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
           </div>

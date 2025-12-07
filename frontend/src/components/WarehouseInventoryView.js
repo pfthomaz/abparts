@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
+import { useTranslation } from '../hooks/useTranslation';
 import { validateInventoryData, safeFilter } from '../utils/inventoryValidation';
 
 const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
+  const { t } = useTranslation();
   const [inventoryItems, setInventoryItems] = useState([]);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -130,17 +132,17 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
 
   const getStockStatusLabel = (status) => {
     switch (status) {
-      case 'out_of_stock': return 'Out of Stock';
-      case 'low_stock': return 'Low Stock';
-      case 'in_stock': return 'In Stock';
-      default: return 'Unknown';
+      case 'out_of_stock': return t('warehouses.outOfStock');
+      case 'low_stock': return t('warehouses.lowStock');
+      case 'in_stock': return t('warehouses.inStock');
+      default: return t('common.unknown');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Loading warehouse inventory...</div>
+        <div className="text-gray-500">{t('warehouses.loadingInventory')}</div>
       </div>
     );
   }
@@ -158,7 +160,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
-          Inventory
+          {t('warehouses.inventory')}
           {warehouse && (
             <span className="text-sm font-normal text-gray-500 ml-2">
               - {warehouse.name}
@@ -167,10 +169,10 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         </h3>
 
         <div className="text-sm text-gray-500">
-          {filteredInventory.length} items
+          {filteredInventory.length} {t('warehouses.items')}
           {lastUpdated && (
             <div className="text-xs text-gray-400 mt-1">
-              Last updated: {lastUpdated.toLocaleTimeString()}
+              {t('warehouses.lastUpdated')}: {lastUpdated.toLocaleTimeString()}
             </div>
           )}
         </div>
@@ -181,7 +183,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search parts..."
+            placeholder={t('warehouses.searchParts')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -194,8 +196,8 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
             onChange={(e) => setFilterType(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="all">All Items (In Stock)</option>
-            <option value="low_stock">Low Stock</option>
+            <option value="all">{t('warehouses.allItemsInStock')}</option>
+            <option value="low_stock">{t('warehouses.lowStock')}</option>
           </select>
         </div>
       </div>
@@ -205,8 +207,8 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         <div className="bg-gray-50 p-8 rounded-lg text-center">
           <div className="text-gray-500">
             {searchTerm || filterType !== 'all'
-              ? 'No inventory items match your filters.'
-              : 'No inventory items found for this warehouse.'}
+              ? t('warehouses.noInventoryMatch')
+              : t('warehouses.noInventoryFound')}
           </div>
         </div>
       ) : (
@@ -215,19 +217,19 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Part
+                  {t('warehouses.part')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Current Stock
+                  {t('warehouses.currentStock')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Min. Stock
+                  {t('warehouses.minStock')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  {t('warehouses.statusLabel')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Unit
+                  {t('warehouses.unit')}
                 </th>
               </tr>
             </thead>
@@ -241,7 +243,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {part.name || 'Unknown Part'}
+                          {part.name || t('warehouses.unknownPart')}
                         </div>
                         <div className="text-sm text-gray-500">
                           {part.part_number}
@@ -279,14 +281,14 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Total Items</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.totalItems')}</div>
           <div className="text-2xl font-bold text-gray-900">
             {Array.isArray(inventoryItems) ? inventoryItems.filter(item => parseFloat(item.current_stock || 0) > 0).length : 0}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Low Stock Items</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.lowStockItems')}</div>
           <div className="text-2xl font-bold text-orange-600">
             {safeFilter(inventoryItems, item => {
               try {
@@ -302,7 +304,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Items In Stock</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.itemsInStock')}</div>
           <div className="text-2xl font-bold text-green-600">
             {safeFilter(inventoryItems, item => {
               try {

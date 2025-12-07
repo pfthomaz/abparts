@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { listProtocols, deleteProtocol } from '../services/maintenanceProtocolsService';
 import ProtocolForm from '../components/ProtocolForm';
 import ChecklistItemManager from '../components/ChecklistItemManager';
+import { useTranslation } from '../hooks/useTranslation';
 
 const MaintenanceProtocols = () => {
+  const { t } = useTranslation();
   const [protocols, setProtocols] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ const MaintenanceProtocols = () => {
   };
 
   const handleDeleteProtocol = async (protocolId) => {
-    if (!window.confirm('Are you sure you want to delete this protocol?')) {
+    if (!window.confirm(t('maintenance.protocols.confirmDelete'))) {
       return;
     }
 
@@ -55,7 +57,7 @@ const MaintenanceProtocols = () => {
       await deleteProtocol(protocolId);
       loadProtocols();
     } catch (err) {
-      alert(`Failed to delete protocol: ${err.message}`);
+      alert(t('maintenance.protocols.deleteFailed') + `: ${err.message}`);
     }
   };
 

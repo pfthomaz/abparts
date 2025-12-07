@@ -7,6 +7,7 @@ import PartForm from '../components/PartForm';
 import PermissionGuard from '../components/PermissionGuard';
 import { PERMISSIONS, isSuperAdmin } from '../utils/permissions';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import SuperAdminPartsManager from '../components/SuperAdminPartsManager';
 import PartCard from '../components/PartCard';
 import PartsSearchFilter from '../components/PartsSearchFilter';
@@ -24,6 +25,7 @@ import {
 } from '../utils';
 
 const Parts = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   // Check if user is superadmin first
@@ -285,13 +287,13 @@ const Parts = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Parts</h1>
+        <h1 className="text-3xl font-bold text-gray-800">{t('parts.title')}</h1>
         <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
           <button
             onClick={() => openModal()}
             className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
           >
-            Add Part
+            {t('parts.addPart')}
           </button>
         </PermissionGuard>
       </div>
@@ -357,11 +359,11 @@ const Parts = () => {
 
       {!loading && !error && filteredParts.length === 0 && (
         <div className="text-center py-10 bg-white rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-700">{DISPLAY_CONSTANTS.EMPTY_STATE_TITLE}</h3>
+          <h3 className="text-xl font-semibold text-gray-700">{t('parts.noPartsFound')}</h3>
           <p className="text-gray-500 mt-2">
             {parts.length > 0
-              ? 'Try adjusting your search or filter criteria.'
-              : DISPLAY_CONSTANTS.EMPTY_STATE_MESSAGE
+              ? t('parts.tryAdjustingFilters')
+              : t('parts.noPartsYet')
             }
           </p>
           {parts.length === 0 && (
@@ -370,7 +372,7 @@ const Parts = () => {
                 onClick={() => openModal()}
                 className="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
               >
-                {DISPLAY_CONSTANTS.ADD_PART_BUTTON_TEXT}
+                {t('parts.addPart')}
               </button>
             </PermissionGuard>
           )}
@@ -380,7 +382,7 @@ const Parts = () => {
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={editingPart ? "Edit Part" : "Add New Part"}
+        title={editingPart ? t('parts.editPart') : t('parts.addNewPart')}
       >
         <PartForm
           initialData={editingPart || {}}

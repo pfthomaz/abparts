@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { warehouseService } from '../services/warehouseService';
+import { useTranslation } from '../hooks/useTranslation';
 import WarehouseInventoryView from './WarehouseInventoryView';
 import WarehouseCapacityManagement from './WarehouseCapacityManagement';
 
 const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
+  const { t } = useTranslation();
   const [performanceData, setPerformanceData] = useState(null);
   const [utilizationData, setUtilizationData] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
@@ -54,7 +56,7 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Loading warehouse performance data...</div>
+        <div className="text-gray-500">{t('warehouses.loadingPerformance')}</div>
       </div>
     );
   }
@@ -73,7 +75,7 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium text-gray-900">
-            Warehouse Dashboard
+            {t('warehouses.warehouseDashboard')}
             {warehouse && (
               <span className="text-sm font-normal text-gray-500 ml-2">
                 - {warehouse.name}
@@ -90,7 +92,7 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
-              Performance
+              {t('warehouses.performanceTab')}
             </button>
             <button
               onClick={() => setActiveTab('inventory')}
@@ -99,7 +101,7 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
-              Inventory
+              {t('warehouses.inventoryTab')}
             </button>
             <button
               onClick={() => setActiveTab('capacity')}
@@ -108,21 +110,21 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
-              Capacity
+              {t('warehouses.capacityTab')}
             </button>
           </div>
         </div>
 
         {/* Date Range Selector */}
         <div className="flex items-center space-x-2">
-          <label className="text-sm text-gray-700">From:</label>
+          <label className="text-sm text-gray-700">{t('warehouses.from')}</label>
           <input
             type="date"
             value={dateRange.start_date}
             onChange={(e) => handleDateRangeChange('start_date', e.target.value)}
             className="px-2 py-1 border border-gray-300 rounded text-sm"
           />
-          <label className="text-sm text-gray-700">To:</label>
+          <label className="text-sm text-gray-700">{t('warehouses.to')}</label>
           <input
             type="date"
             value={dateRange.end_date}
@@ -139,28 +141,28 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
           {summaryData && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="text-sm font-medium text-gray-500">Total Parts</div>
+                <div className="text-sm font-medium text-gray-500">{t('warehouses.totalPartsLabel')}</div>
                 <div className="text-2xl font-bold text-gray-900">
                   {summaryData.total_parts || 0}
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="text-sm font-medium text-gray-500">Total Stock Value</div>
+                <div className="text-sm font-medium text-gray-500">{t('warehouses.totalStockValue')}</div>
                 <div className="text-2xl font-bold text-green-600">
                   ${(summaryData.total_stock_value || 0).toLocaleString()}
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="text-sm font-medium text-gray-500">Low Stock Items</div>
+                <div className="text-sm font-medium text-gray-500">{t('warehouses.lowStockItems')}</div>
                 <div className="text-2xl font-bold text-orange-600">
                   {summaryData.low_stock_items || 0}
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="text-sm font-medium text-gray-500">Out of Stock</div>
+                <div className="text-sm font-medium text-gray-500">{t('warehouses.outOfStockItems')}</div>
                 <div className="text-2xl font-bold text-red-600">
                   {summaryData.out_of_stock_items || 0}
                 </div>
@@ -171,24 +173,24 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
           {/* Performance Metrics */}
           {performanceData && (
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h4 className="text-md font-medium text-gray-900 mb-4">Performance Metrics</h4>
+              <h4 className="text-md font-medium text-gray-900 mb-4">{t('warehouses.performanceMetrics')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Total Transactions</div>
+                  <div className="text-sm font-medium text-gray-500">{t('warehouses.totalTransactions')}</div>
                   <div className="text-xl font-bold text-blue-600">
                     {performanceData.total_transactions || 0}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Parts Received</div>
+                  <div className="text-sm font-medium text-gray-500">{t('warehouses.partsReceived')}</div>
                   <div className="text-xl font-bold text-green-600">
                     {performanceData.parts_received || 0}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Parts Consumed</div>
+                  <div className="text-sm font-medium text-gray-500">{t('warehouses.partsConsumed')}</div>
                   <div className="text-xl font-bold text-orange-600">
                     {performanceData.parts_consumed || 0}
                   </div>
@@ -200,10 +202,10 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
           {/* Utilization Metrics */}
           {utilizationData && (
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h4 className="text-md font-medium text-gray-900 mb-4">Utilization Metrics</h4>
+              <h4 className="text-md font-medium text-gray-900 mb-4">{t('warehouses.utilizationMetrics')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Storage Utilization</div>
+                  <div className="text-sm font-medium text-gray-500">{t('warehouses.storageUtilization')}</div>
                   <div className="flex items-center mt-2">
                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                       <div
@@ -218,11 +220,11 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500">Turnover Rate</div>
+                  <div className="text-sm font-medium text-gray-500">{t('warehouses.turnoverRate')}</div>
                   <div className="text-xl font-bold text-purple-600">
                     {(utilizationData.turnover_rate || 0).toFixed(2)}x
                   </div>
-                  <div className="text-sm text-gray-500">per month</div>
+                  <div className="text-sm text-gray-500">{t('warehouses.perMonth')}</div>
                 </div>
               </div>
             </div>
@@ -232,7 +234,7 @@ const WarehousePerformanceDashboard = ({ warehouseId, warehouse }) => {
           {!summaryData && !performanceData && !utilizationData && (
             <div className="bg-gray-50 p-8 rounded-lg text-center">
               <div className="text-gray-500">
-                No performance data available for this warehouse.
+                {t('warehouses.noPerformanceData')}
               </div>
             </div>
           )}

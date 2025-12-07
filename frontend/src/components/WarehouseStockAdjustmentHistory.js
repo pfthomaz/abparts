@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { partsService } from '../services/partsService';
 import { stockAdjustmentsService } from '../services/stockAdjustmentsService';
+import { useTranslation } from '../hooks/useTranslation';
 import StockAdjustmentDetailsModal from './StockAdjustmentDetailsModal';
 
 const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
+  const { t } = useTranslation();
   const [adjustments, setAdjustments] = useState([]);
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -120,11 +122,11 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
   const getAdjustmentType = (quantityChange) => {
     const change = parseFloat(quantityChange);
     if (change > 0) {
-      return { type: 'increase', label: 'Increase', color: 'text-green-600 bg-green-100' };
+      return { type: 'increase', label: t('warehouses.increase'), color: 'text-green-600 bg-green-100' };
     } else if (change < 0) {
-      return { type: 'decrease', label: 'Decrease', color: 'text-red-600 bg-red-100' };
+      return { type: 'decrease', label: t('warehouses.decrease'), color: 'text-red-600 bg-red-100' };
     }
-    return { type: 'neutral', label: 'No Change', color: 'text-gray-600 bg-gray-100' };
+    return { type: 'neutral', label: t('warehouses.noChange'), color: 'text-gray-600 bg-gray-100' };
   };
 
   const exportAdjustments = () => {
@@ -179,7 +181,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Loading adjustment history...</div>
+        <div className="text-gray-500">{t('warehouses.loadingAdjustments')}</div>
       </div>
     );
   }
@@ -197,7 +199,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
-          Stock Adjustment History
+          {t('warehouses.stockAdjustmentHistory')}
           {warehouse && (
             <span className="text-sm font-normal text-gray-500 ml-2">
               - {warehouse.name}
@@ -209,7 +211,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
           disabled={filteredAdjustments.length === 0}
           className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
         >
-          Export CSV
+          {t('warehouses.exportCSV')}
         </button>
       </div>
 
@@ -218,7 +220,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              From Date
+              {t('warehouses.fromDate')}
             </label>
             <input
               type="date"
@@ -230,7 +232,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              To Date
+              {t('warehouses.toDate')}
             </label>
             <input
               type="date"
@@ -242,29 +244,29 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Adjustment Type
+              {t('warehouses.adjustmentType')}
             </label>
             <select
               value={filters.adjustment_type}
               onChange={(e) => handleFilterChange('adjustment_type', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Adjustments</option>
-              <option value="increase">Increases Only</option>
-              <option value="decrease">Decreases Only</option>
+              <option value="all">{t('warehouses.allAdjustments')}</option>
+              <option value="increase">{t('warehouses.increasesOnly')}</option>
+              <option value="decrease">{t('warehouses.decreasesOnly')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Reason
+              {t('warehouses.reason')}
             </label>
             <select
               value={filters.reason}
               onChange={(e) => handleFilterChange('reason', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Reasons</option>
+              <option value="all">{t('warehouses.allReasons')}</option>
               {reasonOptions.map((reason) => (
                 <option key={reason} value={reason}>
                   {reason}
@@ -275,11 +277,11 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Search
+              {t('common.search')}
             </label>
             <input
               type="text"
-              placeholder="Part name or notes..."
+              placeholder={t('warehouses.partNameOrNotes')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -291,21 +293,21 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
       {/* Adjustment Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Total Adjustments</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.totalAdjustments')}</div>
           <div className="text-2xl font-bold text-gray-900">
             {formatNumber(filteredAdjustments.length)}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Stock Increases</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.stockIncreases')}</div>
           <div className="text-2xl font-bold text-green-600">
             {formatNumber(filteredAdjustments.filter(a => parseFloat(a.quantity_change) > 0).length)}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Stock Decreases</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.stockDecreases')}</div>
           <div className="text-2xl font-bold text-red-600">
             {formatNumber(filteredAdjustments.filter(a => parseFloat(a.quantity_change) < 0).length)}
           </div>
@@ -318,13 +320,13 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
           <div className="text-gray-500">
             {error ? (
               <div>
-                <div className="mb-2">Stock adjustment history is currently unavailable.</div>
-                <div className="text-sm">The backend API endpoint is being developed. Please check back later.</div>
+                <div className="mb-2">{t('warehouses.adjustmentHistoryUnavailable')}</div>
+                <div className="text-sm">{t('warehouses.backendDevelopment')}</div>
               </div>
             ) : adjustments.length === 0 ? (
-              'No stock adjustments found for this warehouse.'
+              t('warehouses.noAdjustmentsFound')
             ) : (
-              'No adjustments match your current filters.'
+              t('warehouses.noAdjustmentsMatch')
             )}
           </div>
         </div>
@@ -334,28 +336,28 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  {t('warehouses.date')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Part
+                  {t('warehouses.part')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Change
+                  {t('warehouses.change')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                  {t('warehouses.type')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reason
+                  {t('warehouses.reason')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Notes
+                  {t('warehouses.notes')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Performed By
+                  {t('warehouses.performedBy')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  {t('warehouses.actions')}
                 </th>
               </tr>
             </thead>
@@ -372,7 +374,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {adjustment.total_items_adjusted} {adjustment.total_items_adjusted === 1 ? 'part' : 'parts'} adjusted
+                          {adjustment.total_items_adjusted} {adjustment.total_items_adjusted === 1 ? t('warehouses.partAdjusted') : t('warehouses.partsAdjusted')}
                         </div>
                         <div className="text-sm text-gray-500">
                           {adjustmentTypeLabel}
@@ -384,7 +386,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
                         onClick={() => handleViewDetails(adjustment.id)}
                         className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
                       >
-                        {adjustment.total_items_adjusted} items
+                        {adjustment.total_items_adjusted} {t('warehouses.items')}
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -408,7 +410,7 @@ const WarehouseStockAdjustmentHistory = ({ warehouseId, warehouse }) => {
                         onClick={() => handleViewDetails(adjustment.id)}
                         className="text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        View Details
+                        {t('warehouses.viewDetails')}
                       </button>
                     </td>
                   </tr>

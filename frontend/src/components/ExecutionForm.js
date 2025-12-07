@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { 
   getChecklistItems, 
   createExecution, 
@@ -9,6 +10,7 @@ import {
 
 const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [checklistItems, setChecklistItems] = useState([]);
   const [executionId, setExecutionId] = useState(null);
   const [completedItems, setCompletedItems] = useState({});
@@ -85,7 +87,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
         [item.id]: { ...itemData, saved: true }
       }));
     } catch (err) {
-      alert(`Failed to save item: ${err.message}`);
+      alert(t('maintenance.failedToSaveItem', { error: err.message }));
       // Revert the change on error
       setCompletedItems(prev => ({
         ...prev,
@@ -119,7 +121,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
     );
 
     if (incompleteCritical.length > 0) {
-      alert(`Please complete all critical items before finishing (${incompleteCritical.length} remaining)`);
+      alert(t('maintenance.completeAllCriticalItems', { count: incompleteCritical.length }));
       return;
     }
 
@@ -129,21 +131,21 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
     );
 
     if (unsavedItems.length > 0) {
-      alert('Please save all checklist items before finishing');
+      alert(t('maintenance.saveAllItemsBeforeFinishing'));
       return;
     }
 
-    if (!window.confirm('Are you sure you want to finish this maintenance execution?')) {
+    if (!window.confirm(t('maintenance.confirmFinishExecution'))) {
       return;
     }
 
     try {
       setSaving(true);
       await completeExecution(executionId);
-      alert('Maintenance execution completed successfully!');
+      alert(t('maintenance.executionCompletedSuccessfully'));
       onComplete();
     } catch (err) {
-      alert(`Failed to complete execution: ${err.message}`);
+      alert(t('maintenance.failedToCompleteExecution', { error: err.message }));
     } finally {
       setSaving(false);
     }
@@ -152,13 +154,13 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
   if (showHoursInput) {
     return (
       <div className="bg-white rounded-lg shadow p-6 max-w-md mx-auto mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Enter Current Machine Hours</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('maintenance.enterCurrentMachineHours')}</h2>
         <p className="text-gray-600 mb-4">
-          Please enter the current hour meter reading for {machine.name || machine.serial_number}
+          {t('maintenance.pleaseEnterHourMeterReading')} {machine.name || machine.serial_number}
         </p>
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Machine Hours *
+            {t('maintenance.machineHours')} *
           </label>
           <input
             type="number"
@@ -166,7 +168,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
             value={machineHours}
             onChange={(e) => setMachineHours(parseFloat(e.target.value) || 0)}
             className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., 125.5"
+            placeholder={t('maintenance.hoursPlaceholder')}
             autoFocus
           />
         </div>
@@ -175,14 +177,14 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
             onClick={onCancel}
             className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleStartExecution}
             disabled={loading}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
           >
-            {loading ? 'Starting...' : 'Start Maintenance'}
+            {loading ? t('maintenance.starting') : t('maintenance.startMaintenance')}
           </button>
         </div>
       </div>
@@ -200,13 +202,13 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-        <p className="font-medium">Error initializing execution</p>
+        <p className="font-medium">{t('maintenance.errorInitializingExecution')}</p>
         <p className="text-sm mt-1">{error}</p>
         <button
           onClick={onCancel}
           className="mt-4 px-4 py-2 bg-white border border-red-300 rounded-md hover:bg-red-50"
         >
-          Go Back
+          {t('common.goBack')}
         </button>
       </div>
     );
@@ -224,7 +226,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{protocol.name}</h1>
             <p className="text-gray-600 mt-1">
-              Machine: {machine.serial_number} - {machine.model}
+              {t('maintenance.machine')}: {machine.serial_number} - {machine.model}
             </p>
           </div>
           <button
@@ -238,7 +240,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
         {/* Progress Bar */}
         <div className="mt-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Progress</span>
+            <span>{t('maintenance.progress')}</span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -275,7 +277,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
                         {item.item_description}
                         {item.is_critical && (
                           <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                            Critical
+                            {t('maintenance.critical')}
                           </span>
                         )}
                       </h3>
@@ -308,10 +310,10 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
                         disabled={isSaved}
                       />
                       <label htmlFor={`complete-${item.id}`} className="ml-3 text-base font-medium text-gray-900 cursor-pointer flex-1">
-                        {isSaved ? '✓ Completed' : 'Mark as completed'}
+                        {isSaved ? t('maintenance.completed') : t('maintenance.markAsCompleted')}
                       </label>
                       {isSaved && (
-                        <span className="text-green-600 text-sm font-medium">Saved</span>
+                        <span className="text-green-600 text-sm font-medium">{t('maintenance.saved')}</span>
                       )}
                     </div>
 
@@ -319,7 +321,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
                     {item.estimated_quantity && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Quantity Used {item.part && `(${item.part.name})`}
+                          {t('maintenance.quantityUsed')} {item.part && `(${item.part.name})`}
                         </label>
                         <input
                           type="number"
@@ -328,7 +330,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
                           onChange={(e) => handleItemChange(item, 'quantity', e.target.value)}
                           onBlur={() => isSaved && handleItemComplete(item, itemData)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder={`Estimated: ${item.estimated_quantity}`}
+                          placeholder={t('maintenance.estimatedQuantity', { quantity: item.estimated_quantity })}
                           disabled={!itemData.completed}
                         />
                       </div>
@@ -337,7 +339,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
                     {/* Notes */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Notes
+                        {t('maintenance.notes')}
                       </label>
                       <textarea
                         value={itemData.notes || ''}
@@ -345,7 +347,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
                         onBlur={() => isSaved && handleItemComplete(item, itemData)}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Add any observations or notes"
+                        placeholder={t('maintenance.addObservationsPlaceholder')}
                         disabled={!itemData.completed}
                       />
                     </div>
@@ -364,14 +366,14 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
             onClick={onCancel}
             className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleFinish}
             disabled={progress < 100}
             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Finish Maintenance
+            {t('maintenance.finishMaintenance')}
           </button>
         </div>
       </div>

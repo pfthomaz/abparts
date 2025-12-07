@@ -1,12 +1,14 @@
 // frontend/src/components/WarehouseDetailedView.js
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import WarehouseInventoryView from './WarehouseInventoryView';
 import InventoryTransferHistory from './InventoryTransferHistory';
 import WarehouseStockAdjustmentHistory from './WarehouseStockAdjustmentHistory';
 import StockResetTab from './StockResetTab';
 
 const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('inventory');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const inventoryRefreshFnRef = React.useRef(null);
@@ -20,9 +22,9 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
   }, [onInventoryRefresh]);
 
   const tabs = [
-    { id: 'inventory', label: 'Current Inventory', icon: '📦' },
-    { id: 'adjustments', label: 'Stock Adjustments', icon: '⚖️' },
-    { id: 'transfers', label: 'Transfer History', icon: '↔️' }
+    { id: 'inventory', label: t('warehouses.currentInventory'), icon: '📦' },
+    { id: 'adjustments', label: t('warehouses.stockAdjustments'), icon: '⚖️' },
+    { id: 'transfers', label: t('warehouses.transferHistory'), icon: '↔️' }
   ];
 
   const renderTabContent = () => {
@@ -83,7 +85,7 @@ const WarehouseDetailedView = ({ warehouseId, warehouse, onInventoryRefresh }) =
               ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
               }`}>
-              {warehouse?.is_active ? 'Active' : 'Inactive'}
+              {warehouse?.is_active ? t('warehouses.active') : t('warehouses.inactive')}
             </div>
           </div>
         </div>

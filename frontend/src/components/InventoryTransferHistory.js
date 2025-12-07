@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { warehouseService } from '../services/warehouseService';
 import { partsService } from '../services/partsService';
 import { inventoryService } from '../services/inventoryService';
+import { useTranslation } from '../hooks/useTranslation';
 import { safeFilter } from '../utils/inventoryValidation';
 
 const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
+  const { t } = useTranslation();
   const [transfers, setTransfers] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [parts, setParts] = useState([]);
@@ -170,7 +172,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
 
   const getWarehouseName = (warehouseId) => {
     const warehouse = warehouses.find(w => w.id === warehouseId);
-    return warehouse ? warehouse.name : 'Unknown Warehouse';
+    return warehouse ? warehouse.name : t('warehouses.unknownWarehouse');
   };
 
   const getPartDetails = (partId) => {
@@ -219,11 +221,11 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
 
   const getTransferDirection = (transfer) => {
     if (transfer.from_warehouse_id === warehouseId) {
-      return { direction: 'out', label: 'Outbound', color: 'text-red-600 bg-red-100' };
+      return { direction: 'out', label: t('warehouses.outbound'), color: 'text-red-600 bg-red-100' };
     } else if (transfer.to_warehouse_id === warehouseId) {
-      return { direction: 'in', label: 'Inbound', color: 'text-green-600 bg-green-100' };
+      return { direction: 'in', label: t('warehouses.inbound'), color: 'text-green-600 bg-green-100' };
     }
-    return { direction: 'unknown', label: 'Unknown', color: 'text-gray-600 bg-gray-100' };
+    return { direction: 'unknown', label: t('common.unknown'), color: 'text-gray-600 bg-gray-100' };
   };
 
   const formatDate = (dateString) => {
@@ -279,7 +281,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Loading transfer history...</div>
+        <div className="text-gray-500">{t('common.loading')}</div>
       </div>
     );
   }
@@ -296,14 +298,14 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-yellow-800">
-              Transfer History Unavailable
+              {t('warehouses.transferHistoryUnavailable')}
             </h3>
             <div className="mt-2 text-sm text-yellow-700">
-              <p>Unable to load transfer history data. This may be because:</p>
+              <p>{t('warehouses.unableToLoadTransfers')}</p>
               <ul className="list-disc list-inside mt-1">
-                <li>Essential warehouse or parts data could not be loaded</li>
-                <li>There may be a temporary connectivity issue</li>
-                <li>Please try refreshing the page</li>
+                <li>{t('warehouses.essentialDataNotLoaded')}</li>
+                <li>{t('warehouses.temporaryConnectivity')}</li>
+                <li>{t('warehouses.tryRefreshing')}</li>
               </ul>
             </div>
           </div>
@@ -317,7 +319,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
-          Transfer History
+          {t('warehouses.transferHistoryTitle')}
           {warehouse && (
             <span className="text-sm font-normal text-gray-500 ml-2">
               - {warehouse.name}
@@ -330,7 +332,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
             disabled={filteredTransfers.length === 0}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            Export CSV
+            {t('warehouses.exportCSV')}
           </button>
         </div>
       </div>
@@ -340,7 +342,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              From Date
+              {t('warehouses.fromDate')}
             </label>
             <input
               type="date"
@@ -352,7 +354,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              To Date
+              {t('warehouses.toDate')}
             </label>
             <input
               type="date"
@@ -364,26 +366,26 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Direction
+              {t('warehouses.direction')}
             </label>
             <select
               value={filters.direction}
               onChange={(e) => handleFilterChange('direction', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Transfers</option>
-              <option value="in">Inbound Only</option>
-              <option value="out">Outbound Only</option>
+              <option value="all">{t('warehouses.allTransfers')}</option>
+              <option value="in">{t('warehouses.inboundOnly')}</option>
+              <option value="out">{t('warehouses.outboundOnly')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Search
+              {t('common.search')}
             </label>
             <input
               type="text"
-              placeholder="Part name or notes..."
+              placeholder={t('warehouses.partNameOrNotes')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -395,23 +397,23 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       {/* Transfer Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Total Transfers</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.totalTransfers')}</div>
           <div className="text-2xl font-bold text-gray-900">
             {formatNumber(filteredTransfers.length)}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Inbound Transfers</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.inboundTransfers')}</div>
           <div className="text-2xl font-bold text-green-600">
-            {formatNumber(safeFilter(filteredTransfers, t => t && t.to_warehouse_id === warehouseId, []).length)}
+            {formatNumber(safeFilter(filteredTransfers, transfer => transfer && transfer.to_warehouse_id === warehouseId, []).length)}
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="text-sm font-medium text-gray-500">Outbound Transfers</div>
+          <div className="text-sm font-medium text-gray-500">{t('warehouses.outboundTransfers')}</div>
           <div className="text-2xl font-bold text-red-600">
-            {formatNumber(safeFilter(filteredTransfers, t => t && t.from_warehouse_id === warehouseId, []).length)}
+            {formatNumber(safeFilter(filteredTransfers, transfer => transfer && transfer.from_warehouse_id === warehouseId, []).length)}
           </div>
         </div>
       </div>
@@ -420,15 +422,15 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       {filteredTransfers.length === 0 ? (
         <div className="bg-gray-50 p-8 rounded-lg text-center">
           <div className="text-gray-500">
-            <div className="mb-2">No transfer history found.</div>
+            <div className="mb-2">{t('warehouses.noTransfersFound')}</div>
             <div className="text-sm">
               {warehouseId ?
-                'No transfers have been recorded for this warehouse in the selected date range.' :
-                'Please select a warehouse to view transfer history.'
+                t('warehouses.noTransfersRecorded') :
+                t('warehouses.selectWarehouseForTransfers')
               }
             </div>
             <div className="text-xs text-gray-600 mt-2">
-              Transfer functionality is working. Create some transfers to see history here.
+              {t('warehouses.transferFunctionalityWorking')}
             </div>
           </div>
         </div>
@@ -438,22 +440,22 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  {t('warehouses.date')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Direction
+                  {t('warehouses.direction')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Part
+                  {t('warehouses.part')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quantity
+                  {t('warehouses.quantity')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  From/To
+                  {t('warehouses.fromTo')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Notes
+                  {t('warehouses.notes')}
                 </th>
               </tr>
             </thead>
@@ -489,11 +491,11 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
                       <div className="text-sm text-gray-900">
                         {direction.direction === 'in' ? (
                           <>
-                            <span className="text-gray-500">From:</span> {transfer.from_warehouse_name || getWarehouseName(transfer.from_warehouse_id)}
+                            <span className="text-gray-500">{t('warehouses.from')}:</span> {transfer.from_warehouse_name || getWarehouseName(transfer.from_warehouse_id)}
                           </>
                         ) : (
                           <>
-                            <span className="text-gray-500">To:</span> {transfer.to_warehouse_name || getWarehouseName(transfer.to_warehouse_id)}
+                            <span className="text-gray-500">{t('warehouses.to')}:</span> {transfer.to_warehouse_name || getWarehouseName(transfer.to_warehouse_id)}
                           </>
                         )}
                       </div>

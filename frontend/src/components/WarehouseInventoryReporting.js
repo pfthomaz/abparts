@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
+import { useTranslation } from '../hooks/useTranslation';
 
 // Helper functions moved outside component to avoid dependency issues
 const getStockStatus = (currentStock) => {
@@ -110,6 +111,7 @@ const transformReportData = (rawData, reportType) => {
 };
 
 const WarehouseInventoryReporting = ({ organizationId }) => {
+  const { t } = useTranslation();
   const [reportData, setReportData] = useState(null);
   const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -308,43 +310,43 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-900">
-          Warehouse Inventory Reporting
+          {t('warehouses.reportingTitle')}
         </h3>
         <button
           onClick={exportReport}
           disabled={!reportData || loading}
           className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
         >
-          Export CSV
+          {t('warehouses.exportCSV')}
         </button>
       </div>
 
       {/* Report Configuration */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h4 className="text-md font-medium text-gray-900 mb-4">Report Configuration</h4>
+        <h4 className="text-md font-medium text-gray-900 mb-4">{t('warehouses.reportConfiguration')}</h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           {/* Report Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Report Type
+              {t('warehouses.reportType')}
             </label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="summary">Summary Report</option>
-              <option value="detailed">Detailed Inventory</option>
-              <option value="movement">Movement Analysis</option>
-              <option value="valuation">Inventory Valuation</option>
+              <option value="summary">{t('warehouses.summaryReport')}</option>
+              <option value="detailed">{t('warehouses.detailedInventory')}</option>
+              <option value="movement">{t('warehouses.movementAnalysis')}</option>
+              <option value="valuation">{t('warehouses.inventoryValuation')}</option>
             </select>
           </div>
 
           {/* Date Range */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              From Date
+              {t('warehouses.fromDate')}
             </label>
             <input
               type="date"
@@ -356,7 +358,7 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              To Date
+              {t('warehouses.toDate')}
             </label>
             <input
               type="date"
@@ -369,17 +371,17 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
           {/* Stock Status Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Stock Status
+              {t('warehouses.stockStatus')}
             </label>
             <select
               value={filters.stock_status}
               onChange={(e) => handleFilterChange('stock_status', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Items</option>
-              <option value="in_stock">In Stock</option>
-              <option value="low_stock">Low Stock</option>
-              <option value="out_of_stock">Out of Stock</option>
+              <option value="all">{t('warehouses.allItems')}</option>
+              <option value="in_stock">{t('warehouses.inStock')}</option>
+              <option value="low_stock">{t('warehouses.lowStock')}</option>
+              <option value="out_of_stock">{t('warehouses.outOfStock')}</option>
             </select>
           </div>
         </div>
@@ -388,20 +390,20 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-medium text-gray-700">
-              Select Warehouses
+              {t('warehouses.selectWarehouses')}
             </label>
             <div className="space-x-2">
               <button
                 onClick={handleSelectAllWarehouses}
                 className="text-xs text-blue-600 hover:text-blue-800"
               >
-                Select All
+                {t('warehouses.selectAll')}
               </button>
               <button
                 onClick={handleDeselectAllWarehouses}
                 className="text-xs text-gray-600 hover:text-gray-800"
               >
-                Deselect All
+                {t('warehouses.deselectAll')}
               </button>
             </div>
           </div>
@@ -424,7 +426,7 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center p-8">
-          <div className="text-gray-500">Generating report...</div>
+          <div className="text-gray-500">{t('warehouses.generatingReport')}</div>
         </div>
       )}
 
@@ -441,28 +443,28 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
           {/* Summary Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div key="total-items" className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="text-sm font-medium text-gray-500">Total Items</div>
+              <div className="text-sm font-medium text-gray-500">{t('warehouses.totalItems')}</div>
               <div className="text-2xl font-bold text-gray-900">
                 {formatNumber(reportData.summary?.total_items || 0)}
               </div>
             </div>
 
             <div key="total-value" className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="text-sm font-medium text-gray-500">Total Value</div>
+              <div className="text-sm font-medium text-gray-500">{t('warehouses.totalValue')}</div>
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(reportData.summary?.total_value || 0)}
               </div>
             </div>
 
             <div key="low-stock" className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="text-sm font-medium text-gray-500">Low Stock Items</div>
+              <div className="text-sm font-medium text-gray-500">{t('warehouses.lowStockItems')}</div>
               <div className="text-2xl font-bold text-orange-600">
                 {formatNumber(reportData.summary?.low_stock_items || 0)}
               </div>
             </div>
 
             <div key="out-of-stock" className="bg-white p-4 rounded-lg border border-gray-200">
-              <div className="text-sm font-medium text-gray-500">Out of Stock</div>
+              <div className="text-sm font-medium text-gray-500">{t('warehouses.outOfStockItems')}</div>
               <div className="text-2xl font-bold text-red-600">
                 {formatNumber(reportData.summary?.out_of_stock_items || 0)}
               </div>
@@ -474,10 +476,10 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
             <div className="bg-white shadow overflow-hidden sm:rounded-md">
               <div className="px-4 py-5 sm:px-6">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Detailed Report
+                  {t('warehouses.detailedReport')}
                 </h3>
                 <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                  {reportData.items.length} items across {selectedWarehouses.length} warehouse{selectedWarehouses.length !== 1 ? 's' : ''}
+                  {reportData.items.length} {t('warehouses.itemsAcrossWarehouses', { count: reportData.items.length, warehouses: selectedWarehouses.length, plural: selectedWarehouses.length !== 1 ? 's' : '' })}
                 </p>
               </div>
 
@@ -486,22 +488,22 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Warehouse
+                        {t('warehouses.warehouse')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Part
+                        {t('warehouses.part')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Current Stock
+                        {t('warehouses.currentStock')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Min Stock
+                        {t('warehouses.minStockLabel')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        {t('warehouses.statusLabel')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Est. Value
+                        {t('warehouses.estValue')}
                       </th>
                     </tr>
                   </thead>
@@ -546,26 +548,26 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
           {/* Warehouse Breakdown */}
           {reportData.warehouse_breakdown && (
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h4 className="text-md font-medium text-gray-900 mb-4">Warehouse Breakdown</h4>
+              <h4 className="text-md font-medium text-gray-900 mb-4">{t('warehouses.warehouseBreakdownTitle')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {reportData.warehouse_breakdown.map((warehouse, index) => (
                   <div key={`warehouse-${warehouse.warehouse_id}-${index}`} className="border border-gray-200 rounded-lg p-4">
                     <h5 className="font-medium text-gray-900 mb-2">{warehouse.warehouse_name}</h5>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Total Items:</span>
+                        <span className="text-gray-600">{t('warehouses.totalItemsLabel')}</span>
                         <span className="font-medium">{formatNumber(warehouse.total_items)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Total Value:</span>
+                        <span className="text-gray-600">{t('warehouses.totalValueLabel')}</span>
                         <span className="font-medium">{formatCurrency(warehouse.total_value)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Low Stock:</span>
+                        <span className="text-gray-600">{t('warehouses.lowStockLabel')}</span>
                         <span className="font-medium text-orange-600">{formatNumber(warehouse.low_stock_items)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Out of Stock:</span>
+                        <span className="text-gray-600">{t('warehouses.outOfStockLabel')}</span>
                         <span className="font-medium text-red-600">{formatNumber(warehouse.out_of_stock_items)}</span>
                       </div>
                     </div>
@@ -581,7 +583,7 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       {reportData && reportData.items && reportData.items.length === 0 && !loading && (
         <div className="bg-gray-50 p-8 rounded-lg text-center">
           <div className="text-gray-500">
-            No inventory data found for the selected criteria.
+            {t('warehouses.noDataFound')}
           </div>
         </div>
       )}

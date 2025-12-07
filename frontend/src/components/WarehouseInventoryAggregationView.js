@@ -5,9 +5,11 @@ import { inventoryService } from '../services/inventoryService';
 import { warehouseService } from '../services/warehouseService';
 import { partsService } from '../services/partsService';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 const WarehouseInventoryAggregationView = ({ organizationId }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [aggregatedInventory, setAggregatedInventory] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [parts, setParts] = useState([]);
@@ -481,10 +483,10 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
         {/* Loading Header */}
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900">
-            Aggregated Inventory Across All Warehouses
+            {t('warehouses.aggregatedTitle')}
           </h3>
           <div className="text-sm text-gray-500">
-            Loading...
+            {t('common.loading')}
           </div>
         </div>
 
@@ -492,9 +494,9 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
         <div className="flex items-center justify-center p-12">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-            <div className="text-gray-500 text-lg">Loading aggregated inventory...</div>
+            <div className="text-gray-500 text-lg">{t('warehouses.loadingAggregated')}</div>
             <div className="text-gray-400 text-sm mt-2">
-              {retryCount > 0 ? `Retry attempt ${retryCount}` : 'Fetching data from server'}
+              {retryCount > 0 ? `${t('warehouses.retryAttempt')} ${retryCount}` : t('warehouses.fetchingData')}
             </div>
           </div>
         </div>
@@ -535,10 +537,10 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
         {/* Error Header */}
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900">
-            Aggregated Inventory Across All Warehouses
+            {t('warehouses.aggregatedTitle')}
           </h3>
           <div className="text-sm text-red-500">
-            Error
+            {t('common.error')}
           </div>
         </div>
 
@@ -552,7 +554,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
             </div>
             <div className="ml-3 flex-1">
               <h3 className="text-sm font-medium text-red-800">
-                Unable to Load Inventory Data
+                {t('warehouses.unableToLoad')}
               </h3>
               <div className="mt-2 text-sm text-red-700">
                 {error}
@@ -565,7 +567,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                   disabled={loading}
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Retrying...' : 'Try Again'}
+                  {loading ? t('common.loading') : t('warehouses.tryAgain')}
                 </button>
 
                 {retryCount < 3 && (
@@ -574,7 +576,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                     disabled={loading}
                     className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Auto Retry ({3 - retryCount} attempts left)
+                    {t('warehouses.autoRetry')} ({3 - retryCount} {t('warehouses.attemptsLeft')})
                   </button>
                 )}
 
@@ -582,7 +584,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                   onClick={() => window.location.reload()}
                   className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Refresh Page
+                  {t('warehouses.refreshPage')}
                 </button>
               </div>
 
@@ -607,10 +609,9 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
             <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3" />
             </svg>
-            <p className="text-lg font-medium text-gray-900 mb-2">Inventory Data Unavailable</p>
+            <p className="text-lg font-medium text-gray-900 mb-2">{t('warehouses.inventoryUnavailable')}</p>
             <p className="text-gray-600">
-              We're having trouble loading your inventory data right now.
-              This could be due to a temporary network issue or server maintenance.
+              {t('warehouses.troubleLoading')}
             </p>
           </div>
         </div>
@@ -624,10 +625,10 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900">
-            Aggregated Inventory Across All Warehouses
+            {t('warehouses.aggregatedTitle')}
           </h3>
           <div className="text-sm text-gray-500">
-            {filteredInventory.length} parts
+            {filteredInventory.length} {t('warehouses.parts')}
           </div>
         </div>
 
@@ -643,7 +644,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search parts..."
+              placeholder={t('warehouses.searchParts')}
               value={searchTerm}
               onChange={(e) => {
                 try {
@@ -676,9 +677,9 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
               }}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Items</option>
-              <option value="low_stock">Low Stock</option>
-              <option value="out_of_stock">Out of Stock</option>
+              <option value="all">{t('warehouses.allItems')}</option>
+              <option value="low_stock">{t('warehouses.lowStock')}</option>
+              <option value="out_of_stock">{t('warehouses.outOfStock')}</option>
             </select>
           </div>
         </div>
@@ -688,8 +689,8 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
           <div className="bg-gray-50 p-8 rounded-lg text-center">
             <div className="text-gray-500">
               {searchTerm || filterType !== 'all'
-                ? 'No inventory items match your filters.'
-                : 'No inventory items found.'}
+                ? t('warehouses.noItemsMatch')
+                : t('warehouses.noItemsFound')}
             </div>
           </div>
         ) : (
@@ -698,22 +699,22 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Part
+                    {t('warehouses.part')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Stock
+                    {t('warehouses.totalStockLabel')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Min. Stock
+                    {t('warehouses.minStock')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t('warehouses.statusLabel')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Warehouses
+                    {t('warehouses.warehousesLabel')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('warehouses.actions')}
                   </th>
                 </tr>
               </thead>
@@ -774,7 +775,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                               onClick={() => showPartDetails(item)}
                               className="text-blue-600 hover:text-blue-900"
                             >
-                              View Details
+                              {t('warehouses.viewDetails')}
                             </button>
                           </td>
                         </tr>
@@ -794,21 +795,21 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Total Parts</div>
+            <div className="text-sm font-medium text-gray-500">{t('warehouses.totalParts')}</div>
             <div className="text-2xl font-bold text-gray-900">
               {safeArrayOperation(aggregatedInventory, (arr) => arr.length, 0)}
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Total Warehouses</div>
+            <div className="text-sm font-medium text-gray-500">{t('warehouses.totalWarehouses')}</div>
             <div className="text-2xl font-bold text-blue-600">
               {safeArrayOperation(warehouses, (arr) => arr.length, 0)}
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Low Stock Items</div>
+            <div className="text-sm font-medium text-gray-500">{t('warehouses.lowStockItems')}</div>
             <div className="text-2xl font-bold text-orange-600">
               {safeArrayOperation(
                 aggregatedInventory,
@@ -829,7 +830,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="text-sm font-medium text-gray-500">Out of Stock</div>
+            <div className="text-sm font-medium text-gray-500">{t('warehouses.outOfStockItems')}</div>
             <div className="text-2xl font-bold text-red-600">
               {safeArrayOperation(
                 aggregatedInventory,
@@ -854,13 +855,13 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
             <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
-                  Part Details: {safePropertyAccess(getPartDetails(safePropertyAccess(selectedPart, 'part_id')), 'name', 'Unknown Part')}
+                  {t('warehouses.partDetails')}: {safePropertyAccess(getPartDetails(safePropertyAccess(selectedPart, 'part_id')), 'name', 'Unknown Part')}
                 </h3>
                 <button
                   onClick={closePartDetails}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">{t('warehouses.close')}</span>
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -870,13 +871,13 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Part Number:</span>
+                    <span className="text-sm font-medium text-gray-500">{t('warehouses.partNumber')}:</span>
                     <p className="text-sm text-gray-900">
                       {safePropertyAccess(getPartDetails(safePropertyAccess(selectedPart, 'part_id')), 'part_number', 'N/A')}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-500">Unit of Measure:</span>
+                    <span className="text-sm font-medium text-gray-500">{t('warehouses.unitOfMeasure')}:</span>
                     <p className="text-sm text-gray-900">
                       {safePropertyAccess(getPartDetails(safePropertyAccess(selectedPart, 'part_id')), 'unit_of_measure', 'N/A')}
                     </p>
@@ -884,7 +885,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                 </div>
 
                 <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Warehouse Breakdown</h4>
+                  <h4 className="text-md font-medium text-gray-900 mb-2">{t('warehouses.warehouseBreakdown')}</h4>
                   <div className="bg-gray-50 rounded-lg p-4">
                     {safeArrayOperation(
                       safePropertyAccess(selectedPart, 'warehouse_details', []),
@@ -914,9 +915,9 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                           }).filter(Boolean)}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-500">No warehouse details available</p>
+                        <p className="text-sm text-gray-500">{t('warehouses.noWarehouseDetails')}</p>
                       ),
-                      <p className="text-sm text-gray-500">No warehouse details available</p>
+                      <p className="text-sm text-gray-500">{t('warehouses.noWarehouseDetails')}</p>
                     )}
                   </div>
                 </div>
@@ -927,7 +928,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
                   onClick={closePartDetails}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
                 >
-                  Close
+                  {t('warehouses.close')}
                 </button>
               </div>
             </div>

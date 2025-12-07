@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { machinesService } from '../services/machinesService';
 import { listProtocols, createExecution, getExecutions } from '../services/maintenanceProtocolsService';
 import ExecutionForm from '../components/ExecutionForm';
@@ -8,6 +9,7 @@ import ExecutionHistory from '../components/ExecutionHistory';
 
 const MaintenanceExecutions = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [machines, setMachines] = useState([]);
@@ -57,11 +59,11 @@ const MaintenanceExecutions = () => {
 
   const handleStartExecution = () => {
     if (!selectedMachine) {
-      alert('Please select a machine');
+      alert(t('maintenance.pleaseSelectMachine'));
       return;
     }
     if (!selectedProtocol) {
-      alert('Please select a protocol');
+      alert(t('maintenance.pleaseSelectProtocol'));
       return;
     }
     setShowExecutionForm(true);
@@ -109,7 +111,7 @@ const MaintenanceExecutions = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Maintenance Executions</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('maintenance.title')}</h1>
       </div>
 
       {error && (
@@ -129,7 +131,7 @@ const MaintenanceExecutions = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            New Execution
+            {t('maintenance.newExecution')}
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -139,20 +141,20 @@ const MaintenanceExecutions = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Execution History
+            {t('maintenance.executionHistory')}
           </button>
         </nav>
       </div>
 
       {activeTab === 'new' && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Start New Maintenance</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('maintenance.startNewMaintenance')}</h2>
           
           <div className="space-y-6">
             {/* Machine Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Machine *
+                {t('maintenance.selectMachine')} *
               </label>
               <select
                 value={selectedMachine?.id || ''}
@@ -162,7 +164,7 @@ const MaintenanceExecutions = () => {
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">-- Select a machine --</option>
+                <option value="">{t('maintenance.selectMachinePlaceholder')}</option>
                 {machines.map(machine => (
                   <option key={machine.id} value={machine.id}>
                     {machine.name || machine.model} ({machine.serial_number})
@@ -175,7 +177,7 @@ const MaintenanceExecutions = () => {
             {/* Protocol Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Protocol *
+                {t('maintenance.selectProtocol')} *
               </label>
               <select
                 value={selectedProtocol?.id || ''}
@@ -186,11 +188,11 @@ const MaintenanceExecutions = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={!selectedMachine}
               >
-                <option value="">-- Select a protocol --</option>
+                <option value="">{t('maintenance.selectProtocolPlaceholder')}</option>
                 {protocols.map(protocol => (
                   <option key={protocol.id} value={protocol.id}>
                     {protocol.name} ({protocol.protocol_type})
-                    {protocol.estimated_duration_minutes && ` - ${protocol.estimated_duration_minutes} min`}
+                    {protocol.estimated_duration_minutes && ` - ${protocol.estimated_duration_minutes} ${t('maintenance.min')}`}
                   </option>
                 ))}
               </select>
@@ -204,12 +206,12 @@ const MaintenanceExecutions = () => {
                   <p className="text-sm text-blue-800 mb-2">{selectedProtocol.description}</p>
                 )}
                 <div className="flex flex-wrap gap-4 text-sm text-blue-700">
-                  <span>Type: {selectedProtocol.protocol_type}</span>
+                  <span>{t('maintenance.type')}: {selectedProtocol.protocol_type}</span>
                   {selectedProtocol.estimated_duration_minutes && (
-                    <span>Duration: {selectedProtocol.estimated_duration_minutes} min</span>
+                    <span>{t('maintenance.duration')}: {selectedProtocol.estimated_duration_minutes} {t('maintenance.min')}</span>
                   )}
                   {selectedProtocol.frequency_hours && (
-                    <span>Frequency: Every {selectedProtocol.frequency_hours} hours</span>
+                    <span>{t('maintenance.frequency')}: {t('maintenance.every')} {selectedProtocol.frequency_hours} {t('maintenance.hours')}</span>
                   )}
                 </div>
               </div>
@@ -221,7 +223,7 @@ const MaintenanceExecutions = () => {
                 disabled={!selectedMachine || !selectedProtocol}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Start Maintenance
+                {t('maintenance.startMaintenance')}
               </button>
             </div>
           </div>

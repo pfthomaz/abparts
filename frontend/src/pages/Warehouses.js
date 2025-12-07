@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { warehouseService } from '../services/warehouseService';
 import { organizationsService } from '../services/organizationsService';
 import { inventoryService } from '../services/inventoryService';
@@ -19,6 +20,7 @@ import InventoryForm from '../components/InventoryForm';
 
 const Warehouses = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [warehouses, setWarehouses] = useState([]);
   const [warehouseSummaries, setWarehouseSummaries] = useState({});
   const [organizations, setOrganizations] = useState([]);
@@ -272,8 +274,8 @@ const Warehouses = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warehouse & Inventory Management</h1>
-          <p className="text-gray-600">Manage warehouses, inventory, and monitor performance</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('warehouses.title')}</h1>
+          <p className="text-gray-600">{t('warehouses.subtitle')}</p>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -281,19 +283,19 @@ const Warehouses = () => {
             onClick={() => setShowTransferModal(true)}
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            Transfer Inventory
+            {t('warehouses.transferInventory')}
           </button>
           <button
             onClick={() => setShowAddInventoryModal(true)}
             className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            Add Inventory Item
+            {t('warehouses.addInventoryItem')}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Add Warehouse
+            {t('warehouses.addWarehouse')}
           </button>
         </div>
       </div>
@@ -308,10 +310,10 @@ const Warehouses = () => {
       <div className="bg-white border-b border-gray-200">
         <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
           {[
-            { id: 'warehouses', label: 'Warehouses', icon: '🏭' },
-            { id: 'aggregated', label: 'Aggregated Inventory', icon: '📊' },
-            { id: 'reports', label: 'Reports', icon: '📈' },
-            { id: 'performance', label: 'Performance', icon: '⚡' }
+            { id: 'warehouses', label: t('warehouses.tabs.warehouses'), icon: '🏭' },
+            { id: 'aggregated', label: t('warehouses.tabs.aggregated'), icon: '📊' },
+            { id: 'reports', label: t('warehouses.tabs.reports'), icon: '📈' },
+            { id: 'performance', label: t('warehouses.tabs.performance'), icon: '⚡' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -336,13 +338,13 @@ const Warehouses = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Warehouses
+                  {t('warehouses.searchWarehouses')}
                 </label>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, location..."
+                  placeholder={t('warehouses.searchPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -350,14 +352,14 @@ const Warehouses = () => {
               {user?.role === 'super_admin' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Organization
+                    {t('warehouses.organization')}
                   </label>
                   <select
                     value={selectedOrganization}
                     onChange={(e) => setSelectedOrganization(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">All Organizations</option>
+                    <option value="">{t('warehouses.allOrganizations')}</option>
                     {availableOrganizations.map(org => (
                       <option key={org.id} value={org.id}>
                         {org.name} ({org.organization_type})
@@ -376,7 +378,7 @@ const Warehouses = () => {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="includeInactive" className="ml-2 block text-sm text-gray-700">
-                  Include inactive warehouses
+                  {t('warehouses.includeInactive')}
                 </label>
               </div>
             </div>
@@ -385,12 +387,12 @@ const Warehouses = () => {
           {/* Warehouses Card Grid */}
           {loading ? (
             <div className="p-8 text-center">
-              <div className="text-gray-500">Loading warehouses...</div>
+              <div className="text-gray-500">{t('warehouses.loadingWarehouses')}</div>
             </div>
           ) : warehouses.length === 0 ? (
             <div className="p-8 text-center bg-white rounded-lg border border-gray-200">
               <div className="text-gray-500">
-                {searchQuery ? 'No warehouses found matching your search.' : 'No warehouses found.'}
+                {searchQuery ? t('warehouses.noWarehousesMatch') : t('warehouses.noWarehousesFound')}
               </div>
             </div>
           ) : (
@@ -410,14 +412,14 @@ const Warehouses = () => {
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                         }`}>
-                        {warehouse.is_active ? 'Active' : 'Inactive'}
+                        {warehouse.is_active ? t('warehouses.active') : t('warehouses.inactive')}
                       </span>
                     </div>
                     {warehouse.description && (
                       <p className="text-sm text-gray-600 mb-2">{warehouse.description}</p>
                     )}
                     <div className="text-sm text-gray-500">
-                      <div>📍 {warehouse.location || 'Not specified'}</div>
+                      <div>📍 {warehouse.location || t('warehouses.notSpecified')}</div>
                       <div>🏢 {getOrganizationName(warehouse.organization_id)}</div>
                     </div>
                   </div>
@@ -427,20 +429,20 @@ const Warehouses = () => {
                     {warehouseSummaries[warehouse.id] ? (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <div className="text-xs text-gray-500">Inventory Items</div>
+                          <div className="text-xs text-gray-500">{t('warehouses.inventoryItems')}</div>
                           <div className="text-lg font-semibold text-gray-900">
                             {warehouseSummaries[warehouse.id].total_inventory_items}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-gray-500">Total Stock</div>
+                          <div className="text-xs text-gray-500">{t('warehouses.totalStock')}</div>
                           <div className="text-lg font-semibold text-gray-900">
                             {warehouseSummaries[warehouse.id].total_stock_quantity}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-400">Loading stats...</div>
+                      <div className="text-sm text-gray-400">{t('warehouses.loadingStats')}</div>
                     )}
                   </div>
 
@@ -450,20 +452,20 @@ const Warehouses = () => {
                       onClick={() => openInventoryModal(warehouse)}
                       className="w-full px-3 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 text-sm font-medium"
                     >
-                      📦 View Inventory
+                      📦 {t('warehouses.viewInventory')}
                     </button>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => openAdjustmentModal(warehouse)}
                         className="px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100 text-sm font-medium"
                       >
-                        ⚖️ Adjust Stock
+                        ⚖️ {t('warehouses.adjustStock')}
                       </button>
                       <button
                         onClick={() => openPerformanceModal(warehouse)}
                         className="px-3 py-2 bg-purple-50 text-purple-700 rounded-md hover:bg-purple-100 text-sm font-medium"
                       >
-                        ⚡ Performance
+                        ⚡ {t('warehouses.performance')}
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200">
@@ -471,7 +473,7 @@ const Warehouses = () => {
                         onClick={() => openEditModal(warehouse)}
                         className="px-2 py-1 text-indigo-600 hover:text-indigo-900 text-xs"
                       >
-                        Edit
+                        {t('warehouses.edit')}
                       </button>
                       <button
                         onClick={() => handleToggleWarehouseStatus(warehouse)}
@@ -480,7 +482,7 @@ const Warehouses = () => {
                           : 'text-green-600 hover:text-green-900'
                           }`}
                       >
-                        {warehouse.is_active ? 'Deactivate' : 'Activate'}
+                        {warehouse.is_active ? t('warehouses.deactivate') : t('warehouses.activate')}
                       </button>
                       <button
                         onClick={() => handleDeleteWarehouse(warehouse)}
@@ -491,11 +493,11 @@ const Warehouses = () => {
                           }`}
                         title={
                           warehouseSummaries[warehouse.id]?.total_inventory_items > 0
-                            ? 'Cannot delete warehouse with inventory'
-                            : 'Delete warehouse'
+                            ? t('warehouses.cannotDeleteWithInventory')
+                            : t('warehouses.deleteWarehouse')
                         }
                       >
-                        Delete
+                        {t('warehouses.delete')}
                       </button>
                     </div>
                   </div>
@@ -525,14 +527,14 @@ const Warehouses = () => {
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-lg border border-gray-200">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Warehouse for Performance Analysis
+              {t('warehouses.selectWarehouseForPerformance')}
             </label>
             <WarehouseSelector
               selectedWarehouseId={selectedWarehouse?.id}
               onWarehouseChange={(_, warehouse) => setSelectedWarehouse(warehouse)}
               organizationId={selectedOrganization}
               includeInactive={includeInactive}
-              placeholder="Choose a warehouse to view performance"
+              placeholder={t('warehouses.chooseWarehouse')}
             />
           </div>
 
@@ -549,7 +551,7 @@ const Warehouses = () => {
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Create New Warehouse"
+        title={t('warehouses.createNewWarehouse')}
         size="lg"
       >
         <WarehouseForm
@@ -565,7 +567,7 @@ const Warehouses = () => {
           setShowEditModal(false);
           setEditingWarehouse(null);
         }}
-        title="Edit Warehouse"
+        title={t('warehouses.editWarehouse')}
         size="lg"
       >
         <WarehouseForm
@@ -585,7 +587,7 @@ const Warehouses = () => {
           setShowPerformanceModal(false);
           setSelectedWarehouse(null);
         }}
-        title="Warehouse Performance"
+        title={t('warehouses.warehousePerformance')}
         size="xl"
       >
         {selectedWarehouse && (
@@ -602,7 +604,7 @@ const Warehouses = () => {
           setShowInventoryModal(false);
           setSelectedWarehouseForInventory(null);
         }}
-        title={`Inventory - ${selectedWarehouseForInventory?.name}`}
+        title={`${t('warehouses.inventoryTitle')} - ${selectedWarehouseForInventory?.name}`}
         size="xl"
       >
         {selectedWarehouseForInventory && (
@@ -619,7 +621,7 @@ const Warehouses = () => {
           setShowAdjustmentModal(false);
           setSelectedWarehouseForInventory(null);
         }}
-        title={`Adjust Stock - ${selectedWarehouseForInventory?.name}`}
+        title={`${t('warehouses.adjustStockTitle')} - ${selectedWarehouseForInventory?.name}`}
         size="lg"
       >
         {selectedWarehouseForInventory && (
@@ -638,7 +640,7 @@ const Warehouses = () => {
       <Modal
         isOpen={showTransferModal}
         onClose={() => setShowTransferModal(false)}
-        title="Transfer Inventory Between Warehouses"
+        title={t('warehouses.transferInventoryTitle')}
         size="lg"
       >
         <InventoryTransferForm
@@ -650,7 +652,7 @@ const Warehouses = () => {
       <Modal
         isOpen={showAddInventoryModal}
         onClose={() => setShowAddInventoryModal(false)}
-        title="Add New Inventory Item"
+        title={t('warehouses.addNewInventoryItem')}
         size="lg"
       >
         <InventoryForm

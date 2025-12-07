@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { PartCategoryFilter } from './PartCategoryBadge';
 import { SearchStatusIndicator } from './ProgressiveLoader';
+import { useTranslation } from '../hooks/useTranslation';
 
 /**
  * Optimized search and filter component for parts
@@ -16,18 +17,20 @@ const PartsSearchFilter = memo(({
   isSearching = false,
   resultCount = 0
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1">
           <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-            Search
+            {t('parts.search')}
           </label>
           <div className="relative mt-1">
             <input
               type="text"
               id="search"
-              placeholder="By name or number..."
+              placeholder={t('parts.searchPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -42,7 +45,7 @@ const PartsSearchFilter = memo(({
 
         <div>
           <label htmlFor="filterProprietary" className="block text-sm font-medium text-gray-700">
-            Proprietary
+            {t('parts.proprietary')}
           </label>
           <select
             id="filterProprietary"
@@ -50,15 +53,15 @@ const PartsSearchFilter = memo(({
             value={filterProprietary}
             onChange={(e) => onProprietaryChange(e.target.value)}
           >
-            <option value="all">All</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="yes">{t('common.yes')}</option>
+            <option value="no">{t('common.no')}</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Part Category
+            {t('parts.partCategory')}
           </label>
           <PartCategoryFilter
             value={filterPartType}

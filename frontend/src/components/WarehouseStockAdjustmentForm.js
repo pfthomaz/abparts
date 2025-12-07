@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { partsService } from '../services/partsService';
 import { inventoryService } from '../services/inventoryService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCancel }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     part_id: '',
     quantity_change: '',
@@ -31,7 +33,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       const partsData = response?.items || response || [];
       setParts(Array.isArray(partsData) ? partsData : []);
     } catch (err) {
-      setError('Failed to fetch parts');
+      setError(t('warehouses.failedToFetchParts'));
       console.error('Failed to fetch parts:', err);
       setParts([]); // Ensure parts is always an array
     }
@@ -54,7 +56,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
 
     const quantityChange = parseFloat(formData.quantity_change);
     if (isNaN(quantityChange)) {
-      setError('Quantity change must be a valid number');
+      setError(t('warehouses.quantityMustBeValid'));
       setLoading(false);
       return;
     }
@@ -63,7 +65,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
     if (quantityChange < 0) {
       const currentStock = getCurrentStock(formData.part_id);
       if (Math.abs(quantityChange) > currentStock) {
-        setError(`Cannot reduce stock by ${Math.abs(quantityChange)}. Current stock: ${currentStock}`);
+        setError(t('warehouses.cannotReduceStock', { quantity: Math.abs(quantityChange), currentStock }));
         setLoading(false);
         return;
       }
@@ -92,7 +94,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
       }, 500);
 
     } catch (err) {
-      setError(err.message || 'Failed to create adjustment');
+      setError(err.message || t('warehouses.failedToCreateAdjustment'));
     } finally {
       setLoading(false);
     }
@@ -124,28 +126,28 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
   ) : [];
 
   const reasonOptions = [
-    'Stocktake adjustment',
-    'Damaged goods',
-    'Expired items',
-    'Found items',
-    'Lost items',
-    'Transfer correction',
-    'System error correction',
-    'Initial stock entry',
-    'Return to vendor',
-    'Customer return - resalable',
-    'Customer return - damaged',
-    'Other'
+    { key: 'stocktakeAdjustment', value: 'Stocktake adjustment' },
+    { key: 'damagedGoods', value: 'Damaged goods' },
+    { key: 'expiredItems', value: 'Expired items' },
+    { key: 'foundItems', value: 'Found items' },
+    { key: 'lostItems', value: 'Lost items' },
+    { key: 'transferCorrection', value: 'Transfer correction' },
+    { key: 'systemErrorCorrection', value: 'System error correction' },
+    { key: 'initialStockEntry', value: 'Initial stock entry' },
+    { key: 'returnToVendor', value: 'Return to vendor' },
+    { key: 'customerReturnResalable', value: 'Customer return - resalable' },
+    { key: 'customerReturnDamaged', value: 'Customer return - damaged' },
+    { key: 'other', value: 'Other' }
   ];
 
   return (
     <div className="space-y-4">
       <div className="bg-blue-50 p-4 rounded-lg">
         <h3 className="text-lg font-medium text-blue-900">
-          Stock Adjustment
+          {t('warehouses.stockAdjustmentForm.title')}
         </h3>
         <p className="text-sm text-blue-700 mt-1">
-          Warehouse: {warehouse?.name || 'Unknown Warehouse'}
+          {t('warehouses.warehouse')}: {warehouse?.name || t('warehouses.unknownWarehouse')}
           {warehouse?.location && ` - ${warehouse.location}`}
         </p>
       </div>
@@ -159,21 +161,21 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
 
         <div>
           <label htmlFor="part_search" className="block text-sm font-medium text-gray-700 mb-1">
-            Search Parts
+            {t('warehouses.stockAdjustmentForm.searchParts')}
           </label>
           <input
             type="text"
             id="part_search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by part number or name..."
+            placeholder={t('warehouses.stockAdjustmentForm.searchPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         <div>
           <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Part *
+            {t('warehouses.stockAdjustmentForm.part')} *
           </label>
           <select
             id="part_id"
@@ -184,12 +186,12 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             size={Math.min(filteredParts.length + 1, 8)}
           >
-            <option value="">Select a part</option>
+            <option value="">{t('warehouses.stockAdjustmentForm.selectPart')}</option>
             {filteredParts.map((part) => {
               const currentStock = getCurrentStock(part.id);
               return (
                 <option key={part.id} value={part.id}>
-                  {part.part_number} - {part.name} (Current: {currentStock} {part.unit_of_measure})
+                  {part.part_number} - {part.name} ({t('warehouses.stockAdjustmentForm.current')}: {currentStock} {part.unit_of_measure})
                 </option>
               );
             })}
@@ -199,14 +201,14 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
         {formData.part_id && (
           <div className="bg-gray-50 p-3 rounded-md">
             <p className="text-sm text-gray-700">
-              <span className="font-medium">Current Stock:</span> {getCurrentStock(formData.part_id)} {getPartDetails(formData.part_id)?.unit_of_measure}
+              <span className="font-medium">{t('warehouses.stockAdjustmentForm.currentStock')}:</span> {getCurrentStock(formData.part_id)} {getPartDetails(formData.part_id)?.unit_of_measure}
             </p>
           </div>
         )}
 
         <div>
           <label htmlFor="quantity_change" className="block text-sm font-medium text-gray-700 mb-1">
-            Quantity Change *
+            {t('warehouses.stockAdjustmentForm.quantityChange')} *
           </label>
           <input
             type="number"
@@ -216,22 +218,22 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
             value={formData.quantity_change}
             onChange={handleChange}
             required
-            placeholder="Enter positive for increase, negative for decrease"
+            placeholder={t('warehouses.stockAdjustmentForm.quantityPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Use positive numbers to increase inventory, negative numbers to decrease
+            {t('warehouses.stockAdjustmentForm.quantityHint')}
           </p>
           {formData.part_id && formData.quantity_change && (
             <p className="text-xs text-blue-600 mt-1">
-              New stock level will be: {getCurrentStock(formData.part_id) + parseFloat(formData.quantity_change || 0)} {getPartDetails(formData.part_id)?.unit_of_measure}
+              {t('warehouses.stockAdjustmentForm.newStockLevel')}: {getCurrentStock(formData.part_id) + parseFloat(formData.quantity_change || 0)} {getPartDetails(formData.part_id)?.unit_of_measure}
             </p>
           )}
         </div>
 
         <div>
           <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
-            Reason *
+            {t('warehouses.stockAdjustmentForm.reason')} *
           </label>
           <select
             id="reason"
@@ -241,10 +243,10 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="">Select a reason</option>
+            <option value="">{t('warehouses.stockAdjustmentForm.selectReason')}</option>
             {reasonOptions.map((reason) => (
-              <option key={reason} value={reason}>
-                {reason}
+              <option key={reason.key} value={reason.value}>
+                {t(`warehouses.stockAdjustmentForm.reasons.${reason.key}`)}
               </option>
             ))}
           </select>
@@ -252,7 +254,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
 
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+            {t('warehouses.stockAdjustmentForm.notes')}
           </label>
           <textarea
             id="notes"
@@ -260,7 +262,7 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
             value={formData.notes}
             onChange={handleChange}
             rows={3}
-            placeholder="Optional additional details about this adjustment..."
+            placeholder={t('warehouses.stockAdjustmentForm.notesPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -271,14 +273,14 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'Creating Adjustment...' : 'Create Adjustment'}
+            {loading ? t('warehouses.stockAdjustmentForm.creatingAdjustment') : t('warehouses.stockAdjustmentForm.createAdjustment')}
           </button>
         </div>
       </form>

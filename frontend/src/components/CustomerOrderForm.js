@@ -4,8 +4,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 import { partsService } from '../services/partsService';
 import PartSearchSelector from './PartSearchSelector';
+import { useTranslation } from '../hooks/useTranslation';
 
 function CustomerOrderForm({ organizations = [], users = [], parts = [], initialData = {}, onSubmit, onClose }) {
+  const { t } = useTranslation();
   const { token, user } = useAuth(); // Current logged-in user
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -283,7 +285,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
       {/* Customer Organization Dropdown */}
       <div>
         <label htmlFor="customer_organization_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Customer Organization
+          {t('orders.customerOrganization')}
         </label>
         <select
           id="customer_organization_id"
@@ -294,7 +296,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           required
           disabled={disableOrgSelection}
         >
-          <option value="">Select Customer Organization</option>
+          <option value="">{t('orders.selectCustomerOrganization')}</option>
           {customerOrganizations.map(org => (
             <option key={org.id} value={org.id}>{org.name}</option>
           ))}
@@ -304,7 +306,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
       {/* Oraseas Organization (pre-filled and disabled) */}
       <div>
         <label htmlFor="oraseas_organization_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Oraseas Organization (Receiving Order)
+          {t('orders.oraseasOrganization')}
         </label>
         <select
           id="oraseas_organization_id"
@@ -314,16 +316,16 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           disabled={true} // Always disabled as it's pre-filled
         >
           {oraseasOrg && <option value={oraseasOrg.id}>{oraseasOrg.name}</option>}
-          {!oraseasOrg && <option value="">Loading Oraseas EE...</option>}
+          {!oraseasOrg && <option value="">{t('orders.loadingOraseasEE')}</option>}
         </select>
         {(!oraseasOrg && !loading) && (
-          <p className="text-red-500 text-xs mt-1">Oraseas EE organization not found. Please ensure it exists.</p>
+          <p className="text-red-500 text-xs mt-1">{t('orders.oraseasNotFound')}</p>
         )}
       </div>
 
       <div>
         <label htmlFor="order_date" className="block text-sm font-medium text-gray-700 mb-1">
-          Order Date
+          {t('orders.orderDate')}
         </label>
         <input
           type="date"
@@ -339,7 +341,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
       <div>
         <label htmlFor="expected_delivery_date" className="block text-sm font-medium text-gray-700 mb-1">
-          Expected Delivery Date
+          {t('orders.expectedDeliveryDate')}
         </label>
         <input
           type="date"
@@ -354,7 +356,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
       <div>
         <label htmlFor="actual_delivery_date" className="block text-sm font-medium text-gray-700 mb-1">
-          Actual Delivery Date
+          {t('orders.actualDeliveryDate')}
         </label>
         <input
           type="date"
@@ -369,7 +371,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
       <div>
         <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-          Status
+          {t('orders.status')}
         </label>
         <select
           id="status"
@@ -380,17 +382,17 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           required
           disabled={loading}
         >
-          <option value="Pending">Pending</option>
-          <option value="Shipped">Shipped</option>
-          <option value="Delivered">Delivered</option>
-          <option value="Cancelled">Cancelled</option>
+          <option value="Pending">{t('orders.pending')}</option>
+          <option value="Shipped">{t('orders.shipped')}</option>
+          <option value="Delivered">{t('orders.delivered')}</option>
+          <option value="Cancelled">{t('orders.cancelled')}</option>
         </select>
       </div>
 
       {/* Ordered By User Dropdown */}
       <div>
         <label htmlFor="ordered_by_user_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Ordered By User (Optional)
+          {t('orders.orderedByUser')}
         </label>
         <select
           id="ordered_by_user_id"
@@ -400,7 +402,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           onChange={handleChange}
           disabled={loading}
         >
-          <option value="">Select User (Optional)</option>
+          <option value="">{t('orders.selectUserOptional')}</option>
           {filteredUsers.map(u => (
             <option key={u.id} value={u.id}>{u.name || u.username}</option>
           ))}
@@ -409,25 +411,25 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
       {/* Order Items */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Order Items</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">{t('orders.orderItems')}</h3>
 
         {/* Add Item Form */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
-              Part
+              {t('orders.part')}
             </label>
             <PartSearchSelector
               parts={safeParts}
               value={currentItem.part_id}
               onChange={(partId) => setCurrentItem(prev => ({ ...prev, part_id: partId }))}
               disabled={loading || partsLoading}
-              placeholder={partsLoading ? 'Loading parts...' : 'Search by code, name, or description...'}
+              placeholder={partsLoading ? t('orders.loadingParts') : t('orders.searchPartPlaceholder')}
             />
             <div className="h-5 mt-1">
               {smartParts.length > 0 && (
-                <p className="text-xs text-gray-500">
-                  ✨ Parts sorted by order frequency for this customer
+                <p className="text-[10px] text-gray-500 leading-tight">
+                  ✨ {t('orders.partsSortedNote')}
                 </p>
               )}
             </div>
@@ -435,7 +437,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
           <div>
             <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity
+              {t('orders.quantity')}
             </label>
             <input
               type="number"
@@ -459,7 +461,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
           <div>
             <label htmlFor="unit_price" className="block text-sm font-medium text-gray-700 mb-1">
-              Unit Price (Optional)
+              {t('orders.unitPrice')} ({t('common.optional')})
             </label>
             <input
               type="number"
@@ -483,7 +485,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
               className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-semibold"
               disabled={loading}
             >
-              Add Item
+              {t('orders.addItem')}
             </button>
             <div className="h-5 mt-1"></div>
           </div>
@@ -492,7 +494,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
         {/* Items List */}
         {formData.items.length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium text-gray-800">Order Items:</h4>
+            <h4 className="font-medium text-gray-800">{t('orders.orderItems')}:</h4>
             {formData.items.map((item, index) => (
               <div key={index} className="bg-white p-3 rounded border">
                 <div className="flex items-start justify-between mb-2">
@@ -506,13 +508,13 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
                     className="text-red-600 hover:text-red-800 font-semibold ml-2"
                     disabled={loading}
                   >
-                    Remove
+                    {t('orders.removeItem')}
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Quantity ({item.part.unit_of_measure})
+                      {t('orders.quantity')} ({item.part.unit_of_measure})
                     </label>
                     <input
                       type="number"
@@ -534,7 +536,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Unit Price (optional)
+                      {t('orders.unitPrice')} ({t('common.optional')})
                     </label>
                     <input
                       type="number"
@@ -559,7 +561,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
 
       <div>
         <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-          Notes
+          {t('orders.notes')}
         </label>
         <textarea
           id="notes"
@@ -579,14 +581,14 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           disabled={loading}
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           disabled={loading}
         >
-          {loading ? 'Submitting...' : (initialData.id ? 'Update Order' : 'Create Order')}
+          {loading ? t('orders.submitting') : (initialData.id ? t('orders.updateOrder') : t('orders.createOrder'))}
         </button>
       </div>
     </form>

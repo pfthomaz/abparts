@@ -2,16 +2,7 @@
 
 import React from 'react';
 import { formatDate } from '../utils';
-
-const adjustmentTypeLabels = {
-  stock_take: 'Stock Take',
-  damage: 'Damage',
-  loss: 'Loss',
-  found: 'Found',
-  correction: 'Correction',
-  return: 'Return',
-  other: 'Other'
-};
+import { useTranslation } from '../hooks/useTranslation';
 
 const adjustmentTypeColors = {
   stock_take: 'bg-blue-100 text-blue-800',
@@ -24,10 +15,12 @@ const adjustmentTypeColors = {
 };
 
 const StockAdjustmentsList = ({ adjustments, onViewDetails, onEdit, onDelete }) => {
+  const { t } = useTranslation();
+
   if (adjustments.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-        No stock adjustments found
+        {t('stockAdjustments.noAdjustmentsFound')}
       </div>
     );
   }
@@ -38,25 +31,25 @@ const StockAdjustmentsList = ({ adjustments, onViewDetails, onEdit, onDelete }) 
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Date
+              {t('stockAdjustments.date')}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Warehouse
+              {t('stockAdjustments.warehouse')}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Type
+              {t('stockAdjustments.type')}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Items
+              {t('stockAdjustments.items')}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              User
+              {t('stockAdjustments.user')}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Reason
+              {t('stockAdjustments.reason')}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
+              {t('common.actions')}
             </th>
           </tr>
         </thead>
@@ -71,7 +64,7 @@ const StockAdjustmentsList = ({ adjustments, onViewDetails, onEdit, onDelete }) 
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-2 py-1 text-xs font-medium rounded ${adjustmentTypeColors[adjustment.adjustment_type]}`}>
-                  {adjustmentTypeLabels[adjustment.adjustment_type]}
+                  {t(`stockAdjustments.types.${adjustment.adjustment_type.replace('_', '')}`)}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -88,14 +81,14 @@ const StockAdjustmentsList = ({ adjustments, onViewDetails, onEdit, onDelete }) 
                   onClick={() => onViewDetails(adjustment.id)}
                   className="text-blue-600 hover:text-blue-900 font-medium"
                 >
-                  View
+                  {t('common.view')}
                 </button>
                 {onEdit && (
                   <button
                     onClick={() => onEdit(adjustment)}
                     className="text-green-600 hover:text-green-900 font-medium"
                   >
-                    Edit
+                    {t('common.edit')}
                   </button>
                 )}
                 {onDelete && (
@@ -103,7 +96,7 @@ const StockAdjustmentsList = ({ adjustments, onViewDetails, onEdit, onDelete }) 
                     onClick={() => onDelete(adjustment)}
                     className="text-red-600 hover:text-red-900 font-medium"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 )}
               </td>

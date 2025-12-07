@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { partsService } from '../services/partsService';
 import PartSearchSelector from './PartSearchSelector';
+import { useTranslation } from '../hooks/useTranslation';
 
 const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = false, initialData = null }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     warehouse_id: '',
     adjustment_type: 'stock_take',
@@ -49,7 +51,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
       setParts(partsArray);
     } catch (err) {
       console.error('Failed to load parts:', err);
-      setError('Failed to load parts');
+      setError(t('stockAdjustments.failedToLoadParts'));
       setParts([]); // Ensure parts is always an array
     }
   };
@@ -57,7 +59,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
   const handleAddItem = (part) => {
     // Check if part already added
     if (formData.items.some(item => item.part_id === part.id)) {
-      setError('Part already added to this adjustment');
+      setError(t('stockAdjustments.partAlreadyAdded'));
       return;
     }
 
@@ -98,19 +100,19 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
     e.preventDefault();
     
     if (!formData.warehouse_id) {
-      setError('Please select a warehouse');
+      setError(t('stockAdjustments.pleaseSelectWarehouse'));
       return;
     }
     
     if (formData.items.length === 0) {
-      setError('Please add at least one item');
+      setError(t('stockAdjustments.pleaseAddOneItem'));
       return;
     }
 
     // Validate all items have quantity_after
     const invalidItems = formData.items.filter(item => !item.quantity_after && item.quantity_after !== 0);
     if (invalidItems.length > 0) {
-      setError('Please set quantity for all items');
+      setError(t('stockAdjustments.pleaseSetQuantity'));
       return;
     }
 
@@ -151,7 +153,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">{editMode ? 'Edit Stock Adjustment' : 'Create Stock Adjustment'}</h2>
+            <h2 className="text-2xl font-bold">{editMode ? t('stockAdjustments.editAdjustment') : t('stockAdjustments.createAdjustment')}</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
@@ -171,7 +173,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Warehouse *
+                  {t('stockAdjustments.warehouse')} *
                 </label>
                 <select
                   value={formData.warehouse_id}
@@ -179,7 +181,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   required
                 >
-                  <option value="">Select Warehouse</option>
+                  <option value="">{t('stockAdjustments.selectWarehouse')}</option>
                   {warehouses.map(wh => (
                     <option key={wh.id} value={wh.id}>{wh.name}</option>
                   ))}
@@ -188,7 +190,7 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Adjustment Type *
+                  {t('stockAdjustments.adjustmentType')} *
                 </label>
                 <select
                   value={formData.adjustment_type}
@@ -196,47 +198,47 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   required
                 >
-                  <option value="stock_take">Stock Take</option>
-                  <option value="damage">Damage</option>
-                  <option value="loss">Loss</option>
-                  <option value="found">Found</option>
-                  <option value="correction">Correction</option>
-                  <option value="return">Return</option>
-                  <option value="other">Other</option>
+                  <option value="stock_take">{t('stockAdjustments.types.stockTake')}</option>
+                  <option value="damage">{t('stockAdjustments.types.damage')}</option>
+                  <option value="loss">{t('stockAdjustments.types.loss')}</option>
+                  <option value="found">{t('stockAdjustments.types.found')}</option>
+                  <option value="correction">{t('stockAdjustments.types.correction')}</option>
+                  <option value="return">{t('stockAdjustments.types.return')}</option>
+                  <option value="other">{t('stockAdjustments.types.other')}</option>
                 </select>
               </div>
             </div>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reason
+                {t('stockAdjustments.reason')}
               </label>
               <input
                 type="text"
                 value={formData.reason}
                 onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-2"
-                placeholder="Overall reason for this adjustment"
+                placeholder={t('stockAdjustments.overallReasonPlaceholder')}
               />
             </div>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+                {t('stockAdjustments.notes')}
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-2"
                 rows="3"
-                placeholder="Additional notes"
+                placeholder={t('stockAdjustments.additionalNotes')}
               />
             </div>
 
             {/* Items Section */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold">Items to Adjust *</h3>
+                <h3 className="text-lg font-semibold">{t('stockAdjustments.itemsToAdjust')} *</h3>
               </div>
 
               {/* Add Part */}
@@ -244,14 +246,14 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
                 <PartSearchSelector
                   parts={parts}
                   onSelect={handleAddItem}
-                  placeholder="Search and add parts..."
+                  placeholder={t('stockAdjustments.searchAndAddParts')}
                 />
               </div>
 
               {/* Items List */}
               {formData.items.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded">
-                  No items added yet. Search and add parts above.
+                  {t('stockAdjustments.noItemsAdded')}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -267,14 +269,14 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
                           onClick={() => handleRemoveItem(index)}
                           className="text-red-600 hover:text-red-800"
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            New Quantity *
+                            {t('stockAdjustments.newQuantity')} *
                           </label>
                           <input
                             type="number"
@@ -297,14 +299,14 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Item Reason
+                            {t('stockAdjustments.itemReason')}
                           </label>
                           <input
                             type="text"
                             value={item.reason}
                             onChange={(e) => handleItemChange(index, 'reason', e.target.value)}
                             className="w-full border border-gray-300 rounded px-3 py-2"
-                            placeholder="Specific reason for this part"
+                            placeholder={t('stockAdjustments.specificReasonPlaceholder')}
                           />
                         </div>
                       </div>
@@ -322,14 +324,14 @@ const CreateStockAdjustmentModal = ({ warehouses, onClose, onSubmit, editMode = 
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
                 disabled={loading}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
                 disabled={loading}
               >
-                {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Adjustment' : 'Create Adjustment')}
+                {loading ? (editMode ? t('stockAdjustments.updating') : t('stockAdjustments.creating')) : (editMode ? t('stockAdjustments.updateAdjustment') : t('stockAdjustments.createAdjustment'))}
               </button>
             </div>
           </form>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { formatDate } from '../utils';
+import { useTranslation } from '../hooks/useTranslation';
 
 const ExecutionHistory = ({ executions, onRefresh }) => {
+  const { t } = useTranslation();
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -42,49 +44,49 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
             onClick={() => setSelectedExecution(null)}
             className="text-blue-600 hover:text-blue-800 mb-4"
           >
-            ← Back to History
+            ← {t('maintenance.backToHistory')}
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">Execution Details</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('maintenance.executionDetails')}</h2>
         </div>
 
         <div className="p-6 space-y-6">
           {/* Execution Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Protocol</label>
+              <label className="text-sm font-medium text-gray-500">{t('maintenance.protocol')}</label>
               <p className="text-gray-900">{selectedExecution.protocol?.name}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Machine</label>
+              <label className="text-sm font-medium text-gray-500">{t('maintenance.machine')}</label>
               <p className="text-gray-900">
                 {selectedExecution.machine?.name || selectedExecution.machine?.model} ({selectedExecution.machine?.serial_number})
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Performed By</label>
-              <p className="text-gray-900">{selectedExecution.performed_by?.name || selectedExecution.performed_by?.username || 'Unknown'}</p>
+              <label className="text-sm font-medium text-gray-500">{t('maintenance.performedBy')}</label>
+              <p className="text-gray-900">{selectedExecution.performed_by?.name || selectedExecution.performed_by?.username || t('common.unknown')}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Date</label>
+              <label className="text-sm font-medium text-gray-500">{t('common.date')}</label>
               <p className="text-gray-900">{formatDate(selectedExecution.performed_date || selectedExecution.created_at)}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Status</label>
+              <label className="text-sm font-medium text-gray-500">{t('common.status')}</label>
               <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${getStatusBadge(selectedExecution.status)}`}>
-                {selectedExecution.status}
+                {t(`maintenance.status.${selectedExecution.status}`)}
               </span>
             </div>
             {selectedExecution.machine_hours_at_service && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Machine Hours</label>
-                <p className="text-gray-900">{selectedExecution.machine_hours_at_service} hours</p>
+                <label className="text-sm font-medium text-gray-500">{t('maintenance.machineHours')}</label>
+                <p className="text-gray-900">{selectedExecution.machine_hours_at_service} {t('maintenance.hours')}</p>
               </div>
             )}
           </div>
 
           {selectedExecution.notes && (
             <div>
-              <label className="text-sm font-medium text-gray-500">Notes</label>
+              <label className="text-sm font-medium text-gray-500">{t('maintenance.notes')}</label>
               <p className="text-gray-900 mt-1 bg-gray-50 p-3 rounded">{selectedExecution.notes}</p>
             </div>
           )}
@@ -92,7 +94,7 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
           {/* Checklist Completions */}
           {selectedExecution.checklist_completions && selectedExecution.checklist_completions.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Checklist Items</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('maintenance.checklistItems')}</h3>
               <div className="space-y-3">
                 {selectedExecution.checklist_completions.map((completion, index) => (
                   <div key={completion.id} className="border border-gray-200 rounded-lg p-4">
@@ -110,12 +112,12 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {completion.status}
+                            {t(`maintenance.status.${completion.status}`)}
                           </span>
                         </div>
                         {completion.actual_quantity_used && (
                           <p className="text-sm text-gray-600">
-                            Quantity used: {completion.actual_quantity_used}
+                            {t('maintenance.quantityUsedValue', { quantity: completion.actual_quantity_used })}
                           </p>
                         )}
                         {completion.notes && (
@@ -139,24 +141,24 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Execution History</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('maintenance.executionHistory')}</h2>
           <div className="flex items-center gap-4">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('maintenance.allStatus')}</option>
+              <option value="scheduled">{t('maintenance.status.scheduled')}</option>
+              <option value="in_progress">{t('maintenance.status.in_progress')}</option>
+              <option value="completed">{t('maintenance.status.completed')}</option>
+              <option value="cancelled">{t('maintenance.status.cancelled')}</option>
             </select>
             <button
               onClick={onRefresh}
               className="px-4 py-2 text-blue-600 hover:text-blue-800"
             >
-              🔄 Refresh
+              🔄 {t('common.refresh')}
             </button>
           </div>
         </div>
@@ -164,7 +166,7 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
 
       {filteredExecutions.length === 0 && (
         <div className="p-12 text-center text-gray-500">
-          No executions found
+          {t('maintenance.noExecutionsFound')}
         </div>
       )}
 
@@ -181,23 +183,23 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
                   <span className="text-xl">{getStatusIcon(execution.status)}</span>
                   <h3 className="font-medium text-gray-900">{execution.protocol?.name}</h3>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(execution.status)}`}>
-                    {execution.status}
+                    {t(`maintenance.status.${execution.status}`)}
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <span>
-                    Machine: {execution.machine?.name || execution.machine?.model} ({execution.machine?.serial_number})
+                    {t('maintenance.machine')}: {execution.machine?.name || execution.machine?.model} ({execution.machine?.serial_number})
                   </span>
                   <span>
-                    By: {execution.performed_by?.name || execution.performed_by?.username || 'Unknown'}
+                    {t('maintenance.by')}: {execution.performed_by?.name || execution.performed_by?.username || t('common.unknown')}
                   </span>
                   <span>
-                    Date: {formatDate(execution.performed_date || execution.created_at)}
+                    {t('common.date')}: {formatDate(execution.performed_date || execution.created_at)}
                   </span>
                 </div>
               </div>
               <button className="text-blue-600 hover:text-blue-800 text-sm">
-                View Details →
+                {t('maintenance.viewDetails')} →
               </button>
             </div>
           </div>

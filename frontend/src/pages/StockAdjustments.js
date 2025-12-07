@@ -6,8 +6,10 @@ import { warehouseService } from '../services/warehouseService';
 import StockAdjustmentsList from '../components/StockAdjustmentsList';
 import CreateStockAdjustmentModal from '../components/CreateStockAdjustmentModal';
 import StockAdjustmentDetailsModal from '../components/StockAdjustmentDetailsModal';
+import { useTranslation } from '../hooks/useTranslation';
 
 const StockAdjustments = () => {
+  const { t } = useTranslation();
   const [adjustments, setAdjustments] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ const StockAdjustments = () => {
         // Update existing adjustment
         await stockAdjustmentsService.update(editingAdjustment.id, adjustmentData);
         setEditingAdjustment(null);
-        alert('Stock adjustment updated successfully. Page will reload.');
+        alert(t('stockAdjustments.updateSuccess'));
         window.location.reload();
       } else {
         // Create new adjustment
@@ -79,21 +81,25 @@ const StockAdjustments = () => {
       const details = await stockAdjustmentsService.getById(adjustment.id);
       setEditingAdjustment(details);
     } catch (err) {
-      alert('Failed to load adjustment details: ' + (err.response?.data?.detail || err.message));
+      alert(t('stockAdjustments.loadDetailsFailed') + ': ' + (err.response?.data?.detail || err.message));
     }
   };
 
   const handleDelete = async (adjustment) => {
-    if (!window.confirm(`Are you sure you want to delete this stock adjustment?\n\nDate: ${adjustment.adjustment_date}\nWarehouse: ${adjustment.warehouse_name}\nType: ${adjustment.adjustment_type}`)) {
+    if (!window.confirm(t('stockAdjustments.confirmDelete', { 
+      date: adjustment.adjustment_date, 
+      warehouse: adjustment.warehouse_name, 
+      type: adjustment.adjustment_type 
+    }))) {
       return;
     }
 
     try {
       await stockAdjustmentsService.delete(adjustment.id);
-      alert('Stock adjustment deleted successfully. Page will reload.');
+      alert(t('stockAdjustments.deleteSuccess'));
       window.location.reload();
     } catch (err) {
-      alert('Failed to delete stock adjustment: ' + (err.response?.data?.detail || err.message));
+      alert(t('stockAdjustments.deleteFailed') + ': ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -116,12 +122,12 @@ const StockAdjustments = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Stock Adjustments</h1>
+        <h1 className="text-3xl font-bold">{t('stockAdjustments.title')}</h1>
         <button
           onClick={() => setShowCreateModal(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          + New Adjustment
+          + {t('stockAdjustments.newAdjustment')}
         </button>
       </div>
 
@@ -130,14 +136,14 @@ const StockAdjustments = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Warehouse
+              {t('stockAdjustments.warehouse')}
             </label>
             <select
               value={filters.warehouse_id}
               onChange={(e) => handleFilterChange('warehouse_id', e.target.value)}
               className="w-full border border-gray-300 rounded px-3 py-2"
             >
-              <option value="">All Warehouses</option>
+              <option value="">{t('stockAdjustments.allWarehouses')}</option>
               {warehouses.map(wh => (
                 <option key={wh.id} value={wh.id}>{wh.name}</option>
               ))}
@@ -146,27 +152,27 @@ const StockAdjustments = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type
+              {t('stockAdjustments.type')}
             </label>
             <select
               value={filters.adjustment_type}
               onChange={(e) => handleFilterChange('adjustment_type', e.target.value)}
               className="w-full border border-gray-300 rounded px-3 py-2"
             >
-              <option value="">All Types</option>
-              <option value="stock_take">Stock Take</option>
-              <option value="damage">Damage</option>
-              <option value="loss">Loss</option>
-              <option value="found">Found</option>
-              <option value="correction">Correction</option>
-              <option value="return">Return</option>
-              <option value="other">Other</option>
+              <option value="">{t('stockAdjustments.allTypes')}</option>
+              <option value="stock_take">{t('stockAdjustments.types.stockTake')}</option>
+              <option value="damage">{t('stockAdjustments.types.damage')}</option>
+              <option value="loss">{t('stockAdjustments.types.loss')}</option>
+              <option value="found">{t('stockAdjustments.types.found')}</option>
+              <option value="correction">{t('stockAdjustments.types.correction')}</option>
+              <option value="return">{t('stockAdjustments.types.return')}</option>
+              <option value="other">{t('stockAdjustments.types.other')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Date
+              {t('stockAdjustments.startDate')}
             </label>
             <input
               type="date"
@@ -178,7 +184,7 @@ const StockAdjustments = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              End Date
+              {t('stockAdjustments.endDate')}
             </label>
             <input
               type="date"
@@ -194,7 +200,7 @@ const StockAdjustments = () => {
             onClick={clearFilters}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
-            Clear Filters
+            {t('common.clearFilters')}
           </button>
         </div>
       </div>
@@ -208,7 +214,7 @@ const StockAdjustments = () => {
 
       {/* Adjustments List */}
       {loading ? (
-        <div className="text-center py-8">Loading...</div>
+        <div className="text-center py-8">{t('common.loading')}</div>
       ) : (
         <StockAdjustmentsList
           adjustments={adjustments}

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ordersService } from '../services/ordersService';
 import { organizationsService } from '../services/organizationsService';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 import Modal from '../components/Modal';
 import SupplierOrderForm from '../components/SupplierOrderForm';
 import CustomerOrderForm from '../components/CustomerOrderForm';
@@ -14,6 +15,7 @@ import OrderCalendarView from '../components/OrderCalendarView';
 import { api } from '../services/api';
 
 const Orders = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [supplierOrders, setSupplierOrders] = useState([]);
   const [customerOrders, setCustomerOrders] = useState([]);
@@ -357,21 +359,21 @@ const Orders = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Orders</h1>
-          <p className="text-gray-600 mt-1">Manage part orders and fulfillment workflow</p>
+          <h1 className="text-3xl font-bold text-gray-800">{t('orders.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('orders.subtitle')}</p>
         </div>
         <div className="flex space-x-2">
           <button
             onClick={() => setShowAnalytics(!showAnalytics)}
             className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 font-semibold"
           >
-            {showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
+            {t('orders.toggleAnalytics')}
           </button>
           <button
             onClick={() => setShowOrderHistoryModal(true)}
             className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 font-semibold"
           >
-            Order History
+            {t('orders.viewHistory')}
           </button>
 
           {/* Only show Add Supplier Order for Oraseas EE users and super admins */}
@@ -381,14 +383,14 @@ const Orders = () => {
                 onClick={() => setShowSupplierOrderModal(true)}
                 className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-semibold"
               >
-                Add Supplier Order
+                {t('orders.createSupplierOrder')}
               </button>
             )}
           <button
             onClick={() => setShowCustomerOrderModal(true)}
             className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-semibold"
           >
-            Add Customer Order
+            {t('orders.createCustomerOrder')}
           </button>
         </div>
       </div>
@@ -405,7 +407,7 @@ const Orders = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              📋 List View
+              📋 {t('orders.listView')}
             </button>
             <button
               onClick={() => setActiveView('calendar')}
@@ -415,7 +417,7 @@ const Orders = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              📅 Calendar View
+              📅 {t('orders.calendarView')}
             </button>
           </nav>
         </div>
@@ -424,33 +426,33 @@ const Orders = () => {
       {/* Order Analytics Dashboard */}
       {showAnalytics && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Order Analytics</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-4">{t('orders.orderAnalytics')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-blue-600">Total Orders</h3>
+              <h3 className="text-sm font-medium text-blue-600">{t('orders.totalOrders')}</h3>
               <p className="text-2xl font-bold text-blue-800">{orderAnalytics.totalOrders}</p>
             </div>
             <div className="bg-yellow-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-yellow-600">Pending Orders</h3>
+              <h3 className="text-sm font-medium text-yellow-600">{t('orders.pendingOrders')}</h3>
               <p className="text-2xl font-bold text-yellow-800">{orderAnalytics.pendingOrders}</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-green-600">Completed Orders</h3>
+              <h3 className="text-sm font-medium text-green-600">{t('orders.completedOrders')}</h3>
               <p className="text-2xl font-bold text-green-800">{orderAnalytics.completedOrders}</p>
             </div>
             <div className="bg-red-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-red-600">Overdue Orders</h3>
+              <h3 className="text-sm font-medium text-red-600">{t('orders.overdueOrders')}</h3>
               <p className="text-2xl font-bold text-red-800">{orderAnalytics.overdueOrders}</p>
             </div>
             <div className="bg-indigo-50 p-4 rounded-lg">
-              <h3 className="text-sm font-medium text-indigo-600">Completion Rate</h3>
+              <h3 className="text-sm font-medium text-indigo-600">{t('orders.completionRate')}</h3>
               <p className="text-2xl font-bold text-indigo-800">{orderAnalytics.completionRate}%</p>
             </div>
           </div>
         </div>
       )}
 
-      {loading && <p className="text-gray-500">Loading orders...</p>}
+      {loading && <p className="text-gray-500">{t('orders.loadingOrders')}</p>}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
           <strong className="font-bold">Error: </strong>
@@ -462,44 +464,44 @@ const Orders = () => {
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Search by Name</label>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">{t('orders.searchByName')}</label>
             <input
               type="text"
               id="search"
-              placeholder="Supplier or Customer name..."
+              placeholder={t('orders.searchByName')}
               className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700">Filter by Status</label>
+            <label htmlFor="filterStatus" className="block text-sm font-medium text-gray-700">{t('orders.filterByStatus')}</label>
             <select
               id="filterStatus"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="Requested">Requested</option>
-              <option value="Pending">Pending</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Received">Received</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="all">{t('orders.allStatuses')}</option>
+              <option value="Requested">{t('orders.requested')}</option>
+              <option value="Pending">{t('orders.pending')}</option>
+              <option value="Shipped">{t('orders.shipped')}</option>
+              <option value="Received">{t('orders.received')}</option>
+              <option value="Delivered">{t('orders.delivered')}</option>
+              <option value="Cancelled">{t('orders.cancelled')}</option>
             </select>
           </div>
           <div>
-            <label htmlFor="filterOrderType" className="block text-sm font-medium text-gray-700">Filter by Order Type</label>
+            <label htmlFor="filterOrderType" className="block text-sm font-medium text-gray-700">{t('orders.filterByOrderType')}</label>
             <select
               id="filterOrderType"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={filterOrderType}
               onChange={(e) => setFilterOrderType(e.target.value)}
             >
-              <option value="all">All Orders</option>
-              <option value="supplier">Supplier Orders</option>
-              <option value="customer">Customer Orders</option>
+              <option value="all">{t('orders.allOrders')}</option>
+              <option value="supplier">{t('orders.supplierOrders')}</option>
+              <option value="customer">{t('orders.customerOrders')}</option>
             </select>
           </div>
         </div>
@@ -520,7 +522,7 @@ const Orders = () => {
         <>
           {(filterOrderType === 'all' || filterOrderType === 'supplier') && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-700 mt-8 mb-4">Supplier Orders</h2>
+              <h2 className="text-2xl font-bold text-gray-700 mt-8 mb-4">{t('orders.supplierOrders')}</h2>
           {filteredSupplierOrders.length > 0 ? (
             <div className="flex flex-col space-y-4 mb-12">
               {filteredSupplierOrders.map((order) => (
@@ -528,7 +530,7 @@ const Orders = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-semibold text-red-700">Order from {order.supplier_name}</h3>
+                        <h3 className="text-xl font-semibold text-red-700">{t('orders.orderFrom')} {order.supplier_name}</h3>
                         <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' :
                             order.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
@@ -542,12 +544,12 @@ const Orders = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        <p><span className="font-medium">Order Date:</span> {new Date(order.order_date).toLocaleDateString()}</p>
+                        <p><span className="font-medium">{t('orders.orderDate')}:</span> {new Date(order.order_date).toLocaleDateString()}</p>
                         {order.expected_delivery_date && (
-                          <p><span className="font-medium">Expected:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">{t('orders.expected')}:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
                         )}
                         {order.actual_delivery_date && (
-                          <p><span className="font-medium">Delivered:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">{t('common.delivered')}:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
                         )}
                       </div>
                     </div>
@@ -557,7 +559,7 @@ const Orders = () => {
                           onClick={() => handleFulfillOrder(order, 'supplier')}
                           className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
                         >
-                          Fulfill Order
+                          {t('orders.fulfillOrder')}
                         </button>
                       )}
                       {canEditOrder(order) && (
@@ -565,7 +567,7 @@ const Orders = () => {
                           onClick={() => handleEditOrder(order, 'supplier')}
                           className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
                         >
-                          Edit
+                          {t('common.edit')}
                         </button>
                       )}
                       {canDeleteOrder(order) && (
@@ -573,20 +575,20 @@ const Orders = () => {
                           onClick={() => handleDeleteOrder(order, 'supplier')}
                           className="text-sm bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
                         >
-                          Delete
+                          {t('common.delete')}
                         </button>
                       )}
                       <button
                         onClick={() => toggleOrderItems(order.id)}
                         className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-md transition-colors"
                       >
-                        {expandedOrderId === order.id ? 'Hide Items' : 'View Items'}
+                        {expandedOrderId === order.id ? t('orders.collapseDetails') : t('orders.viewDetails')}
                       </button>
                     </div>
                   </div>
                   {expandedOrderId === order.id && (
                     <div className="mt-4 border-t pt-4">
-                      <h4 className="font-semibold text-gray-800 mb-2">Order Items</h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">{t('orders.orderItems')}</h4>
                       {order.items && order.items.length > 0 ? (
                         <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
                           {order.items.map(item => (
@@ -596,7 +598,7 @@ const Orders = () => {
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-gray-500">No items in this order.</p>
+                        <p className="text-gray-500">{t('orders.noItemsInOrder')}</p>
                       )}
                     </div>
                   )}
@@ -604,14 +606,14 @@ const Orders = () => {
               ))}
             </div>
           ) : (
-            !loading && supplierOrders.length > 0 && <p className="text-gray-500">No supplier orders match your criteria.</p>
+            !loading && supplierOrders.length > 0 && <p className="text-gray-500">{t('orders.noOrdersMatch')}</p>
           )}
         </div>
       )}
 
       {(filterOrderType === 'all' || filterOrderType === 'customer') && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-700 mt-8 mb-4">Customer Orders</h2>
+          <h2 className="text-2xl font-bold text-gray-700 mt-8 mb-4">{t('orders.customerOrders')}</h2>
           {filteredCustomerOrders.length > 0 ? (
             <div className="flex flex-col space-y-4 mb-12">
               {filteredCustomerOrders.map((order) => (
@@ -619,7 +621,7 @@ const Orders = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-semibold text-indigo-700">Order for {order.customer_organization_name || 'Unknown'}</h3>
+                        <h3 className="text-xl font-semibold text-indigo-700">{t('orders.orderFor')} {order.customer_organization_name || 'Unknown'}</h3>
                         <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' :
                             order.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
@@ -633,18 +635,18 @@ const Orders = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        <p><span className="font-medium">Order Date:</span> {new Date(order.order_date).toLocaleDateString()}</p>
+                        <p><span className="font-medium">{t('orders.orderDate')}:</span> {new Date(order.order_date).toLocaleDateString()}</p>
                         {order.expected_delivery_date && (
-                          <p><span className="font-medium">Expected:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">{t('orders.expected')}:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
                         )}
                         {order.shipped_date && (
-                          <p><span className="font-medium">Shipped:</span> {new Date(order.shipped_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">{t('orders.shipped')}:</span> {new Date(order.shipped_date).toLocaleDateString()}</p>
                         )}
                         {order.actual_delivery_date && (
-                          <p><span className="font-medium">Received:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">{t('orders.received')}:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
                         )}
                         {order.ordered_by_username && (
-                          <p><span className="font-medium">Ordered by:</span> {order.ordered_by_username}</p>
+                          <p><span className="font-medium">{t('orders.orderedBy')}:</span> {order.ordered_by_username}</p>
                         )}
                         {order.receiving_warehouse_name && (order.status === 'Received' || order.status === 'Delivered') && (
                           <p><span className="font-medium">Warehouse:</span> {order.receiving_warehouse_name}</p>
@@ -688,13 +690,13 @@ const Orders = () => {
                         onClick={() => toggleOrderItems(order.id)}
                         className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-md transition-colors"
                       >
-                        {expandedOrderId === order.id ? 'Hide Items' : 'View Items'}
+                        {expandedOrderId === order.id ? t('orders.collapseDetails') : t('orders.viewDetails')}
                       </button>
                     </div>
                   </div>
                   {expandedOrderId === order.id && (
                     <div className="mt-4 border-t pt-4">
-                      <h4 className="font-semibold text-gray-800 mb-2">Order Items</h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">{t('orders.orderItems')}</h4>
                       {order.items && order.items.length > 0 ? (
                         <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
                           {order.items.map(item => (
@@ -704,7 +706,7 @@ const Orders = () => {
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-gray-500">No items in this order.</p>
+                        <p className="text-gray-500">{t('orders.noItemsInOrder')}</p>
                       )}
                     </div>
                   )}
@@ -712,7 +714,7 @@ const Orders = () => {
               ))}
             </div>
           ) : (
-            !loading && customerOrders.length > 0 && <p className="text-gray-500">No customer orders match your criteria.</p>
+            !loading && customerOrders.length > 0 && <p className="text-gray-500">{t('orders.noOrdersMatch')}</p>
           )}
         </div>
       )}
@@ -735,7 +737,7 @@ const Orders = () => {
           setEditingOrder(null);
           setEditOrderType(null);
         }} 
-        title={editingOrder && editOrderType === 'supplier' ? "Edit Supplier Order" : "Add Supplier Order"} 
+        title={editingOrder && editOrderType === 'supplier' ? t('orders.editOrder') : t('orders.createSupplierOrder')} 
         size="xl"
       >
         <SupplierOrderForm 
@@ -759,7 +761,7 @@ const Orders = () => {
           setEditingOrder(null);
           setEditOrderType(null);
         }} 
-        title={editingOrder && editOrderType === 'customer' ? "Edit Customer Order" : "Add Customer Order"} 
+        title={editingOrder && editOrderType === 'customer' ? t('orders.editOrder') : t('orders.createCustomerOrder')} 
         size="xl"
       >
         <CustomerOrderForm 
@@ -838,7 +840,7 @@ const Orders = () => {
       <Modal
         isOpen={showOrderHistoryModal}
         onClose={() => setShowOrderHistoryModal(false)}
-        title="Order History & Analytics"
+        title={t('orders.viewHistory')}
       >
         <OrderHistoryView onClose={() => setShowOrderHistoryModal(false)} />
       </Modal>

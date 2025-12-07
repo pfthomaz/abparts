@@ -12,8 +12,10 @@ import {
   parseISO
 } from 'date-fns';
 import Modal from './Modal';
+import { useTranslation } from '../hooks/useTranslation';
 
 const OrderCalendarView = ({ orders = [], onOrderClick }) => {
+  const { t } = useTranslation();
   const [centerDate, setCenterDate] = useState(new Date());
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -98,27 +100,27 @@ const OrderCalendarView = ({ orders = [], onOrderClick }) => {
           onClick={goBack}
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
         >
-          ◄ Previous 30 Days
+          ◄ {t('orders.calendar.previous30Days')}
         </button>
         <div className="text-center">
           <button
             onClick={goToday}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold"
           >
-            Today: {format(new Date(), 'MMM dd, yyyy')}
+            {t('orders.calendar.today')}: {format(new Date(), 'MMM dd, yyyy')}
           </button>
         </div>
         <button
           onClick={goForward}
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
         >
-          Next 30 Days ►
+          {t('orders.calendar.next30Days')} ►
         </button>
       </div>
 
       {/* Date Range Display */}
       <div className="text-center text-gray-600 mb-4">
-        Showing: {format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd, yyyy')}
+        {t('orders.calendar.showing')}: {format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd, yyyy')}
       </div>
 
       {/* Calendar Grid */}
@@ -155,7 +157,7 @@ const OrderCalendarView = ({ orders = [], onOrderClick }) => {
         <div className="relative" style={{ minHeight: '400px' }}>
           {visibleOrders.length === 0 ? (
             <div className="text-center py-20 text-gray-500">
-              No orders in this date range
+              {t('orders.calendar.noOrdersInRange')}
             </div>
           ) : (
             visibleOrders.map((order, index) => {
@@ -197,25 +199,25 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
       <div className="mt-6 flex justify-center space-x-6 text-sm">
         <div className="flex items-center">
           <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-          <span>Pending</span>
+          <span>{t('orders.pending')}</span>
         </div>
         <div className="flex items-center">
           <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-          <span>Shipped</span>
+          <span>{t('orders.shipped')}</span>
         </div>
         <div className="flex items-center">
           <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-          <span>Delivered</span>
+          <span>{t('orders.delivered')}</span>
         </div>
         <div className="flex items-center">
           <div className="w-4 h-4 bg-red-300 rounded mr-2"></div>
-          <span>Cancelled</span>
+          <span>{t('orders.cancelled')}</span>
         </div>
       </div>
 
       {/* Order Count */}
       <div className="mt-4 text-center text-gray-600 text-sm">
-        Showing {visibleOrders.length} of {orders.length} orders
+        {t('orders.calendar.showingCount', { visible: visibleOrders.length, total: orders.length })}
       </div>
 
       {/* Order Details Modal */}
@@ -229,14 +231,14 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
           <div className="space-y-4">
             {/* Order Information */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-800 mb-3">Order Information</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">{t('orders.calendar.orderInformation')}</h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-600">Customer:</span>
+                  <span className="text-gray-600">{t('orders.customer')}:</span>
                   <p className="font-medium">{selectedOrder.customer_organization_name}</p>
                 </div>
                 <div>
-                  <span className="text-gray-600">Status:</span>
+                  <span className="text-gray-600">{t('orders.status')}:</span>
                   <p className="font-medium">
                     <span className={`px-2 py-1 rounded text-xs ${
                       selectedOrder.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
@@ -249,43 +251,43 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-600">Order Date:</span>
+                  <span className="text-gray-600">{t('orders.orderDate')}:</span>
                   <p className="font-medium">{format(parseISO(selectedOrder.order_date), 'MMM dd, yyyy')}</p>
                 </div>
                 {selectedOrder.expected_delivery_date && (
                   <div>
-                    <span className="text-gray-600">Expected Delivery:</span>
+                    <span className="text-gray-600">{t('orders.expectedDelivery')}:</span>
                     <p className="font-medium">{format(parseISO(selectedOrder.expected_delivery_date), 'MMM dd, yyyy')}</p>
                   </div>
                 )}
                 {selectedOrder.shipped_date && (
                   <div>
-                    <span className="text-gray-600">Shipped:</span>
+                    <span className="text-gray-600">{t('orders.shipped')}:</span>
                     <p className="font-medium">{format(parseISO(selectedOrder.shipped_date), 'MMM dd, yyyy')}</p>
                   </div>
                 )}
                 {selectedOrder.actual_delivery_date && (
                   <div>
-                    <span className="text-gray-600">Delivered:</span>
+                    <span className="text-gray-600">{t('orders.delivered')}:</span>
                     <p className="font-medium">{format(parseISO(selectedOrder.actual_delivery_date), 'MMM dd, yyyy')}</p>
                   </div>
                 )}
                 {selectedOrder.receiving_warehouse_name && (
                   <div>
-                    <span className="text-gray-600">Receiving Warehouse:</span>
+                    <span className="text-gray-600">{t('orders.receivingWarehouse')}:</span>
                     <p className="font-medium">{selectedOrder.receiving_warehouse_name}</p>
                   </div>
                 )}
                 {selectedOrder.ordered_by_username && (
                   <div>
-                    <span className="text-gray-600">Ordered By:</span>
+                    <span className="text-gray-600">{t('orders.orderedBy')}:</span>
                     <p className="font-medium">{selectedOrder.ordered_by_username}</p>
                   </div>
                 )}
               </div>
               {selectedOrder.notes && (
                 <div className="mt-3">
-                  <span className="text-gray-600">Notes:</span>
+                  <span className="text-gray-600">{t('orders.notes')}:</span>
                   <p className="text-sm text-gray-700 mt-1">{selectedOrder.notes}</p>
                 </div>
               )}
@@ -293,7 +295,7 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
 
             {/* Order Items */}
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">Order Items</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">{t('orders.calendar.orderItems')}</h3>
               {selectedOrder.items && selectedOrder.items.length > 0 ? (
                 <div className="space-y-2">
                   {selectedOrder.items.map((item, index) => (
@@ -301,19 +303,19 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <p className="font-medium text-gray-900">
-                            {item.part_name || 'Unknown Part'}
+                            {item.part_name || t('orders.calendar.unknownPart')}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Part #: {item.part_number || 'N/A'}
+                            {t('orders.calendar.partNumber')}: {item.part_number || 'N/A'}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-gray-900">
-                            {item.quantity} {item.unit_of_measure || 'units'}
+                            {item.quantity} {item.unit_of_measure || t('orders.calendar.units')}
                           </p>
                           {item.unit_price && (
                             <p className="text-sm text-gray-600">
-                              ${parseFloat(item.unit_price).toFixed(2)} each
+                              ${parseFloat(item.unit_price).toFixed(2)} {t('orders.calendar.each')}
                             </p>
                           )}
                         </div>
@@ -321,7 +323,7 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                       {item.unit_price && (
                         <div className="mt-2 pt-2 border-t border-gray-100">
                           <p className="text-sm text-gray-700 text-right">
-                            Subtotal: ${(parseFloat(item.quantity) * parseFloat(item.unit_price)).toFixed(2)}
+                            {t('orders.calendar.subtotal')}: ${(parseFloat(item.quantity) * parseFloat(item.unit_price)).toFixed(2)}
                           </p>
                         </div>
                       )}
@@ -332,7 +334,7 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                   {selectedOrder.items.some(item => item.unit_price) && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-800">Order Total:</span>
+                        <span className="font-semibold text-gray-800">{t('orders.calendar.orderTotal')}:</span>
                         <span className="text-xl font-bold text-blue-600">
                           ${selectedOrder.items.reduce((sum, item) => 
                             sum + (parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0)), 0
@@ -343,7 +345,7 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                   )}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No items in this order</p>
+                <p className="text-gray-500 text-sm">{t('orders.calendar.noItemsInOrder')}</p>
               )}
             </div>
 
@@ -353,7 +355,7 @@ ${order.actual_delivery_date ? `Delivered: ${format(parseISO(order.actual_delive
                 onClick={closeModal}
                 className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md font-medium"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
           </div>

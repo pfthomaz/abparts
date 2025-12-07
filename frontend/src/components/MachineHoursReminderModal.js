@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import { machinesService } from '../services/machinesService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
+  const { t } = useTranslation();
   const [hoursData, setHoursData] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -27,7 +29,7 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
         if (hours && parseFloat(hours) > 0) {
           await machinesService.recordMachineHours(machineId, {
             hours_value: parseFloat(hours),
-            notes: 'Recorded via reminder'
+            notes: t('machines.recordedViaReminder')
           });
           saved++;
         }
@@ -42,7 +44,7 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
         }, 1500);
       }
     } catch (err) {
-      setError(err.message || 'Failed to save machine hours');
+      setError(err.message || t('machines.failedToSaveHours'));
     } finally {
       setSaving(false);
     }
@@ -57,9 +59,9 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
         <div className="bg-yellow-500 text-white px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-bold">⏰ Machine Hours Reminder</h2>
+              <h2 className="text-xl font-bold">⏰ {t('machines.hoursReminder')}</h2>
               <p className="text-yellow-100 text-sm mt-1">
-                The following machines haven't had hours recorded in the last 2 weeks
+                {t('machines.hoursReminderMessage')}
               </p>
             </div>
             <button
@@ -82,7 +84,7 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
 
           {successCount > 0 && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
-              ✅ Successfully saved hours for {successCount} machine{successCount > 1 ? 's' : ''}!
+              ✅ {t('machines.successfullySavedHours', { count: successCount })}
             </div>
           )}
 
@@ -93,30 +95,30 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{machine.name}</h3>
                     <p className="text-sm text-gray-600">
-                      Model: {machine.model_type} | Serial: {machine.serial_number}
+                      {t('machines.model')}: {machine.model_type} | {t('machines.serial')}: {machine.serial_number}
                     </p>
                     {machine.last_hours_date && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Last recorded: {new Date(machine.last_hours_date).toLocaleDateString()} 
-                        {' '}({machine.last_hours_value?.toLocaleString()} hrs)
+                        {t('machines.lastRecorded')}: {new Date(machine.last_hours_date).toLocaleDateString()} 
+                        {' '}({machine.last_hours_value?.toLocaleString()} {t('machines.hrs')})
                       </p>
                     )}
                     {!machine.last_hours_date && (
                       <p className="text-xs text-orange-600 mt-1">
-                        ⚠️ No hours ever recorded
+                        ⚠️ {t('machines.noHoursRecorded')}
                       </p>
                     )}
                   </div>
                   
                   <div className="w-40">
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Current Hours
+                      {t('machines.currentHours')}
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="Enter hours..."
+                      placeholder={t('machines.enterHoursPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={hoursData[machine.id] || ''}
                       onChange={(e) => handleHoursChange(machine.id, e.target.value)}
@@ -130,8 +132,8 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
 
           {machines.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              <p className="text-lg">✅ All machines are up to date!</p>
-              <p className="text-sm mt-2">All machines have hours recorded within the last 2 weeks.</p>
+              <p className="text-lg">✅ {t('machines.allMachinesUpToDate')}</p>
+              <p className="text-sm mt-2">{t('machines.allMachinesUpToDateMessage')}</p>
             </div>
           )}
         </div>
@@ -139,7 +141,7 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
         {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t">
           <p className="text-sm text-gray-600">
-            {machines.length} machine{machines.length !== 1 ? 's' : ''} need{machines.length === 1 ? 's' : ''} updating
+            {t('machines.machinesNeedUpdating', { count: machines.length })}
           </p>
           <div className="flex space-x-3">
             <button
@@ -147,7 +149,7 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
               className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
               disabled={saving}
             >
-              Skip for Now
+              {t('machines.skipForNow')}
             </button>
             {hasAnyHours && (
               <button
@@ -155,7 +157,7 @@ const MachineHoursReminderModal = ({ machines, onClose, onHoursSaved }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 disabled={saving}
               >
-                {saving ? 'Saving...' : 'Save Hours'}
+                {saving ? t('machines.saving') : t('machines.saveHours')}
               </button>
             )}
           </div>
