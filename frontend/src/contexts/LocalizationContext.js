@@ -82,11 +82,23 @@ const SUPPORTED_LANGUAGES = {
     name: 'Spanish',
     nativeName: 'Español',
     rtl: false
+  },
+  tr: {
+    code: 'tr',
+    name: 'Turkish',
+    nativeName: 'Türkçe',
+    rtl: false
+  },
+  no: {
+    code: 'no',
+    name: 'Norwegian',
+    nativeName: 'Norsk',
+    rtl: false
   }
 };
 
 // Default language fallback order
-const LANGUAGE_FALLBACK_ORDER = ['en', 'el', 'ar', 'es'];
+const LANGUAGE_FALLBACK_ORDER = ['en', 'el', 'ar', 'es', 'tr', 'no'];
 
 const LocalizationContext = createContext(null);
 
@@ -104,7 +116,23 @@ export const LocalizationProvider = ({ children }) => {
 
   // Initialize localization settings
   useEffect(() => {
-    // Try to get saved preferences from localStorage
+    console.log('🌍 Localization: Initializing with user:', user);
+    
+    // PRIORITY 1: Check if user has preferred_language from backend
+    if (user?.preferred_language) {
+      console.log('🌍 Localization: User preferred_language:', user.preferred_language);
+      if (SUPPORTED_LANGUAGES[user.preferred_language]) {
+        setCurrentLanguage(user.preferred_language);
+        setUserPreferences(prev => ({
+          ...prev,
+          language: user.preferred_language
+        }));
+        console.log('✅ Localization: Set language to user preference:', user.preferred_language);
+        return; // Exit early - user preference takes priority
+      }
+    }
+
+    // PRIORITY 2: Try to get saved preferences from localStorage
     const savedPreferences = localStorage.getItem('localizationPreferences');
     if (savedPreferences) {
       try {
@@ -112,26 +140,26 @@ export const LocalizationProvider = ({ children }) => {
         setUserPreferences(parsed);
         setCurrentLanguage(parsed.language || 'en');
         setCurrentCountry(parsed.country || 'GR');
+        console.log('🌍 Localization: Loaded from localStorage:', parsed.language);
+        return;
       } catch (error) {
         console.error('Error parsing saved localization preferences:', error);
       }
     }
 
-    // If user is logged in and has organization country, use that as default
+    // PRIORITY 3: If user is logged in and has organization country, use that as default
     if (user?.organization?.country) {
       const orgCountry = user.organization.country;
       if (SUPPORTED_COUNTRIES[orgCountry]) {
         setCurrentCountry(orgCountry);
-        // Update language based on country if not explicitly set
-        if (!savedPreferences) {
-          const countryConfig = SUPPORTED_COUNTRIES[orgCountry];
-          setCurrentLanguage(countryConfig.language);
-          setUserPreferences(prev => ({
-            ...prev,
-            country: orgCountry,
-            language: countryConfig.language
-          }));
-        }
+        const countryConfig = SUPPORTED_COUNTRIES[orgCountry];
+        setCurrentLanguage(countryConfig.language);
+        setUserPreferences(prev => ({
+          ...prev,
+          country: orgCountry,
+          language: countryConfig.language
+        }));
+        console.log('🌍 Localization: Set language from organization country:', countryConfig.language);
       }
     }
   }, [user]);

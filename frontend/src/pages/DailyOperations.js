@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { machinesService } from '../services/machinesService';
 import { listProtocols, getExecutions } from '../services/maintenanceProtocolsService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const DailyOperations = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [machines, setMachines] = useState([]);
@@ -127,8 +129,8 @@ const DailyOperations = () => {
   return (
     <>
       <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg shadow-lg p-8 text-white mb-6">
-        <h1 className="text-3xl font-bold mb-2">🌊 Let's Wash Nets!</h1>
-        <p className="text-cyan-100">Daily operations workflow - Start and end your day right</p>
+        <h1 className="text-3xl font-bold mb-2">🌊 {t('dailyOperations.title')}</h1>
+        <p className="text-cyan-100">{t('dailyOperations.subtitle')}</p>
       </div>
       
       <div className="space-y-6">
@@ -136,7 +138,7 @@ const DailyOperations = () => {
       {/* Machine Selection */}
       <div className="bg-white rounded-lg shadow p-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Your Machine
+          {t('dailyOperations.selectMachine')}
         </label>
         <select
           value={selectedMachine?.id || ''}
@@ -146,7 +148,7 @@ const DailyOperations = () => {
           }}
           className="w-full px-4 py-3 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
         >
-          <option value="">-- Select a machine --</option>
+          <option value="">{t('dailyOperations.selectMachinePlaceholder')}</option>
           {machines.map(machine => (
             <option key={machine.id} value={machine.id}>
               {machine.name || machine.model} ({machine.serial_number})

@@ -52,10 +52,23 @@ if __name__ == "__main__":
         print("Usage: python set_user_language.py <username> [language]")
         print("Example: python set_user_language.py admin el")
         print()
-        print("Available languages: en, el, ar, es")
+        print("Available languages:")
+        print("  en - English")
+        print("  el - Greek (Ελληνικά)")
+        print("  ar - Arabic (العربية)")
+        print("  es - Spanish (Español)")
+        print("  tr - Turkish (Türkçe)")
+        print("  no - Norwegian (Norsk)")
         sys.exit(1)
     
     username = sys.argv[1]
     language = sys.argv[2] if len(sys.argv) > 2 else 'el'
+    
+    # Validate language
+    valid_languages = ['en', 'el', 'ar', 'es', 'tr', 'no']
+    if language not in valid_languages:
+        print(f"❌ Invalid language: {language}")
+        print(f"Valid languages: {', '.join(valid_languages)}")
+        sys.exit(1)
     
     set_language(username, language)

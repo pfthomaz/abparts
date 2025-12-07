@@ -240,6 +240,7 @@ export const getNavigationItems = (user) => {
 
   // Dashboard - available to all authenticated users
   items.push({
+    name: 'dashboard',
     path: '/',
     label: 'Dashboard',
     icon: 'dashboard',
@@ -251,6 +252,7 @@ export const getNavigationItems = (user) => {
   // Organizations - super admin only
   if (hasPermission(user, PERMISSIONS.VIEW_ALL_ORGANIZATIONS)) {
     items.push({
+      name: 'organizations',
       path: '/organizations',
       label: 'Organizations',
       icon: 'organizations',
@@ -265,6 +267,7 @@ export const getNavigationItems = (user) => {
   // Organization Management - admin and above
   if (hasPermission(user, PERMISSIONS.MANAGE_ORG_USERS) || hasPermission(user, PERMISSIONS.VIEW_ALL_ORGANIZATIONS)) {
     items.push({
+      name: 'organizationManagement',
       path: '/organization-management',
       label: 'Organization Management',
       icon: 'organization-management',
@@ -279,6 +282,7 @@ export const getNavigationItems = (user) => {
   // Parts - all users can view
   if (hasPermission(user, PERMISSIONS.VIEW_PARTS)) {
     items.push({
+      name: 'parts',
       path: '/parts',
       label: 'Parts',
       icon: 'parts',
@@ -294,6 +298,7 @@ export const getNavigationItems = (user) => {
   // Orders - all users can view/create
   if (hasPermission(user, PERMISSIONS.ORDER_PARTS)) {
     items.push({
+      name: 'orders',
       path: '/orders',
       label: 'Orders',
       icon: 'orders',
@@ -307,6 +312,7 @@ export const getNavigationItems = (user) => {
   // Stocktake - admin and above
   if (hasPermission(user, PERMISSIONS.ADJUST_INVENTORY)) {
     items.push({
+      name: 'stocktake',
       path: '/stocktake',
       label: 'Stocktake',
       icon: 'stocktake',
@@ -321,6 +327,7 @@ export const getNavigationItems = (user) => {
   // Stock Adjustments - admin and above
   if (hasPermission(user, PERMISSIONS.ADJUST_INVENTORY)) {
     items.push({
+      name: 'stockAdjustments',
       path: '/stock-adjustments',
       label: 'Stock Adjustments',
       icon: 'stock-adjustments',
@@ -335,6 +342,7 @@ export const getNavigationItems = (user) => {
   // Maintenance Protocols - super admin only
   if (isSuperAdmin(user)) {
     items.push({
+      name: 'maintenanceProtocols',
       path: '/maintenance-protocols',
       label: 'Maintenance Protocols',
       icon: 'maintenance',
@@ -349,6 +357,7 @@ export const getNavigationItems = (user) => {
 
   // Maintenance Executions - all users can execute maintenance
   items.push({
+    name: 'maintenance',
     path: '/maintenance-executions',
     label: 'Maintenance',
     icon: 'maintenance',
@@ -361,6 +370,7 @@ export const getNavigationItems = (user) => {
   // Machines - all users can view their org's machines
   if (hasPermission(user, PERMISSIONS.VIEW_ORG_MACHINES) || hasPermission(user, PERMISSIONS.VIEW_ALL_MACHINES)) {
     items.push({
+      name: 'machines',
       path: '/machines',
       label: 'Machines',
       icon: 'machines',
@@ -374,6 +384,7 @@ export const getNavigationItems = (user) => {
   // Users - admin and above
   if (hasPermission(user, PERMISSIONS.MANAGE_ORG_USERS) || hasPermission(user, PERMISSIONS.MANAGE_ALL_USERS)) {
     items.push({
+      name: 'users',
       path: '/users',
       label: 'Users',
       icon: 'users',
@@ -388,6 +399,7 @@ export const getNavigationItems = (user) => {
   // Warehouses - admin and above (if they have warehouse management permissions)
   if (hasPermission(user, PERMISSIONS.MANAGE_WAREHOUSES)) {
     items.push({
+      name: 'warehouses',
       path: '/warehouses',
       label: 'Warehouses',
       icon: 'warehouses',
@@ -402,6 +414,7 @@ export const getNavigationItems = (user) => {
   // Transactions - all users can view their org's transactions
   if (hasPermission(user, PERMISSIONS.VIEW_ORG_TRANSACTIONS)) {
     items.push({
+      name: 'transactions',
       path: '/transactions',
       label: 'Transactions',
       icon: 'transactions',
@@ -415,6 +428,7 @@ export const getNavigationItems = (user) => {
   // Configuration - admin and above
   if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN) {
     items.push({
+      name: 'configuration',
       path: '/configuration',
       label: 'Configuration',
       icon: 'configuration',

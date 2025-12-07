@@ -7,11 +7,17 @@ import { useLocalization } from '../contexts/LocalizationContext';
 import enTranslations from '../locales/en.json';
 import elTranslations from '../locales/el.json';
 import arTranslations from '../locales/ar.json';
+import esTranslations from '../locales/es.json';
+import trTranslations from '../locales/tr.json';
+import noTranslations from '../locales/no.json';
 
 const translations = {
   en: enTranslations,
   el: elTranslations,
-  ar: arTranslations
+  ar: arTranslations,
+  es: esTranslations,
+  tr: trTranslations,
+  no: noTranslations
 };
 
 /**

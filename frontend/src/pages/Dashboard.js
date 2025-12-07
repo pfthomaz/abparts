@@ -7,6 +7,7 @@ import { dashboardService } from '../services/dashboardService';
 import { isSuperAdmin, hasPermission, PERMISSIONS, getContextualPermissions } from '../utils/permissions';
 import PermissionGuard from '../components/PermissionGuard';
 import OrganizationSelector from '../components/OrganizationSelector';
+import { useTranslation } from '../hooks/useTranslation';
 import {
   BarChart,
   Bar,
@@ -294,6 +295,7 @@ const OrderIcon = () => (
 );
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [lowStockData, setLowStockData] = useState([]);
@@ -408,7 +410,7 @@ const Dashboard = () => {
                 <h1 className="text-4xl font-bold text-gray-900 mb-2">
                   Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}!
                 </h1>
-                <p className="text-lg text-gray-600">Welcome back, {user.name || user.username}</p>
+                <p className="text-lg text-gray-600">{t('dashboard.welcomeBack', { name: user.name || user.username })}</p>
                 {metrics && (
                   <p className="text-sm text-gray-500 mt-1">
                     {isSuperAdmin(user)
@@ -551,7 +553,7 @@ const Dashboard = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('dashboard.quickActions')}</h2>
                 </div>
                 {/* Role indicator */}
                 <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
