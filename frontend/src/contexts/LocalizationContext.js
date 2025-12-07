@@ -154,7 +154,8 @@ export const LocalizationProvider = ({ children }) => {
       if (user?.id) {
         try {
           const token = localStorage.getItem('authToken');
-          const response = await fetch(`http://localhost:8000/users/${user.id}`, {
+          const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+          const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -190,7 +191,8 @@ export const LocalizationProvider = ({ children }) => {
       if (user?.id) {
         try {
           const token = localStorage.getItem('authToken');
-          const response = await fetch(`http://localhost:8000/users/${user.id}`, {
+          const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+          const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
