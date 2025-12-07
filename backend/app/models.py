@@ -34,6 +34,7 @@ class CountryCode(enum.Enum):
     ES = "ES"  # Spain
     CY = "CY"  # Cyprus
     SA = "SA"  # Saudi Arabia
+    KSA = "KSA"  # Saudi Arabia (alternative code)
 
 
 class PartType(enum.Enum):
@@ -83,7 +84,7 @@ class Organization(Base):
     name = Column(String(255), unique=True, nullable=False, index=True)
     organization_type = Column(Enum(OrganizationType), nullable=False)
     parent_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
-    # country = Column(Enum(CountryCode), nullable=True)  # Country field - commented until DB migration runs
+    country = Column(Enum(CountryCode), nullable=True)
     address = Column(Text)
     contact_info = Column(Text)
     logo_url = Column(String(500), nullable=True)  # Organization logo (legacy)
@@ -212,7 +213,7 @@ class User(Base):
     # email_verification_token = Column(String(255), nullable=True)
     # email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
     # pending_email = Column(String(255), nullable=True)
-    # preferred_language = Column(String(5), nullable=True, server_default='en')  # Language preference (en, el, ar, es)
+    preferred_language = Column(String(5), nullable=True, server_default='en')  # Language preference (en, el, ar, es)
     # preferred_country = Column(String(3), nullable=True)  # Country preference (GR, KSA, ES, CY, OM)
     # localization_preferences = Column(Text, nullable=True)  # JSON string for advanced preferences
     is_active = Column(Boolean, server_default='true', nullable=False)

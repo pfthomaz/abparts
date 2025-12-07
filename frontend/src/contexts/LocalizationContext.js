@@ -142,24 +142,74 @@ export const LocalizationProvider = ({ children }) => {
   }, [userPreferences]);
 
   // Update language preference
-  const updateLanguage = (languageCode) => {
+  const updateLanguage = async (languageCode) => {
     if (SUPPORTED_LANGUAGES[languageCode]) {
       setCurrentLanguage(languageCode);
       setUserPreferences(prev => ({
         ...prev,
         language: languageCode
       }));
+
+      // Save to backend if user is logged in
+      if (user?.id) {
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch(`http://localhost:8000/users/${user.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              preferred_language: languageCode
+            })
+          });
+
+          if (!response.ok) {
+            console.error('Failed to save language preference to backend');
+          } else {
+            console.log('✅ Language preference saved to backend:', languageCode);
+          }
+        } catch (error) {
+          console.error('Error saving language preference:', error);
+        }
+      }
     }
   };
 
   // Update country preference
-  const updateCountry = (countryCode) => {
+  const updateCountry = async (countryCode) => {
     if (SUPPORTED_COUNTRIES[countryCode]) {
       setCurrentCountry(countryCode);
       setUserPreferences(prev => ({
         ...prev,
         country: countryCode
       }));
+
+      // Save to backend if user is logged in
+      if (user?.id) {
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch(`http://localhost:8000/users/${user.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              preferred_country: countryCode
+            })
+          });
+
+          if (!response.ok) {
+            console.error('Failed to save country preference to backend');
+          } else {
+            console.log('✅ Country preference saved to backend:', countryCode);
+          }
+        } catch (error) {
+          console.error('Error saving country preference:', error);
+        }
+      }
     }
   };
 

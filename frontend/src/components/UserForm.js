@@ -26,6 +26,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
     role: USER_ROLES.user,
     organization_id: '',
     user_status: USER_STATUS.active,
+    preferred_language: 'en',
     is_active: true,
   });
 
@@ -41,6 +42,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       role: USER_ROLES.user,
       organization_id: (user?.role === 'admin' && !initialData.id) ? user.organization_id : '',
       user_status: USER_STATUS.active,
+      preferred_language: 'en',
       is_active: true,
     };
 
@@ -52,6 +54,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
         organization_id: initialData.organization_id || defaultState.organization_id,
         role: initialData.role || defaultState.role,
         user_status: initialData.user_status || USER_STATUS.active,
+        preferred_language: initialData.preferred_language || 'en',
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
       });
     } else {
@@ -87,8 +90,12 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
 
     try {
       const dataToSend = { ...formData };
-      if (initialData.id && dataToSend.password === '') {
-        delete dataToSend.password;
+      
+      // When editing, only include password if it's provided and valid
+      if (initialData.id) {
+        if (!dataToSend.password || dataToSend.password.length < 8) {
+          delete dataToSend.password;
+        }
       }
 
       await onSubmit(dataToSend);
@@ -201,6 +208,24 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           onChange={handleChange}
           disabled={loading}
         />
+      </div>
+      <div>
+        <label htmlFor="preferred_language" className="block text-sm font-medium text-gray-700 mb-1">
+          Preferred Language
+        </label>
+        <select
+          id="preferred_language"
+          name="preferred_language"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          value={formData.preferred_language || 'en'}
+          onChange={handleChange}
+          disabled={loading}
+        >
+          <option value="en">🇬🇧 English</option>
+          <option value="el">🇬🇷 Ελληνικά (Greek)</option>
+          <option value="ar">🇸🇦 العربية (Arabic)</option>
+          <option value="es">🇪🇸 Español (Spanish)</option>
+        </select>
       </div>
       <div>
         <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">

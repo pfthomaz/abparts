@@ -156,6 +156,7 @@ class UserBase(BaseModel):
     profile_photo_url: Optional[str] = None
     role: UserRoleEnum
     user_status: UserStatusEnum = UserStatusEnum.ACTIVE
+    preferred_language: Optional[str] = Field(None, max_length=5)
     is_active: bool = True
 
 class UserCreate(UserBase):
@@ -170,6 +171,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=8) # For password change
     role: Optional[UserRoleEnum] = None
     user_status: Optional[UserStatusEnum] = None
+    preferred_language: Optional[str] = Field(None, max_length=5)
     is_active: Optional[bool] = None
 
 class UserResponse(UserBase, BaseSchema):
@@ -278,6 +280,10 @@ class UserProfileResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        # Ensure all fields are included in JSON, even if None
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
 
 class PasswordResetRequest(BaseModel):
     """Schema for password reset request"""

@@ -34,11 +34,19 @@ class UserUpdate(BaseModel):
     role: Optional[UserRoleEnum] = None
     organization_id: Optional[uuid.UUID] = None
     is_active: Optional[bool] = None
+    user_status: Optional[UserStatusEnum] = None
+    preferred_language: Optional[str] = Field(None, max_length=5)
+    preferred_country: Optional[str] = Field(None, max_length=5)
+    profile_photo_url: Optional[str] = None
+    password: Optional[str] = Field(None, min_length=8)
 
 class UserResponse(UserBase):
     id: uuid.UUID
     user_status: UserStatusEnum
     is_active: bool
+    preferred_language: Optional[str] = None
+    preferred_country: Optional[str] = None
+    profile_photo_url: Optional[str] = None
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
@@ -92,6 +100,9 @@ class UserProfileResponse(BaseModel):
     organization_id: uuid.UUID
     organization_name: str
     organization_type: str
+    preferred_language: Optional[str] = None
+    preferred_country: Optional[str] = None
+    profile_photo_url: Optional[str] = None
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime

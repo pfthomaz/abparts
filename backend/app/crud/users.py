@@ -297,16 +297,19 @@ def update_user_profile(db: Session, user_id: uuid.UUID, profile_update: schemas
     
     update_data = profile_update.model_dump(exclude_unset=True)
     
-    # Handle email change - set as pending if email is being changed
+    # Handle email change - set as pending if email verification is enabled
     if "email" in update_data and update_data["email"] != db_user.email:
         # Check if new email is already in use
         existing_user = get_user_by_email(db, update_data["email"])
         if existing_user and existing_user.id != user_id:
             raise ValueError("Email address is already in use")
         
-        # Set pending email instead of directly updating
-        db_user.pending_email = update_data["email"]
-        del update_data["email"]  # Don't update email directly
+        # If pending_email field exists, use email verification flow
+        if hasattr(db_user, 'pending_email'):
+            db_user.pending_email = update_data["email"]
+            del update_data["email"]  # Don't update email directly
+        # Otherwise, update email directly (email verification disabled)
+        # Email will be updated in the loop below
     
     # Update other fields
     for key, value in update_data.items():
@@ -459,6 +462,9 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
         "organization_id": user.organization_id,
         "organization_name": organization.name,
         "organization_type": organization.organization_type.value,
+        "preferred_language": user.preferred_language,
+        "preferred_country": user.preferred_country if hasattr(user, 'preferred_country') else None,
+        "localization_preferences": user.localization_preferences if hasattr(user, 'localization_preferences') else None,
         "profile_photo_url": user.profile_photo_url,
         "last_login": user.last_login,
         "created_at": user.created_at,

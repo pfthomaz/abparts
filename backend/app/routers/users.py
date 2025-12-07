@@ -55,12 +55,20 @@ def _check_update_user_permissions(user_to_update: models.User, user_update: sch
     if is_super_admin:
         return # Super admin has full permissions
 
+    # Check if trying to change organization (not allowed for non-super-admins)
     if user_update.organization_id is not None and user_update.organization_id != user_to_update.organization_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot change a user's organization.")
     
-    if user_update.role is not None and user_update.role != user_to_update.role:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot change a user's role.")
+    # Check if trying to change role (not allowed for non-super-admins)
+    # Only raise error if role is actually being CHANGED, not just included in the update
+    if user_update.role is not None:
+        # Compare enum values properly
+        current_role_value = user_to_update.role.value if hasattr(user_to_update.role, 'value') else str(user_to_update.role)
+        update_role_value = user_update.role.value if hasattr(user_update.role, 'value') else str(user_update.role)
+        if update_role_value != current_role_value:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot change a user's role.")
 
+    # Check if user has permission to update this user at all
     if not (is_admin_in_own_org or is_self_update):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this user")
 
@@ -92,6 +100,21 @@ async def get_users(
     query = OrganizationScopedQueries.filter_users(query, current_user)
     users = query.all()
     return users
+
+@router.get("/me/")
+async def get_current_user_info(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get current authenticated user's information with organization details.
+    """
+    profile_dict = crud.users.get_user_profile_with_organization(db, current_user.user_id)
+    if not profile_dict:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    # Return dict directly to include all fields including None values
+    return profile_dict
 
 @router.get("/me/profile", response_model=schemas.UserProfileResponse)
 async def get_my_profile(
@@ -673,8 +696,8 @@ async def update_my_profile(
                 detail="User not found"
             )
         
-        # If email was changed, send verification email
-        if profile_update.email and updated_user.pending_email:
+        # If email was changed, send verification email (if email verification is enabled)
+        if profile_update.email and hasattr(updated_user, 'pending_email') and updated_user.pending_email:
             send_email_verification_email.delay(
                 email=updated_user.email,  # Send to current email
                 name=updated_user.name,

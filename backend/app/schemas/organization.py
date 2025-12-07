@@ -23,6 +23,7 @@ class CountryEnum(str, Enum):
     ES = "ES"  # Spain
     CY = "CY"  # Cyprus
     SA = "SA"  # Saudi Arabia
+    KSA = "KSA"  # Saudi Arabia
 
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)
