@@ -44,7 +44,7 @@ def create_customer_order(db: Session, order: schemas.CustomerOrderCreate):
         logger.error(f"Error creating customer order: {e}")
         raise HTTPException(status_code=400, detail="Error creating customer order")
 
-def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schemas.CustomerOrderUpdate, current_user_id: uuid.UUID = None, items_data: list = None):
+def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schemas.CustomerOrderUpdate, current_user_id: uuid.UUID = None, items_data: list = None, raw_update_data: dict = None):
     """Update an existing customer order and handle inventory updates on fulfillment."""
     db_order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
     if not db_order:
@@ -53,27 +53,49 @@ def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schema
     # Store the old status to check if we need to update inventory
     old_status = db_order.status
     
-    update_data = order_update.dict(exclude_unset=True)
-    full_update_data = order_update.dict()  # Get all fields including None values
+    # Use raw_update_data if provided (has all fields from request), otherwise fall back to Pydantic object
+    if raw_update_data:
+        from dateutil import parser as date_parser
+        full_update_data = raw_update_data.copy()
+        
+        # Convert date strings to datetime objects
+        date_fields = ['order_date', 'expected_delivery_date', 'actual_delivery_date', 'shipped_date']
+        for field in date_fields:
+            if field in full_update_data and full_update_data[field]:
+                if isinstance(full_update_data[field], str):
+                    full_update_data[field] = date_parser.parse(full_update_data[field])
+    else:
+        # Get all fields from the update object (don't exclude anything for the update loop)
+        full_update_data = order_update.dict(exclude_unset=False, exclude_none=False)  # Get ALL fields
+    
+    logger.info(f"=== ORDER UPDATE DEBUG ===")
+    logger.info(f"Order ID: {order_id}")
+    logger.info(f"Old order_date: {db_order.order_date}")
+    logger.info(f"full_update_data keys: {full_update_data.keys()}")
+    logger.info(f"order_date in full_update_data: {'order_date' in full_update_data}")
+    if 'order_date' in full_update_data:
+        logger.info(f"order_date value in full_update_data: {full_update_data['order_date']}")
     
     # Add items to full_update_data if provided
     if items_data is not None:
         full_update_data['items'] = items_data
         logger.info(f"Items data added to full_update_data: {len(items_data)} items")
     
-    for key, value in update_data.items():
+    # Update all fields from full_update_data (including None values to allow clearing fields)
+    for key, value in full_update_data.items():
         if key != 'items':  # Don't try to set items on the order object
+            logger.info(f"Setting {key} = {value}")
             setattr(db_order, key, value)
     
     try:
         # Re-validate FKs if IDs are updated
-        if "customer_organization_id" in update_data:
+        if "customer_organization_id" in full_update_data and full_update_data["customer_organization_id"]:
             customer_org = db.query(models.Organization).filter(models.Organization.id == db_order.customer_organization_id).first()
             if not customer_org: raise HTTPException(status_code=400, detail="Customer Organization ID not found")
-        if "oraseas_organization_id" in update_data:
+        if "oraseas_organization_id" in full_update_data and full_update_data["oraseas_organization_id"]:
             oraseas_org = db.query(models.Organization).filter(models.Organization.id == db_order.oraseas_organization_id).first()
             if not oraseas_org: raise HTTPException(status_code=400, detail="Oraseas Organization ID not found")
-        if "ordered_by_user_id" in update_data and db_order.ordered_by_user_id:
+        if "ordered_by_user_id" in full_update_data and db_order.ordered_by_user_id:
             user = db.query(models.User).filter(models.User.id == db_order.ordered_by_user_id).first()
             if not user: raise HTTPException(status_code=400, detail="Ordered by User ID not found")
 
@@ -82,7 +104,6 @@ def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schema
         logger.info(f"Order status change: {old_status} -> {new_status}")
         logger.info(f"Order update object: {order_update}")
         logger.info(f"Order update dict: {order_update.dict()}")
-        logger.info(f"Order update data (exclude_unset): {update_data}")
         logger.info(f"Full update data: {full_update_data}")
         logger.info(f"Has receiving_warehouse_id: {hasattr(order_update, 'receiving_warehouse_id')}")
         logger.info(f"Receiving warehouse ID: {getattr(order_update, 'receiving_warehouse_id', None)}")

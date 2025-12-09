@@ -195,9 +195,17 @@ async def update_customer_order(
     body = await request.body()
     body_json = json.loads(body.decode('utf-8'))
     
+    logger.info(f"Raw request body_json keys: {body_json.keys()}")
+    logger.info(f"order_date in body_json: {'order_date' in body_json}")
+    if 'order_date' in body_json:
+        logger.info(f"order_date value: {body_json['order_date']}")
+    
     # Extract items before Pydantic validation (workaround for Pydantic issue)
     items_data = body_json.pop('items', None)
     logger.info(f"Extracted items from request: {items_data}")
+    
+    logger.info(f"body_json keys after pop: {body_json.keys()}")
+    logger.info(f"order_date in body_json after pop: {'order_date' in body_json}")
     
     # Now parse the rest with Pydantic
     order_update = schemas.CustomerOrderUpdate(**body_json)
@@ -235,7 +243,8 @@ async def update_customer_order(
         order_id=order_id, 
         order_update=order_update, 
         current_user_id=current_user.user_id,
-        items_data=items_data  # Pass items separately
+        items_data=items_data,  # Pass items separately
+        raw_update_data=body_json  # Pass the raw JSON data that has all fields
     )
 
 @router.get("/{order_id}", response_model=schemas.CustomerOrderResponse)

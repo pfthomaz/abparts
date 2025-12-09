@@ -43,7 +43,8 @@
     "date": "Tarih",
     "na": "Yok",
     "warning": "Uyarı",
-    "admin": "Yönetici"
+    "admin": "Yönetici",
+    "remove": "Kaldır"
   },
   "navigation": {
     "dashboard": "Kontrol Paneli",
@@ -582,6 +583,7 @@
     "received": "Alındı",
     "delivered": "Teslim Edildi",
     "cancelled": "İptal Edildi",
+    "expectedDelivery": "Beklenen Teslimat",
     "partsSortedNoteSupplier": "Bu tedarikçi için sipariş sıklığına göre sıralanmış parçalar",
     "calendar": {
       "previous30Days": "Önceki 30 Gün",

@@ -47,18 +47,21 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to upload photo');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to upload photo');
       }
 
       const data = await response.json();
       console.log('Upload successful, new URL:', data.url);
-      onPhotoUpdated(data.url);
       
-      // Refresh user context to update header photo
+      // Refresh user context first to update header photo
       await refreshUser();
+      
+      // Then notify parent component
+      onPhotoUpdated(data.url);
     } catch (err) {
       console.error('Upload error:', err);
-      setError('Failed to upload photo. Please try again.');
+      setError(err.message || 'Failed to upload photo. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -82,13 +85,18 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to remove photo');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to remove photo');
       }
 
+      // Refresh user context first
+      await refreshUser();
+      
+      // Then notify parent component
       onPhotoUpdated(null);
     } catch (err) {
       console.error('Remove error:', err);
-      setError('Failed to remove photo. Please try again.');
+      setError(err.message || 'Failed to remove photo. Please try again.');
     } finally {
       setUploading(false);
     }

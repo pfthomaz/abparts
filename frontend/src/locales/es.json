@@ -43,7 +43,8 @@
     "date": "Fecha",
     "na": "N/D",
     "warning": "Advertencia",
-    "admin": "Administrador"
+    "admin": "Administrador",
+    "remove": "Eliminar"
   },
   "navigation": {
     "dashboard": "Panel de Control",
@@ -582,6 +583,7 @@
     "received": "Recibido",
     "delivered": "Entregado",
     "cancelled": "Cancelado",
+    "expectedDelivery": "Entrega Esperada",
     "partsSortedNoteSupplier": "Piezas ordenadas por frecuencia de pedido para este proveedor",
     "calendar": {
       "previous30Days": "30 Días Anteriores",

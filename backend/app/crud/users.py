@@ -444,6 +444,8 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
     """
     Get user profile with organization information.
     """
+    from ..image_utils import image_to_data_url
+    
     result = db.query(models.User, models.Organization).join(
         models.Organization, models.User.organization_id == models.Organization.id
     ).filter(models.User.id == user_id).first()
@@ -452,6 +454,15 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
         return None
     
     user, organization = result
+    
+    # Convert profile photo data to data URL if it exists
+    profile_photo_url = None
+    if user.profile_photo_data:
+        profile_photo_url = image_to_data_url(user.profile_photo_data)
+    elif user.profile_photo_url:
+        # Fallback to legacy URL if it exists
+        profile_photo_url = user.profile_photo_url
+    
     return {
         "id": user.id,
         "username": user.username,
@@ -465,7 +476,7 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
         "preferred_language": user.preferred_language,
         "preferred_country": user.preferred_country if hasattr(user, 'preferred_country') else None,
         "localization_preferences": user.localization_preferences if hasattr(user, 'localization_preferences') else None,
-        "profile_photo_url": f"/images/users/{user.id}/profile" if user.profile_photo_data else None,
+        "profile_photo_url": profile_photo_url,
         "last_login": user.last_login,
         "created_at": user.created_at,
         "updated_at": user.updated_at

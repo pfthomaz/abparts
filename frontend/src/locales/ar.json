@@ -43,7 +43,8 @@
     "date": "التاريخ",
     "na": "غير متاح",
     "warning": "تحذير",
-    "admin": "مسؤول"
+    "admin": "مسؤول",
+    "remove": "إزالة"
   },
   "navigation": {
     "dashboard": "لوحة التحكم",
@@ -582,6 +583,7 @@
     "received": "تم الاستلام",
     "delivered": "تم التسليم",
     "cancelled": "ملغى",
+    "expectedDelivery": "التسليم المتوقع",
     "partsSortedNoteSupplier": "القطع مرتبة حسب تكرار الطلب لهذا المورد",
     "calendar": {
       "previous30Days": "الـ 30 يومًا السابقة",

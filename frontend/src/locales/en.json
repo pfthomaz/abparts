@@ -43,7 +43,8 @@
     "date": "Date",
     "na": "N/A",
     "warning": "Warning",
-    "admin": "Admin"
+    "admin": "Admin",
+    "remove": "Remove"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -582,6 +583,7 @@
     "received": "Received",
     "delivered": "Delivered",
     "cancelled": "Cancelled",
+    "expectedDelivery": "Expected Delivery",
     "partsSortedNoteSupplier": "Parts sorted by order frequency for this supplier",
     "calendar": {
       "previous30Days": "Previous 30 Days",

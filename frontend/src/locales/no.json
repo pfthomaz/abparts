@@ -43,7 +43,8 @@
     "date": "Dato",
     "na": "I/T",
     "warning": "Advarsel",
-    "admin": "Administrator"
+    "admin": "Administrator",
+    "remove": "Fjern"
   },
   "navigation": {
     "dashboard": "Dashbord",
@@ -582,6 +583,7 @@
     "received": "Mottatt",
     "delivered": "Levert",
     "cancelled": "Kansellert",
+    "expectedDelivery": "Forventet Levering",
     "partsSortedNoteSupplier": "Deler sortert etter bestillingsfrekvens for denne leverandøren",
     "calendar": {
       "previous30Days": "Forrige 30 Dager",
