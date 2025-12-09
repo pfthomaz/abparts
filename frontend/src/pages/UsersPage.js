@@ -7,6 +7,7 @@ import PermissionGuard from '../components/PermissionGuard';
 import { userService } from '../services/userService';
 import { organizationsService } from '../services/organizationsService';
 import { PERMISSIONS } from '../utils/permissions';
+import { useTranslation } from '../hooks/useTranslation';
 
 // New role system aligned with business model
 const USER_ROLES = {
@@ -23,6 +24,7 @@ const USER_STATUS = {
 };
 
 function UsersPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
@@ -51,7 +53,7 @@ function UsersPage() {
       const data = await userService.getUsers();
       setUsers(data);
     } catch (err) {
-      setActionError('Failed to load users.');
+      setActionError(t('users.failedToLoadUsers'));
     } finally {
       setLoading(false);
     }
@@ -84,7 +86,7 @@ function UsersPage() {
       await userService.deactivateUser(userId);
       fetchUsers();
     } catch {
-      setActionError('Failed to deactivate user.');
+      setActionError(t('users.failedToDeactivateUser'));
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,7 @@ function UsersPage() {
       await userService.reactivateUser(userId);
       fetchUsers();
     } catch {
-      setActionError('Failed to reactivate user.');
+      setActionError(t('users.failedToReactivateUser'));
     } finally {
       setLoading(false);
     }
@@ -115,7 +117,7 @@ function UsersPage() {
       setShowForm(false);
       fetchUsers();
     } catch (err) {
-      setActionError(err.message || 'Failed to save user.');
+      setActionError(err.message || t('users.failedToSaveUser'));
     } finally {
       setLoading(false);
     }
@@ -128,11 +130,11 @@ function UsersPage() {
     setSuccessMessage(null);
     try {
       await userService.inviteUser(invitationData);
-      setSuccessMessage(`Invitation sent successfully to ${invitationData.email}`);
+      setSuccessMessage(t('users.invitationSentSuccess', { email: invitationData.email }));
       setShowInvitationForm(false);
       fetchUsers(); // Refresh to show pending invitations
     } catch (err) {
-      setActionError(err.message || 'Failed to send invitation.');
+      setActionError(err.message || t('users.failedToSendInvitation'));
     } finally {
       setLoading(false);
     }
@@ -143,7 +145,7 @@ function UsersPage() {
   }
 
   function handleResendInvitation() {
-    setSuccessMessage('Invitation resent successfully');
+    setSuccessMessage(t('users.invitationResentSuccess'));
     fetchUsers(); // Refresh user list
   }
 
@@ -172,7 +174,7 @@ function UsersPage() {
       setBulkSelection([]);
       fetchUsers();
     } catch {
-      setActionError('Failed to activate selected users.');
+      setActionError(t('users.failedToActivateUsers'));
     } finally {
       setLoading(false);
     }
@@ -186,7 +188,7 @@ function UsersPage() {
       setBulkSelection([]);
       fetchUsers();
     } catch {
-      setActionError('Failed to deactivate selected users.');
+      setActionError(t('users.failedToDeactivateUsers'));
     } finally {
       setLoading(false);
     }
@@ -213,20 +215,20 @@ function UsersPage() {
   // Helper function to get user status display
   const getUserStatusDisplay = (user) => {
     if (!user.is_active) {
-      return { text: 'Inactive', class: 'bg-gray-200 text-gray-600' };
+      return { text: t('users.inactiveStatus'), class: 'bg-gray-200 text-gray-600' };
     }
 
     switch (user.user_status) {
       case USER_STATUS.active:
-        return { text: 'Active', class: 'bg-green-100 text-green-800' };
+        return { text: t('users.activeStatus'), class: 'bg-green-100 text-green-800' };
       case USER_STATUS.pending_invitation:
-        return { text: 'Pending Invitation', class: 'bg-yellow-100 text-yellow-800' };
+        return { text: t('users.pendingInvitationStatus'), class: 'bg-yellow-100 text-yellow-800' };
       case USER_STATUS.locked:
-        return { text: 'Locked', class: 'bg-red-100 text-red-800' };
+        return { text: t('users.lockedStatus'), class: 'bg-red-100 text-red-800' };
       case USER_STATUS.inactive:
-        return { text: 'Inactive', class: 'bg-gray-200 text-gray-600' };
+        return { text: t('users.inactiveStatus'), class: 'bg-gray-200 text-gray-600' };
       default:
-        return { text: 'Unknown', class: 'bg-gray-200 text-gray-600' };
+        return { text: t('users.unknownStatus'), class: 'bg-gray-200 text-gray-600' };
     }
   };
 
@@ -234,44 +236,44 @@ function UsersPage() {
   const getRoleDisplay = (role) => {
     switch (role) {
       case USER_ROLES.super_admin:
-        return 'Super Admin';
+        return t('users.superAdminRole');
       case USER_ROLES.admin:
-        return 'Admin';
+        return t('users.adminRole');
       case USER_ROLES.user:
-        return 'User';
+        return t('users.userRole');
       default:
         return role; // Fallback for legacy roles
     }
   };
 
   const tabs = [
-    { id: 'users', label: 'User Management', icon: 'users' },
-    { id: 'permissions', label: 'Permissions', icon: 'shield', permission: PERMISSIONS.VIEW_USER_AUDIT_LOGS }
+    { id: 'users', label: t('users.userManagement'), icon: 'users' },
+    { id: 'permissions', label: t('users.permissions'), icon: 'shield', permission: PERMISSIONS.VIEW_USER_AUDIT_LOGS }
   ];
 
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">User & Permission Management</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('users.title')}</h1>
         {activeTab === 'users' && (
           <div className="flex gap-2">
             <button
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
               onClick={() => setShowInvitationForm(true)}
             >
-              📧 Invite User
+              📧 {t('users.inviteUser')}
             </button>
             <button
               className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition"
               onClick={handleShowInvitations}
             >
-              📋 Pending Invitations
+              📋 {t('users.pendingInvitations')}
             </button>
             <button
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
               onClick={handleCreate}
             >
-              + Add User
+              + {t('users.addUser')}
             </button>
           </div>
         )}
@@ -320,7 +322,7 @@ function UsersPage() {
           <div className="flex flex-wrap gap-2 mb-4">
             <input
               type="text"
-              placeholder="Search by name or email"
+              placeholder={t('users.searchPlaceholder')}
               className="border px-3 py-2 rounded-md"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -330,21 +332,21 @@ function UsersPage() {
               value={filterRole}
               onChange={e => setFilterRole(e.target.value)}
             >
-              <option value="">All Roles</option>
-              <option value={USER_ROLES.user}>User</option>
-              <option value={USER_ROLES.admin}>Admin</option>
-              <option value={USER_ROLES.super_admin}>Super Admin</option>
+              <option value="">{t('users.allRoles')}</option>
+              <option value={USER_ROLES.user}>{t('users.userRole')}</option>
+              <option value={USER_ROLES.admin}>{t('users.adminRole')}</option>
+              <option value={USER_ROLES.super_admin}>{t('users.superAdminRole')}</option>
             </select>
             <select
               className="border px-3 py-2 rounded-md"
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
             >
-              <option value="">All Statuses</option>
-              <option value={USER_STATUS.active}>Active</option>
-              <option value={USER_STATUS.inactive}>Inactive</option>
-              <option value={USER_STATUS.pending_invitation}>Pending Invitation</option>
-              <option value={USER_STATUS.locked}>Locked</option>
+              <option value="">{t('users.allStatuses')}</option>
+              <option value={USER_STATUS.active}>{t('users.activeStatus')}</option>
+              <option value={USER_STATUS.inactive}>{t('users.inactiveStatus')}</option>
+              <option value={USER_STATUS.pending_invitation}>{t('users.pendingInvitationStatus')}</option>
+              <option value={USER_STATUS.locked}>{t('users.lockedStatus')}</option>
             </select>
           </div>
           {actionError && (
@@ -362,7 +364,7 @@ function UsersPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-blue-700">
-                  {bulkSelection.length} user{bulkSelection.length !== 1 ? 's' : ''} selected
+                  {t('users.usersSelected', { count: bulkSelection.length })}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -370,20 +372,20 @@ function UsersPage() {
                     className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
                     disabled={loading}
                   >
-                    Activate Selected
+                    {t('users.activateSelected')}
                   </button>
                   <button
                     onClick={handleBulkDeactivate}
                     className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                     disabled={loading}
                   >
-                    Deactivate Selected
+                    {t('users.deactivateSelected')}
                   </button>
                   <button
                     onClick={() => setBulkSelection([])}
                     className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
                   >
-                    Clear Selection
+                    {t('users.clearSelection')}
                   </button>
                 </div>
               </div>
@@ -402,13 +404,13 @@ function UsersPage() {
                       className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-4 py-2 text-left">Name</th>
-                  <th className="px-4 py-2 text-left">Email</th>
-                  <th className="px-4 py-2 text-left">Role</th>
-                  <th className="px-4 py-2 text-left">Organization</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">Last Login</th>
-                  <th className="px-4 py-2 text-left">Actions</th>
+                  <th className="px-4 py-2 text-left">{t('users.name')}</th>
+                  <th className="px-4 py-2 text-left">{t('users.email')}</th>
+                  <th className="px-4 py-2 text-left">{t('users.role')}</th>
+                  <th className="px-4 py-2 text-left">{t('users.organization')}</th>
+                  <th className="px-4 py-2 text-left">{t('users.status')}</th>
+                  <th className="px-4 py-2 text-left">{t('users.lastLogin')}</th>
+                  <th className="px-4 py-2 text-left">{t('users.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -443,7 +445,7 @@ function UsersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-500">
-                        {u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'}
+                        {u.last_login ? new Date(u.last_login).toLocaleDateString() : t('users.never')}
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex gap-2">
@@ -452,7 +454,7 @@ function UsersPage() {
                             onClick={() => handleEdit(u)}
                             disabled={loading}
                           >
-                            Edit
+                            {t('users.edit')}
                           </button>
                           {u.is_active && u.user_status === 'active' ? (
                             <button
@@ -460,7 +462,7 @@ function UsersPage() {
                               onClick={() => handleDeactivate(u.id)}
                               disabled={loading}
                             >
-                              Deactivate
+                              {t('users.deactivate')}
                             </button>
                           ) : (
                             <button
@@ -468,7 +470,7 @@ function UsersPage() {
                               onClick={() => handleReactivate(u.id)}
                               disabled={loading}
                             >
-                              Reactivate
+                              {t('users.reactivate')}
                             </button>
                           )}
                         </div>
@@ -483,8 +485,8 @@ function UsersPage() {
                         <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                         </svg>
-                        <p className="text-lg font-medium">No users found</p>
-                        <p className="text-sm">Try adjusting your search or filter criteria</p>
+                        <p className="text-lg font-medium">{t('users.noUsersFound')}</p>
+                        <p className="text-sm">{t('users.adjustSearchCriteria')}</p>
                       </div>
                     </td>
                   </tr>

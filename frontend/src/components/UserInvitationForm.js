@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 // Role system aligned with business model
 const USER_ROLES = {
@@ -9,6 +10,7 @@ const USER_ROLES = {
 };
 
 function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -38,7 +40,7 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
       await onSubmit(formData);
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to send invitation.');
+      setError(err.message || t('userInvitation.failedToSendInvitation'));
     } finally {
       setLoading(false);
     }
@@ -50,16 +52,16 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
     // Super admins can invite users with any role
     if (user.role === "super_admin") {
       return [
-        { value: USER_ROLES.user, label: "User" },
-        { value: USER_ROLES.admin, label: "Admin" },
-        { value: USER_ROLES.super_admin, label: "Super Admin" }
+        { value: USER_ROLES.user, label: t('users.userRole') },
+        { value: USER_ROLES.admin, label: t('users.adminRole') },
+        { value: USER_ROLES.super_admin, label: t('users.superAdminRole') }
       ];
     }
     // Admins can invite users and admins within their organization
     else if (user.role === "admin") {
       return [
-        { value: USER_ROLES.user, label: "User" },
-        { value: USER_ROLES.admin, label: "Admin" }
+        { value: USER_ROLES.user, label: t('users.userRole') },
+        { value: USER_ROLES.admin, label: t('users.adminRole') }
       ];
     }
     // Regular users cannot send invitations
@@ -77,8 +79,8 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <p className="text-lg font-medium text-gray-900">Access Restricted</p>
-        <p className="text-sm text-gray-500">Only admins and super admins can send user invitations.</p>
+        <p className="text-lg font-medium text-gray-900">{t('userInvitation.accessRestricted')}</p>
+        <p className="text-sm text-gray-500">{t('userInvitation.accessRestrictedMessage')}</p>
       </div>
     );
   }
@@ -86,20 +88,20 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Invite New User</h3>
-        <p className="text-sm text-gray-600">Send an invitation email to a new user to join your organization.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('userInvitation.title')}</h3>
+        <p className="text-sm text-gray-600">{t('userInvitation.subtitle')}</p>
       </div>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error:</strong>
+          <strong className="font-bold">{t('userInvitation.error')}</strong>
           <span className="block sm:inline ml-2">{error}</span>
         </div>
       )}
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email Address *
+          {t('userInvitation.emailAddress')} *
         </label>
         <input
           type="email"
@@ -110,13 +112,13 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
           onChange={handleChange}
           required
           disabled={loading}
-          placeholder="user@example.com"
+          placeholder={t('userInvitation.emailPlaceholder')}
         />
       </div>
 
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Full Name
+          {t('userInvitation.fullName')}
         </label>
         <input
           type="text"
@@ -126,13 +128,13 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
           value={formData.name}
           onChange={handleChange}
           disabled={loading}
-          placeholder="John Doe"
+          placeholder={t('userInvitation.namePlaceholder')}
         />
       </div>
 
       <div>
         <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-          Role *
+          {t('users.role')} *
         </label>
         <select
           id="role"
@@ -151,7 +153,7 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
 
       <div>
         <label htmlFor="organization_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Organization *
+          {t('users.organization')} *
         </label>
         <select
           id="organization_id"
@@ -162,7 +164,7 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
           required
           disabled={loading || (user?.role === 'admin')} // Admins can only invite to their own org
         >
-          <option value="">Select organization</option>
+          <option value="">{t('userInvitation.selectOrganization')}</option>
           {organizations.map(org => (
             <option key={org.id} value={org.id}>{org.name}</option>
           ))}
@@ -178,8 +180,7 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
           </div>
           <div className="ml-3">
             <p className="text-sm text-blue-700">
-              The invited user will receive an email with a secure link to set up their account.
-              The invitation will expire after 7 days.
+              {t('userInvitation.invitationNote')}
             </p>
           </div>
         </div>
@@ -192,14 +193,14 @@ function UserInvitationForm({ organizations = [], onSubmit, onClose }) {
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           disabled={loading}
         >
-          Cancel
+          {t('userInvitation.cancel')}
         </button>
         <button
           type="submit"
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           disabled={loading}
         >
-          {loading ? 'Sending Invitation...' : 'Send Invitation'}
+          {loading ? t('userInvitation.sendingInvitation') : t('userInvitation.sendInvitation')}
         </button>
       </div>
     </form>

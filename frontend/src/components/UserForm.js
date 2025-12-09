@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 // New role system aligned with business model
 const USER_ROLES = {
@@ -16,6 +17,7 @@ const USER_STATUS = {
 };
 
 function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, editingSelf }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -101,7 +103,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       await onSubmit(dataToSend);
       onClose();
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.');
+      setError(err.message || t('userForm.unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -113,30 +115,30 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
     // Super admins can assign any role
     if (user.role === "super_admin") {
       return [
-        { value: USER_ROLES.user, label: "User" },
-        { value: USER_ROLES.admin, label: "Admin" },
-        { value: USER_ROLES.super_admin, label: "Super Admin" }
+        { value: USER_ROLES.user, label: t('users.userRole') },
+        { value: USER_ROLES.admin, label: t('users.adminRole') },
+        { value: USER_ROLES.super_admin, label: t('users.superAdminRole') }
       ];
     }
     // Admins can assign user and admin roles within their organization
     else if (user.role === "admin") {
       return [
-        { value: USER_ROLES.user, label: "User" },
-        { value: USER_ROLES.admin, label: "Admin" }
+        { value: USER_ROLES.user, label: t('users.userRole') },
+        { value: USER_ROLES.admin, label: t('users.adminRole') }
       ];
     }
     // Regular users cannot assign roles
-    return [{ value: USER_ROLES.user, label: "User" }];
+    return [{ value: USER_ROLES.user, label: t('users.userRole') }];
   };
 
   const availableRoles = getAvailableRoles();
 
   const getAvailableStatuses = () => {
     return [
-      { value: USER_STATUS.active, label: "Active" },
-      { value: USER_STATUS.inactive, label: "Inactive" },
-      { value: USER_STATUS.pending_invitation, label: "Pending Invitation" },
-      { value: USER_STATUS.locked, label: "Locked" }
+      { value: USER_STATUS.active, label: t('users.activeStatus') },
+      { value: USER_STATUS.inactive, label: t('users.inactiveStatus') },
+      { value: USER_STATUS.pending_invitation, label: t('users.pendingInvitationStatus') },
+      { value: USER_STATUS.locked, label: t('users.lockedStatus') }
     ];
   };
 
@@ -146,13 +148,13 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error:</strong>
+          <strong className="font-bold">{t('userInvitation.error')}</strong>
           <span className="block sm:inline ml-2">{error}</span>
         </div>
       )}
       <div>
         <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-          Username
+          {t('userForm.username')}
         </label>
         <input
           type="text"
@@ -167,7 +169,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       </div>
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email
+          {t('users.email')}
         </label>
         <input
           type="email"
@@ -182,7 +184,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       </div>
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password {initialData.id ? '(Leave blank to keep current)' : ''}
+          {t('userForm.password')} {initialData.id ? t('userForm.passwordKeepCurrent') : ''}
         </label>
         <input
           type="password"
@@ -197,7 +199,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       </div>
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Full Name
+          {t('userInvitation.fullName')}
         </label>
         <input
           type="text"
@@ -211,7 +213,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       </div>
       <div>
         <label htmlFor="preferred_language" className="block text-sm font-medium text-gray-700 mb-1">
-          Preferred Language
+          {t('userForm.preferredLanguage')}
         </label>
         <select
           id="preferred_language"
@@ -225,11 +227,13 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           <option value="el">🇬🇷 Ελληνικά (Greek)</option>
           <option value="ar">🇸🇦 العربية (Arabic)</option>
           <option value="es">🇪🇸 Español (Spanish)</option>
+          <option value="tr">🇹🇷 Türkçe (Turkish)</option>
+          <option value="no">🇳🇴 Norsk (Norwegian)</option>
         </select>
       </div>
       <div>
         <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-          Role
+          {t('users.role')}
         </label>
         <select
           id="role"
@@ -247,7 +251,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       </div>
       <div>
         <label htmlFor="organization_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Organization
+          {t('users.organization')}
         </label>
         <select
           id="organization_id"
@@ -258,7 +262,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           required
           disabled={loading || isFieldDisabled('organization_id')}
         >
-          <option value="">Select organization</option>
+          <option value="">{t('userInvitation.selectOrganization')}</option>
           {organizations.map(org => (
             <option key={org.id} value={org.id}>{org.name}</option>
           ))}
@@ -266,7 +270,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
       </div>
       <div>
         <label htmlFor="user_status" className="block text-sm font-medium text-gray-700 mb-1">
-          User Status
+          {t('userForm.userStatus')}
         </label>
         <select
           id="user_status"
@@ -293,7 +297,7 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           disabled={loading || isFieldDisabled('is_active')}
         />
         <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-          Active
+          {t('userForm.active')}
         </label>
       </div>
       <div className="flex justify-end space-x-3 mt-6">
@@ -303,14 +307,14 @@ function UserForm({ organizations = [], initialData = {}, onSubmit, onClose, edi
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           disabled={loading}
         >
-          Cancel
+          {t('userInvitation.cancel')}
         </button>
         <button
           type="submit"
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           disabled={loading}
         >
-          {loading ? 'Submitting...' : (initialData.id ? 'Update User' : 'Create User')}
+          {loading ? t('userForm.submitting') : (initialData.id ? t('userForm.updateUser') : t('userForm.createUser'))}
         </button>
       </div>
     </form>
