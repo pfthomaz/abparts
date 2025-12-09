@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
-import { OrganizationType, ORGANIZATION_TYPE_CONFIG, organizationsService } from '../services/organizationsService';
+import { OrganizationType, organizationsService } from '../services/organizationsService';
 import { getSupportedCountries, getCountryDisplay } from '../utils/countryFlags';
 import OrganizationLogoUpload from './OrganizationLogoUpload';
+import { useTranslation } from '../hooks/useTranslation';
+import { getOrganizationTypeConfig } from '../utils/organizationTypeConfig';
 
 function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
@@ -116,10 +119,10 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           ).join('; ');
           setError(errorMessages);
         } else {
-          setError('Validation failed. Please check your input.');
+          setError(t('organizationForm.validationFailed'));
         }
       } else {
-        setError(err.message || 'An unexpected error occurred.');
+        setError(err.message || t('organizationForm.unexpectedError'));
       }
     } finally {
       setLoading(false);
@@ -127,6 +130,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
   };
 
   const getOrganizationTypeInfo = (type) => {
+    const ORGANIZATION_TYPE_CONFIG = getOrganizationTypeConfig(t);
     return ORGANIZATION_TYPE_CONFIG[type];
   };
 
@@ -134,7 +138,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error:</strong>
+          <strong className="font-bold">{t('userInvitation.error')}</strong>
           <span className="block sm:inline ml-2">{error}</span>
         </div>
       )}
@@ -142,7 +146,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       {/* Organization Logo Upload (only when editing) */}
       {isEditing && initialData.id && (
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Organization Logo</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">{t('organizationForm.organizationLogo')}</h4>
           <OrganizationLogoUpload
             organizationId={initialData.id}
             currentLogoUrl={formData.logo_url}
@@ -156,7 +160,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       {/* Organization Name */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Organization Name *
+          {t('organizationForm.organizationName')} *
         </label>
         <input
           type="text"
@@ -167,14 +171,14 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           onChange={handleChange}
           required
           disabled={loading}
-          placeholder="Enter organization name"
+          placeholder={t('organizationForm.organizationNamePlaceholder')}
         />
       </div>
 
       {/* Organization Type */}
       <div>
         <label htmlFor="organization_type" className="block text-sm font-medium text-gray-700 mb-1">
-          Organization Type *
+          {t('organizationForm.organizationType')} *
         </label>
         <select
           id="organization_type"
@@ -198,7 +202,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
         {/* Show singleton warning */}
         {formData.organization_type && getOrganizationTypeInfo(formData.organization_type).singleton && (
           <p className="mt-1 text-sm text-amber-600">
-            ⚠️ Only one {getOrganizationTypeInfo(formData.organization_type).label} organization is allowed
+            {t('organizationForm.singletonWarning', { type: getOrganizationTypeInfo(formData.organization_type).label })}
           </p>
         )}
       </div>
@@ -206,7 +210,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       {/* Country Selection */}
       <div>
         <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-          Country
+          {t('organizationForm.country')}
         </label>
         <select
           id="country"
@@ -216,7 +220,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           onChange={handleChange}
           disabled={loading}
         >
-          <option value="">Select country...</option>
+          <option value="">{t('organizationForm.selectCountry')}</option>
           {getSupportedCountries().map((country) => (
             <option key={country.code} value={country.code}>
               {getCountryDisplay(country.code)}
@@ -229,7 +233,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       {formData.organization_type === OrganizationType.SUPPLIER && (
         <div>
           <label htmlFor="parent_organization_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Parent Organization *
+            {t('organizationForm.parentOrganization')} *
           </label>
           <select
             id="parent_organization_id"
@@ -240,7 +244,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
             required
             disabled={loading || loadingParents}
           >
-            <option value="">Select parent organization...</option>
+            <option value="">{t('organizationForm.selectParentOrganization')}</option>
             {potentialParents.map((parent) => (
               <option key={parent.id} value={parent.id}>
                 {getOrganizationTypeInfo(parent.organization_type).icon} {parent.name}
@@ -248,7 +252,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
             ))}
           </select>
           {loadingParents && (
-            <p className="mt-1 text-sm text-gray-500">Loading parent organizations...</p>
+            <p className="mt-1 text-sm text-gray-500">{t('organizationForm.loadingParentOrganizations')}</p>
           )}
         </div>
       )}
@@ -256,7 +260,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
       {/* Address */}
       <div>
         <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-          Address
+          {t('organizations.address')}
         </label>
         <textarea
           id="address"
@@ -266,14 +270,14 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           value={formData.address}
           onChange={handleChange}
           disabled={loading}
-          placeholder="Enter organization address"
+          placeholder={t('organizationForm.addressPlaceholder')}
         />
       </div>
 
       {/* Contact Info */}
       <div>
         <label htmlFor="contact_info" className="block text-sm font-medium text-gray-700 mb-1">
-          Contact Information
+          {t('organizationForm.contactInformation')}
         </label>
         <textarea
           id="contact_info"
@@ -283,7 +287,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           value={formData.contact_info}
           onChange={handleChange}
           disabled={loading}
-          placeholder="Enter contact information (phone, email, etc.)"
+          placeholder={t('organizationForm.contactPlaceholder')}
         />
       </div>
 
@@ -299,7 +303,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           disabled={loading}
         />
         <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-          Organization is active
+          {t('organizationForm.organizationIsActive')}
         </label>
       </div>
 
@@ -311,7 +315,7 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           disabled={loading}
         >
-          Cancel
+          {t('userInvitation.cancel')}
         </button>
         <button
           type="submit"
@@ -324,10 +328,10 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {isEditing ? 'Updating...' : 'Creating...'}
+              {isEditing ? t('organizationForm.updating') : t('organizationForm.creating')}
             </span>
           ) : (
-            isEditing ? 'Update Organization' : 'Create Organization'
+            isEditing ? t('organizationForm.updateOrganization') : t('organizationForm.createOrganization')
           )}
         </button>
       </div>

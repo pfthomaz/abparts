@@ -6,8 +6,10 @@ import OrganizationHierarchy from '../components/OrganizationHierarchy';
 import SupplierManager from '../components/SupplierManager';
 import OrganizationWarehouseWorkflow from '../components/OrganizationWarehouseWorkflow';
 import { isSuperAdmin, isAdmin } from '../utils/permissions';
+import { useTranslation } from '../hooks/useTranslation';
 
 const OrganizationManagement = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [activeTab, setActiveTab] = useState('hierarchy');
@@ -22,9 +24,9 @@ const OrganizationManagement = () => {
   };
 
   const tabs = [
-    { id: 'hierarchy', name: 'Organization Hierarchy', icon: '🌳' },
-    { id: 'suppliers', name: 'Supplier Management', icon: '📦' },
-    { id: 'warehouses', name: 'Warehouse Management', icon: '🏪' }
+    { id: 'hierarchy', name: t('organizationManagement.organizationHierarchy'), icon: '🌳' },
+    { id: 'suppliers', name: t('organizationManagement.supplierManagement'), icon: '📦' },
+    { id: 'warehouses', name: t('organizationManagement.warehouseManagement'), icon: '🏪' }
   ];
 
   return (
@@ -34,10 +36,10 @@ const OrganizationManagement = () => {
         <div className="px-4 py-6 sm:px-0">
           <div className="border-b border-gray-200 pb-5">
             <h1 className="text-3xl font-bold leading-6 text-gray-900">
-              Organization Management
+              {t('organizationManagement.title')}
             </h1>
             <p className="mt-2 max-w-4xl text-sm text-gray-500">
-              Manage organizations, suppliers, and warehouses with enhanced UI components
+              {t('organizationManagement.subtitle')}
             </p>
           </div>
         </div>
@@ -53,7 +55,7 @@ const OrganizationManagement = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Selected: {selectedOrganization.name}
+                      {t('organizationManagement.selected')}: {selectedOrganization.name}
                     </h3>
                     <p className="mt-1 max-w-2xl text-sm text-gray-500">
                       {selectedOrganization.organization_type} organization
@@ -120,9 +122,9 @@ const OrganizationManagement = () => {
                   <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100">
                     <span className="text-2xl">📦</span>
                   </div>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No organization selected</h3>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">{t('organizationManagement.noOrganizationSelected')}</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Select an organization from the hierarchy to manage its suppliers.
+                    {t('organizationManagement.selectOrgForSuppliers')}
                   </p>
                 </div>
               )}
@@ -143,9 +145,9 @@ const OrganizationManagement = () => {
                   <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100">
                     <span className="text-2xl">🏪</span>
                   </div>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No organization selected</h3>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">{t('organizationManagement.noOrganizationSelected')}</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Select an organization from the hierarchy to manage its warehouses.
+                    {t('organizationManagement.selectOrgForWarehouses')}
                   </p>
                 </div>
               )}
@@ -165,12 +167,11 @@ const OrganizationManagement = () => {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-yellow-800">
-                    Limited Access
+                    {t('organizationManagement.limitedAccess')}
                   </h3>
                   <div className="mt-2 text-sm text-yellow-700">
                     <p>
-                      Some organization management features may be limited based on your role.
-                      Contact your administrator for additional permissions.
+                      {t('organizationManagement.limitedAccessMessage')}
                     </p>
                   </div>
                 </div>

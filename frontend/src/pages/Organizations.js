@@ -1,14 +1,17 @@
 // frontend/src/pages/Organizations.js
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { organizationsService, OrganizationType, ORGANIZATION_TYPE_CONFIG } from '../services/organizationsService';
+import { organizationsService, OrganizationType } from '../services/organizationsService';
 import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
 import OrganizationForm from '../components/OrganizationForm';
 import PermissionGuard from '../components/PermissionGuard';
 import { PERMISSIONS } from '../utils/permissions';
+import { useTranslation } from '../hooks/useTranslation';
+import { getOrganizationTypeConfig } from '../utils/organizationTypeConfig';
 
 const Organizations = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   // State management
@@ -34,7 +37,7 @@ const Organizations = () => {
       const data = response.data || response;
       setOrganizations(data);
     } catch (err) {
-      setError(err.message || 'Failed to fetch organizations.');
+      setError(err.message || t('organizations.failedToFetch'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +104,7 @@ const Organizations = () => {
   };
 
   const handleDelete = async (orgId) => {
-    if (!window.confirm("Are you sure you want to delete this organization? This action cannot be undone.")) {
+    if (!window.confirm(t('organizations.deleteConfirm'))) {
       return;
     }
     setError(null);
@@ -112,7 +115,7 @@ const Organizations = () => {
         fetchHierarchy();
       }
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to delete organization.');
+      setError(err.response?.data?.detail || err.message || t('organizations.failedToDelete'));
     }
   };
 
@@ -127,6 +130,7 @@ const Organizations = () => {
   };
 
   const getOrganizationTypeInfo = (type) => {
+    const ORGANIZATION_TYPE_CONFIG = getOrganizationTypeConfig(t);
     return ORGANIZATION_TYPE_CONFIG[type] || {
       label: type,
       description: '',
@@ -159,13 +163,13 @@ const Organizations = () => {
                 onClick={() => openModal(organizations.find(org => org.id === node.id))}
                 className="text-indigo-600 hover:text-indigo-900 text-sm"
               >
-                Edit
+                {t('users.edit')}
               </button>
               <button
                 onClick={() => handleDelete(node.id)}
                 className="text-red-600 hover:text-red-900 text-sm"
               >
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           </PermissionGuard>
@@ -180,8 +184,8 @@ const Organizations = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Organizations</h1>
-          <p className="text-gray-600 mt-1">Manage organization hierarchy and relationships</p>
+          <h1 className="text-3xl font-bold text-gray-800">{t('organizations.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('organizations.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-3">
           {/* View Mode Toggle */}
@@ -193,7 +197,7 @@ const Organizations = () => {
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
             >
-              Cards
+              {t('organizations.cards')}
             </button>
             <button
               onClick={() => setViewMode('hierarchy')}
@@ -202,7 +206,7 @@ const Organizations = () => {
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 } -ml-px`}
             >
-              Hierarchy
+              {t('organizations.hierarchy')}
             </button>
           </div>
 
@@ -211,14 +215,14 @@ const Organizations = () => {
               onClick={() => openModal()}
               className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
             >
-              Add Organization
+              {t('organizations.addOrganization')}
             </button>
           </PermissionGuard>
         </div>
       </div>
 
       {/* Loading and Error States */}
-      {loading && <p className="text-gray-500">Loading organizations...</p>}
+      {loading && <p className="text-gray-500">{t('organizations.loadingOrganizations')}</p>}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
           <strong className="font-bold">Error: </strong>
@@ -231,25 +235,25 @@ const Organizations = () => {
         <div className="bg-white p-4 rounded-lg shadow-md mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700">Search by Name</label>
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700">{t('organizations.searchByName')}</label>
               <input
                 type="text"
                 id="search"
-                placeholder="Search organizations..."
+                placeholder={t('organizations.searchPlaceholder')}
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="filterType" className="block text-sm font-medium text-gray-700">Filter by Type</label>
+              <label htmlFor="filterType" className="block text-sm font-medium text-gray-700">{t('organizations.filterByType')}</label>
               <select
                 id="filterType"
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
               >
-                <option value="all">All Types</option>
+                <option value="all">{t('organizations.allTypes')}</option>
                 {Object.values(OrganizationType).map((type) => {
                   const config = getOrganizationTypeInfo(type);
                   return (
@@ -269,9 +273,9 @@ const Organizations = () => {
         // Cards View
         !loading && filteredOrganizations.length === 0 ? (
           <div className="text-center py-10 bg-white rounded-lg shadow-md">
-            <h3 className="text-xl font-semibold text-gray-700">No Organizations Found</h3>
+            <h3 className="text-xl font-semibold text-gray-700">{t('organizations.noOrganizationsFound')}</h3>
             <p className="text-gray-500 mt-2">
-              {organizations.length > 0 ? 'Try adjusting your search or filter criteria.' : 'There are no organizations in the system yet.'}
+              {organizations.length > 0 ? t('organizations.adjustSearchCriteria') : t('organizations.noOrganizationsYet')}
             </p>
           </div>
         ) : (
@@ -294,7 +298,7 @@ const Organizations = () => {
                         />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 border border-gray-200">
-                          <span className="text-gray-400 text-xs">No Logo</span>
+                          <span className="text-gray-400 text-xs">{t('organizations.noLogo')}</span>
                         </div>
                       )}
                       <h3 className="text-xl font-semibold text-gray-900">{org.name}</h3>
@@ -310,7 +314,7 @@ const Organizations = () => {
 
                   {org.parent_organization_name && (
                     <p className="text-gray-600 mb-2">
-                      <span className="font-medium">Parent:</span> {org.parent_organization_name}
+                      <span className="font-medium">{t('organizations.parent')}:</span> {org.parent_organization_name}
                     </p>
                   )}
 
@@ -319,17 +323,17 @@ const Organizations = () => {
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                       }`}>
-                      {org.is_active ? 'Active' : 'Inactive'}
+                      {org.is_active ? t('users.activeStatus') : t('users.inactiveStatus')}
                     </span>
                   </div>
 
-                  {org.address && <p className="text-gray-600 mb-1 text-sm"><span className="font-medium">Address:</span> {org.address}</p>}
-                  {org.contact_info && <p className="text-gray-600 mb-1 text-sm"><span className="font-medium">Contact:</span> {org.contact_info}</p>}
+                  {org.address && <p className="text-gray-600 mb-1 text-sm"><span className="font-medium">{t('organizations.address')}:</span> {org.address}</p>}
+                  {org.contact_info && <p className="text-gray-600 mb-1 text-sm"><span className="font-medium">{t('organizations.contact')}:</span> {org.contact_info}</p>}
 
                   <div className="mt-4 flex justify-between items-center">
                     <div className="text-xs text-gray-500">
-                      <div>Warehouses: {org.warehouses_count || 0}</div>
-                      <div>Users: {org.users_count || 0}</div>
+                      <div>{t('organizations.warehouses')}: {org.warehouses_count || 0}</div>
+                      <div>{t('users.users')}: {org.users_count || 0}</div>
                     </div>
 
                     <PermissionGuard permission={PERMISSIONS.MANAGE_ORGANIZATIONS} hideIfNoPermission={true}>
@@ -338,13 +342,13 @@ const Organizations = () => {
                           onClick={() => openModal(org)}
                           className="bg-indigo-500 text-white py-1 px-3 rounded-md hover:bg-indigo-600 text-sm transition-colors"
                         >
-                          Edit
+                          {t('users.edit')}
                         </button>
                         <button
                           onClick={() => handleDelete(org.id)}
                           className="bg-red-500 text-white py-1 px-3 rounded-md hover:bg-red-600 text-sm transition-colors"
                         >
-                          Delete
+                          {t('common.delete')}
                         </button>
                       </div>
                     </PermissionGuard>
@@ -358,11 +362,11 @@ const Organizations = () => {
         // Hierarchy View
         <div className="bg-gray-50 p-6 rounded-lg">
           {loadingHierarchy ? (
-            <p className="text-gray-500">Loading hierarchy...</p>
+            <p className="text-gray-500">{t('organizations.loadingHierarchy')}</p>
           ) : hierarchyData.length === 0 ? (
             <div className="text-center py-10">
-              <h3 className="text-xl font-semibold text-gray-700">No Hierarchy Data</h3>
-              <p className="text-gray-500 mt-2">Unable to load organization hierarchy.</p>
+              <h3 className="text-xl font-semibold text-gray-700">{t('organizations.noHierarchyData')}</h3>
+              <p className="text-gray-500 mt-2">{t('organizations.unableToLoadHierarchy')}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -376,7 +380,7 @@ const Organizations = () => {
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={editingOrganization ? "Edit Organization" : "Add New Organization"}
+        title={editingOrganization ? t('organizations.editOrganization') : t('organizations.addNewOrganization')}
       >
         <OrganizationForm
           initialData={editingOrganization || {}}
