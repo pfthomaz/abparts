@@ -1208,5 +1208,161 @@
     "customerDesc": "المنظمات التي تشتري الآلات",
     "supplierLabel": "مورد",
     "supplierDesc": "موردو قطع الغيار من طرف ثالث"
+  },
+  "configuration": {
+    "title": "التكوين الإداري",
+    "subtitle": "إدارة إعدادات النظام والتفضيلات التنظيمية",
+    "accessDenied": "تم رفض الوصول",
+    "noPermission": "ليس لديك إذن للوصول إلى إعدادات التكوين.",
+    "loading": "تحميل إعدادات التكوين...",
+    "error": "خطأ",
+    "failedToLoad": "فشل في تحميل إعدادات التكوين. يرجى المحاولة مرة أخرى.",
+    "onlySuperadmin": "يمكن للمشرفين الفائقين فقط تهيئة التكوينات الافتراضية.",
+    "templates": "القوالب",
+    "importExport": "استيراد/تصدير",
+    "initializeDefaults": "تهيئة الافتراضيات",
+    "tabs": {
+      "organization": "إدارة المنظمة",
+      "parts": "إدارة القطع",
+      "userManagement": "إدارة المستخدمين",
+      "localization": "التوطين",
+      "system": "إعدادات النظام"
+    },
+    "category": {
+      "organization": {
+        "title": "إعدادات إدارة المنظمة",
+        "description": "تكوين الإعدادات الافتراضية لإنشاء وإدارة المنظمة"
+      },
+      "parts": {
+        "title": "إعدادات إدارة القطع",
+        "description": "تكوين إعدادات كتالوج القطع وإدارة المخزون"
+      },
+      "userManagement": {
+        "title": "إعدادات إدارة المستخدمين",
+        "description": "تكوين إعدادات المصادقة والتفويض والأمان للمستخدمين"
+      },
+      "localization": {
+        "title": "إعدادات التوطين",
+        "description": "تكوين تفضيلات اللغة والبلد والمنطقة"
+      },
+      "system": {
+        "title": "إعدادات النظام",
+        "description": "خيارات تكوين النظام المتقدمة (للمشرف الفائق فقط)"
+      },
+      "default": {
+        "title": "إعدادات التكوين",
+        "description": "خيارات تكوين النظام"
+      }
+    },
+    "search": {
+      "placeholder": "البحث في التكوينات..."
+    },
+    "showSystemManaged": "إظهار المُدارة بواسطة النظام",
+    "showingCount": "عرض {count} من {total} تكوين",
+    "noConfigurations": {
+      "title": "لم يتم العثور على تكوينات",
+      "searchMessage": "حاول تعديل مصطلحات البحث.",
+      "emptyMessage": "لا توجد تكوينات متاحة لهذه الفئة."
+    },
+    "tips": {
+      "title": "نصائح التكوين",
+      "organization": {
+        "1": "إعداد البلد الافتراضي يؤثر على إنشاء منظمة جديدة",
+        "2": "إعداد الإنشاء التلقائي للمستودع يحدد ما إذا كانت المستودعات تُنشأ تلقائياً",
+        "3": "حدود الموردين تساعد في إدارة التعقيد التنظيمي"
+      },
+      "parts": {
+        "1": "حدود الصور تؤثر على متطلبات التخزين وأداء الرفع",
+        "2": "التنسيقات المدعومة يجب أن توازن بين الجودة والتوافق",
+        "3": "عتبات المخزون تساعد في إدارة المخزون"
+      },
+      "userManagement": {
+        "1": "متطلبات كلمة المرور تؤثر على الأمان وتجربة المستخدم",
+        "2": "مهلة الجلسة توازن بين الأمان وسهولة الاستخدام",
+        "3": "حدود تسجيل الدخول الفاشل تساعد في منع هجمات القوة الغاشمة"
+      },
+      "localization": {
+        "1": "إعدادات اللغة تؤثر على عرض واجهة المستخدم",
+        "2": "إعدادات البلد تحدد تنسيقات التاريخ/الرقم",
+        "3": "دعم RTL مهم للمناطق العربية"
+      },
+      "system": {
+        "1": "إعدادات النظام قد تتطلب إعادة تشغيل التطبيق",
+        "2": "التغييرات في الإعدادات المُدارة بواسطة النظام يجب أن تتم بحذر",
+        "3": "اختبر دائماً تغييرات التكوين في بيئة التطوير أولاً"
+      }
+    },
+    "item": {
+      "systemManaged": "مُدار بواسطة النظام",
+      "requiresRestart": "يتطلب إعادة التشغيل",
+      "currentValue": "القيمة الحالية",
+      "defaultValue": "القيمة الافتراضية",
+      "validationRules": "قواعد التحقق",
+      "notSet": "غير محدد",
+      "enabled": "مُفعل",
+      "disabled": "مُعطل",
+      "selectValue": "اختر قيمة...",
+      "enterJson": "أدخل JSON صالح...",
+      "validating": "جاري التحقق...",
+      "edit": "تحرير",
+      "save": "حفظ",
+      "saving": "جاري الحفظ...",
+      "cancel": "إلغاء",
+      "dataType": "نوع البيانات",
+      "category": "الفئة",
+      "lastUpdated": "آخر تحديث",
+      "validationFailed": "فشل التحقق",
+      "failedToSave": "فشل في حفظ التكوين"
+    },
+    "dataType": {
+      "string": "نص",
+      "integer": "رقم",
+      "boolean": "نعم/لا",
+      "json": "JSON",
+      "enum": "اختيار"
+    },
+    "modal": {
+      "templates": "قوالب التكوين",
+      "importExport": "استيراد/تصدير التكوينات"
+    },
+    "configKeys": {
+      "org.default_country": "البلد الافتراضي",
+      "org.auto_create_warehouse": "إنشاء المستودع تلقائياً",
+      "org.max_suppliers_per_organization": "الحد الأقصى للموردين لكل منظمة",
+      "parts.max_photos_per_part": "الحد الأقصى للصور لكل قطعة",
+      "parts.photo_max_size_mb": "الحد الأقصى لحجم الصورة (ميجابايت)",
+      "parts.supported_photo_formats": "تنسيقات الصور المدعومة",
+      "user.password_min_length": "الحد الأدنى لطول كلمة المرور",
+      "user.session_timeout_minutes": "انتهاء مهلة الجلسة (دقائق)",
+      "user.max_failed_login_attempts": "الحد الأقصى لمحاولات تسجيل الدخول الفاشلة",
+      "locale.supported_languages": "اللغات المدعومة",
+      "locale.supported_countries": "البلدان المدعومة",
+      "locale.default_language": "اللغة الافتراضية",
+      "test.config": "تكوين الاختبار",
+      "test_update_value": "قيمة تحديث الاختبار"
+    },
+    "configDescriptions": {
+      "org.default_country": "البلد الافتراضي للمنظمات الجديدة",
+      "org.auto_create_warehouse": "إنشاء مستودع افتراضي تلقائياً للمنظمات الجديدة",
+      "org.max_suppliers_per_organization": "الحد الأقصى لعدد الموردين لكل منظمة",
+      "parts.max_photos_per_part": "الحد الأقصى لعدد الصور لكل قطعة",
+      "parts.photo_max_size_mb": "الحد الأقصى لحجم الصورة بالميجابايت",
+      "parts.supported_photo_formats": "تنسيقات الصور المدعومة للقطع",
+      "user.password_min_length": "الحد الأدنى لطول كلمة المرور",
+      "user.session_timeout_minutes": "انتهاء مهلة الجلسة بالدقائق",
+      "user.max_failed_login_attempts": "الحد الأقصى لمحاولات تسجيل الدخول الفاشلة قبل الحظر",
+      "locale.supported_languages": "اللغات المدعومة",
+      "locale.supported_countries": "البلدان المدعومة",
+      "locale.default_language": "اللغة الافتراضية للمستخدمين الجدد",
+      "test.config": "تكوين الاختبار",
+      "test_update_value": "قيمة تحديث الاختبار"
+    },
+    "validationRules": {
+      "allowed_values": "القيم المسموحة",
+      "min": "الحد الأدنى",
+      "max": "الحد الأقصى",
+      "min_length": "الحد الأدنى للطول",
+      "max_length": "الحد الأقصى للطول"
+    }
   }
 }

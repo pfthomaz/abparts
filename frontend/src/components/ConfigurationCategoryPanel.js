@@ -1,9 +1,11 @@
 // frontend/src/components/ConfigurationCategoryPanel.js
 
 import React, { useState } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import ConfigurationItem from './ConfigurationItem';
 
 const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSuperAdmin }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [showSystemManaged, setShowSystemManaged] = useState(false);
 
@@ -20,40 +22,40 @@ const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSupe
   const getCategoryInfo = (categoryName) => {
     const categoryInfo = {
       organization: {
-        title: 'Organization Management Settings',
-        description: 'Configure default settings for organization creation and management',
+        title: t('configuration.category.organization.title'),
+        description: t('configuration.category.organization.description'),
         icon: '🏢',
         color: 'blue'
       },
       parts: {
-        title: 'Parts Management Settings',
-        description: 'Configure settings for parts catalog and inventory management',
+        title: t('configuration.category.parts.title'),
+        description: t('configuration.category.parts.description'),
         icon: '🔧',
         color: 'green'
       },
       user_management: {
-        title: 'User Management Settings',
-        description: 'Configure user authentication, authorization, and security settings',
+        title: t('configuration.category.userManagement.title'),
+        description: t('configuration.category.userManagement.description'),
         icon: '👥',
         color: 'purple'
       },
       localization: {
-        title: 'Localization Settings',
-        description: 'Configure language, country, and regional preferences',
+        title: t('configuration.category.localization.title'),
+        description: t('configuration.category.localization.description'),
         icon: '🌍',
         color: 'yellow'
       },
       system: {
-        title: 'System Settings',
-        description: 'Advanced system configuration options (superadmin only)',
+        title: t('configuration.category.system.title'),
+        description: t('configuration.category.system.description'),
         icon: '⚙️',
         color: 'red'
       }
     };
 
     return categoryInfo[categoryName] || {
-      title: 'Configuration Settings',
-      description: 'System configuration options',
+      title: t('configuration.category.default.title'),
+      description: t('configuration.category.default.description'),
       icon: '⚙️',
       color: 'gray'
     };
@@ -80,7 +82,7 @@ const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSupe
           <div className="relative">
             <input
               type="text"
-              placeholder="Search configurations..."
+              placeholder={t('configuration.search.placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -100,7 +102,7 @@ const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSupe
                 onChange={(e) => setShowSystemManaged(e.target.checked)}
                 className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
               />
-              <span className="ml-2 text-sm text-gray-700">Show system-managed</span>
+              <span className="ml-2 text-sm text-gray-700">{t('configuration.showSystemManaged')}</span>
             </label>
           </div>
         )}
@@ -109,7 +111,10 @@ const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSupe
       {/* Configuration Count */}
       <div className="mb-4">
         <p className="text-sm text-gray-600">
-          Showing {filteredConfigurations.length} of {configurations.length} configurations
+          {t('configuration.showingCount', { 
+            count: filteredConfigurations.length, 
+            total: configurations.length 
+          })}
         </p>
       </div>
 
@@ -117,9 +122,9 @@ const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSupe
       {filteredConfigurations.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">📋</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No configurations found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('configuration.noConfigurations.title')}</h3>
           <p className="text-gray-600">
-            {searchTerm ? 'Try adjusting your search terms.' : 'No configurations available for this category.'}
+            {searchTerm ? t('configuration.noConfigurations.searchMessage') : t('configuration.noConfigurations.emptyMessage')}
           </p>
         </div>
       ) : (
@@ -139,42 +144,42 @@ const ConfigurationCategoryPanel = ({ category, configurations, onUpdate, isSupe
       <div className="mt-8 bg-gray-50 rounded-lg p-4">
         <h3 className="text-lg font-medium text-gray-900 mb-2">
           <span className="mr-2">💡</span>
-          Configuration Tips
+          {t('configuration.tips.title')}
         </h3>
         <div className="text-sm text-gray-700 space-y-2">
           {category === 'organization' && (
             <>
-              <p>• Default country setting affects new organization creation</p>
-              <p>• Auto-create warehouse setting determines if warehouses are created automatically</p>
-              <p>• Supplier limits help manage organizational complexity</p>
+              <p>• {t('configuration.tips.organization.1')}</p>
+              <p>• {t('configuration.tips.organization.2')}</p>
+              <p>• {t('configuration.tips.organization.3')}</p>
             </>
           )}
           {category === 'parts' && (
             <>
-              <p>• Photo limits affect storage requirements and upload performance</p>
-              <p>• Supported formats should balance quality and compatibility</p>
-              <p>• Inventory thresholds help with stock management</p>
+              <p>• {t('configuration.tips.parts.1')}</p>
+              <p>• {t('configuration.tips.parts.2')}</p>
+              <p>• {t('configuration.tips.parts.3')}</p>
             </>
           )}
           {category === 'user_management' && (
             <>
-              <p>• Password requirements affect security and user experience</p>
-              <p>• Session timeout balances security with usability</p>
-              <p>• Failed login limits help prevent brute force attacks</p>
+              <p>• {t('configuration.tips.userManagement.1')}</p>
+              <p>• {t('configuration.tips.userManagement.2')}</p>
+              <p>• {t('configuration.tips.userManagement.3')}</p>
             </>
           )}
           {category === 'localization' && (
             <>
-              <p>• Language settings affect the user interface display</p>
-              <p>• Country settings determine date/number formats</p>
-              <p>• RTL support is important for Arabic regions</p>
+              <p>• {t('configuration.tips.localization.1')}</p>
+              <p>• {t('configuration.tips.localization.2')}</p>
+              <p>• {t('configuration.tips.localization.3')}</p>
             </>
           )}
           {category === 'system' && (
             <>
-              <p>• System settings may require application restart</p>
-              <p>• Changes to system-managed settings should be made carefully</p>
-              <p>• Always test configuration changes in a development environment first</p>
+              <p>• {t('configuration.tips.system.1')}</p>
+              <p>• {t('configuration.tips.system.2')}</p>
+              <p>• {t('configuration.tips.system.3')}</p>
             </>
           )}
         </div>

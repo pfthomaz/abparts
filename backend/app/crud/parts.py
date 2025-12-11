@@ -26,10 +26,27 @@ def get_part_with_monitoring(db: Session, part_id: uuid.UUID):
     """Retrieve a single part by ID with performance monitoring."""
     return db.query(models.Part).filter(models.Part.id == part_id).first()
 
+def _add_image_urls_to_part(part):
+    """Helper function to add image URLs to a part object for frontend compatibility."""
+    part_dict = part.__dict__ if hasattr(part, '__dict__') else part
+    
+    # Convert binary image data to URLs for frontend compatibility
+    # Always use absolute URLs to bypass proxy issues
+    if hasattr(part, 'image_data') and part.image_data and len(part.image_data) > 0:
+        # Always use localhost:8000 for development to bypass frontend proxy
+        base_url = "http://localhost:8000"
+        generated_urls = [f"{base_url}/images/parts/{part.id}?index={i}" for i in range(len(part.image_data))]
+        part_dict["image_urls"] = generated_urls
+    else:
+        part_dict["image_urls"] = []
+    
+    return part_dict
+
 @monitor_performance("parts_crud.get_parts", param_keys=["skip", "limit"])
 def get_parts(db: Session, skip: int = 0, limit: int = 100):
     """Retrieve a list of parts."""
-    return db.query(models.Part).offset(skip).limit(limit).all()
+    parts = db.query(models.Part).offset(skip).limit(limit).all()
+    return [_add_image_urls_to_part(part) for part in parts]
 
 @monitor_performance("parts_crud.create_part")
 def create_part(db: Session, part: schemas.PartCreate):
@@ -148,7 +165,8 @@ def get_filtered_parts(db: Session, part_type: Optional[str] = None, is_propriet
         query = query.filter(models.Part.is_proprietary == is_proprietary)
     
     # Apply pagination
-    return query.offset(skip).limit(limit).all()
+    parts = query.offset(skip).limit(limit).all()
+    return [_add_image_urls_to_part(part) for part in parts]
 
 @monitor_performance("parts_crud.get_filtered_parts_with_count", param_keys=["part_type", "is_proprietary", "skip", "limit", "include_count"])
 def get_filtered_parts_with_count(db: Session, part_type: Optional[str] = None, is_proprietary: Optional[bool] = None, 
@@ -194,7 +212,7 @@ def get_filtered_parts_with_count(db: Session, part_type: Optional[str] = None, 
         items = items[:limit]  # Remove the extra item
     
     return {
-        "items": items,
+        "items": [_add_image_urls_to_part(part) for part in items],
         "total_count": total_count,
         "has_more": has_more
     }
@@ -335,7 +353,8 @@ def search_parts_multilingual(db: Session, search_term: str, part_type: Optional
         query = query.filter(models.Part.is_proprietary == is_proprietary)
     
     # Apply pagination and return results
-    return query.offset(skip).limit(limit).all()
+    parts = query.offset(skip).limit(limit).all()
+    return [_add_image_urls_to_part(part) for part in parts]
 
 @monitor_performance("parts_crud.search_parts_multilingual_with_count", param_keys=["part_type", "is_proprietary", "skip", "limit", "include_count"])
 def search_parts_multilingual_with_count(db: Session, search_term: str, part_type: Optional[str] = None, 
@@ -403,7 +422,7 @@ def search_parts_multilingual_with_count(db: Session, search_term: str, part_typ
         items = items[:limit]  # Remove the extra item
     
     return {
-        "items": items,
+        "items": [_add_image_urls_to_part(part) for part in items],
         "total_count": total_count,
         "has_more": has_more
     }
@@ -633,6 +652,14 @@ def get_part_with_inventory(db: Session, part_id: uuid.UUID, organization_id: Op
         "warehouse_inventory": warehouse_inventory,
         "is_low_stock": is_low_stock
     }
+    
+    # Convert binary image data to URLs for frontend compatibility
+    if part.image_data and len(part.image_data) > 0:
+        # Always use absolute URLs to bypass frontend proxy issues
+        base_url = "http://localhost:8000"
+        result["image_urls"] = [f"{base_url}/images/parts/{part.id}?index={i}" for i in range(len(part.image_data))]
+    else:
+        result["image_urls"] = []
     
     return result
 

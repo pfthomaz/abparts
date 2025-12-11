@@ -1,9 +1,18 @@
 // frontend/src/components/ConfigurationItem.js
 
 import React, { useState } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { api } from '../services/api';
 
 const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
+  const { t, getNamespace, currentLanguage } = useTranslation();
+  
+  // Debug: Log current language and test translation access
+  console.log(`🌍 Current language: ${currentLanguage}`);
+  console.log(`🧪 Test translation: ${t('configuration.title')}`);
+  
+  // Get configuration namespace for direct object access
+  const configNamespace = getNamespace('configuration');
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(configuration.value || '');
   const [isValidating, setIsValidating] = useState(false);
@@ -40,7 +49,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
 
     } catch (error) {
       console.error('Error validating configuration:', error);
-      return { isValid: false, error_message: 'Validation failed' };
+      return { isValid: false, error_message: t('configuration.item.validationFailed') };
     } finally {
       setIsValidating(false);
     }
@@ -69,7 +78,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
 
     } catch (error) {
       console.error('Error saving configuration:', error);
-      setValidationError('Failed to save configuration');
+      setValidationError(t('configuration.item.failedToSave'));
     } finally {
       setIsSaving(false);
     }
@@ -88,8 +97,8 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
       case 'boolean':
         return (
           <select {...commonProps}>
-            <option value="true">True</option>
-            <option value="false">False</option>
+            <option value="true">{t('configuration.item.enabled')}</option>
+            <option value="false">{t('configuration.item.disabled')}</option>
           </select>
         );
 
@@ -107,7 +116,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
         const allowedValues = configuration.validation_rules?.allowed_values || [];
         return (
           <select {...commonProps}>
-            <option value="">Select a value...</option>
+            <option value="">{t('configuration.item.selectValue')}</option>
             {allowedValues.map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -121,7 +130,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
           <textarea
             {...commonProps}
             rows={4}
-            placeholder="Enter valid JSON..."
+            placeholder={t('configuration.item.enterJson')}
           />
         );
 
@@ -141,7 +150,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
     const value = configuration.typed_value;
 
     if (value === null || value === undefined) {
-      return <span className="text-gray-400 italic">Not set</span>;
+      return <span className="text-gray-400 italic">{t('configuration.item.notSet')}</span>;
     }
 
     switch (configuration.data_type) {
@@ -149,7 +158,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
         return (
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
-            {value ? 'Enabled' : 'Disabled'}
+            {value ? t('configuration.item.enabled') : t('configuration.item.disabled')}
           </span>
         );
 
@@ -163,6 +172,38 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
       default:
         return <span className="font-mono">{String(value)}</span>;
     }
+  };
+
+  // Helper function to get translated configuration key
+  const getTranslatedKey = (key) => {
+    // Use namespace to get direct object access
+    const configKeys = configNamespace?.configKeys;
+    if (configKeys && configKeys[key]) {
+      console.log(`✅ Found translation for key: ${key} -> ${configKeys[key]}`);
+      return configKeys[key];
+    }
+    
+    // Fallback to dot notation
+    const translationKey = `configuration.configKeys.${key}`;
+    const translatedKey = t(translationKey);
+    console.log(`🔍 Translation lookup fallback: ${translationKey} -> ${translatedKey}`);
+    return translatedKey !== translationKey ? translatedKey : key;
+  };
+
+  // Helper function to get translated description
+  const getTranslatedDescription = (key, fallbackDescription) => {
+    // Use namespace to get direct object access
+    const configDescriptions = configNamespace?.configDescriptions;
+    if (configDescriptions && configDescriptions[key]) {
+      console.log(`✅ Found description for key: ${key} -> ${configDescriptions[key]}`);
+      return configDescriptions[key];
+    }
+    
+    // Fallback to dot notation
+    const translationKey = `configuration.configDescriptions.${key}`;
+    const translatedDesc = t(translationKey);
+    console.log(`🔍 Description lookup fallback: ${translationKey} -> ${translatedDesc}`);
+    return translatedDesc !== translationKey ? translatedDesc : fallbackDescription;
   };
 
   const getDataTypeIcon = (dataType) => {
@@ -186,20 +227,22 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
             <span className="text-lg mr-2">{getDataTypeIcon(configuration.data_type)}</span>
             <div>
               <h3 className="text-lg font-medium text-gray-900">
-                {configuration.key}
+                {getTranslatedKey(configuration.key)}
                 {configuration.is_system_managed && (
                   <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                    System Managed
+                    {t('configuration.item.systemManaged')}
                   </span>
                 )}
                 {configuration.requires_restart && (
                   <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                    Requires Restart
+                    {t('configuration.item.requiresRestart')}
                   </span>
                 )}
               </h3>
               {configuration.description && (
-                <p className="text-sm text-gray-600 mt-1">{configuration.description}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {getTranslatedDescription(configuration.key, configuration.description)}
+                </p>
               )}
             </div>
           </div>
@@ -207,7 +250,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
           {/* Configuration Value */}
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Current Value
+              {t('configuration.item.currentValue')}
             </label>
             {isEditing ? (
               <div>
@@ -215,7 +258,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
                 {isValidating && (
                   <p className="text-sm text-blue-600 mt-1">
                     <span className="animate-spin inline-block mr-1">⏳</span>
-                    Validating...
+                    {t('configuration.item.validating')}
                   </p>
                 )}
                 {validationError && (
@@ -236,7 +279,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
           {configuration.default_value && (
             <div className="mb-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Default Value
+                {t('configuration.item.defaultValue')}
               </label>
               <span className="text-sm text-gray-500 font-mono">
                 {configuration.default_value}
@@ -248,14 +291,19 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
           {configuration.validation_rules && (
             <div className="mb-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Validation Rules
+                {t('configuration.item.validationRules')}
               </label>
               <div className="text-sm text-gray-600">
-                {Object.entries(configuration.validation_rules).map(([rule, value]) => (
-                  <span key={rule} className="inline-block bg-gray-100 px-2 py-1 rounded mr-2 mb-1">
-                    {rule}: {Array.isArray(value) ? value.join(', ') : String(value)}
-                  </span>
-                ))}
+                {Object.entries(configuration.validation_rules).map(([rule, value]) => {
+                  // Use namespace for validation rules
+                  const validationRules = configNamespace?.validationRules;
+                  const ruleLabel = (validationRules && validationRules[rule]) || rule;
+                  return (
+                    <span key={rule} className="inline-block bg-gray-100 px-2 py-1 rounded mr-2 mb-1">
+                      {ruleLabel}: {Array.isArray(value) ? value.join(', ') : String(value)}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -272,14 +320,14 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
                     disabled={isSaving || isValidating}
                     className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSaving ? '💾 Saving...' : '💾 Save'}
+                    {isSaving ? `💾 ${t('configuration.item.saving')}` : `💾 ${t('configuration.item.save')}`}
                   </button>
                   <button
                     onClick={handleCancel}
                     disabled={isSaving}
                     className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50"
                   >
-                    ❌ Cancel
+                    ❌ {t('configuration.item.cancel')}
                   </button>
                 </>
               ) : (
@@ -287,7 +335,7 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
                   onClick={handleEdit}
                   className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                 >
-                  ✏️ Edit
+                  ✏️ {t('configuration.item.edit')}
                 </button>
               )}
             </div>
@@ -298,12 +346,12 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
       {/* Metadata */}
       <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500">
         <div className="flex justify-between">
-          <span>Data Type: {configuration.data_type}</span>
-          <span>Category: {configuration.category}</span>
+          <span>{t('configuration.item.dataType')}: {t(`configuration.dataType.${configuration.data_type}`)}</span>
+          <span>{t('configuration.item.category')}: {configuration.category}</span>
         </div>
         {configuration.updated_at && (
           <div className="mt-1">
-            Last updated: {new Date(configuration.updated_at).toLocaleString()}
+            {t('configuration.item.lastUpdated')}: {new Date(configuration.updated_at).toLocaleString()}
           </div>
         )}
       </div>

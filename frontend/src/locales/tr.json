@@ -1214,5 +1214,161 @@
     "customerDesc": "Makine satın alan organizasyonlar",
     "supplierLabel": "Tedarikçi",
     "supplierDesc": "Üçüncü taraf parça tedarikçileri"
+  },
+  "configuration": {
+    "title": "Yönetici Yapılandırması",
+    "subtitle": "Sistem ayarlarını ve organizasyonel tercihleri yönetin",
+    "accessDenied": "Erişim Reddedildi",
+    "noPermission": "Yapılandırma ayarlarına erişim izniniz yok.",
+    "loading": "Yapılandırma ayarları yükleniyor...",
+    "error": "Hata",
+    "failedToLoad": "Yapılandırma ayarları yüklenemedi. Lütfen tekrar deneyin.",
+    "onlySuperadmin": "Sadece süper yöneticiler varsayılan yapılandırmaları başlatabilir.",
+    "templates": "Şablonlar",
+    "importExport": "İçe/Dışa Aktar",
+    "initializeDefaults": "Varsayılanları Başlat",
+    "tabs": {
+      "organization": "Organizasyon Yönetimi",
+      "parts": "Parça Yönetimi",
+      "userManagement": "Kullanıcı Yönetimi",
+      "localization": "Yerelleştirme",
+      "system": "Sistem Ayarları"
+    },
+    "category": {
+      "organization": {
+        "title": "Organizasyon Yönetimi Ayarları",
+        "description": "Organizasyon oluşturma ve yönetimi için varsayılan ayarları yapılandırın"
+      },
+      "parts": {
+        "title": "Parça Yönetimi Ayarları",
+        "description": "Parça kataloğu ve envanter yönetimi ayarlarını yapılandırın"
+      },
+      "userManagement": {
+        "title": "Kullanıcı Yönetimi Ayarları",
+        "description": "Kullanıcı kimlik doğrulama, yetkilendirme ve güvenlik ayarlarını yapılandırın"
+      },
+      "localization": {
+        "title": "Yerelleştirme Ayarları",
+        "description": "Dil, ülke ve bölgesel tercihleri yapılandırın"
+      },
+      "system": {
+        "title": "Sistem Ayarları",
+        "description": "Gelişmiş sistem yapılandırma seçenekleri (sadece süper yönetici)"
+      },
+      "default": {
+        "title": "Yapılandırma Ayarları",
+        "description": "Sistem yapılandırma seçenekleri"
+      }
+    },
+    "search": {
+      "placeholder": "Yapılandırmaları ara..."
+    },
+    "showSystemManaged": "Sistem yönetimli olanları göster",
+    "showingCount": "{total} yapılandırmadan {count} tanesi gösteriliyor",
+    "noConfigurations": {
+      "title": "Yapılandırma bulunamadı",
+      "searchMessage": "Arama terimlerinizi ayarlamayı deneyin.",
+      "emptyMessage": "Bu kategori için mevcut yapılandırma yok."
+    },
+    "tips": {
+      "title": "Yapılandırma İpuçları",
+      "organization": {
+        "1": "Varsayılan ülke ayarı yeni organizasyon oluşturmayı etkiler",
+        "2": "Otomatik depo oluşturma ayarı, depoların otomatik olarak oluşturulup oluşturulmayacağını belirler",
+        "3": "Tedarikçi limitleri organizasyonel karmaşıklığı yönetmeye yardımcı olur"
+      },
+      "parts": {
+        "1": "Fotoğraf limitleri depolama gereksinimlerini ve yükleme performansını etkiler",
+        "2": "Desteklenen formatlar kalite ve uyumluluğu dengelemelidir",
+        "3": "Envanter eşikleri stok yönetimine yardımcı olur"
+      },
+      "userManagement": {
+        "1": "Şifre gereksinimleri güvenliği ve kullanıcı deneyimini etkiler",
+        "2": "Oturum zaman aşımı güvenlik ile kullanılabilirliği dengeler",
+        "3": "Başarısız giriş limitleri kaba kuvvet saldırılarını önlemeye yardımcı olur"
+      },
+      "localization": {
+        "1": "Dil ayarları kullanıcı arayüzü görüntüsünü etkiler",
+        "2": "Ülke ayarları tarih/sayı formatlarını belirler",
+        "3": "RTL desteği Arap bölgeleri için önemlidir"
+      },
+      "system": {
+        "1": "Sistem ayarları uygulama yeniden başlatması gerektirebilir",
+        "2": "Sistem yönetimli ayarlardaki değişiklikler dikkatli yapılmalıdır",
+        "3": "Yapılandırma değişikliklerini her zaman önce geliştirme ortamında test edin"
+      }
+    },
+    "item": {
+      "systemManaged": "Sistem Yönetimli",
+      "requiresRestart": "Yeniden Başlatma Gerektirir",
+      "currentValue": "Mevcut Değer",
+      "defaultValue": "Varsayılan Değer",
+      "validationRules": "Doğrulama Kuralları",
+      "notSet": "Ayarlanmamış",
+      "enabled": "Etkin",
+      "disabled": "Devre Dışı",
+      "selectValue": "Bir değer seçin...",
+      "enterJson": "Geçerli JSON girin...",
+      "validating": "Doğrulanıyor...",
+      "edit": "Düzenle",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "cancel": "İptal",
+      "dataType": "Veri Türü",
+      "category": "Kategori",
+      "lastUpdated": "Son güncelleme",
+      "validationFailed": "Doğrulama başarısız",
+      "failedToSave": "Yapılandırma kaydedilemedi"
+    },
+    "dataType": {
+      "string": "Metin",
+      "integer": "Sayı",
+      "boolean": "Evet/Hayır",
+      "json": "JSON",
+      "enum": "Seçim"
+    },
+    "modal": {
+      "templates": "Yapılandırma Şablonları",
+      "importExport": "Yapılandırmaları İçe/Dışa Aktar"
+    },
+    "configKeys": {
+      "org.default_country": "Varsayılan Ülke",
+      "org.auto_create_warehouse": "Otomatik Depo Oluştur",
+      "org.max_suppliers_per_organization": "Organizasyon Başına Maks. Tedarikçi",
+      "parts.max_photos_per_part": "Parça Başına Maks. Fotoğraf",
+      "parts.photo_max_size_mb": "Maks. Fotoğraf Boyutu (MB)",
+      "parts.supported_photo_formats": "Desteklenen Fotoğraf Formatları",
+      "user.password_min_length": "Min. Şifre Uzunluğu",
+      "user.session_timeout_minutes": "Oturum Zaman Aşımı (Dakika)",
+      "user.max_failed_login_attempts": "Maks. Başarısız Giriş Denemesi",
+      "locale.supported_languages": "Desteklenen Diller",
+      "locale.supported_countries": "Desteklenen Ülkeler",
+      "locale.default_language": "Varsayılan Dil",
+      "test.config": "Test Yapılandırması",
+      "test_update_value": "Test Güncelleme Değeri"
+    },
+    "configDescriptions": {
+      "org.default_country": "Yeni organizasyonlar için varsayılan ülke",
+      "org.auto_create_warehouse": "Yeni organizasyonlar için otomatik varsayılan depo oluştur",
+      "org.max_suppliers_per_organization": "Organizasyon başına maksimum tedarikçi sayısı",
+      "parts.max_photos_per_part": "Parça başına maksimum fotoğraf sayısı",
+      "parts.photo_max_size_mb": "MB cinsinden maksimum fotoğraf boyutu",
+      "parts.supported_photo_formats": "Parçalar için desteklenen fotoğraf formatları",
+      "user.password_min_length": "Minimum şifre uzunluğu",
+      "user.session_timeout_minutes": "Dakika cinsinden oturum zaman aşımı",
+      "user.max_failed_login_attempts": "Kilitleme öncesi maksimum başarısız giriş denemesi",
+      "locale.supported_languages": "Desteklenen diller",
+      "locale.supported_countries": "Desteklenen ülkeler",
+      "locale.default_language": "Yeni kullanıcılar için varsayılan dil",
+      "test.config": "Test yapılandırması",
+      "test_update_value": "Test güncelleme değeri"
+    },
+    "validationRules": {
+      "allowed_values": "İzin Verilen Değerler",
+      "min": "Minimum",
+      "max": "Maksimum",
+      "min_length": "Minimum Uzunluk",
+      "max_length": "Maksimum Uzunluk"
+    }
   }
 }

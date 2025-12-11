@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { api } from '../services/api';
+import { useTranslation } from '../hooks/useTranslation';
 import Modal from '../components/Modal';
 import ConfigurationCategoryPanel from '../components/ConfigurationCategoryPanel';
 import ConfigurationTemplateSelector from '../components/ConfigurationTemplateSelector';
@@ -10,6 +11,7 @@ import ConfigurationImportExport from '../components/ConfigurationImportExport';
 
 const Configuration = () => {
   const { user, token } = useAuth();
+  const { t } = useTranslation();
   const [configurations, setConfigurations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ const Configuration = () => {
 
   useEffect(() => {
     if (!isAdmin) {
-      setError('You do not have permission to access configuration settings.');
+      setError(t('configuration.noPermission'));
       setLoading(false);
       return;
     }
@@ -47,7 +49,7 @@ const Configuration = () => {
 
     } catch (error) {
       console.error('Error fetching configurations:', error);
-      setError('Failed to load configuration settings. Please try again.');
+      setError(t('configuration.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ const Configuration = () => {
 
   const handleInitializeDefaults = async () => {
     if (!isSuperAdmin) {
-      setError('Only superadmins can initialize default configurations.');
+      setError(t('configuration.onlySuperadmin'));
       return;
     }
 
@@ -92,11 +94,11 @@ const Configuration = () => {
   };
 
   const tabs = [
-    { id: 'organization', label: 'Organization Management', icon: '🏢' },
-    { id: 'parts', label: 'Parts Management', icon: '🔧' },
-    { id: 'user_management', label: 'User Management', icon: '👥' },
-    { id: 'localization', label: 'Localization', icon: '🌍' },
-    ...(isSuperAdmin ? [{ id: 'system', label: 'System Settings', icon: '⚙️' }] : [])
+    { id: 'organization', label: t('configuration.tabs.organization'), icon: '🏢' },
+    { id: 'parts', label: t('configuration.tabs.parts'), icon: '🔧' },
+    { id: 'user_management', label: t('configuration.tabs.userManagement'), icon: '👥' },
+    { id: 'localization', label: t('configuration.tabs.localization'), icon: '🌍' },
+    ...(isSuperAdmin ? [{ id: 'system', label: t('configuration.tabs.system'), icon: '⚙️' }] : [])
   ];
 
   if (!isAdmin) {
@@ -104,8 +106,8 @@ const Configuration = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
           <div className="text-red-500 text-6xl mb-4">🚫</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You do not have permission to access configuration settings.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('configuration.accessDenied')}</h2>
+          <p className="text-gray-600">{t('configuration.noPermission')}</p>
         </div>
       </div>
     );
@@ -116,7 +118,7 @@ const Configuration = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading configuration settings...</p>
+          <p className="text-gray-600">{t('configuration.loading')}</p>
         </div>
       </div>
     );
@@ -129,9 +131,9 @@ const Configuration = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Administrative Configuration</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('configuration.title')}</h1>
               <p className="text-gray-600 mt-2">
-                Manage system settings and organizational preferences
+                {t('configuration.subtitle')}
               </p>
             </div>
 
@@ -141,19 +143,19 @@ const Configuration = () => {
                   onClick={() => setShowTemplateModal(true)}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  📋 Templates
+                  📋 {t('configuration.templates')}
                 </button>
                 <button
                   onClick={() => setShowImportExportModal(true)}
                   className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  📤 Import/Export
+                  📤 {t('configuration.importExport')}
                 </button>
                 <button
                   onClick={handleInitializeDefaults}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  🔄 Initialize Defaults
+                  🔄 {t('configuration.initializeDefaults')}
                 </button>
               </div>
             )}
@@ -166,7 +168,7 @@ const Configuration = () => {
             <div className="flex">
               <div className="text-red-400 text-xl mr-3">⚠️</div>
               <div>
-                <h3 className="text-red-800 font-medium">Error</h3>
+                <h3 className="text-red-800 font-medium">{t('configuration.error')}</h3>
                 <p className="text-red-700 mt-1">{error}</p>
               </div>
             </div>
@@ -209,7 +211,7 @@ const Configuration = () => {
           <Modal
             isOpen={showTemplateModal}
             onClose={() => setShowTemplateModal(false)}
-            title="Configuration Templates"
+            title={t('configuration.modal.templates')}
             size="large"
           >
             <ConfigurationTemplateSelector
@@ -224,7 +226,7 @@ const Configuration = () => {
           <Modal
             isOpen={showImportExportModal}
             onClose={() => setShowImportExportModal(false)}
-            title="Import/Export Configurations"
+            title={t('configuration.modal.importExport')}
             size="large"
           >
             <ConfigurationImportExport

@@ -1214,5 +1214,161 @@
     "customerDesc": "Organisasjoner som kjøper maskiner",
     "supplierLabel": "Leverandør",
     "supplierDesc": "Tredjepartsleverandører av deler"
+  },
+  "configuration": {
+    "title": "Administrativ Konfigurasjon",
+    "subtitle": "Administrer systeminnstillinger og organisatoriske preferanser",
+    "accessDenied": "Tilgang Nektet",
+    "noPermission": "Du har ikke tillatelse til å få tilgang til konfigurasjonsinnstillinger.",
+    "loading": "Laster konfigurasjonsinnstillinger...",
+    "error": "Feil",
+    "failedToLoad": "Kunne ikke laste konfigurasjonsinnstillinger. Vennligst prøv igjen.",
+    "onlySuperadmin": "Bare superadministratorer kan initialisere standardkonfigurasjoner.",
+    "templates": "Maler",
+    "importExport": "Import/Eksport",
+    "initializeDefaults": "Initialiser Standarder",
+    "tabs": {
+      "organization": "Organisasjonsstyring",
+      "parts": "Delstyring",
+      "userManagement": "Brukerstyring",
+      "localization": "Lokalisering",
+      "system": "Systeminnstillinger"
+    },
+    "category": {
+      "organization": {
+        "title": "Organisasjonsstyringsinnstillinger",
+        "description": "Konfigurer standardinnstillinger for organisasjonsopprettelse og -styring"
+      },
+      "parts": {
+        "title": "Delsstyringsinnstillinger",
+        "description": "Konfigurer innstillinger for delskatalog og lagerstyring"
+      },
+      "userManagement": {
+        "title": "Brukerstyringsinnstillinger",
+        "description": "Konfigurer brukerautentisering, autorisasjon og sikkerhetsinnstillinger"
+      },
+      "localization": {
+        "title": "Lokaliseringsinnstillinger",
+        "description": "Konfigurer språk-, land- og regionale preferanser"
+      },
+      "system": {
+        "title": "Systeminnstillinger",
+        "description": "Avanserte systemkonfigurasjonsalternativer (kun superadmin)"
+      },
+      "default": {
+        "title": "Konfigurasjonsinnstillinger",
+        "description": "Systemkonfigurasjonsalternativer"
+      }
+    },
+    "search": {
+      "placeholder": "Søk konfigurasjoner..."
+    },
+    "showSystemManaged": "Vis systemadministrerte",
+    "showingCount": "Viser {count} av {total} konfigurasjoner",
+    "noConfigurations": {
+      "title": "Ingen konfigurasjoner funnet",
+      "searchMessage": "Prøv å justere søkeordene dine.",
+      "emptyMessage": "Ingen konfigurasjoner tilgjengelig for denne kategorien."
+    },
+    "tips": {
+      "title": "Konfigurasjonstips",
+      "organization": {
+        "1": "Standard landinnstilling påvirker opprettelse av ny organisasjon",
+        "2": "Auto-opprett lager-innstilling bestemmer om lagre opprettes automatisk",
+        "3": "Leverandørgrenser hjelper med å administrere organisatorisk kompleksitet"
+      },
+      "parts": {
+        "1": "Fotobegrensninger påvirker lagringskrav og opplastingsytelse",
+        "2": "Støttede formater bør balansere kvalitet og kompatibilitet",
+        "3": "Lagerterskler hjelper med lagerstyring"
+      },
+      "userManagement": {
+        "1": "Passordkrav påvirker sikkerhet og brukeropplevelse",
+        "2": "Øktutløp balanserer sikkerhet med brukervennlighet",
+        "3": "Mislykkede påloggingsgrenser hjelper med å forhindre brute force-angrep"
+      },
+      "localization": {
+        "1": "Språkinnstillinger påvirker brukergrensesnittvisning",
+        "2": "Landinnstillinger bestemmer dato-/tallformater",
+        "3": "RTL-støtte er viktig for arabiske regioner"
+      },
+      "system": {
+        "1": "Systeminnstillinger kan kreve omstart av applikasjon",
+        "2": "Endringer i systemadministrerte innstillinger bør gjøres forsiktig",
+        "3": "Test alltid konfigurasjonsendringer i et utviklingsmiljø først"
+      }
+    },
+    "item": {
+      "systemManaged": "Systemadministrert",
+      "requiresRestart": "Krever Omstart",
+      "currentValue": "Nåværende Verdi",
+      "defaultValue": "Standardverdi",
+      "validationRules": "Valideringsregler",
+      "notSet": "Ikke satt",
+      "enabled": "Aktivert",
+      "disabled": "Deaktivert",
+      "selectValue": "Velg en verdi...",
+      "enterJson": "Skriv inn gyldig JSON...",
+      "validating": "Validerer...",
+      "edit": "Rediger",
+      "save": "Lagre",
+      "saving": "Lagrer...",
+      "cancel": "Avbryt",
+      "dataType": "Datatype",
+      "category": "Kategori",
+      "lastUpdated": "Sist oppdatert",
+      "validationFailed": "Validering mislyktes",
+      "failedToSave": "Kunne ikke lagre konfigurasjon"
+    },
+    "dataType": {
+      "string": "Tekst",
+      "integer": "Tall",
+      "boolean": "Ja/Nei",
+      "json": "JSON",
+      "enum": "Valg"
+    },
+    "modal": {
+      "templates": "Konfigurasjonsmaler",
+      "importExport": "Import/Eksporter Konfigurasjoner"
+    },
+    "configKeys": {
+      "org.default_country": "Standard Land",
+      "org.auto_create_warehouse": "Opprett Lager Automatisk",
+      "org.max_suppliers_per_organization": "Maks. Leverandører per Organisasjon",
+      "parts.max_photos_per_part": "Maks. Bilder per Del",
+      "parts.photo_max_size_mb": "Maks. Bildestørrelse (MB)",
+      "parts.supported_photo_formats": "Støttede Bildeformater",
+      "user.password_min_length": "Min. Passordlengde",
+      "user.session_timeout_minutes": "Økt Tidsavbrudd (Minutter)",
+      "user.max_failed_login_attempts": "Maks. Mislykkede Påloggingsforsøk",
+      "locale.supported_languages": "Støttede Språk",
+      "locale.supported_countries": "Støttede Land",
+      "locale.default_language": "Standard Språk",
+      "test.config": "Testkonfigurasjon",
+      "test_update_value": "Test Oppdateringsverdi"
+    },
+    "configDescriptions": {
+      "org.default_country": "Standard land for nye organisasjoner",
+      "org.auto_create_warehouse": "Opprett automatisk standardlager for nye organisasjoner",
+      "org.max_suppliers_per_organization": "Maksimalt antall leverandører per organisasjon",
+      "parts.max_photos_per_part": "Maksimalt antall bilder per del",
+      "parts.photo_max_size_mb": "Maksimal bildestørrelse i MB",
+      "parts.supported_photo_formats": "Støttede bildeformater for deler",
+      "user.password_min_length": "Minimum passordlengde",
+      "user.session_timeout_minutes": "Økt tidsavbrudd i minutter",
+      "user.max_failed_login_attempts": "Maksimale mislykkede påloggingsforsøk før låsing",
+      "locale.supported_languages": "Støttede språk",
+      "locale.supported_countries": "Støttede land",
+      "locale.default_language": "Standard språk for nye brukere",
+      "test.config": "Testkonfigurasjon",
+      "test_update_value": "Test oppdateringsverdi"
+    },
+    "validationRules": {
+      "allowed_values": "Tillatte Verdier",
+      "min": "Minimum",
+      "max": "Maksimum",
+      "min_length": "Minimum Lengde",
+      "max_length": "Maksimum Lengde"
+    }
   }
 }

@@ -1208,5 +1208,161 @@
     "customerDesc": "Organizations that purchase machines",
     "supplierLabel": "Supplier",
     "supplierDesc": "Third-party parts suppliers"
+  },
+  "configuration": {
+    "title": "Administrative Configuration",
+    "subtitle": "Manage system settings and organizational preferences",
+    "accessDenied": "Access Denied",
+    "noPermission": "You do not have permission to access configuration settings.",
+    "loading": "Loading configuration settings...",
+    "error": "Error",
+    "failedToLoad": "Failed to load configuration settings. Please try again.",
+    "onlySuperadmin": "Only superadmins can initialize default configurations.",
+    "templates": "Templates",
+    "importExport": "Import/Export",
+    "initializeDefaults": "Initialize Defaults",
+    "tabs": {
+      "organization": "Organization Management",
+      "parts": "Parts Management",
+      "userManagement": "User Management",
+      "localization": "Localization",
+      "system": "System Settings"
+    },
+    "category": {
+      "organization": {
+        "title": "Organization Management Settings",
+        "description": "Configure default settings for organization creation and management"
+      },
+      "parts": {
+        "title": "Parts Management Settings",
+        "description": "Configure settings for parts catalog and inventory management"
+      },
+      "userManagement": {
+        "title": "User Management Settings",
+        "description": "Configure user authentication, authorization, and security settings"
+      },
+      "localization": {
+        "title": "Localization Settings",
+        "description": "Configure language, country, and regional preferences"
+      },
+      "system": {
+        "title": "System Settings",
+        "description": "Advanced system configuration options (superadmin only)"
+      },
+      "default": {
+        "title": "Configuration Settings",
+        "description": "System configuration options"
+      }
+    },
+    "search": {
+      "placeholder": "Search configurations..."
+    },
+    "showSystemManaged": "Show system-managed",
+    "showingCount": "Showing {count} of {total} configurations",
+    "noConfigurations": {
+      "title": "No configurations found",
+      "searchMessage": "Try adjusting your search terms.",
+      "emptyMessage": "No configurations available for this category."
+    },
+    "tips": {
+      "title": "Configuration Tips",
+      "organization": {
+        "1": "Default country setting affects new organization creation",
+        "2": "Auto-create warehouse setting determines if warehouses are created automatically",
+        "3": "Supplier limits help manage organizational complexity"
+      },
+      "parts": {
+        "1": "Photo limits affect storage requirements and upload performance",
+        "2": "Supported formats should balance quality and compatibility",
+        "3": "Inventory thresholds help with stock management"
+      },
+      "userManagement": {
+        "1": "Password requirements affect security and user experience",
+        "2": "Session timeout balances security with usability",
+        "3": "Failed login limits help prevent brute force attacks"
+      },
+      "localization": {
+        "1": "Language settings affect the user interface display",
+        "2": "Country settings determine date/number formats",
+        "3": "RTL support is important for Arabic regions"
+      },
+      "system": {
+        "1": "System settings may require application restart",
+        "2": "Changes to system-managed settings should be made carefully",
+        "3": "Always test configuration changes in a development environment first"
+      }
+    },
+    "item": {
+      "systemManaged": "System Managed",
+      "requiresRestart": "Requires Restart",
+      "currentValue": "Current Value",
+      "defaultValue": "Default Value",
+      "validationRules": "Validation Rules",
+      "notSet": "Not set",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "selectValue": "Select a value...",
+      "enterJson": "Enter valid JSON...",
+      "validating": "Validating...",
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "dataType": "Data Type",
+      "category": "Category",
+      "lastUpdated": "Last updated",
+      "validationFailed": "Validation failed",
+      "failedToSave": "Failed to save configuration"
+    },
+    "dataType": {
+      "string": "Text",
+      "integer": "Number",
+      "boolean": "Yes/No",
+      "json": "JSON",
+      "enum": "Selection"
+    },
+    "modal": {
+      "templates": "Configuration Templates",
+      "importExport": "Import/Export Configurations"
+    },
+    "configKeys": {
+      "org.default_country": "Default Country",
+      "org.auto_create_warehouse": "Auto-Create Warehouse",
+      "org.max_suppliers_per_organization": "Max Suppliers per Organization",
+      "parts.max_photos_per_part": "Max Photos per Part",
+      "parts.photo_max_size_mb": "Max Photo Size (MB)",
+      "parts.supported_photo_formats": "Supported Photo Formats",
+      "user.password_min_length": "Minimum Password Length",
+      "user.session_timeout_minutes": "Session Timeout (Minutes)",
+      "user.max_failed_login_attempts": "Max Failed Login Attempts",
+      "locale.supported_languages": "Supported Languages",
+      "locale.supported_countries": "Supported Countries",
+      "locale.default_language": "Default Language",
+      "test.config": "Test Configuration",
+      "test_update_value": "Test Update Value"
+    },
+    "configDescriptions": {
+      "org.default_country": "Default country for new organizations",
+      "org.auto_create_warehouse": "Automatically create default warehouse for new organizations",
+      "org.max_suppliers_per_organization": "Maximum number of suppliers per organization",
+      "parts.max_photos_per_part": "Maximum number of photos per part",
+      "parts.photo_max_size_mb": "Maximum photo size in MB",
+      "parts.supported_photo_formats": "Supported photo formats for parts",
+      "user.password_min_length": "Minimum password length",
+      "user.session_timeout_minutes": "Session timeout in minutes",
+      "user.max_failed_login_attempts": "Maximum failed login attempts before lockout",
+      "locale.supported_languages": "Supported languages",
+      "locale.supported_countries": "Supported countries",
+      "locale.default_language": "Default language for new users",
+      "test.config": "Test configuration",
+      "test_update_value": "Test update value"
+    },
+    "validationRules": {
+      "allowed_values": "Allowed Values",
+      "min": "Minimum",
+      "max": "Maximum",
+      "min_length": "Minimum Length",
+      "max_length": "Maximum Length"
+    }
   }
 }

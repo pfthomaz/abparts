@@ -1214,5 +1214,161 @@
     "customerDesc": "Organizaciones que compran máquinas",
     "supplierLabel": "Proveedor",
     "supplierDesc": "Proveedores de piezas de terceros"
+  },
+  "configuration": {
+    "title": "Configuración Administrativa",
+    "subtitle": "Gestionar configuraciones del sistema y preferencias organizacionales",
+    "accessDenied": "Acceso Denegado",
+    "noPermission": "No tienes permisos para acceder a las configuraciones.",
+    "loading": "Cargando configuraciones...",
+    "error": "Error",
+    "failedToLoad": "Error al cargar las configuraciones. Por favor, inténtalo de nuevo.",
+    "onlySuperadmin": "Solo los superadministradores pueden inicializar configuraciones predeterminadas.",
+    "templates": "Plantillas",
+    "importExport": "Importar/Exportar",
+    "initializeDefaults": "Inicializar Predeterminados",
+    "tabs": {
+      "organization": "Gestión de Organización",
+      "parts": "Gestión de Piezas",
+      "userManagement": "Gestión de Usuarios",
+      "localization": "Localización",
+      "system": "Configuraciones del Sistema"
+    },
+    "category": {
+      "organization": {
+        "title": "Configuraciones de Gestión de Organización",
+        "description": "Configurar ajustes predeterminados para creación y gestión de organización"
+      },
+      "parts": {
+        "title": "Configuraciones de Gestión de Piezas",
+        "description": "Configurar ajustes para catálogo de piezas y gestión de inventario"
+      },
+      "userManagement": {
+        "title": "Configuraciones de Gestión de Usuarios",
+        "description": "Configurar autenticación, autorización y configuraciones de seguridad de usuarios"
+      },
+      "localization": {
+        "title": "Configuraciones de Localización",
+        "description": "Configurar preferencias de idioma, país y región"
+      },
+      "system": {
+        "title": "Configuraciones del Sistema",
+        "description": "Opciones avanzadas de configuración del sistema (solo superadmin)"
+      },
+      "default": {
+        "title": "Configuraciones",
+        "description": "Opciones de configuración del sistema"
+      }
+    },
+    "search": {
+      "placeholder": "Buscar configuraciones..."
+    },
+    "showSystemManaged": "Mostrar gestionadas por sistema",
+    "showingCount": "Mostrando {count} de {total} configuraciones",
+    "noConfigurations": {
+      "title": "No se encontraron configuraciones",
+      "searchMessage": "Intenta ajustar los términos de búsqueda.",
+      "emptyMessage": "No hay configuraciones disponibles para esta categoría."
+    },
+    "tips": {
+      "title": "Consejos de Configuración",
+      "organization": {
+        "1": "La configuración de país predeterminado afecta la creación de nueva organización",
+        "2": "La configuración de auto-crear almacén determina si los almacenes se crean automáticamente",
+        "3": "Los límites de proveedores ayudan a gestionar la complejidad organizacional"
+      },
+      "parts": {
+        "1": "Los límites de fotos afectan los requisitos de almacenamiento y rendimiento de carga",
+        "2": "Los formatos soportados deben equilibrar calidad y compatibilidad",
+        "3": "Los umbrales de inventario ayudan con la gestión de stock"
+      },
+      "userManagement": {
+        "1": "Los requisitos de contraseña afectan la seguridad y experiencia del usuario",
+        "2": "El tiempo de espera de sesión equilibra seguridad con usabilidad",
+        "3": "Los límites de inicio de sesión fallido ayudan a prevenir ataques de fuerza bruta"
+      },
+      "localization": {
+        "1": "Las configuraciones de idioma afectan la visualización de la interfaz de usuario",
+        "2": "Las configuraciones de país determinan los formatos de fecha/número",
+        "3": "El soporte RTL es importante para regiones árabes"
+      },
+      "system": {
+        "1": "Las configuraciones del sistema pueden requerir reinicio de la aplicación",
+        "2": "Los cambios en configuraciones gestionadas por el sistema deben hacerse cuidadosamente",
+        "3": "Siempre prueba los cambios de configuración en un entorno de desarrollo primero"
+      }
+    },
+    "item": {
+      "systemManaged": "Gestionado por Sistema",
+      "requiresRestart": "Requiere Reinicio",
+      "currentValue": "Valor Actual",
+      "defaultValue": "Valor Predeterminado",
+      "validationRules": "Reglas de Validación",
+      "notSet": "No establecido",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "selectValue": "Selecciona un valor...",
+      "enterJson": "Ingresa JSON válido...",
+      "validating": "Validando...",
+      "edit": "Editar",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "cancel": "Cancelar",
+      "dataType": "Tipo de Datos",
+      "category": "Categoría",
+      "lastUpdated": "Última actualización",
+      "validationFailed": "La validación falló",
+      "failedToSave": "Error al guardar configuración"
+    },
+    "dataType": {
+      "string": "Texto",
+      "integer": "Número",
+      "boolean": "Sí/No",
+      "json": "JSON",
+      "enum": "Selección"
+    },
+    "modal": {
+      "templates": "Plantillas de Configuración",
+      "importExport": "Importar/Exportar Configuraciones"
+    },
+    "configKeys": {
+      "org.default_country": "País Predeterminado",
+      "org.auto_create_warehouse": "Crear Almacén Automáticamente",
+      "org.max_suppliers_per_organization": "Máx. Proveedores por Organización",
+      "parts.max_photos_per_part": "Máx. Fotos por Pieza",
+      "parts.photo_max_size_mb": "Tamaño Máx. de Foto (MB)",
+      "parts.supported_photo_formats": "Formatos de Foto Soportados",
+      "user.password_min_length": "Longitud Mín. de Contraseña",
+      "user.session_timeout_minutes": "Tiempo de Espera de Sesión (Minutos)",
+      "user.max_failed_login_attempts": "Máx. Intentos de Inicio Fallidos",
+      "locale.supported_languages": "Idiomas Soportados",
+      "locale.supported_countries": "Países Soportados",
+      "locale.default_language": "Idioma Predeterminado",
+      "test.config": "Configuración de Prueba",
+      "test_update_value": "Valor de Actualización de Prueba"
+    },
+    "configDescriptions": {
+      "org.default_country": "País predeterminado para nuevas organizaciones",
+      "org.auto_create_warehouse": "Crear automáticamente almacén predeterminado para nuevas organizaciones",
+      "org.max_suppliers_per_organization": "Número máximo de proveedores por organización",
+      "parts.max_photos_per_part": "Número máximo de fotos por pieza",
+      "parts.photo_max_size_mb": "Tamaño máximo de foto en MB",
+      "parts.supported_photo_formats": "Formatos de foto soportados para piezas",
+      "user.password_min_length": "Longitud mínima de contraseña",
+      "user.session_timeout_minutes": "Tiempo de espera de sesión en minutos",
+      "user.max_failed_login_attempts": "Máximo de intentos de inicio fallidos antes del bloqueo",
+      "locale.supported_languages": "Idiomas soportados",
+      "locale.supported_countries": "Países soportados",
+      "locale.default_language": "Idioma predeterminado para nuevos usuarios",
+      "test.config": "Configuración de prueba",
+      "test_update_value": "Valor de actualización de prueba"
+    },
+    "validationRules": {
+      "allowed_values": "Valores Permitidos",
+      "min": "Mínimo",
+      "max": "Máximo",
+      "min_length": "Longitud Mínima",
+      "max_length": "Longitud Máxima"
+    }
   }
 }
