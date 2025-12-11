@@ -1,6 +1,7 @@
 // frontend/src/services/maintenanceProtocolsService.js
 
 import { api } from './api';
+import translationService from './translationService';
 
 // Protocol Management
 
@@ -58,8 +59,31 @@ export const reorderChecklistItems = async (protocolId, itemOrders) => {
 
 // User-facing endpoints
 
-export const getProtocolsForMachine = async (machineId) => {
-  return api.get(`/maintenance-protocols/for-machine/${machineId}`);
+export const getProtocolsForMachine = async (machineId, userLanguage = null) => {
+  const protocols = await api.get(`/maintenance-protocols/for-machine/${machineId}`);
+  
+  if (!userLanguage || userLanguage === 'en') {
+    return protocols;
+  }
+  
+  // Get localized versions
+  const localizedProtocols = await Promise.all(
+    protocols.map(async (protocol) => {
+      try {
+        const localizedProtocol = await translationService.getLocalizedProtocol(protocol.id, userLanguage);
+        return {
+          ...protocol,
+          name: localizedProtocol.name || protocol.name,
+          description: localizedProtocol.description || protocol.description,
+          isTranslated: localizedProtocol.isTranslated || false
+        };
+      } catch (error) {
+        return protocol;
+      }
+    })
+  );
+  
+  return localizedProtocols;
 };
 
 export const getExecutions = async (skip = 0, limit = 100) => {
@@ -89,3 +113,66 @@ export const getPendingReminders = async () => {
 export const acknowledgeReminder = async (reminderId) => {
   return api.put(`/maintenance-protocols/reminders/${reminderId}/acknowledge`);
 };
+
+// Localized Protocol Functions (Language-aware)
+
+export const getLocalizedProtocols = async (filters = {}, userLanguage = null) => {
+  // Get base protocols first
+  const protocols = await listProtocols(filters);
+  
+  if (!userLanguage || userLanguage === 'en') {
+    return protocols;
+  }
+  
+  // Get localized versions for each protocol
+  const localizedProtocols = await Promise.all(
+    protocols.map(async (protocol) => {
+      try {
+        const localizedProtocol = await translationService.getLocalizedProtocol(protocol.id, userLanguage);
+        return {
+          ...protocol,
+          name: localizedProtocol.name || protocol.name,
+          description: localizedProtocol.description || protocol.description,
+          isTranslated: localizedProtocol.isTranslated || false
+        };
+      } catch (error) {
+        // If translation fails, return original protocol
+        console.warn(`Failed to get translation for protocol ${protocol.id}:`, error);
+        return protocol;
+      }
+    })
+  );
+  
+  return localizedProtocols;
+};
+
+export const getLocalizedProtocol = async (protocolId, userLanguage = null) => {
+  if (!userLanguage || userLanguage === 'en') {
+    return getProtocol(protocolId);
+  }
+  
+  try {
+    const localizedProtocol = await translationService.getLocalizedProtocol(protocolId, userLanguage);
+    return localizedProtocol;
+  } catch (error) {
+    // Fallback to original protocol
+    console.warn(`Failed to get localized protocol ${protocolId}:`, error);
+    return getProtocol(protocolId);
+  }
+};
+
+export const getLocalizedChecklistItems = async (protocolId, userLanguage = null) => {
+  if (!userLanguage || userLanguage === 'en') {
+    return getChecklistItems(protocolId);
+  }
+  
+  try {
+    const localizedItems = await translationService.getLocalizedChecklistItems(protocolId, userLanguage);
+    return localizedItems;
+  } catch (error) {
+    // Fallback to original checklist items
+    console.warn(`Failed to get localized checklist items for protocol ${protocolId}:`, error);
+    return getChecklistItems(protocolId);
+  }
+};
+

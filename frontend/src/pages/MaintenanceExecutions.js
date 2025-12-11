@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { machinesService } from '../services/machinesService';
-import { listProtocols, createExecution, getExecutions } from '../services/maintenanceProtocolsService';
+import { getLocalizedProtocols, createExecution, getExecutions } from '../services/maintenanceProtocolsService';
 import ExecutionForm from '../components/ExecutionForm';
 import ExecutionHistory from '../components/ExecutionHistory';
 
@@ -41,7 +41,7 @@ const MaintenanceExecutions = () => {
       setLoading(true);
       const [machinesData, protocolsData, executionsData] = await Promise.all([
         machinesService.getMachines(),
-        listProtocols(),
+        getLocalizedProtocols({}, user.preferred_language),
         getExecutions()
       ]);
       console.log('Loaded executions:', executionsData);

@@ -87,7 +87,9 @@
       "inventory": "المخزون",
       "operations": "العمليات",
       "administration": "الإدارة"
-    }
+    },
+    "protocolTranslations": "ترجمات البروتوكولات",
+    "protocolTranslationsDescription": "إدارة ترجمات البروتوكولات متعددة اللغات"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -1508,5 +1510,61 @@
       "global": "عالمي",
       "organization": "منظمة"
     }
+  },
+  "translations": {
+    "manageTranslations": "إدارة الترجمات",
+    "manageTranslationsDescription": "ترجمة بروتوكولات الصيانة وعناصر قائمة التحقق إلى لغات مختلفة",
+    "overview": "نظرة عامة",
+    "noStatus": "لا توجد حالة ترجمة متاحة",
+    "baseLanguage": "اللغة الأساسية",
+    "totalItems": "إجمالي العناصر",
+    "completedLanguages": "اللغات المكتملة",
+    "progress": "التقدم",
+    "edit": "تحرير",
+    "start": "بدء",
+    "checklist": "قائمة التحقق",
+    "quickActions": "إجراءات سريعة",
+    "exportTranslations": "تصدير الترجمات",
+    "importTranslations": "استيراد الترجمات",
+    "bulkTranslate": "ترجمة مجمعة",
+    "editTranslation": "تحرير الترجمة",
+    "createTranslation": "إنشاء ترجمة",
+    "translateProtocolTo": "ترجمة البروتوكول إلى",
+    "originalContent": "المحتوى الأصلي",
+    "translationContent": "محتوى الترجمة",
+    "enterTranslation": "أدخل الترجمة...",
+    "translationTips": "نصائح الترجمة",
+    "tip1": "احتفظ بمعنى وسياق النص الأصلي",
+    "tip2": "استخدم المصطلحات التقنية المناسبة للغتك",
+    "tip3": "اعتبر الاختلافات الثقافية عند الترجمة",
+    "tip4": "حافظ على الاتساق عبر جميع الترجمات",
+    "translateChecklist": "ترجمة عناصر قائمة التحقق",
+    "translateTo": "ترجمة إلى",
+    "translationProgress": "تقدم الترجمة",
+    "checklistItem": "عنصر قائمة التحقق",
+    "step": "خطوة",
+    "translated": "مترجم",
+    "pending": "معلق",
+    "completed": "مكتمل",
+    "saveAllTranslations": "حفظ جميع الترجمات",
+    "saveAll": "حفظ الكل",
+    "saving": "جاري الحفظ...",
+    "errors": {
+      "nameRequired": "اسم البروتوكول مطلوب",
+      "descriptionRequired": "الوصف مطلوب",
+      "saveFailed": "فشل في حفظ الترجمة"
+    },
+    "totalProtocols": "إجمالي البروتوكولات",
+    "fullyTranslated": "مترجم بالكامل",
+    "partiallyTranslated": "مترجم جزئياً",
+    "untranslated": "غير مترجم",
+    "allProtocols": "جميع البروتوكولات",
+    "languages": "اللغات",
+    "checklistItems": "عناصر قائمة التحقق",
+    "startTranslating": "بدء الترجمة",
+    "noProtocolsFound": "لم يتم العثور على بروتوكولات",
+    "noProtocolsYet": "لا توجد بروتوكولات متاحة بعد",
+    "tryDifferentSearch": "جرب تعديل معايير البحث أو التصفية",
+    "createProtocolsFirst": "أنشئ بروتوكولات الصيانة أولاً لتمكين الترجمات"
   }
 }

@@ -87,7 +87,9 @@
       "inventory": "Beholdning",
       "operations": "Operasjoner",
       "administration": "Administrasjon"
-    }
+    },
+    "protocolTranslations": "Protokolloversettelser",
+    "protocolTranslationsDescription": "Administrer flerspråklige protokolloversettelser"
   },
   "auth": {
     "login": "Logg inn",
@@ -1514,5 +1516,61 @@
       "global": "global",
       "organization": "organisasjon"
     }
+  },
+  "translations": {
+    "manageTranslations": "Administrer Oversettelser",
+    "manageTranslationsDescription": "Oversett vedlikeholdsprotokoller og sjekkliste-elementer til forskjellige språk",
+    "overview": "Oversikt",
+    "noStatus": "Ingen oversettelsestatus tilgjengelig",
+    "baseLanguage": "Grunnspråk",
+    "totalItems": "Totalt Elementer",
+    "completedLanguages": "Fullførte Språk",
+    "progress": "Fremgang",
+    "edit": "Rediger",
+    "start": "Start",
+    "checklist": "Sjekkliste",
+    "quickActions": "Hurtighandlinger",
+    "exportTranslations": "Eksporter Oversettelser",
+    "importTranslations": "Importer Oversettelser",
+    "bulkTranslate": "Masseoversetelse",
+    "editTranslation": "Rediger Oversettelse",
+    "createTranslation": "Opprett Oversettelse",
+    "translateProtocolTo": "Oversett protokoll til",
+    "originalContent": "Originalt Innhold",
+    "translationContent": "Oversettelsesinnhold",
+    "enterTranslation": "Skriv inn oversettelse...",
+    "translationTips": "Oversettelsetips",
+    "tip1": "Behold betydningen og konteksten til den opprinnelige teksten",
+    "tip2": "Bruk passende teknisk terminologi for ditt språk",
+    "tip3": "Vurder kulturelle forskjeller når du oversetter",
+    "tip4": "Oppretthold konsistens på tvers av alle oversettelser",
+    "translateChecklist": "Oversett Sjekkliste-elementer",
+    "translateTo": "Oversett til",
+    "translationProgress": "Oversettelsesframgang",
+    "checklistItem": "Sjekkliste-element",
+    "step": "Trinn",
+    "translated": "Oversatt",
+    "pending": "Venter",
+    "completed": "Fullført",
+    "saveAllTranslations": "Lagre alle oversettelser",
+    "saveAll": "Lagre Alle",
+    "saving": "Lagrer...",
+    "errors": {
+      "nameRequired": "Protokollnavn er påkrevd",
+      "descriptionRequired": "Beskrivelse er påkrevd",
+      "saveFailed": "Kunne ikke lagre oversettelse"
+    },
+    "totalProtocols": "Totalt Protokoller",
+    "fullyTranslated": "Fullstendig Oversatt",
+    "partiallyTranslated": "Delvis Oversatt",
+    "untranslated": "Ikke Oversatt",
+    "allProtocols": "Alle Protokoller",
+    "languages": "Språk",
+    "checklistItems": "sjekkliste-elementer",
+    "startTranslating": "Start Oversettelse",
+    "noProtocolsFound": "Ingen protokoller funnet",
+    "noProtocolsYet": "Ingen protokoller tilgjengelig ennå",
+    "tryDifferentSearch": "Prøv å justere søke- eller filterkriteriene dine",
+    "createProtocolsFirst": "Opprett vedlikeholdsprotokoller først for å aktivere oversettelser"
   }
 }

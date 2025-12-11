@@ -87,7 +87,9 @@
       "inventory": "Inventory",
       "operations": "Operations",
       "administration": "Administration"
-    }
+    },
+    "protocolTranslations": "Protocol Translations",
+    "protocolTranslationsDescription": "Manage multi-language protocol translations"
   },
   "auth": {
     "login": "Login",
@@ -1508,5 +1510,61 @@
       "global": "global",
       "organization": "organization"
     }
+  },
+  "translations": {
+    "manageTranslations": "Manage Translations",
+    "manageTranslationsDescription": "Translate maintenance protocols and checklist items into different languages",
+    "overview": "Overview",
+    "noStatus": "No translation status available",
+    "baseLanguage": "Base Language",
+    "totalItems": "Total Items",
+    "completedLanguages": "Completed Languages",
+    "progress": "Progress",
+    "edit": "Edit",
+    "start": "Start",
+    "checklist": "Checklist",
+    "quickActions": "Quick Actions",
+    "exportTranslations": "Export Translations",
+    "importTranslations": "Import Translations",
+    "bulkTranslate": "Bulk Translate",
+    "editTranslation": "Edit Translation",
+    "createTranslation": "Create Translation",
+    "translateProtocolTo": "Translate protocol to",
+    "originalContent": "Original Content",
+    "translationContent": "Translation Content",
+    "enterTranslation": "Enter translation...",
+    "translationTips": "Translation Tips",
+    "tip1": "Keep the meaning and context of the original text",
+    "tip2": "Use appropriate technical terminology for your language",
+    "tip3": "Consider cultural differences when translating",
+    "tip4": "Maintain consistency across all translations",
+    "translateChecklist": "Translate Checklist Items",
+    "translateTo": "Translate to",
+    "translationProgress": "Translation Progress",
+    "checklistItem": "Checklist Item",
+    "step": "Step",
+    "translated": "Translated",
+    "pending": "Pending",
+    "completed": "Completed",
+    "saveAllTranslations": "Save all translations",
+    "saveAll": "Save All",
+    "saving": "Saving...",
+    "errors": {
+      "nameRequired": "Protocol name is required",
+      "descriptionRequired": "Description is required",
+      "saveFailed": "Failed to save translation"
+    },
+    "totalProtocols": "Total Protocols",
+    "fullyTranslated": "Fully Translated",
+    "partiallyTranslated": "Partially Translated",
+    "untranslated": "Untranslated",
+    "allProtocols": "All Protocols",
+    "languages": "Languages",
+    "checklistItems": "checklist items",
+    "startTranslating": "Start Translating",
+    "noProtocolsFound": "No protocols found",
+    "noProtocolsYet": "No protocols available yet",
+    "tryDifferentSearch": "Try adjusting your search or filter criteria",
+    "createProtocolsFirst": "Create maintenance protocols first to enable translations"
   }
 }

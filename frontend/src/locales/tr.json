@@ -87,7 +87,9 @@
       "inventory": "Envanter",
       "operations": "İşlemler",
       "administration": "Yönetim"
-    }
+    },
+    "protocolTranslations": "Protokol Çevirileri",
+    "protocolTranslationsDescription": "Çok dilli protokol çevirilerini yönet"
   },
   "auth": {
     "login": "Giriş",
@@ -1514,5 +1516,61 @@
       "global": "küresel",
       "organization": "organizasyon"
     }
+  },
+  "translations": {
+    "manageTranslations": "Çevirileri Yönet",
+    "manageTranslationsDescription": "Bakım protokollerini ve kontrol listesi öğelerini farklı dillere çevirin",
+    "overview": "Genel Bakış",
+    "noStatus": "Kullanılabilir çeviri durumu yok",
+    "baseLanguage": "Temel Dil",
+    "totalItems": "Toplam Öğeler",
+    "completedLanguages": "Tamamlanan Diller",
+    "progress": "İlerleme",
+    "edit": "Düzenle",
+    "start": "Başla",
+    "checklist": "Kontrol Listesi",
+    "quickActions": "Hızlı İşlemler",
+    "exportTranslations": "Çevirileri Dışa Aktar",
+    "importTranslations": "Çevirileri İçe Aktar",
+    "bulkTranslate": "Toplu Çeviri",
+    "editTranslation": "Çeviriyi Düzenle",
+    "createTranslation": "Çeviri Oluştur",
+    "translateProtocolTo": "Protokolü şuna çevir",
+    "originalContent": "Orijinal İçerik",
+    "translationContent": "Çeviri İçeriği",
+    "enterTranslation": "Çeviri girin...",
+    "translationTips": "Çeviri İpuçları",
+    "tip1": "Orijinal metnin anlamını ve bağlamını koruyun",
+    "tip2": "Diliniz için uygun teknik terminoloji kullanın",
+    "tip3": "Çeviri yaparken kültürel farklılıkları göz önünde bulundurun",
+    "tip4": "Tüm çevirilerde tutarlılığı koruyun",
+    "translateChecklist": "Kontrol Listesi Öğelerini Çevir",
+    "translateTo": "Şuna çevir",
+    "translationProgress": "Çeviri İlerlemesi",
+    "checklistItem": "Kontrol Listesi Öğesi",
+    "step": "Adım",
+    "translated": "Çevrildi",
+    "pending": "Beklemede",
+    "completed": "Tamamlandı",
+    "saveAllTranslations": "Tüm çevirileri kaydet",
+    "saveAll": "Tümünü Kaydet",
+    "saving": "Kaydediliyor...",
+    "errors": {
+      "nameRequired": "Protokol adı gereklidir",
+      "descriptionRequired": "Açıklama gereklidir",
+      "saveFailed": "Çeviri kaydedilemedi"
+    },
+    "totalProtocols": "Toplam Protokoller",
+    "fullyTranslated": "Tamamen Çevrildi",
+    "partiallyTranslated": "Kısmen Çevrildi",
+    "untranslated": "Çevrilmedi",
+    "allProtocols": "Tüm Protokoller",
+    "languages": "Diller",
+    "checklistItems": "kontrol listesi öğeleri",
+    "startTranslating": "Çeviriye Başla",
+    "noProtocolsFound": "Protokol bulunamadı",
+    "noProtocolsYet": "Henüz mevcut protokol yok",
+    "tryDifferentSearch": "Arama veya filtre kriterlerinizi ayarlamayı deneyin",
+    "createProtocolsFirst": "Çevirileri etkinleştirmek için önce bakım protokolleri oluşturun"
   }
 }

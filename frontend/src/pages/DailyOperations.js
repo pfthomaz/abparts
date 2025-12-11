@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { machinesService } from '../services/machinesService';
-import { listProtocols, getExecutions } from '../services/maintenanceProtocolsService';
+import { getLocalizedProtocols, getExecutions } from '../services/maintenanceProtocolsService';
 import { useTranslation } from '../hooks/useTranslation';
 
 const DailyOperations = () => {
+  const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,7 +39,7 @@ const DailyOperations = () => {
       setLoading(true);
       const [machinesData, protocolsData, executionsData] = await Promise.all([
         machinesService.getMachines(),
-        listProtocols(),
+        getLocalizedProtocols({}, user?.preferred_language),
         getExecutions()
       ]);
 

@@ -355,6 +355,22 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Protocol Translations - super admin only
+  if (isSuperAdmin(user)) {
+    items.push({
+      name: 'protocolTranslations',
+      path: '/protocol-translations',
+      label: 'Protocol Translations',
+      icon: 'translations',
+      permission: null,
+      description: 'Manage multi-language protocol translations',
+      adminOnly: true,
+      superAdminOnly: true,
+      category: 'administration',
+      accessScope: 'global'
+    });
+  }
+
   // Maintenance Executions - all users can execute maintenance
   items.push({
     name: 'maintenance',

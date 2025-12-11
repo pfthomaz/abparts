@@ -1275,6 +1275,7 @@ class MaintenanceProtocol(Base):
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)
+    base_language = Column(String(5), nullable=False, server_default='en')  # Base language for translations
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -1282,6 +1283,7 @@ class MaintenanceProtocol(Base):
     checklist_items = relationship("ProtocolChecklistItem", back_populates="protocol", cascade="all, delete-orphan", order_by="ProtocolChecklistItem.item_order")
     executions = relationship("MaintenanceExecution", back_populates="protocol")
     reminders = relationship("MaintenanceReminder", back_populates="protocol")
+    translations = relationship("ProtocolTranslation", back_populates="protocol", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<MaintenanceProtocol(id={self.id}, name='{self.name}', type='{self.protocol_type.value}')>"
@@ -1305,12 +1307,14 @@ class ProtocolChecklistItem(Base):
     is_critical = Column(Boolean, default=False)
     estimated_duration_minutes = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
+    base_language = Column(String(5), nullable=False, server_default='en')  # Base language for translations
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     protocol = relationship("MaintenanceProtocol", back_populates="checklist_items")
     part = relationship("Part")
     completions = relationship("MaintenanceChecklistCompletion", back_populates="checklist_item")
+    translations = relationship("ChecklistItemTranslation", back_populates="checklist_item", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<ProtocolChecklistItem(id={self.id}, protocol_id={self.protocol_id}, order={self.item_order})>"
@@ -1755,3 +1759,60 @@ class PartVideo(Base):
 
     def __repr__(self):
         return f"<PartVideo(id={self.id}, part_id={self.part_id}, type='{self.video_type}')>"
+
+
+# Translation Models for Multi-Language Support
+
+class ProtocolTranslation(Base):
+    """
+    SQLAlchemy model for maintenance protocol translations.
+    Stores translated content for protocols in different languages.
+    """
+    __tablename__ = "protocol_translations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    protocol_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_protocols.id", ondelete="CASCADE"), nullable=False)
+    language_code = Column(String(5), nullable=False)  # 'en', 'el', 'ar', 'es', 'tr', 'no'
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    protocol = relationship("MaintenanceProtocol", back_populates="translations")
+
+    # Unique constraint to prevent duplicate translations for same protocol+language
+    __table_args__ = (
+        UniqueConstraint('protocol_id', 'language_code', name='uq_protocol_translations_protocol_language'),
+    )
+
+    def __repr__(self):
+        return f"<ProtocolTranslation(protocol_id={self.protocol_id}, language={self.language_code}, name='{self.name[:30]}...')>"
+
+
+class ChecklistItemTranslation(Base):
+    """
+    SQLAlchemy model for checklist item translations.
+    Stores translated content for checklist items in different languages.
+    """
+    __tablename__ = "checklist_item_translations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    checklist_item_id = Column(UUID(as_uuid=True), ForeignKey("protocol_checklist_items.id", ondelete="CASCADE"), nullable=False)
+    language_code = Column(String(5), nullable=False)
+    item_description = Column(Text, nullable=False)
+    notes = Column(Text, nullable=True)
+    item_category = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    checklist_item = relationship("ProtocolChecklistItem", back_populates="translations")
+
+    # Unique constraint to prevent duplicate translations for same item+language
+    __table_args__ = (
+        UniqueConstraint('checklist_item_id', 'language_code', name='uq_checklist_translations_item_language'),
+    )
+
+    def __repr__(self):
+        return f"<ChecklistItemTranslation(item_id={self.checklist_item_id}, language={self.language_code}, description='{self.item_description[:30]}...')>"

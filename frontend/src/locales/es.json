@@ -87,7 +87,9 @@
       "inventory": "Inventario",
       "operations": "Operaciones",
       "administration": "Administración"
-    }
+    },
+    "protocolTranslations": "Traducciones de Protocolos",
+    "protocolTranslationsDescription": "Gestionar traducciones de protocolos en múltiples idiomas"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -1514,5 +1516,61 @@
       "global": "global",
       "organization": "organización"
     }
+  },
+  "translations": {
+    "manageTranslations": "Gestionar Traducciones",
+    "manageTranslationsDescription": "Traducir protocolos de mantenimiento y elementos de lista de verificación a diferentes idiomas",
+    "overview": "Resumen",
+    "noStatus": "No hay estado de traducción disponible",
+    "baseLanguage": "Idioma Base",
+    "totalItems": "Total de Elementos",
+    "completedLanguages": "Idiomas Completados",
+    "progress": "Progreso",
+    "edit": "Editar",
+    "start": "Iniciar",
+    "checklist": "Lista de Verificación",
+    "quickActions": "Acciones Rápidas",
+    "exportTranslations": "Exportar Traducciones",
+    "importTranslations": "Importar Traducciones",
+    "bulkTranslate": "Traducción Masiva",
+    "editTranslation": "Editar Traducción",
+    "createTranslation": "Crear Traducción",
+    "translateProtocolTo": "Traducir protocolo a",
+    "originalContent": "Contenido Original",
+    "translationContent": "Contenido de Traducción",
+    "enterTranslation": "Ingrese traducción...",
+    "translationTips": "Consejos de Traducción",
+    "tip1": "Mantenga el significado y contexto del texto original",
+    "tip2": "Use terminología técnica apropiada para su idioma",
+    "tip3": "Considere las diferencias culturales al traducir",
+    "tip4": "Mantenga consistencia en todas las traducciones",
+    "translateChecklist": "Traducir Elementos de Lista de Verificación",
+    "translateTo": "Traducir a",
+    "translationProgress": "Progreso de Traducción",
+    "checklistItem": "Elemento de Lista de Verificación",
+    "step": "Paso",
+    "translated": "Traducido",
+    "pending": "Pendiente",
+    "completed": "Completado",
+    "saveAllTranslations": "Guardar todas las traducciones",
+    "saveAll": "Guardar Todo",
+    "saving": "Guardando...",
+    "errors": {
+      "nameRequired": "El nombre del protocolo es requerido",
+      "descriptionRequired": "La descripción es requerida",
+      "saveFailed": "Error al guardar la traducción"
+    },
+    "totalProtocols": "Total de Protocolos",
+    "fullyTranslated": "Completamente Traducido",
+    "partiallyTranslated": "Parcialmente Traducido",
+    "untranslated": "Sin Traducir",
+    "allProtocols": "Todos los Protocolos",
+    "languages": "Idiomas",
+    "checklistItems": "elementos de lista de verificación",
+    "startTranslating": "Comenzar Traducción",
+    "noProtocolsFound": "No se encontraron protocolos",
+    "noProtocolsYet": "Aún no hay protocolos disponibles",
+    "tryDifferentSearch": "Intenta ajustar tus criterios de búsqueda o filtro",
+    "createProtocolsFirst": "Crea primero protocolos de mantenimiento para habilitar traducciones"
   }
 }

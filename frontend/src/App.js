@@ -32,6 +32,7 @@ import Configuration from './pages/Configuration'; // New: Import Configuration 
 import StockAdjustments from './pages/StockAdjustments'; // New: Import StockAdjustments page
 import MaintenanceProtocols from './pages/MaintenanceProtocols'; // New: Import MaintenanceProtocols page
 import MaintenanceExecutions from './pages/MaintenanceExecutions'; // New: Import MaintenanceExecutions page
+import ProtocolTranslations from './pages/ProtocolTranslations'; // New: Import ProtocolTranslations page
 import DailyOperations from './pages/DailyOperations'; // New: Import DailyOperations page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
@@ -285,6 +286,24 @@ function App() {
                     feature="Maintenance Protocols"
                   >
                     <MaintenanceProtocols />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="protocol-translations"
+              element={
+                <PermissionErrorBoundary
+                  feature="Protocol Translations"
+                  requiredRole="super_admin"
+                  resource="translations"
+                  action="manage"
+                >
+                  <ProtectedRoute
+                    requiredRole="super_admin"
+                    feature="Protocol Translations"
+                  >
+                    <ProtocolTranslations />
                   </ProtectedRoute>
                 </PermissionErrorBoundary>
               }

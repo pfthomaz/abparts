@@ -58,7 +58,7 @@ services:
       FROM_EMAIL: ${FROM_EMAIL}
       BASE_URL: ${BASE_URL:-http://localhost:8000}
       # CORS configuration for development
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.67:3000,http://192.168.1.67:8000,http://46.62.153.166:8001,53.166:81,http://46.62.153.166:3000,http://46.62.153.166:8000,https://abparts.oraseas.com}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,http://192.168.1.67:3000,http://192.168.1.67:3001,http://192.168.1.67:8000,http://46.62.153.166:8001,53.166:81,http://46.62.153.166:3000,http://46.62.153.166:8000,https://abparts.oraseas.com}
       CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       # Add any other FastAPI environment variables here (e.g., AUTH0_DOMAIN, KEYCLOAK_URL)
@@ -125,6 +125,7 @@ services:
     build:
       context: ./frontend # Path to your frontend directory
       dockerfile: Dockerfile.frontend # Assuming your Dockerfile is named Dockerfile.frontend
+      target: development # Use the development stage
     container_name: abparts_web
     ports:
       - "3000:3000" # React development server port

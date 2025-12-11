@@ -87,7 +87,9 @@
       "inventory": "Απόθεμα",
       "operations": "Λειτουργίες",
       "administration": "Διαχείριση"
-    }
+    },
+    "protocolTranslations": "Μεταφράσεις Πρωτοκόλλων",
+    "protocolTranslationsDescription": "Διαχείριση μεταφράσεων πρωτοκόλλων σε πολλές γλώσσες"
   },
   "auth": {
     "login": "Σύνδεση",
@@ -1508,5 +1510,61 @@
       "global": "καθολικό",
       "organization": "οργανισμός"
     }
+  },
+  "translations": {
+    "manageTranslations": "Διαχείριση Μεταφράσεων",
+    "manageTranslationsDescription": "Μετάφραση πρωτοκόλλων συντήρησης και στοιχείων ελέγχου σε διαφορετικές γλώσσες",
+    "overview": "Επισκόπηση",
+    "noStatus": "Δεν υπάρχει διαθέσιμη κατάσταση μετάφρασης",
+    "baseLanguage": "Βασική Γλώσσα",
+    "totalItems": "Συνολικά Στοιχεία",
+    "completedLanguages": "Ολοκληρωμένες Γλώσσες",
+    "progress": "Πρόοδος",
+    "edit": "Επεξεργασία",
+    "start": "Έναρξη",
+    "checklist": "Λίστα Ελέγχου",
+    "quickActions": "Γρήγορες Ενέργειες",
+    "exportTranslations": "Εξαγωγή Μεταφράσεων",
+    "importTranslations": "Εισαγωγή Μεταφράσεων",
+    "bulkTranslate": "Μαζική Μετάφραση",
+    "editTranslation": "Επεξεργασία Μετάφρασης",
+    "createTranslation": "Δημιουργία Μετάφρασης",
+    "translateProtocolTo": "Μετάφραση πρωτοκόλλου σε",
+    "originalContent": "Αρχικό Περιεχόμενο",
+    "translationContent": "Περιεχόμενο Μετάφρασης",
+    "enterTranslation": "Εισάγετε μετάφραση...",
+    "translationTips": "Συμβουλές Μετάφρασης",
+    "tip1": "Διατηρήστε το νόημα και το πλαίσιο του αρχικού κειμένου",
+    "tip2": "Χρησιμοποιήστε κατάλληλη τεχνική ορολογία για τη γλώσσα σας",
+    "tip3": "Λάβετε υπόψη τις πολιτισμικές διαφορές κατά τη μετάφραση",
+    "tip4": "Διατηρήστε συνέπεια σε όλες τις μεταφράσεις",
+    "translateChecklist": "Μετάφραση Στοιχείων Λίστας Ελέγχου",
+    "translateTo": "Μετάφραση σε",
+    "translationProgress": "Πρόοδος Μετάφρασης",
+    "checklistItem": "Στοιχείο Λίστας Ελέγχου",
+    "step": "Βήμα",
+    "translated": "Μεταφρασμένο",
+    "pending": "Εκκρεμεί",
+    "completed": "Ολοκληρωμένο",
+    "saveAllTranslations": "Αποθήκευση όλων των μεταφράσεων",
+    "saveAll": "Αποθήκευση Όλων",
+    "saving": "Αποθήκευση...",
+    "errors": {
+      "nameRequired": "Το όνομα του πρωτοκόλλου είναι υποχρεωτικό",
+      "descriptionRequired": "Η περιγραφή είναι υποχρεωτική",
+      "saveFailed": "Αποτυχία αποθήκευσης μετάφρασης"
+    },
+    "totalProtocols": "Συνολικά Πρωτόκολλα",
+    "fullyTranslated": "Πλήρως Μεταφρασμένα",
+    "partiallyTranslated": "Μερικώς Μεταφρασμένα",
+    "untranslated": "Αμετάφραστα",
+    "allProtocols": "Όλα τα Πρωτόκολλα",
+    "languages": "Γλώσσες",
+    "checklistItems": "στοιχεία λίστας ελέγχου",
+    "startTranslating": "Έναρξη Μετάφρασης",
+    "noProtocolsFound": "Δεν βρέθηκαν πρωτόκολλα",
+    "noProtocolsYet": "Δεν υπάρχουν ακόμη πρωτόκολλα",
+    "tryDifferentSearch": "Δοκιμάστε να προσαρμόσετε τα κριτήρια αναζήτησης ή φίλτρου",
+    "createProtocolsFirst": "Δημιουργήστε πρώτα πρωτόκολλα συντήρησης για να ενεργοποιήσετε τις μεταφράσεις"
   }
 }

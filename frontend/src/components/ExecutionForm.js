@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { 
-  getChecklistItems, 
+  getLocalizedChecklistItems, 
   createExecution, 
   completeChecklistItem,
   completeExecution
@@ -31,9 +31,9 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
       
       console.log('Starting execution with hours:', hours);
       
-      // Load checklist items
-      const items = await getChecklistItems(protocol.id);
-      console.log('Loaded checklist items:', items);
+      // Load localized checklist items
+      const items = await getLocalizedChecklistItems(protocol.id, user.preferred_language);
+      console.log('Loaded localized checklist items:', items);
       setChecklistItems(items);
 
       // Create execution record
