@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import { getAccessScope, isSuperAdmin } from '../utils/permissions';
+import { useTranslation } from '../hooks/useTranslation';
 
 /**
  * OrganizationScopeIndicator component shows the current data access scope
@@ -16,6 +17,7 @@ const OrganizationScopeIndicator = ({
   className = ''
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const accessScope = getAccessScope(user);
 
@@ -61,19 +63,19 @@ const OrganizationScopeIndicator = ({
           <div className="min-w-0 flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
               <h3 className="text-sm font-medium text-gray-900 truncate">
-                {accessScope.canAccessAllOrganizations ? 'Global Access' : 'Organization Access'}
+                {accessScope.canAccessAllOrganizations ? t('organizationScope.globalAccess') : t('organizationScope.organizationAccess')}
               </h3>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium self-start ${accessScope.canAccessAllOrganizations
                 ? 'bg-purple-100 text-purple-800'
                 : 'bg-blue-100 text-blue-800'
                 }`}>
-                {accessScope.accessLevel}
+                {t(`organizationScope.accessLevels.${accessScope.accessLevel}`)}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 truncate">
               {accessScope.canAccessAllOrganizations
-                ? `Viewing: ${currentOrg?.name || 'All Organizations'}`
-                : `Limited to: ${currentOrg?.name || 'Your Organization'}`
+                ? `${t('organizationScope.viewing')}: ${currentOrg?.name || t('organizationScope.allOrganizations')}`
+                : `${t('organizationScope.limitedTo')}: ${currentOrg?.name || t('organizationScope.yourOrganization')}`
               }
             </p>
           </div>
@@ -86,8 +88,8 @@ const OrganizationScopeIndicator = ({
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <span className="hidden sm:inline">Switch Organization</span>
-              <span className="sm:hidden">Switch</span>
+              <span className="hidden sm:inline">{t('organizationScope.switchOrganization')}</span>
+              <span className="sm:hidden">{t('organizationScope.switch')}</span>
               <svg className={`w-4 h-4 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -105,7 +107,7 @@ const OrganizationScopeIndicator = ({
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>All Organizations</span>
+                      <span>{t('organizationScope.allOrganizations')}</span>
                     </div>
                   </button>
                   {availableOrganizations.map((org) => (
@@ -139,21 +141,21 @@ const OrganizationScopeIndicator = ({
       <div className="hidden md:block mt-4 pt-4 border-t border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">Data Access:</span>
+            <span className="text-gray-500">{t('organizationScope.dataAccess')}:</span>
             <div className="font-medium text-gray-900">
-              {accessScope.restrictions.dataFiltering === 'none' ? 'Unrestricted' : 'Organization-scoped'}
+              {accessScope.restrictions.dataFiltering === 'none' ? t('organizationScope.unrestricted') : t('organizationScope.organizationScoped')}
             </div>
           </div>
           <div>
-            <span className="text-gray-500">User Management:</span>
+            <span className="text-gray-500">{t('organizationScope.userManagement')}:</span>
             <div className="font-medium text-gray-900">
-              {accessScope.restrictions.userManagement === 'all-organizations' ? 'All Organizations' : 'Own Organization'}
+              {accessScope.restrictions.userManagement === 'all-organizations' ? t('organizationScope.allOrganizations') : t('organizationScope.ownOrganization')}
             </div>
           </div>
           <div>
-            <span className="text-gray-500">Reporting:</span>
+            <span className="text-gray-500">{t('organizationScope.reporting')}:</span>
             <div className="font-medium text-gray-900">
-              {accessScope.restrictions.reporting === 'global' ? 'Global Reports' : 'Organization Reports'}
+              {accessScope.restrictions.reporting === 'global' ? t('organizationScope.globalReports') : t('organizationScope.organizationReports')}
             </div>
           </div>
         </div>

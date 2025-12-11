@@ -1370,5 +1370,149 @@
       "min_length": "Minimum Uzunluk",
       "max_length": "Maksimum Uzunluk"
     }
+  },
+  "maintenanceProtocols": {
+    "title": "Bakım Protokolleri",
+    "subtitle": "Makineler için bakım protokolü şablonlarını yönetin",
+    "createNew": "Yeni Protokol Oluştur",
+    "noProtocols": "Protokol bulunamadı. Başlamak için ilk protokolünüzü oluşturun.",
+    "loading": "Protokoller yükleniyor...",
+    "confirmDelete": "Bu protokolü silmek istediğinizden emin misiniz?",
+    "deleteFailed": "Protokol silme başarısız",
+    "filters": {
+      "protocolType": "Protokol Türü",
+      "allTypes": "Tüm Türler",
+      "machineModel": "Makine Modeli",
+      "allModels": "Tüm Modeller",
+      "universal": "Evrensel (Tüm Modeller)",
+      "status": "Durum",
+      "activeOnly": "Sadece Aktif",
+      "all": "Tümü",
+      "search": "Ara",
+      "searchPlaceholder": "Protokollerde ara..."
+    },
+    "types": {
+      "daily": "Günlük",
+      "weekly": "Haftalık",
+      "scheduled": "Planlanmış",
+      "custom": "Özel"
+    },
+    "card": {
+      "serviceInterval": "Servis Aralığı",
+      "hours": "s",
+      "checklistItems": "kontrol listesi öğeleri",
+      "manageChecklist": "Kontrol Listesini Yönet",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "inactive": "Pasif"
+    }
+  },
+  "protocolForm": {
+    "editTitle": "Protokolü Düzenle",
+    "createTitle": "Yeni Protokol Oluştur",
+    "fields": {
+      "name": "Protokol Adı",
+      "namePlaceholder": "örn., Günlük Gün Başlangıcı",
+      "type": "Protokol Türü",
+      "serviceHours": "Servis Saatleri",
+      "serviceHoursPlaceholder": "örn., 50 veya 250",
+      "serviceHoursHelp": "Bu servis için çalışma saati sayısı",
+      "isRecurring": "Tekrarlayan servis (her {hours} saatte tekrarla)",
+      "recurringHelp": "Tek seferlik servisler için işareti kaldırın (örn., 50s ilk servis). Tekrarlayan servisler için işaretleyin (örn., her 250s).",
+      "machineModel": "Makine Modeli",
+      "allModelsUniversal": "Tüm Modeller (Evrensel)",
+      "machineModelHelp": "Tüm makine modellerine uygulamak için boş bırakın",
+      "description": "Açıklama",
+      "descriptionPlaceholder": "Bu protokolün kısa açıklaması...",
+      "displayOrder": "Görüntüleme Sırası",
+      "displayOrderHelp": "Düşük sayılar önce görünür",
+      "isActive": "Aktif (protokol kullanım için mevcut)"
+    },
+    "typeOptions": {
+      "daily": "Günlük",
+      "weekly": "Haftalık",
+      "scheduled": "Planlanmış (Saat Bazlı)",
+      "custom": "Özel"
+    },
+    "actions": {
+      "saving": "Kaydediliyor...",
+      "update": "Protokolü Güncelle",
+      "create": "Protokol Oluştur",
+      "cancel": "İptal"
+    }
+  },
+  "checklistManager": {
+    "title": "Kontrol Listesi Öğelerini Yönet",
+    "backToProtocols": "Protokollere Dön",
+    "protocol": "Protokol",
+    "addItem": "Kontrol Listesi Öğesi Ekle",
+    "loading": "Kontrol listesi öğeleri yükleniyor...",
+    "noItems": "Henüz kontrol listesi öğesi yok. Başlamak için ilk öğenizi ekleyin.",
+    "dragTip": "Öğeleri yeniden sıralamak için sürükleyip bırakın",
+    "confirmDelete": "Bu kontrol listesi öğesini silmek istediğinizden emin misiniz?",
+    "deleteFailed": "Öğe silme başarısız",
+    "reorderFailed": "Öğeleri yeniden sıralama başarısız",
+    "critical": "Kritik",
+    "minutes": "dk",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "itemTypes": {
+      "check": "Kontrol",
+      "service": "Servis",
+      "replacement": "Değiştirme"
+    }
+  },
+  "checklistItemForm": {
+    "editTitle": "Kontrol Listesi Öğesini Düzenle",
+    "addTitle": "Kontrol Listesi Öğesi Ekle",
+    "fields": {
+      "description": "Açıklama",
+      "descriptionPlaceholder": "örn., Yağ seviyesini kontrol edin ve gerekirse ekleyin",
+      "descriptionRequired": "Açıklama gerekli",
+      "itemType": "Öğe Türü",
+      "category": "Kategori",
+      "categoryPlaceholder": "örn., Elektrik, Mekanik",
+      "estimatedDuration": "Tahmini Süre (dakika)",
+      "durationPlaceholder": "örn., 15",
+      "estimatedQuantity": "Tahmini Miktar",
+      "quantityPlaceholder": "örn., 2.5",
+      "isCritical": "Kritik olarak işaretle (tamamlanması gerekir)",
+      "notes": "Notlar",
+      "notesPlaceholder": "Ek talimatlar veya bilgiler"
+    },
+    "typeOptions": {
+      "check": "Kontrol",
+      "service": "Servis",
+      "replacement": "Değiştirme"
+    },
+    "actions": {
+      "cancel": "İptal",
+      "saving": "Kaydediliyor...",
+      "updateItem": "Öğeyi Güncelle",
+      "addItem": "Öğe Ekle",
+      "saveFailed": "Kontrol listesi öğesi kaydetme başarısız"
+    }
+  },
+  "organizationScope": {
+    "globalAccess": "Küresel Erişim",
+    "organizationAccess": "Organizasyon Erişimi",
+    "viewing": "Görüntüleme",
+    "allOrganizations": "Tüm Organizasyonlar",
+    "limitedTo": "Sınırlı",
+    "yourOrganization": "Organizasyonunuz",
+    "switchOrganization": "Organizasyon Değiştir",
+    "switch": "Değiştir",
+    "dataAccess": "Veri Erişimi",
+    "unrestricted": "Sınırsız",
+    "organizationScoped": "Organizasyon Kapsamlı",
+    "userManagement": "Kullanıcı Yönetimi",
+    "ownOrganization": "Kendi Organizasyon",
+    "reporting": "Raporlama",
+    "globalReports": "Küresel Raporlar",
+    "organizationReports": "Organizasyon Raporları",
+    "accessLevels": {
+      "global": "küresel",
+      "organization": "organizasyon"
+    }
   }
 }

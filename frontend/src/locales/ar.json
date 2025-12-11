@@ -1364,5 +1364,149 @@
       "min_length": "الحد الأدنى للطول",
       "max_length": "الحد الأقصى للطول"
     }
+  },
+  "maintenanceProtocols": {
+    "title": "بروتوكولات الصيانة",
+    "subtitle": "إدارة قوالب بروتوكولات الصيانة للآلات",
+    "createNew": "إنشاء بروتوكول جديد",
+    "noProtocols": "لم يتم العثور على بروتوكولات. أنشئ بروتوكولك الأول للبدء.",
+    "loading": "تحميل البروتوكولات...",
+    "confirmDelete": "هل أنت متأكد من أنك تريد حذف هذا البروتوكول؟",
+    "deleteFailed": "فشل في حذف البروتوكول",
+    "filters": {
+      "protocolType": "نوع البروتوكول",
+      "allTypes": "جميع الأنواع",
+      "machineModel": "طراز الآلة",
+      "allModels": "جميع الطرازات",
+      "universal": "عالمي (جميع الطرازات)",
+      "status": "الحالة",
+      "activeOnly": "النشطة فقط",
+      "all": "الكل",
+      "search": "بحث",
+      "searchPlaceholder": "البحث في البروتوكولات..."
+    },
+    "types": {
+      "daily": "يومي",
+      "weekly": "أسبوعي",
+      "scheduled": "مجدول",
+      "custom": "مخصص"
+    },
+    "card": {
+      "serviceInterval": "فترة الخدمة",
+      "hours": "س",
+      "checklistItems": "عناصر قائمة التحقق",
+      "manageChecklist": "إدارة قائمة التحقق",
+      "edit": "تحرير",
+      "delete": "حذف",
+      "inactive": "غير نشط"
+    }
+  },
+  "protocolForm": {
+    "editTitle": "تحرير البروتوكول",
+    "createTitle": "إنشاء بروتوكول جديد",
+    "fields": {
+      "name": "اسم البروتوكول",
+      "namePlaceholder": "مثال: بداية اليوم اليومية",
+      "type": "نوع البروتوكول",
+      "serviceHours": "ساعات الخدمة",
+      "serviceHoursPlaceholder": "مثال: 50 أو 250",
+      "serviceHoursHelp": "عدد ساعات التشغيل لهذه الخدمة",
+      "isRecurring": "خدمة متكررة (تكرار كل {hours} ساعة)",
+      "recurringHelp": "ألغِ التحديد للخدمات لمرة واحدة (مثل خدمة أولية 50س). حدد للخدمات المتكررة (مثل كل 250س).",
+      "machineModel": "طراز الآلة",
+      "allModelsUniversal": "جميع الطرازات (عالمي)",
+      "machineModelHelp": "اتركه فارغاً للتطبيق على جميع طرازات الآلات",
+      "description": "الوصف",
+      "descriptionPlaceholder": "وصف موجز لهذا البروتوكول...",
+      "displayOrder": "ترتيب العرض",
+      "displayOrderHelp": "الأرقام الأقل تظهر أولاً",
+      "isActive": "نشط (البروتوكول متاح للاستخدام)"
+    },
+    "typeOptions": {
+      "daily": "يومي",
+      "weekly": "أسبوعي",
+      "scheduled": "مجدول (على أساس الساعات)",
+      "custom": "مخصص"
+    },
+    "actions": {
+      "saving": "جاري الحفظ...",
+      "update": "تحديث البروتوكول",
+      "create": "إنشاء البروتوكول",
+      "cancel": "إلغاء"
+    }
+  },
+  "checklistManager": {
+    "title": "إدارة عناصر قائمة التحقق",
+    "backToProtocols": "العودة إلى البروتوكولات",
+    "protocol": "البروتوكول",
+    "addItem": "إضافة عنصر قائمة التحقق",
+    "loading": "تحميل عناصر قائمة التحقق...",
+    "noItems": "لا توجد عناصر قائمة تحقق بعد. أضف عنصرك الأول للبدء.",
+    "dragTip": "اسحب وأفلت العناصر لإعادة ترتيبها",
+    "confirmDelete": "هل أنت متأكد من أنك تريد حذف عنصر قائمة التحقق هذا؟",
+    "deleteFailed": "فشل في حذف العنصر",
+    "reorderFailed": "فشل في إعادة ترتيب العناصر",
+    "critical": "حرج",
+    "minutes": "دق",
+    "edit": "تحرير",
+    "delete": "حذف",
+    "itemTypes": {
+      "check": "فحص",
+      "service": "خدمة",
+      "replacement": "استبدال"
+    }
+  },
+  "checklistItemForm": {
+    "editTitle": "تحرير عنصر قائمة التحقق",
+    "addTitle": "إضافة عنصر قائمة التحقق",
+    "fields": {
+      "description": "الوصف",
+      "descriptionPlaceholder": "مثال: فحص مستوى الزيت وإضافة المزيد إذا لزم الأمر",
+      "descriptionRequired": "الوصف مطلوب",
+      "itemType": "نوع العنصر",
+      "category": "الفئة",
+      "categoryPlaceholder": "مثال: كهربائي، ميكانيكي",
+      "estimatedDuration": "المدة المقدرة (دقائق)",
+      "durationPlaceholder": "مثال: 15",
+      "estimatedQuantity": "الكمية المقدرة",
+      "quantityPlaceholder": "مثال: 2.5",
+      "isCritical": "تحديد كحرج (يجب إكماله)",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "تعليمات أو معلومات إضافية"
+    },
+    "typeOptions": {
+      "check": "فحص",
+      "service": "خدمة",
+      "replacement": "استبدال"
+    },
+    "actions": {
+      "cancel": "إلغاء",
+      "saving": "جاري الحفظ...",
+      "updateItem": "تحديث العنصر",
+      "addItem": "إضافة العنصر",
+      "saveFailed": "فشل في حفظ عنصر قائمة التحقق"
+    }
+  },
+  "organizationScope": {
+    "globalAccess": "الوصول العالمي",
+    "organizationAccess": "وصول المنظمة",
+    "viewing": "عرض",
+    "allOrganizations": "جميع المنظمات",
+    "limitedTo": "مقيد بـ",
+    "yourOrganization": "منظمتك",
+    "switchOrganization": "تبديل المنظمة",
+    "switch": "تبديل",
+    "dataAccess": "الوصول للبيانات",
+    "unrestricted": "غير مقيد",
+    "organizationScoped": "مقيد بالمنظمة",
+    "userManagement": "إدارة المستخدمين",
+    "ownOrganization": "المنظمة الخاصة",
+    "reporting": "التقارير",
+    "globalReports": "التقارير العالمية",
+    "organizationReports": "تقارير المنظمة",
+    "accessLevels": {
+      "global": "عالمي",
+      "organization": "منظمة"
+    }
   }
 }

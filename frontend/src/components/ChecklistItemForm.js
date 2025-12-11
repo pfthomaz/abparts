@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createChecklistItem, updateChecklistItem } from '../services/maintenanceProtocolsService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     item_description: '',
     item_type: 'check',
@@ -33,7 +35,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
     e.preventDefault();
     
     if (!formData.item_description.trim()) {
-      alert('Description is required');
+      alert(t('checklistItemForm.fields.descriptionRequired'));
       return;
     }
 
@@ -61,7 +63,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
 
       onSave();
     } catch (err) {
-      alert(`Failed to save checklist item: ${err.message}`);
+      alert(`${t('checklistItemForm.actions.saveFailed')}: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -78,13 +80,13 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        {item ? 'Edit Checklist Item' : 'Add Checklist Item'}
+        {item ? t('checklistItemForm.editTitle') : t('checklistItemForm.addTitle')}
       </h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description *
+            {t('checklistItemForm.fields.description')} *
           </label>
           <textarea
             name="item_description"
@@ -92,7 +94,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
             onChange={handleChange}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Check oil level and top up if needed"
+            placeholder={t('checklistItemForm.fields.descriptionPlaceholder')}
             required
             disabled={loading}
           />
@@ -101,7 +103,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Item Type *
+              {t('checklistItemForm.fields.itemType')} *
             </label>
             <select
               name="item_type"
@@ -111,15 +113,15 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
               required
               disabled={loading}
             >
-              <option value="check">Check</option>
-              <option value="service">Service</option>
-              <option value="replacement">Replacement</option>
+              <option value="check">{t('checklistItemForm.typeOptions.check')}</option>
+              <option value="service">{t('checklistItemForm.typeOptions.service')}</option>
+              <option value="replacement">{t('checklistItemForm.typeOptions.replacement')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              {t('checklistItemForm.fields.category')}
             </label>
             <input
               type="text"
@@ -127,7 +129,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
               value={formData.item_category}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Electrical, Mechanical"
+              placeholder={t('checklistItemForm.fields.categoryPlaceholder')}
               disabled={loading}
             />
           </div>
@@ -136,7 +138,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estimated Duration (minutes)
+              {t('checklistItemForm.fields.estimatedDuration')}
             </label>
             <input
               type="number"
@@ -145,14 +147,14 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
               onChange={handleChange}
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., 15"
+              placeholder={t('checklistItemForm.fields.durationPlaceholder')}
               disabled={loading}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estimated Quantity
+              {t('checklistItemForm.fields.estimatedQuantity')}
             </label>
             <input
               type="number"
@@ -162,7 +164,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
               step="0.001"
               min="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., 2.5"
+              placeholder={t('checklistItemForm.fields.quantityPlaceholder')}
               disabled={loading}
             />
           </div>
@@ -179,13 +181,13 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
             disabled={loading}
           />
           <label htmlFor="is_critical" className="ml-2 text-sm text-gray-700">
-            Mark as Critical (must be completed)
+            {t('checklistItemForm.fields.isCritical')}
           </label>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+            {t('checklistItemForm.fields.notes')}
           </label>
           <textarea
             name="notes"
@@ -193,7 +195,7 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
             onChange={handleChange}
             rows={2}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Additional instructions or information"
+            placeholder={t('checklistItemForm.fields.notesPlaceholder')}
             disabled={loading}
           />
         </div>
@@ -205,14 +207,14 @@ const ChecklistItemForm = ({ protocolId, item, existingItems, onSave, onCancel }
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             disabled={loading}
           >
-            Cancel
+            {t('checklistItemForm.actions.cancel')}
           </button>
           <button
             type="submit"
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
             disabled={loading}
           >
-            {loading ? 'Saving...' : (item ? 'Update Item' : 'Add Item')}
+            {loading ? t('checklistItemForm.actions.saving') : (item ? t('checklistItemForm.actions.updateItem') : t('checklistItemForm.actions.addItem'))}
           </button>
         </div>
       </form>

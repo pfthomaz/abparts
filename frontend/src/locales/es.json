@@ -1370,5 +1370,149 @@
       "min_length": "Longitud Mínima",
       "max_length": "Longitud Máxima"
     }
+  },
+  "maintenanceProtocols": {
+    "title": "Protocolos de Mantenimiento",
+    "subtitle": "Gestionar plantillas de protocolos de mantenimiento para máquinas",
+    "createNew": "Crear Nuevo Protocolo",
+    "noProtocols": "No se encontraron protocolos. Crea tu primer protocolo para comenzar.",
+    "loading": "Cargando protocolos...",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este protocolo?",
+    "deleteFailed": "Error al eliminar el protocolo",
+    "filters": {
+      "protocolType": "Tipo de Protocolo",
+      "allTypes": "Todos los Tipos",
+      "machineModel": "Modelo de Máquina",
+      "allModels": "Todos los Modelos",
+      "universal": "Universal (Todos los Modelos)",
+      "status": "Estado",
+      "activeOnly": "Solo Activos",
+      "all": "Todos",
+      "search": "Buscar",
+      "searchPlaceholder": "Buscar protocolos..."
+    },
+    "types": {
+      "daily": "Diario",
+      "weekly": "Semanal",
+      "scheduled": "Programado",
+      "custom": "Personalizado"
+    },
+    "card": {
+      "serviceInterval": "Intervalo de Servicio",
+      "hours": "h",
+      "checklistItems": "elementos de lista de verificación",
+      "manageChecklist": "Gestionar Lista de Verificación",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "inactive": "Inactivo"
+    }
+  },
+  "protocolForm": {
+    "editTitle": "Editar Protocolo",
+    "createTitle": "Crear Nuevo Protocolo",
+    "fields": {
+      "name": "Nombre del Protocolo",
+      "namePlaceholder": "ej., Inicio Diario del Día",
+      "type": "Tipo de Protocolo",
+      "serviceHours": "Horas de Servicio",
+      "serviceHoursPlaceholder": "ej., 50 o 250",
+      "serviceHoursHelp": "Número de horas de operación para este servicio",
+      "isRecurring": "Servicio recurrente (repetir cada {hours} horas)",
+      "recurringHelp": "Desmarcar para servicios únicos (ej., servicio inicial de 50h). Marcar para servicios recurrentes (ej., cada 250h).",
+      "machineModel": "Modelo de Máquina",
+      "allModelsUniversal": "Todos los Modelos (Universal)",
+      "machineModelHelp": "Dejar vacío para aplicar a todos los modelos de máquinas",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Breve descripción de este protocolo...",
+      "displayOrder": "Orden de Visualización",
+      "displayOrderHelp": "Los números más bajos aparecen primero",
+      "isActive": "Activo (el protocolo está disponible para uso)"
+    },
+    "typeOptions": {
+      "daily": "Diario",
+      "weekly": "Semanal",
+      "scheduled": "Programado (Basado en Horas)",
+      "custom": "Personalizado"
+    },
+    "actions": {
+      "saving": "Guardando...",
+      "update": "Actualizar Protocolo",
+      "create": "Crear Protocolo",
+      "cancel": "Cancelar"
+    }
+  },
+  "checklistManager": {
+    "title": "Gestionar Elementos de Lista de Verificación",
+    "backToProtocols": "Volver a Protocolos",
+    "protocol": "Protocolo",
+    "addItem": "Agregar Elemento de Lista de Verificación",
+    "loading": "Cargando elementos de lista de verificación...",
+    "noItems": "Aún no hay elementos de lista de verificación. Agrega tu primer elemento para comenzar.",
+    "dragTip": "Arrastra y suelta elementos para reordenarlos",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este elemento de lista de verificación?",
+    "deleteFailed": "Error al eliminar elemento",
+    "reorderFailed": "Error al reordenar elementos",
+    "critical": "Crítico",
+    "minutes": "min",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "itemTypes": {
+      "check": "Verificación",
+      "service": "Servicio",
+      "replacement": "Reemplazo"
+    }
+  },
+  "checklistItemForm": {
+    "editTitle": "Editar Elemento de Lista de Verificación",
+    "addTitle": "Agregar Elemento de Lista de Verificación",
+    "fields": {
+      "description": "Descripción",
+      "descriptionPlaceholder": "ej., Verificar nivel de aceite y rellenar si es necesario",
+      "descriptionRequired": "La descripción es requerida",
+      "itemType": "Tipo de Elemento",
+      "category": "Categoría",
+      "categoryPlaceholder": "ej., Eléctrico, Mecánico",
+      "estimatedDuration": "Duración Estimada (minutos)",
+      "durationPlaceholder": "ej., 15",
+      "estimatedQuantity": "Cantidad Estimada",
+      "quantityPlaceholder": "ej., 2.5",
+      "isCritical": "Marcar como Crítico (debe completarse)",
+      "notes": "Notas",
+      "notesPlaceholder": "Instrucciones o información adicional"
+    },
+    "typeOptions": {
+      "check": "Verificación",
+      "service": "Servicio",
+      "replacement": "Reemplazo"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "updateItem": "Actualizar Elemento",
+      "addItem": "Agregar Elemento",
+      "saveFailed": "Error al guardar elemento de lista de verificación"
+    }
+  },
+  "organizationScope": {
+    "globalAccess": "Acceso Global",
+    "organizationAccess": "Acceso de Organización",
+    "viewing": "Viendo",
+    "allOrganizations": "Todas las Organizaciones",
+    "limitedTo": "Limitado a",
+    "yourOrganization": "Tu Organización",
+    "switchOrganization": "Cambiar Organización",
+    "switch": "Cambiar",
+    "dataAccess": "Acceso a Datos",
+    "unrestricted": "Sin Restricciones",
+    "organizationScoped": "Limitado a Organización",
+    "userManagement": "Gestión de Usuarios",
+    "ownOrganization": "Propia Organización",
+    "reporting": "Informes",
+    "globalReports": "Informes Globales",
+    "organizationReports": "Informes de Organización",
+    "accessLevels": {
+      "global": "global",
+      "organization": "organización"
+    }
   }
 }

@@ -54,6 +54,46 @@ const SUPPORTED_COUNTRIES = {
     numberFormat: 'ar-OM',
     rtl: true,
     flag: '🇴🇲'
+  },
+  TR: {
+    code: 'TR',
+    name: 'Turkey',
+    language: 'tr',
+    currency: 'TRY',
+    dateFormat: 'dd.MM.yyyy',
+    numberFormat: 'tr-TR',
+    rtl: false,
+    flag: '🇹🇷'
+  },
+  NO: {
+    code: 'NO',
+    name: 'Norway',
+    language: 'no',
+    currency: 'NOK',
+    dateFormat: 'dd.MM.yyyy',
+    numberFormat: 'no-NO',
+    rtl: false,
+    flag: '🇳🇴'
+  },
+  HR: {
+    code: 'HR',
+    name: 'Croatia',
+    language: 'en',
+    currency: 'EUR',
+    dateFormat: 'dd.MM.yyyy',
+    numberFormat: 'hr-HR',
+    rtl: false,
+    flag: '🇭🇷'
+  },
+  IT: {
+    code: 'IT',
+    name: 'Italy',
+    language: 'en',
+    currency: 'EUR',
+    dateFormat: 'dd/MM/yyyy',
+    numberFormat: 'it-IT',
+    rtl: false,
+    flag: '🇮🇹'
   }
 };
 
@@ -63,37 +103,43 @@ const SUPPORTED_LANGUAGES = {
     code: 'en',
     name: 'English',
     nativeName: 'English',
-    rtl: false
+    rtl: false,
+    flag: '🇺🇸'
   },
   el: {
     code: 'el',
     name: 'Greek',
     nativeName: 'Ελληνικά',
-    rtl: false
+    rtl: false,
+    flag: '🇬🇷'
   },
   ar: {
     code: 'ar',
     name: 'Arabic',
     nativeName: 'العربية',
-    rtl: true
+    rtl: true,
+    flag: '🇸🇦'
   },
   es: {
     code: 'es',
     name: 'Spanish',
     nativeName: 'Español',
-    rtl: false
+    rtl: false,
+    flag: '🇪🇸'
   },
   tr: {
     code: 'tr',
     name: 'Turkish',
     nativeName: 'Türkçe',
-    rtl: false
+    rtl: false,
+    flag: '🇹🇷'
   },
   no: {
     code: 'no',
     name: 'Norwegian',
     nativeName: 'Norsk',
-    rtl: false
+    rtl: false,
+    flag: '🇳🇴'
   }
 };
 

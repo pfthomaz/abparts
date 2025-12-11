@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { createProtocol, updateProtocol } from '../services/maintenanceProtocolsService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const ProtocolForm = ({ protocol, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     protocol_type: 'daily',
@@ -61,7 +63,7 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
   return (
     <div className="max-w-2xl">
       <h2 className="text-2xl font-bold mb-6">
-        {protocol ? 'Edit Protocol' : 'Create New Protocol'}
+        {protocol ? t('protocolForm.editTitle') : t('protocolForm.createTitle')}
       </h2>
 
       {error && (
@@ -73,7 +75,7 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Protocol Name *
+            {t('protocolForm.fields.name')} *
           </label>
           <input
             type="text"
@@ -81,13 +83,13 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            placeholder="e.g., Daily Start of Day"
+            placeholder={t('protocolForm.fields.namePlaceholder')}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Protocol Type *
+            {t('protocolForm.fields.type')} *
           </label>
           <select
             required
@@ -95,10 +97,10 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
             onChange={(e) => setFormData({ ...formData, protocol_type: e.target.value })}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
           >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="scheduled">Scheduled (Hours-based)</option>
-            <option value="custom">Custom</option>
+            <option value="daily">{t('protocolForm.typeOptions.daily')}</option>
+            <option value="weekly">{t('protocolForm.typeOptions.weekly')}</option>
+            <option value="scheduled">{t('protocolForm.typeOptions.scheduled')}</option>
+            <option value="custom">{t('protocolForm.typeOptions.custom')}</option>
           </select>
         </div>
 
@@ -106,7 +108,7 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
           <>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Hours *
+                {t('protocolForm.fields.serviceHours')} *
               </label>
               <input
                 type="number"
@@ -115,10 +117,10 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
                 value={formData.service_interval_hours}
                 onChange={(e) => setFormData({ ...formData, service_interval_hours: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
-                placeholder="e.g., 50 or 250"
+                placeholder={t('protocolForm.fields.serviceHoursPlaceholder')}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Number of operating hours for this service
+                {t('protocolForm.fields.serviceHoursHelp')}
               </p>
             </div>
 
@@ -131,49 +133,49 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded"
               />
               <label htmlFor="is_recurring" className="ml-2 text-sm text-gray-700">
-                Recurring service (repeat every {formData.service_interval_hours || 'N'} hours)
+                {t('protocolForm.fields.isRecurring', { hours: formData.service_interval_hours || 'N' })}
               </label>
             </div>
             <p className="text-xs text-gray-500 -mt-2">
-              Uncheck for one-time services (e.g., 50h initial service). Check for recurring services (e.g., every 250h).
+              {t('protocolForm.fields.recurringHelp')}
             </p>
           </>
         )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Machine Model
+            {t('protocolForm.fields.machineModel')}
           </label>
           <select
             value={formData.machine_model}
             onChange={(e) => setFormData({ ...formData, machine_model: e.target.value })}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
           >
-            <option value="">All Models (Universal)</option>
+            <option value="">{t('protocolForm.fields.allModelsUniversal')}</option>
             <option value="V3.1B">V3.1B</option>
             <option value="V4.0">V4.0</option>
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            Leave empty to apply to all machine models
+            {t('protocolForm.fields.machineModelHelp')}
           </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            {t('protocolForm.fields.description')}
           </label>
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={3}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            placeholder="Brief description of this protocol..."
+            placeholder={t('protocolForm.fields.descriptionPlaceholder')}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Display Order
+            {t('protocolForm.fields.displayOrder')}
           </label>
           <input
             type="number"
@@ -183,7 +185,7 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
             placeholder="0"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Lower numbers appear first
+            {t('protocolForm.fields.displayOrderHelp')}
           </p>
         </div>
 
@@ -196,7 +198,7 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
             className="h-4 w-4 text-blue-600 border-gray-300 rounded"
           />
           <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
-            Active (protocol is available for use)
+            {t('protocolForm.fields.isActive')}
           </label>
         </div>
 
@@ -206,14 +208,14 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
             disabled={saving}
             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
           >
-            {saving ? 'Saving...' : (protocol ? 'Update Protocol' : 'Create Protocol')}
+            {saving ? t('protocolForm.actions.saving') : (protocol ? t('protocolForm.actions.update') : t('protocolForm.actions.create'))}
           </button>
           <button
             type="button"
             onClick={onCancel}
             className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300"
           >
-            Cancel
+            {t('protocolForm.actions.cancel')}
           </button>
         </div>
       </form>

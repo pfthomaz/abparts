@@ -1364,5 +1364,149 @@
       "min_length": "Minimum Length",
       "max_length": "Maximum Length"
     }
+  },
+  "maintenanceProtocols": {
+    "title": "Maintenance Protocols",
+    "subtitle": "Manage maintenance protocol templates for machines",
+    "createNew": "Create New Protocol",
+    "noProtocols": "No protocols found. Create your first protocol to get started.",
+    "loading": "Loading protocols...",
+    "confirmDelete": "Are you sure you want to delete this protocol?",
+    "deleteFailed": "Failed to delete protocol",
+    "filters": {
+      "protocolType": "Protocol Type",
+      "allTypes": "All Types",
+      "machineModel": "Machine Model",
+      "allModels": "All Models",
+      "universal": "Universal (All Models)",
+      "status": "Status",
+      "activeOnly": "Active Only",
+      "all": "All",
+      "search": "Search",
+      "searchPlaceholder": "Search protocols..."
+    },
+    "types": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "scheduled": "Scheduled",
+      "custom": "Custom"
+    },
+    "card": {
+      "serviceInterval": "Service Interval",
+      "hours": "h",
+      "checklistItems": "checklist items",
+      "manageChecklist": "Manage Checklist",
+      "edit": "Edit",
+      "delete": "Delete",
+      "inactive": "Inactive"
+    }
+  },
+  "protocolForm": {
+    "editTitle": "Edit Protocol",
+    "createTitle": "Create New Protocol",
+    "fields": {
+      "name": "Protocol Name",
+      "namePlaceholder": "e.g., Daily Start of Day",
+      "type": "Protocol Type",
+      "serviceHours": "Service Hours",
+      "serviceHoursPlaceholder": "e.g., 50 or 250",
+      "serviceHoursHelp": "Number of operating hours for this service",
+      "isRecurring": "Recurring service (repeat every {hours} hours)",
+      "recurringHelp": "Uncheck for one-time services (e.g., 50h initial service). Check for recurring services (e.g., every 250h).",
+      "machineModel": "Machine Model",
+      "allModelsUniversal": "All Models (Universal)",
+      "machineModelHelp": "Leave empty to apply to all machine models",
+      "description": "Description",
+      "descriptionPlaceholder": "Brief description of this protocol...",
+      "displayOrder": "Display Order",
+      "displayOrderHelp": "Lower numbers appear first",
+      "isActive": "Active (protocol is available for use)"
+    },
+    "typeOptions": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "scheduled": "Scheduled (Hours-based)",
+      "custom": "Custom"
+    },
+    "actions": {
+      "saving": "Saving...",
+      "update": "Update Protocol",
+      "create": "Create Protocol",
+      "cancel": "Cancel"
+    }
+  },
+  "checklistManager": {
+    "title": "Manage Checklist Items",
+    "backToProtocols": "Back to Protocols",
+    "protocol": "Protocol",
+    "addItem": "Add Checklist Item",
+    "loading": "Loading checklist items...",
+    "noItems": "No checklist items yet. Add your first item to get started.",
+    "dragTip": "Drag and drop items to reorder them",
+    "confirmDelete": "Are you sure you want to delete this checklist item?",
+    "deleteFailed": "Failed to delete item",
+    "reorderFailed": "Failed to reorder items",
+    "critical": "Critical",
+    "minutes": "min",
+    "edit": "Edit",
+    "delete": "Delete",
+    "itemTypes": {
+      "check": "Check",
+      "service": "Service",
+      "replacement": "Replacement"
+    }
+  },
+  "checklistItemForm": {
+    "editTitle": "Edit Checklist Item",
+    "addTitle": "Add Checklist Item",
+    "fields": {
+      "description": "Description",
+      "descriptionPlaceholder": "e.g., Check oil level and top up if needed",
+      "descriptionRequired": "Description is required",
+      "itemType": "Item Type",
+      "category": "Category",
+      "categoryPlaceholder": "e.g., Electrical, Mechanical",
+      "estimatedDuration": "Estimated Duration (minutes)",
+      "durationPlaceholder": "e.g., 15",
+      "estimatedQuantity": "Estimated Quantity",
+      "quantityPlaceholder": "e.g., 2.5",
+      "isCritical": "Mark as Critical (must be completed)",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional instructions or information"
+    },
+    "typeOptions": {
+      "check": "Check",
+      "service": "Service",
+      "replacement": "Replacement"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "updateItem": "Update Item",
+      "addItem": "Add Item",
+      "saveFailed": "Failed to save checklist item"
+    }
+  },
+  "organizationScope": {
+    "globalAccess": "Global Access",
+    "organizationAccess": "Organization Access",
+    "viewing": "Viewing",
+    "allOrganizations": "All Organizations",
+    "limitedTo": "Limited to",
+    "yourOrganization": "Your Organization",
+    "switchOrganization": "Switch Organization",
+    "switch": "Switch",
+    "dataAccess": "Data Access",
+    "unrestricted": "Unrestricted",
+    "organizationScoped": "Organization-scoped",
+    "userManagement": "User Management",
+    "ownOrganization": "Own Organization",
+    "reporting": "Reporting",
+    "globalReports": "Global Reports",
+    "organizationReports": "Organization Reports",
+    "accessLevels": {
+      "global": "global",
+      "organization": "organization"
+    }
   }
 }

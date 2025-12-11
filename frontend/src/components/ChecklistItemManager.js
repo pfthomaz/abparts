@@ -9,8 +9,10 @@ import {
   reorderChecklistItems
 } from '../services/maintenanceProtocolsService';
 import ChecklistItemForm from './ChecklistItemForm';
+import { useTranslation } from '../hooks/useTranslation';
 
 const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -46,7 +48,7 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (!window.confirm('Are you sure you want to delete this checklist item?')) {
+    if (!window.confirm(t('checklistManager.confirmDelete'))) {
       return;
     }
 
@@ -55,7 +57,7 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
       loadItems();
       onUpdate();
     } catch (err) {
-      alert(`Failed to delete item: ${err.message}`);
+      alert(`${t('checklistManager.deleteFailed')}: ${err.message}`);
     }
   };
 
@@ -103,7 +105,7 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
       setItems(newItems.map((item, index) => ({ ...item, item_order: index + 1 })));
       onUpdate();
     } catch (err) {
-      alert(`Failed to reorder items: ${err.message}`);
+      alert(`${t('checklistManager.reorderFailed')}: ${err.message}`);
       loadItems(); // Reload to get correct order
     }
 
@@ -150,13 +152,13 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
           onClick={onBack}
           className="text-blue-600 hover:text-blue-800 mb-4 flex items-center"
         >
-          ← Back to Protocols
+          ← {t('checklistManager.backToProtocols')}
         </button>
-        <h2 className="text-2xl font-bold text-gray-900">Manage Checklist Items</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('checklistManager.title')}</h2>
         <div className="mt-2 flex items-center gap-4">
-          <span className="text-gray-600">Protocol: <span className="font-medium">{protocol.name}</span></span>
+          <span className="text-gray-600">{t('checklistManager.protocol')}: <span className="font-medium">{protocol.name}</span></span>
           <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-            {protocol.protocol_type}
+            {t(`maintenanceProtocols.types.${protocol.protocol_type}`)}
           </span>
         </div>
       </div>
@@ -172,20 +174,20 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
           onClick={handleAddItem}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
         >
-          + Add Checklist Item
+          + {t('checklistManager.addItem')}
         </button>
       </div>
 
       {loading && (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading checklist items...</p>
+          <p className="mt-2 text-gray-600">{t('checklistManager.loading')}</p>
         </div>
       )}
 
       {!loading && items.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500">No checklist items yet. Add your first item to get started.</p>
+          <p className="text-gray-500">{t('checklistManager.noItems')}</p>
         </div>
       )}
 
@@ -193,7 +195,7 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b border-gray-200">
             <p className="text-sm text-gray-600">
-              💡 Drag and drop items to reorder them
+              💡 {t('checklistManager.dragTip')}
             </p>
           </div>
           
@@ -222,14 +224,14 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
                           <h3 className="font-medium text-gray-900">{item.item_description}</h3>
                           {item.is_critical && (
                             <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                              Critical
+                              {t('checklistManager.critical')}
                             </span>
                           )}
                         </div>
                         
                         <div className="flex items-center gap-3 text-sm text-gray-600">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${getItemTypeBadge(item.item_type)}`}>
-                            {item.item_type}
+                            {t(`checklistManager.itemTypes.${item.item_type}`)}
                           </span>
                           
                           {item.item_category && (
@@ -240,7 +242,7 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
                           
                           {item.estimated_duration_minutes && (
                             <span className="text-gray-500">
-                              ⏱️ {item.estimated_duration_minutes} min
+                              ⏱️ {item.estimated_duration_minutes} {t('checklistManager.minutes')}
                             </span>
                           )}
                           
@@ -262,13 +264,13 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
                           onClick={() => handleEditItem(item)}
                           className="text-blue-600 hover:text-blue-800 text-sm px-3 py-1 rounded hover:bg-blue-50"
                         >
-                          Edit
+                          {t('checklistManager.edit')}
                         </button>
                         <button
                           onClick={() => handleDeleteItem(item.id)}
                           className="text-red-600 hover:text-red-800 text-sm px-3 py-1 rounded hover:bg-red-50"
                         >
-                          Delete
+                          {t('checklistManager.delete')}
                         </button>
                       </div>
                     </div>

@@ -1370,5 +1370,149 @@
       "min_length": "Minimum Lengde",
       "max_length": "Maksimum Lengde"
     }
+  },
+  "maintenanceProtocols": {
+    "title": "Vedlikeholdsprotokoll",
+    "subtitle": "Administrer vedlikeholdsprotokollmaler for maskiner",
+    "createNew": "Opprett Ny Protokoll",
+    "noProtocols": "Ingen protokoller funnet. Opprett din første protokoll for å komme i gang.",
+    "loading": "Laster protokoller...",
+    "confirmDelete": "Er du sikker på at du vil slette denne protokollen?",
+    "deleteFailed": "Kunne ikke slette protokoll",
+    "filters": {
+      "protocolType": "Protokolltype",
+      "allTypes": "Alle Typer",
+      "machineModel": "Maskinmodell",
+      "allModels": "Alle Modeller",
+      "universal": "Universell (Alle Modeller)",
+      "status": "Status",
+      "activeOnly": "Kun Aktive",
+      "all": "Alle",
+      "search": "Søk",
+      "searchPlaceholder": "Søk protokoller..."
+    },
+    "types": {
+      "daily": "Daglig",
+      "weekly": "Ukentlig",
+      "scheduled": "Planlagt",
+      "custom": "Tilpasset"
+    },
+    "card": {
+      "serviceInterval": "Serviceintervall",
+      "hours": "t",
+      "checklistItems": "sjekkliste elementer",
+      "manageChecklist": "Administrer Sjekkliste",
+      "edit": "Rediger",
+      "delete": "Slett",
+      "inactive": "Inaktiv"
+    }
+  },
+  "protocolForm": {
+    "editTitle": "Rediger Protokoll",
+    "createTitle": "Opprett Ny Protokoll",
+    "fields": {
+      "name": "Protokollnavn",
+      "namePlaceholder": "f.eks., Daglig Oppstart",
+      "type": "Protokolltype",
+      "serviceHours": "Servicetimer",
+      "serviceHoursPlaceholder": "f.eks., 50 eller 250",
+      "serviceHoursHelp": "Antall driftstimer for denne tjenesten",
+      "isRecurring": "Gjentakende service (gjenta hver {hours} time)",
+      "recurringHelp": "Fjern avkrysning for engangsservice (f.eks., 50t første service). Kryss av for gjentakende service (f.eks., hver 250t).",
+      "machineModel": "Maskinmodell",
+      "allModelsUniversal": "Alle Modeller (Universell)",
+      "machineModelHelp": "La stå tom for å gjelde alle maskinmodeller",
+      "description": "Beskrivelse",
+      "descriptionPlaceholder": "Kort beskrivelse av denne protokollen...",
+      "displayOrder": "Visningsrekkefølge",
+      "displayOrderHelp": "Lavere tall vises først",
+      "isActive": "Aktiv (protokoll er tilgjengelig for bruk)"
+    },
+    "typeOptions": {
+      "daily": "Daglig",
+      "weekly": "Ukentlig",
+      "scheduled": "Planlagt (Timebasert)",
+      "custom": "Tilpasset"
+    },
+    "actions": {
+      "saving": "Lagrer...",
+      "update": "Oppdater Protokoll",
+      "create": "Opprett Protokoll",
+      "cancel": "Avbryt"
+    }
+  },
+  "checklistManager": {
+    "title": "Administrer Sjekkliste Elementer",
+    "backToProtocols": "Tilbake til Protokoller",
+    "protocol": "Protokoll",
+    "addItem": "Legg til Sjekkliste Element",
+    "loading": "Laster sjekkliste elementer...",
+    "noItems": "Ingen sjekkliste elementer ennå. Legg til ditt første element for å komme i gang.",
+    "dragTip": "Dra og slipp elementer for å endre rekkefølge",
+    "confirmDelete": "Er du sikker på at du vil slette dette sjekkliste elementet?",
+    "deleteFailed": "Kunne ikke slette element",
+    "reorderFailed": "Kunne ikke endre rekkefølge på elementer",
+    "critical": "Kritisk",
+    "minutes": "min",
+    "edit": "Rediger",
+    "delete": "Slett",
+    "itemTypes": {
+      "check": "Sjekk",
+      "service": "Service",
+      "replacement": "Utskifting"
+    }
+  },
+  "checklistItemForm": {
+    "editTitle": "Rediger Sjekkliste Element",
+    "addTitle": "Legg til Sjekkliste Element",
+    "fields": {
+      "description": "Beskrivelse",
+      "descriptionPlaceholder": "f.eks., Sjekk oljenivå og fyll på om nødvendig",
+      "descriptionRequired": "Beskrivelse er påkrevd",
+      "itemType": "Elementtype",
+      "category": "Kategori",
+      "categoryPlaceholder": "f.eks., Elektrisk, Mekanisk",
+      "estimatedDuration": "Estimert Varighet (minutter)",
+      "durationPlaceholder": "f.eks., 15",
+      "estimatedQuantity": "Estimert Mengde",
+      "quantityPlaceholder": "f.eks., 2.5",
+      "isCritical": "Merk som Kritisk (må fullføres)",
+      "notes": "Notater",
+      "notesPlaceholder": "Tilleggsinstruksjoner eller informasjon"
+    },
+    "typeOptions": {
+      "check": "Sjekk",
+      "service": "Service",
+      "replacement": "Utskifting"
+    },
+    "actions": {
+      "cancel": "Avbryt",
+      "saving": "Lagrer...",
+      "updateItem": "Oppdater Element",
+      "addItem": "Legg til Element",
+      "saveFailed": "Kunne ikke lagre sjekkliste element"
+    }
+  },
+  "organizationScope": {
+    "globalAccess": "Global Tilgang",
+    "organizationAccess": "Organisasjonstilgang",
+    "viewing": "Viser",
+    "allOrganizations": "Alle Organisasjoner",
+    "limitedTo": "Begrenset til",
+    "yourOrganization": "Din Organisasjon",
+    "switchOrganization": "Bytt Organisasjon",
+    "switch": "Bytt",
+    "dataAccess": "Datatilgang",
+    "unrestricted": "Ubegrenset",
+    "organizationScoped": "Organisasjonsbegrenset",
+    "userManagement": "Brukerbehandling",
+    "ownOrganization": "Egen Organisasjon",
+    "reporting": "Rapportering",
+    "globalReports": "Globale Rapporter",
+    "organizationReports": "Organisasjonsrapporter",
+    "accessLevels": {
+      "global": "global",
+      "organization": "organisasjon"
+    }
   }
 }
