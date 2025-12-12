@@ -64,8 +64,9 @@ export const formatNumber = (value, unitOfMeasure = null) => {
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
   
-  // For consumables (units), show as integer without decimals
-  if (unitOfMeasure === 'units') {
+  // For consumables (pieces, units, boxes, sets), show as integer without decimals
+  const consumableUnits = ['pieces', 'units', 'pcs', 'boxes', 'sets'];
+  if (consumableUnits.includes(unitOfMeasure)) {
     return Math.floor(num).toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
@@ -77,4 +78,28 @@ export const formatNumber = (value, unitOfMeasure = null) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   });
+};
+
+// Function to get translated unit of measure
+export const getTranslatedUnit = (unitOfMeasure, t) => {
+  if (!unitOfMeasure || !t) return unitOfMeasure || '';
+  
+  // Map of unit keys to translation keys
+  const unitTranslationMap = {
+    'pieces': 'partForm.units.pieces',
+    'liters': 'partForm.units.liters',
+    'kilograms': 'partForm.units.kilograms',
+    'kg': 'partForm.units.kilograms',
+    'meters': 'partForm.units.meters',
+    'gallons': 'partForm.units.gallons',
+    'pounds': 'partForm.units.pounds',
+    'feet': 'partForm.units.feet',
+    'boxes': 'partForm.units.boxes',
+    'sets': 'partForm.units.sets',
+    'units': 'partForm.units.pieces', // Map 'units' to 'pieces' translation
+    'pcs': 'partForm.units.pieces'    // Map 'pcs' to 'pieces' translation
+  };
+  
+  const translationKey = unitTranslationMap[unitOfMeasure.toLowerCase()];
+  return translationKey ? t(translationKey, unitOfMeasure) : unitOfMeasure;
 };

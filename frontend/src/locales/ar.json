@@ -1096,6 +1096,7 @@
     "serialNumber": "الرقم التسلسلي",
     "mfgPartNumber": "رقم الشركة المصنعة",
     "images": "الصور",
+    "clickToEnlarge": "انقر للتكبير",
     "totalStock": "إجمالي المخزون",
     "low": "منخفض",
     "byWarehouse": "حسب المستودع",

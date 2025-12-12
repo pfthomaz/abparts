@@ -1102,6 +1102,7 @@
     "serialNumber": "Serienr.",
     "mfgPartNumber": "Prod. Delnr.",
     "images": "Bilder",
+    "clickToEnlarge": "Klikk for å forstørre",
     "totalStock": "Totalt Lager",
     "low": "LAV",
     "byWarehouse": "Etter Lager",

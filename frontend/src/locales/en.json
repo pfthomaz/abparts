@@ -1096,6 +1096,7 @@
     "serialNumber": "Serial #",
     "mfgPartNumber": "Mfg Part #",
     "images": "Images",
+    "clickToEnlarge": "Click to enlarge",
     "totalStock": "Total Stock",
     "low": "LOW",
     "byWarehouse": "By Warehouse",

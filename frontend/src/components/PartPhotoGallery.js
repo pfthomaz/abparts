@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { API_BASE_URL } from '../services/api';
 import { partsService } from '../services/partsService';
+import { useTranslation } from '../hooks/useTranslation';
 
 /**
  * PartPhotoGallery component for managing up to 4 part images
@@ -18,6 +19,8 @@ const PartPhotoGallery = forwardRef(({
   className = '',
   disabled = false
 }, ref) => {
+  const { t } = useTranslation();
+  
   // Simplified state management
   const [currentImages, setCurrentImages] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -157,8 +160,8 @@ const PartPhotoGallery = forwardRef(({
                     }}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-md flex items-center justify-center pointer-events-none">
-                    <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                      Click to enlarge
+                    <span className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                      {t('partCard.clickToEnlarge', 'Click to enlarge')}
                     </span>
                   </div>
                 </div>

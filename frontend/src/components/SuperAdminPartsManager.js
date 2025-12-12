@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { partsService } from '../services/partsService';
 import { isSuperAdmin } from '../utils/permissions';
+import { formatNumber, getTranslatedUnit } from '../utils';
+import { useTranslation } from '../hooks/useTranslation';
 import Modal from './Modal';
 import PartForm from './PartForm';
 import MultilingualPartName from './MultilingualPartName';
@@ -16,6 +18,7 @@ import PartCategoryBadge, { PartCategoryFilter } from './PartCategoryBadge';
  */
 const SuperAdminPartsManager = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Check if user is superadmin - do this check first before any hooks
   const isUserSuperAdmin = isSuperAdmin(user);
@@ -617,7 +620,7 @@ const SuperAdminPartsManager = () => {
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {part.manufacturer && <div>Mfg: {part.manufacturer}</div>}
                     {part.part_code && <div>Code: {part.part_code}</div>}
-                    <div>Unit: {part.unit_of_measure}</div>
+                    <div>Unit: {getTranslatedUnit(part.unit_of_measure, t)}</div>
                   </td>
                   <td className="px-6 py-4">
                     {part.image_urls && part.image_urls.length > 0 ? (
@@ -632,7 +635,7 @@ const SuperAdminPartsManager = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className={`text-sm ${part.is_low_stock ? 'text-red-600' : 'text-green-600'}`}>
-                      {part.total_stock || 0} {part.unit_of_measure}
+                      {formatNumber(part.total_stock || 0, part.unit_of_measure)} {getTranslatedUnit(part.unit_of_measure, t)}
                       {part.is_low_stock && <div className="text-xs text-red-500">LOW STOCK</div>}
                     </div>
                   </td>

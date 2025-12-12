@@ -5,6 +5,7 @@ import PartPhotoGallery from './PartPhotoGallery';
 import PartCategoryBadge from './PartCategoryBadge';
 import PermissionGuard from './PermissionGuard';
 import { PERMISSIONS } from '../utils/permissions';
+import { formatNumber, getTranslatedUnit } from '../utils';
 
 /**
  * Optimized PartCard component with React.memo for better performance
@@ -47,7 +48,7 @@ const PartCard = memo(({
           </p>
         )}
         <p className="text-gray-600">
-          <span className="font-medium">{t('partCard.unit')}:</span> {part.unit_of_measure}
+          <span className="font-medium">{t('partCard.unit')}:</span> {getTranslatedUnit(part.unit_of_measure, t)}
         </p>
         {part.manufacturer && (
           <p className="text-gray-600">
@@ -121,7 +122,7 @@ const InventorySection = memo(({ part }) => {
       <div className="flex justify-between items-center mb-2">
         <span className="font-medium text-gray-700">{t('partCard.totalStock')}:</span>
         <span className={`font-semibold ${part.is_low_stock ? 'text-red-600' : 'text-green-600'}`}>
-          {part.total_stock || 0} {part.unit_of_measure}
+          {formatNumber(part.total_stock || 0, part.unit_of_measure)} {getTranslatedUnit(part.unit_of_measure, t)}
           {part.is_low_stock && <span className="ml-1 text-xs">({t('partCard.low')})</span>}
         </span>
       </div>
@@ -133,7 +134,7 @@ const InventorySection = memo(({ part }) => {
             <div key={idx} className="flex justify-between text-sm">
               <span className="text-gray-600">{warehouse.warehouse_name}:</span>
               <span className={warehouse.is_low_stock ? 'text-red-600' : 'text-gray-800'}>
-                {warehouse.current_stock} {warehouse.unit_of_measure}
+                {formatNumber(warehouse.current_stock, warehouse.unit_of_measure)} {getTranslatedUnit(warehouse.unit_of_measure, t)}
                 {warehouse.is_low_stock && <span className="ml-1 text-xs">({t('partCard.low')})</span>}
               </span>
             </div>

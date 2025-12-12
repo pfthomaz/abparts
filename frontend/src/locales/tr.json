@@ -1102,6 +1102,7 @@
     "serialNumber": "Seri No",
     "mfgPartNumber": "Üretici Parça No",
     "images": "Resimler",
+    "clickToEnlarge": "Büyütmek için tıklayın",
     "totalStock": "Toplam Stok",
     "low": "DÜŞÜK",
     "byWarehouse": "Depoya Göre",
