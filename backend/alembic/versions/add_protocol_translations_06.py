@@ -1,6 +1,6 @@
 """Add protocol and checklist item translations
 
-Revision ID: 06_add_protocol_translations
+Revision ID: add_protocol_translations_06
 Revises: 04_add_preferred_language
 Create Date: 2024-12-11 12:00:00.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '06_add_protocol_translations'
+revision = 'add_protocol_translations_06'
 down_revision = '04_add_preferred_language'
 branch_labels = None
 depends_on = None
