@@ -831,7 +831,21 @@
     "startDay": "بدء اليوم",
     "endDay": "إنهاء اليوم",
     "noMachines": "لا توجد أجهزة متاحة",
-    "noProtocols": "لم يتم تكوين البروتوكولات"
+    "noProtocols": "لم يتم تكوين البروتوكولات",
+    "dayCompleted": "اكتمل اليوم!",
+    "operationsInProgress": "العمليات قيد التقدم",
+    "readyToStart": "جاهز للبدء",
+    "allDailyChecksCompleted": "تم إكمال جميع الفحوصات اليومية لهذه الآلة اليوم.",
+    "startCompletedRememberEnd": "تم إكمال فحوصات بداية اليوم. تذكر إكمال فحوصات نهاية اليوم.",
+    "beginDayWithStartChecks": "ابدأ يومك بإكمال فحوصات بداية اليوم.",
+    "startOfDay": "بداية اليوم",
+    "preOperationChecks": "فحوصات ما قبل التشغيل",
+    "endOfDay": "نهاية اليوم",
+    "postOperationChecks": "فحوصات ما بعد التشغيل",
+    "beginStartOfDayChecks": "ابدأ فحوصات بداية اليوم",
+    "noProtocolConfigured": "لم يتم تكوين بروتوكول",
+    "completeEndOfDayChecks": "أكمل فحوصات نهاية اليوم",
+    "completeStartOfDayFirst": "أكمل فحوصات بداية اليوم أولاً"
   },
   "stockAdjustments": {
     "title": "تعديلات المخزون",

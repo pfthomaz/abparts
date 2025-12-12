@@ -837,7 +837,21 @@
     "startDay": "Start dagen",
     "endDay": "Avslutt dagen",
     "noMachines": "Ingen tilgjengelige maskiner",
-    "noProtocols": "Ingen konfigurerte protokoller"
+    "noProtocols": "Ingen konfigurerte protokoller",
+    "dayCompleted": "Dag Fullført!",
+    "operationsInProgress": "Operasjoner Pågår",
+    "readyToStart": "Klar til Start",
+    "allDailyChecksCompleted": "Alle daglige sjekker fullført for denne maskinen i dag.",
+    "startCompletedRememberEnd": "Start av dag sjekker fullført. Husk å fullføre slutt av dag sjekker.",
+    "beginDayWithStartChecks": "Begynn dagen din ved å fullføre start av dag sjekker.",
+    "startOfDay": "Start av Dag",
+    "preOperationChecks": "Pre-operasjon sjekker",
+    "endOfDay": "Slutt av Dag",
+    "postOperationChecks": "Post-operasjon sjekker",
+    "beginStartOfDayChecks": "Begynn Start av Dag Sjekker",
+    "noProtocolConfigured": "Ingen protokoll konfigurert",
+    "completeEndOfDayChecks": "Fullfør Slutt av Dag Sjekker",
+    "completeStartOfDayFirst": "Fullfør start av dag sjekker først"
   },
   "stockAdjustments": {
     "title": "Lagerjusteringer",

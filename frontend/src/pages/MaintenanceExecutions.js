@@ -7,6 +7,7 @@ import { getLocalizedProtocols, createExecution, getExecutions } from '../servic
 import ExecutionForm from '../components/ExecutionForm';
 import ExecutionHistory from '../components/ExecutionHistory';
 
+
 const MaintenanceExecutions = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -143,6 +144,7 @@ const MaintenanceExecutions = () => {
           >
             {t('maintenance.executionHistory')}
           </button>
+
         </nav>
       </div>
 
@@ -233,6 +235,8 @@ const MaintenanceExecutions = () => {
       {activeTab === 'history' && (
         <ExecutionHistory executions={executions} onRefresh={loadData} />
       )}
+
+
     </div>
   );
 };

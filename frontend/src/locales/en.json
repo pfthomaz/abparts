@@ -831,7 +831,21 @@
     "startDay": "Start Day",
     "endDay": "End Day",
     "noMachines": "No machines available",
-    "noProtocols": "No protocols configured"
+    "noProtocols": "No protocols configured",
+    "dayCompleted": "Day Completed!",
+    "operationsInProgress": "Operations In Progress",
+    "readyToStart": "Ready to Start",
+    "allDailyChecksCompleted": "All daily checks completed for this machine today.",
+    "startCompletedRememberEnd": "Start of day checks completed. Remember to complete end of day checks.",
+    "beginDayWithStartChecks": "Begin your day by completing the start of day checks.",
+    "startOfDay": "Start of Day",
+    "preOperationChecks": "Pre-operation checks",
+    "endOfDay": "End of Day",
+    "postOperationChecks": "Post-operation checks",
+    "beginStartOfDayChecks": "Begin Start of Day Checks",
+    "noProtocolConfigured": "No protocol configured",
+    "completeEndOfDayChecks": "Complete End of Day Checks",
+    "completeStartOfDayFirst": "Complete start of day checks first"
   },
   "stockAdjustments": {
     "title": "Stock Adjustments",

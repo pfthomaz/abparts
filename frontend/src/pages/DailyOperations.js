@@ -46,17 +46,38 @@ const DailyOperations = () => {
       setMachines(machinesData);
 
       // Find start and end of day protocols
-      const start = protocolsData.find(p => 
-        p.protocol_type === 'daily' && 
-        p.name.toLowerCase().includes('start') || p.name.toLowerCase().includes('pre-operation')
-      );
-      const end = protocolsData.find(p => 
-        p.protocol_type === 'daily' && 
-        p.name.toLowerCase().includes('end') || p.name.toLowerCase().includes('post-operation')
-      );
+      // Use specific protocol IDs for reliable detection (language-independent)
+      const START_PROTOCOL_ID = 'f459363d-1dbf-443f-b988-ab43bab0f520';
+      const END_PROTOCOL_ID = '674da9b0-6d6b-4f40-a5c2-20ecc4d25aac';
+      
+      const start = protocolsData.find(p => p.id === START_PROTOCOL_ID);
+      const end = protocolsData.find(p => p.id === END_PROTOCOL_ID);
+      
+      // Fallback to name-based detection for other protocols
+      if (!start) {
+        const startFallback = protocolsData.find(p => 
+          p.protocol_type === 'daily' && 
+          (p.name.toLowerCase().includes('start') || 
+           p.name.toLowerCase().includes('pre-operation') ||
+           p.name.toLowerCase().includes('έναρξη') || // Greek: start
+           p.name.toLowerCase().includes('αρχή'))     // Greek: beginning
+        );
+        if (startFallback) setStartProtocol(startFallback);
+      }
+      
+      if (!end) {
+        const endFallback = protocolsData.find(p => 
+          p.protocol_type === 'daily' && 
+          (p.name.toLowerCase().includes('end') || 
+           p.name.toLowerCase().includes('post-operation') ||
+           p.name.toLowerCase().includes('τέλος') ||    // Greek: end
+           p.name.toLowerCase().includes('τέλους'))     // Greek: end (genitive)
+        );
+        if (endFallback) setEndProtocol(endFallback);
+      }
 
-      setStartProtocol(start);
-      setEndProtocol(end);
+      if (start) setStartProtocol(start);
+      if (end) setEndProtocol(end);
 
       // Filter today's executions
       const today = new Date().toISOString().split('T')[0];
@@ -173,15 +194,15 @@ const DailyOperations = () => {
                  sessionStatus === 'in_progress' ? '⚙️' : '🔵'}
               </span>
               <h2 className="text-xl font-bold text-gray-900">
-                {sessionStatus === 'completed' ? 'Day Completed!' :
-                 sessionStatus === 'in_progress' ? 'Operations In Progress' :
-                 'Ready to Start'}
+                {sessionStatus === 'completed' ? t('dailyOperations.dayCompleted') :
+                 sessionStatus === 'in_progress' ? t('dailyOperations.operationsInProgress') :
+                 t('dailyOperations.readyToStart')}
               </h2>
             </div>
             <p className="text-gray-600">
-              {sessionStatus === 'completed' ? 'All daily checks completed for this machine today.' :
-               sessionStatus === 'in_progress' ? 'Start of day checks completed. Remember to complete end of day checks.' :
-               'Begin your day by completing the start of day checks.'}
+              {sessionStatus === 'completed' ? t('dailyOperations.allDailyChecksCompleted') :
+               sessionStatus === 'in_progress' ? t('dailyOperations.startCompletedRememberEnd') :
+               t('dailyOperations.beginDayWithStartChecks')}
             </p>
           </div>
 
@@ -196,8 +217,8 @@ const DailyOperations = () => {
                   <span className="text-2xl">🌅</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Start of Day</h3>
-                  <p className="text-sm text-gray-500">Pre-operation checks</p>
+                  <h3 className="text-lg font-bold text-gray-900">{t('dailyOperations.startOfDay')}</h3>
+                  <p className="text-sm text-gray-500">{t('dailyOperations.preOperationChecks')}</p>
                 </div>
               </div>
               
@@ -207,14 +228,14 @@ const DailyOperations = () => {
                   disabled={!startProtocol}
                   className="w-full px-4 py-3 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 font-medium disabled:bg-gray-400"
                 >
-                  {startProtocol ? 'Begin Start of Day Checks' : 'No protocol configured'}
+                  {startProtocol ? t('dailyOperations.beginStartOfDayChecks') : t('dailyOperations.noProtocolConfigured')}
                 </button>
               ) : (
                 <div className="flex items-center gap-2 text-green-600">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-medium">Completed</span>
+                  <span className="font-medium">{t('dailyOperations.completed')}</span>
                 </div>
               )}
             </div>
@@ -228,8 +249,8 @@ const DailyOperations = () => {
                   <span className="text-2xl">🌇</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">End of Day</h3>
-                  <p className="text-sm text-gray-500">Post-operation checks</p>
+                  <h3 className="text-lg font-bold text-gray-900">{t('dailyOperations.endOfDay')}</h3>
+                  <p className="text-sm text-gray-500">{t('dailyOperations.postOperationChecks')}</p>
                 </div>
               </div>
               
@@ -238,7 +259,7 @@ const DailyOperations = () => {
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-medium">Completed</span>
+                  <span className="font-medium">{t('dailyOperations.completed')}</span>
                 </div>
               ) : sessionStatus === 'in_progress' ? (
                 <button
@@ -246,11 +267,11 @@ const DailyOperations = () => {
                   disabled={!endProtocol}
                   className="w-full px-4 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium disabled:bg-gray-400"
                 >
-                  {endProtocol ? 'Complete End of Day Checks' : 'No protocol configured'}
+                  {endProtocol ? t('dailyOperations.completeEndOfDayChecks') : t('dailyOperations.noProtocolConfigured')}
                 </button>
               ) : (
                 <div className="text-gray-500 text-sm">
-                  Complete start of day checks first
+                  {t('dailyOperations.completeStartOfDayFirst')}
                 </div>
               )}
             </div>

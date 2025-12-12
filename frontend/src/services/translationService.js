@@ -43,13 +43,17 @@ class TranslationService {
 
   // Language-aware Display Methods
   async getLocalizedProtocol(protocolId, language = null) {
-    const params = language ? { language } : {};
-    return api.get(`/translations/protocols/${protocolId}/localized`, { params });
+    const url = language 
+      ? `/translations/protocols/${protocolId}/localized?language=${language}`
+      : `/translations/protocols/${protocolId}/localized`;
+    return api.get(url);
   }
 
   async getLocalizedChecklistItems(protocolId, language = null) {
-    const params = language ? { language } : {};
-    return api.get(`/translations/protocols/${protocolId}/checklist-items/localized`, { params });
+    const url = language 
+      ? `/translations/protocols/${protocolId}/checklist-items/localized?language=${language}`
+      : `/translations/protocols/${protocolId}/checklist-items/localized`;
+    return api.get(url);
   }
 
   // Bulk Operations

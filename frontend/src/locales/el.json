@@ -831,7 +831,21 @@
     "startDay": "Έναρξη Ημέρας",
     "endDay": "Λήξη Ημέρας",
     "noMachines": "Δεν υπάρχουν διαθέσιμα μηχανήματα",
-    "noProtocols": "Δεν έχουν ρυθμιστεί πρωτόκολλα"
+    "noProtocols": "Δεν έχουν ρυθμιστεί πρωτόκολλα",
+    "dayCompleted": "Ημέρα Ολοκληρώθηκε!",
+    "operationsInProgress": "Λειτουργίες σε Εξέλιξη",
+    "readyToStart": "Έτοιμο για Έναρξη",
+    "allDailyChecksCompleted": "Όλοι οι ημερήσιοι έλεγχοι ολοκληρώθηκαν για αυτό το μηχάνημα σήμερα.",
+    "startCompletedRememberEnd": "Οι έλεγχοι έναρξης ημέρας ολοκληρώθηκαν. Θυμηθείτε να ολοκληρώσετε τους ελέγχους τέλους ημέρας.",
+    "beginDayWithStartChecks": "Ξεκινήστε την ημέρα σας ολοκληρώνοντας τους ελέγχους έναρξης ημέρας.",
+    "startOfDay": "Έναρξη Ημέρας",
+    "preOperationChecks": "Έλεγχοι προ-λειτουργίας",
+    "endOfDay": "Τέλος Ημέρας",
+    "postOperationChecks": "Έλεγχοι μετά-λειτουργίας",
+    "beginStartOfDayChecks": "Ξεκινήστε τους Ελέγχους Έναρξης Ημέρας",
+    "noProtocolConfigured": "Δεν έχει ρυθμιστεί πρωτόκολλο",
+    "completeEndOfDayChecks": "Ολοκληρώστε τους Ελέγχους Τέλους Ημέρας",
+    "completeStartOfDayFirst": "Ολοκληρώστε πρώτα τους ελέγχους έναρξης ημέρας"
   },
   "stockAdjustments": {
     "title": "Προσαρμογές Αποθέματος",

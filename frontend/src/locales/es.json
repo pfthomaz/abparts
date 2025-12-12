@@ -837,7 +837,21 @@
     "startDay": "Iniciar Día",
     "endDay": "Finalizar Día",
     "noMachines": "No hay máquinas disponibles",
-    "noProtocols": "No hay protocolos configurados"
+    "noProtocols": "No hay protocolos configurados",
+    "dayCompleted": "¡Día Completado!",
+    "operationsInProgress": "Operaciones en Progreso",
+    "readyToStart": "Listo para Comenzar",
+    "allDailyChecksCompleted": "Todas las verificaciones diarias completadas para esta máquina hoy.",
+    "startCompletedRememberEnd": "Verificaciones de inicio de día completadas. Recuerda completar las verificaciones de fin de día.",
+    "beginDayWithStartChecks": "Comienza tu día completando las verificaciones de inicio de día.",
+    "startOfDay": "Inicio del Día",
+    "preOperationChecks": "Verificaciones pre-operación",
+    "endOfDay": "Fin del Día",
+    "postOperationChecks": "Verificaciones post-operación",
+    "beginStartOfDayChecks": "Comenzar Verificaciones de Inicio de Día",
+    "noProtocolConfigured": "No hay protocolo configurado",
+    "completeEndOfDayChecks": "Completar Verificaciones de Fin de Día",
+    "completeStartOfDayFirst": "Completa primero las verificaciones de inicio de día"
   },
   "stockAdjustments": {
     "title": "Ajustes de Stock",

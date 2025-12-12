@@ -837,7 +837,21 @@
     "startDay": "Güne Başla",
     "endDay": "Günü Bitir",
     "noMachines": "Kullanılabilir makine yok",
-    "noProtocols": "Yapılandırılmış protokol yok"
+    "noProtocols": "Yapılandırılmış protokol yok",
+    "dayCompleted": "Gün Tamamlandı!",
+    "operationsInProgress": "İşlemler Devam Ediyor",
+    "readyToStart": "Başlamaya Hazır",
+    "allDailyChecksCompleted": "Bu makine için bugünkü tüm günlük kontroller tamamlandı.",
+    "startCompletedRememberEnd": "Gün başı kontrolleri tamamlandı. Gün sonu kontrollerini tamamlamayı unutmayın.",
+    "beginDayWithStartChecks": "Gün başı kontrollerini tamamlayarak güne başlayın.",
+    "startOfDay": "Gün Başı",
+    "preOperationChecks": "Operasyon öncesi kontroller",
+    "endOfDay": "Gün Sonu",
+    "postOperationChecks": "Operasyon sonrası kontroller",
+    "beginStartOfDayChecks": "Gün Başı Kontrollerini Başlat",
+    "noProtocolConfigured": "Protokol yapılandırılmamış",
+    "completeEndOfDayChecks": "Gün Sonu Kontrollerini Tamamla",
+    "completeStartOfDayFirst": "Önce gün başı kontrollerini tamamlayın"
   },
   "stockAdjustments": {
     "title": "Stok Ayarlamaları",
