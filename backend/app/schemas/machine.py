@@ -57,7 +57,14 @@ class MachineResponse(MachineBase):
     updated_at: datetime
     
     # Include organization name for easier display
+    # Include organization name for easier display
     customer_organization_name: Optional[str] = None
+    
+    # Enriched hours data
+    latest_hours: Optional[float] = None
+    latest_hours_date: Optional[datetime] = None
+    days_since_last_hours_record: Optional[int] = None
+    total_hours_records: Optional[int] = None
 
     class Config:
         from_attributes = True

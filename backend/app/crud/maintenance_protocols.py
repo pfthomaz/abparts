@@ -316,6 +316,21 @@ def create_execution(
         db_completion = models.MaintenanceChecklistCompletion(**completion_dict)
         db.add(db_completion)
     
+    # Update machine hours if new value is greater than current
+    if execution_in.machine_hours_at_service:
+        machine = db.query(models.Machine).filter(models.Machine.id == execution_data["machine_id"]).first()
+        if machine:
+            latest_hours = machine.get_latest_hours(db)
+            if execution_in.machine_hours_at_service > latest_hours:
+                hours_record = models.MachineHours(
+                    machine_id=machine.id,
+                    recorded_by_user_id=performed_by_user_id,
+                    hours_value=execution_in.machine_hours_at_service,
+                    recorded_date=execution_in.performed_date or datetime.now(),
+                    notes=f"Recorded during maintenance execution"
+                )
+                db.add(hours_record)
+
     db.commit()
     db.refresh(db_execution)
     return db_execution

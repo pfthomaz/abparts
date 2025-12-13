@@ -1498,6 +1498,77 @@ def get_machines_with_hours_data(db: Session, skip: int = 0, limit: int = 100, o
         logger.warning("Falling back to basic machines without hours data")
         return get_machines(db, skip, limit, organization_id)
 
+def get_machine_with_hours_data(db: Session, machine_id: uuid.UUID):
+    """
+    Retrieve a single machine with enriched hours data.
+    """
+    from datetime import datetime
+    from sqlalchemy import desc
+    
+    try:
+        machine = get_machine(db, machine_id)
+        if not machine:
+            return None
+            
+        # Get latest hours record
+        logger.info(f"DEBUG: Querying latest hours for machine {machine.id}")
+        latest_hours_record = db.query(models.MachineHours)\
+            .filter(models.MachineHours.machine_id == machine.id)\
+            .order_by(desc(models.MachineHours.recorded_date))\
+            .first()
+        logger.info(f"DEBUG: Found latest hours: {latest_hours_record.hours_value if latest_hours_record else 'None'}")
+        
+        # Get total hours records count
+        total_records = db.query(models.MachineHours)\
+            .filter(models.MachineHours.machine_id == machine.id)\
+            .count()
+        logger.info(f"DEBUG: Total records: {total_records}")
+        
+        # Calculate days since last record
+        days_since_last = None
+        if latest_hours_record:
+            from datetime import timezone
+            # Ensure both datetimes are timezone-aware for comparison
+            now = datetime.now(timezone.utc)
+            recorded_date = latest_hours_record.recorded_date
+            if recorded_date.tzinfo is None:
+                recorded_date = recorded_date.replace(tzinfo=timezone.utc)
+            days_since_last = (now - recorded_date).days
+        
+        # Create enriched machine data - include all base fields
+        machine_dict = {
+            'id': machine.id,
+            'customer_organization_id': machine.customer_organization_id,
+            'model_type': machine.model_type,
+            'name': machine.name,
+            'serial_number': machine.serial_number,
+            # Include all MachineBase fields
+            'purchase_date': getattr(machine, 'purchase_date', None),
+            'warranty_expiry_date': getattr(machine, 'warranty_expiry_date', None),
+            'status': getattr(machine, 'status', 'active'),
+            'last_maintenance_date': getattr(machine, 'last_maintenance_date', None),
+            'next_maintenance_date': getattr(machine, 'next_maintenance_date', None),
+            'location': getattr(machine, 'location', None),
+            'notes': getattr(machine, 'notes', None),
+            # BaseSchema fields
+            'created_at': machine.created_at,
+            'updated_at': machine.updated_at,
+            # Enriched fields
+            'latest_hours': float(latest_hours_record.hours_value) if latest_hours_record else None,
+            'latest_hours_date': latest_hours_record.recorded_date if latest_hours_record else None,
+            'days_since_last_hours_record': days_since_last,
+            'total_hours_records': total_records,
+            'customer_organization_name': machine.customer_organization.name if machine.customer_organization else None
+        }
+        
+        return machine_dict
+        
+    except Exception as e:
+        logger.error(f"Error enriching machine {machine_id} with hours data: {str(e)}", exc_info=True)
+        # Fall back to basic machine if enrichment fails
+        machine = get_machine(db, machine_id)
+        return machine.__dict__ if machine else None
+
 def get_machine_hours_history(db: Session, machine_id: uuid.UUID, skip: int = 0, limit: int = 50):
     """
     Get machine hours history for a specific machine.

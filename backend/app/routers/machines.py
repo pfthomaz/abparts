@@ -410,7 +410,7 @@ async def get_machine(
             detail="Invalid machine ID provided"
         )
     
-    machine = machines.get_machine(db, machine_id)
+    machine = machines.get_machine_with_hours_data(db, machine_id)
     if not machine:
         logger.info(f"Machine not found: {machine_id}")
         raise HTTPException(
@@ -419,14 +419,16 @@ async def get_machine(
         )
 
     # Check if user can access this machine's organization
-    if not check_organization_access(current_user, machine.customer_organization_id, db):
+    # machine is now a dict, so access fields accordingly
+    if not check_organization_access(current_user, machine['customer_organization_id'], db):
         logger.warning(f"User {current_user.user_id} attempted to access machine {machine_id} without proper organization access")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this machine"
         )
 
-    await log_machine_response(request, machine.__dict__, "get_machine")
+    await log_machine_response(request, machine, "get_machine")
+    logger.info(f"DEBUG: Returning machine data: latest_hours={machine.get('latest_hours')}, keys={machine.keys()}")
     return machine
 
 @router.post("/", response_model=schemas.MachineResponse, status_code=status.HTTP_201_CREATED)
