@@ -223,7 +223,7 @@ const MachineDetails = ({ machineId, onClose }) => {
           {activeTab === 'hours' && (
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('machineDetails.machineHoursLog')}</h3>
-              
+
               {machineHours.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   {t('machines.noHoursRecorded')}
@@ -231,7 +231,7 @@ const MachineDetails = ({ machineId, onClose }) => {
               ) : (
                 <div>
                   {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-blue-600">
                         {machineHours[0]?.hours_value?.toLocaleString() || 0} {t('machines.hrs')}
@@ -244,16 +244,7 @@ const MachineDetails = ({ machineId, onClose }) => {
                       </div>
                       <div className="text-sm text-gray-600">{t('machineDetails.totalRecords')}</div>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {machineHours.length > 1 
-                          ? (machineHours[0]?.hours_value - machineHours[machineHours.length - 1]?.hours_value).toLocaleString()
-                          : 0} {t('machines.hrs')}
-                      </div>
-                      <div className="text-sm text-gray-600">{t('machineDetails.totalAccumulated')}</div>
-                    </div>
                   </div>
-
                   {/* Hours History Table */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -360,10 +351,10 @@ const MachineDetails = ({ machineId, onClose }) => {
                   <PartUsageChart usageData={usageHistory} />
                 </div>
               )}
-              
+
               {/* Detailed History with Delete */}
-              <PartUsageHistory 
-                machineId={machineId} 
+              <PartUsageHistory
+                machineId={machineId}
                 onUsageDeleted={fetchMachineData}
               />
             </div>
