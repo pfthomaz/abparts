@@ -352,13 +352,14 @@ async def initialize_default_organizations(
         raise HTTPException(status_code=500, detail="Failed to initialize default organizations")
 
 def _add_logo_url_to_organization(org):
-    """Helper to add logo_url with cache-busting to organization response."""
+    """Helper to add logo data URL to organization response."""
+    from ..image_utils import image_to_data_url
+    
     if org.logo_data:
-        try:
-            cache_buster = int(org.updated_at.timestamp()) if org.updated_at else 0
-        except (AttributeError, TypeError):
-            cache_buster = 0
-        org.logo_url = f"/images/organizations/{org.id}/logo?v={cache_buster}"
+        # Convert binary data to data URL for immediate display
+        org.logo_data_url = image_to_data_url(org.logo_data)
+    else:
+        org.logo_data_url = None
     return org
 
 @router.get("/{org_id}", response_model=schemas.OrganizationResponse)

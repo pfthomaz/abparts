@@ -17,6 +17,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authService.login(username, password);
       localStorage.setItem('authToken', data.access_token);
+      // Clear the reminder check flag for fresh login
+      sessionStorage.removeItem('hasCheckedReminders');
       setToken(data.access_token);
       return true; // Indicate successful login
     } catch (error) {
@@ -31,6 +33,8 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('authToken');
+    // Clear session storage to ensure reminders work on next login
+    sessionStorage.removeItem('hasCheckedReminders');
   }, []);
 
   // Function to refresh user data (useful after profile/logo updates)

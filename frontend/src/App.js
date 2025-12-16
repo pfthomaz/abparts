@@ -43,11 +43,20 @@ function App() {
   const { token, loadingUser, user } = useAuth();
   const [showHoursReminder, setShowHoursReminder] = useState(false);
   const [machinesNeedingUpdate, setMachinesNeedingUpdate] = useState([]);
+  const [hasCheckedReminders, setHasCheckedReminders] = useState(false);
 
-  // Check for machine hours reminders on login
+  // Check for machine hours reminders only on fresh login (not on page refresh)
   useEffect(() => {
     const checkHoursReminders = async () => {
-      if (!token || !user) return;
+      if (!token || !user || hasCheckedReminders) return;
+      
+      // Check if this is a fresh login or page refresh
+      const isPageRefresh = sessionStorage.getItem('hasCheckedReminders') === 'true';
+      
+      if (isPageRefresh) {
+        setHasCheckedReminders(true);
+        return;
+      }
       
       try {
         const response = await api.get('/machines/check-hours-reminders');
@@ -56,16 +65,30 @@ function App() {
           setMachinesNeedingUpdate(response.machines_needing_update);
           setShowHoursReminder(true);
         }
+        
+        // Mark that we've checked reminders for this session
+        sessionStorage.setItem('hasCheckedReminders', 'true');
+        setHasCheckedReminders(true);
       } catch (error) {
         console.error('Failed to check hours reminders:', error);
+        setHasCheckedReminders(true);
       }
     };
 
     // Check reminders when user logs in
-    if (token && user) {
+    if (token && user && !loadingUser) {
       checkHoursReminders();
     }
-  }, [token, user]);
+  }, [token, user, loadingUser, hasCheckedReminders]);
+
+  // Clear the reminder check flag when user logs out
+  useEffect(() => {
+    if (!token) {
+      sessionStorage.removeItem('hasCheckedReminders');
+      setHasCheckedReminders(false);
+      setShowHoursReminder(false);
+    }
+  }, [token]);
 
   if (loadingUser) {
     return (

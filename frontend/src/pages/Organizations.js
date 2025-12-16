@@ -287,9 +287,9 @@ const Organizations = () => {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3 flex-1">
                       {/* Organization Logo */}
-                      {org.logo_url ? (
+                      {org.logo_data_url ? (
                         <img
-                          src={org.logo_url}
+                          src={org.logo_data_url}
                           alt={`${org.name} logo`}
                           className="w-12 h-12 rounded-lg object-contain border border-gray-200 bg-white flex-shrink-0"
                           onError={(e) => {

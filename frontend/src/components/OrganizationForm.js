@@ -100,8 +100,9 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
         contact_info: formData.contact_info || undefined
       };
 
-      // Remove logo_url from submission - logos are handled separately via upload endpoint
+      // Remove logo fields from submission - logos are handled separately via upload endpoint
       delete cleanedData.logo_url;
+      delete cleanedData.logo_data_url;
 
       // Call the onSubmit prop function (passed from parent component)
       await onSubmit(cleanedData);
@@ -149,9 +150,9 @@ function OrganizationForm({ initialData = {}, onSubmit, onClose }) {
           <h4 className="text-sm font-medium text-gray-700 mb-3">{t('organizationForm.organizationLogo')}</h4>
           <OrganizationLogoUpload
             organizationId={initialData.id}
-            currentLogoUrl={formData.logo_url}
+            currentLogoUrl={formData.logo_data_url}
             onLogoUpdated={(newUrl) => {
-              setFormData(prev => ({ ...prev, logo_url: newUrl }));
+              setFormData(prev => ({ ...prev, logo_data_url: newUrl }));
             }}
           />
         </div>

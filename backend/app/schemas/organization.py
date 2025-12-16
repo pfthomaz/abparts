@@ -52,6 +52,7 @@ class OrganizationResponse(OrganizationBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    logo_data_url: Optional[str] = None  # Data URL for logo display
 
     class Config:
         from_attributes = True
@@ -74,6 +75,7 @@ class OrganizationHierarchyResponse(BaseModel):
     user_count: Optional[int] = None
     warehouse_count: Optional[int] = None
     is_active: bool
+    logo_data_url: Optional[str] = None  # Data URL for logo display
 
     class Config:
         from_attributes = True
@@ -110,6 +112,7 @@ class OrganizationHierarchyNode(BaseModel):
     created_at: datetime
     updated_at: datetime
     children: List['OrganizationHierarchyNode'] = []
+    logo_data_url: Optional[str] = None  # Data URL for logo display
     
     class Config:
         from_attributes = True

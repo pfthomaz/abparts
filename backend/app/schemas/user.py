@@ -48,6 +48,7 @@ class UserResponse(UserBase):
     preferred_language: Optional[str] = None
     preferred_country: Optional[str] = None
     profile_photo_url: Optional[str] = None
+    profile_photo_data_url: Optional[str] = None  # Data URL for photo display
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime

@@ -458,8 +458,10 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
     
     # Convert profile photo data to data URL if it exists
     profile_photo_url = None
+    profile_photo_data_url = None
     if user.profile_photo_data:
-        profile_photo_url = image_to_data_url(user.profile_photo_data)
+        profile_photo_data_url = image_to_data_url(user.profile_photo_data)
+        profile_photo_url = profile_photo_data_url  # Keep legacy field for compatibility
     elif user.profile_photo_url:
         # Fallback to legacy URL if it exists
         profile_photo_url = user.profile_photo_url
@@ -478,6 +480,7 @@ def get_user_profile_with_organization(db: Session, user_id: uuid.UUID) -> Optio
         "preferred_country": user.preferred_country if hasattr(user, 'preferred_country') else None,
         "localization_preferences": user.localization_preferences if hasattr(user, 'localization_preferences') else None,
         "profile_photo_url": profile_photo_url,
+        "profile_photo_data_url": profile_photo_data_url,
         "last_login": user.last_login,
         "created_at": user.created_at,
         "updated_at": user.updated_at

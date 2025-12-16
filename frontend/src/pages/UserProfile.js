@@ -290,7 +290,7 @@ const UserProfile = () => {
                 console.log('Current profile before update:', profile);
                 // Update profile with new photo URL immediately for preview
                 setProfile(prev => {
-                  const updated = { ...prev, profile_photo_url: newUrl };
+                  const updated = { ...prev, profile_photo_data_url: newUrl };
                   console.log('Updated profile:', updated);
                   return updated;
                 });
