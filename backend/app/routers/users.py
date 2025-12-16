@@ -257,6 +257,7 @@ async def get_all_user_management_audit_logs(
 
 @router.get("/me/sessions", response_model=List[dict])
 async def get_my_active_sessions(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
@@ -268,7 +269,26 @@ async def get_my_active_sessions(
     
     try:
         sessions = session_manager.get_active_sessions(current_user.user_id)
-        return sessions
+        
+        # Get current session token from header
+        auth_header = request.headers.get("Authorization", "")
+        current_token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else None
+        
+        # Process sessions for frontend
+        processed_sessions = []
+        for session in sessions:
+            # Map session_token to token for frontend compatibility
+            session["token"] = session.get("session_token")
+            
+            # Determine if this is the current session
+            if current_token and session.get("session_token") == current_token:
+                session["is_current"] = True
+            else:
+                session["is_current"] = False
+                
+            processed_sessions.append(session)
+            
+        return processed_sessions
         
     except Exception as e:
         raise HTTPException(

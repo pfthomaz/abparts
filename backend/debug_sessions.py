@@ -33,13 +33,14 @@ def test_session_logic():
     
     # Mock user object
     class MockUser:
-        id = user_id
-        username = "debug_user"
-        organization_id = organization_id
-        role = "admin"
-        last_login = None
+        pass
     
     user = MockUser()
+    user.id = user_id
+    user.username = "debug_user"
+    user.organization_id = organization_id
+    user.role = "admin"
+    user.last_login = None
     
     print(f"Creating session for user {user_id}...")
     # 2. Create a session
