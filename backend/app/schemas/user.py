@@ -26,6 +26,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    preferred_language: Optional[str] = "en"
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None

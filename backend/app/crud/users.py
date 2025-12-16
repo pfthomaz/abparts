@@ -27,7 +27,8 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
         organization_id=user.organization_id,
         name=user.name,
         role=user.role,
-        user_status=models.UserStatus.active  # Set default status to active
+        user_status=models.UserStatus.active,  # Set default status to active
+        preferred_language=user.preferred_language
     )
     db.add(db_user)
     db.commit()
