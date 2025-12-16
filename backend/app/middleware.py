@@ -77,8 +77,8 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp, redis_client: Optional[redis.Redis] = None):
         super().__init__(app)
         self.redis_client = redis_client
-        self.default_rate_limit = 100  # requests per minute
-        self.admin_rate_limit = 200    # higher limit for admins
+        self.default_rate_limit = 300  # requests per minute (increased from 100)
+        self.admin_rate_limit = 1000   # requests per minute (increased from 200)
         self.window_size = 60          # 1 minute window
     
     def _get_rate_limit_key(self, identifier: str) -> str:
