@@ -102,28 +102,28 @@ class TranslationService {
 
   // Auto-translation methods
   async autoTranslateProtocol(protocolId, targetLanguages = null) {
-    const response = await api.post(`/protocol-translations/protocols/${protocolId}/auto-translate`, {
+    const response = await api.post(`/translations/protocols/${protocolId}/auto-translate`, {
       target_languages: targetLanguages
     });
     return response;
   }
 
   async autoTranslateProtocolChecklist(protocolId, targetLanguages = null) {
-    const response = await api.post(`/protocol-translations/protocols/${protocolId}/auto-translate-checklist`, {
+    const response = await api.post(`/translations/protocols/${protocolId}/auto-translate-checklist`, {
       target_languages: targetLanguages
     });
     return response;
   }
 
   async autoTranslateCompleteProtocol(protocolId, targetLanguages = null) {
-    const response = await api.post(`/protocol-translations/protocols/${protocolId}/auto-translate-complete`, {
+    const response = await api.post(`/translations/protocols/${protocolId}/auto-translate-complete`, {
       target_languages: targetLanguages
     });
     return response;
   }
 
   async getAutoTranslateStatus() {
-    const response = await api.get('/protocol-translations/auto-translate/status');
+    const response = await api.get('/translations/auto-translate/status');
     return response;
   }
 }
