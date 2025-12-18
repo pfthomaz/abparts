@@ -44,7 +44,11 @@
     "na": "N/D",
     "warning": "Advertencia",
     "admin": "Administrador",
-    "remove": "Eliminar"
+    "remove": "Eliminar",
+    "selectAll": "Seleccionar Todo",
+    "selectNone": "No Seleccionar",
+    "noDescription": "Sin descripción disponible",
+    "notes": "Notas"
   },
   "navigation": {
     "dashboard": "Panel de Control",

@@ -266,7 +266,7 @@ const ChecklistTranslationManager = ({ protocol, languageCode, onSave, onCancel 
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {t('maintenanceProtocols.description')}
+                          {t('protocolForm.fields.description')}
                         </label>
                         <div className="bg-white p-3 rounded border text-gray-900">
                           {item.description}
@@ -276,7 +276,7 @@ const ChecklistTranslationManager = ({ protocol, languageCode, onSave, onCancel 
                       {item.notes && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {t('maintenanceProtocols.notes')}
+                            {t('common.notes')}
                           </label>
                           <div className="bg-white p-3 rounded border text-gray-900">
                             {item.notes}
@@ -295,7 +295,7 @@ const ChecklistTranslationManager = ({ protocol, languageCode, onSave, onCancel 
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {t('maintenanceProtocols.description')} *
+                          {t('protocolForm.fields.description')} *
                         </label>
                         <textarea
                           value={translation.description || ''}
@@ -316,7 +316,7 @@ const ChecklistTranslationManager = ({ protocol, languageCode, onSave, onCancel 
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {t('maintenanceProtocols.notes')} ({t('common.optional')})
+                          {t('common.notes')} ({t('common.optional')})
                         </label>
                         <textarea
                           value={translation.notes || ''}

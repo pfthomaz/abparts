@@ -47,7 +47,8 @@
     "remove": "Remove",
     "selectAll": "Select All",
     "selectNone": "Select None",
-    "noDescription": "No description available"
+    "noDescription": "No description available",
+    "notes": "Notes"
   },
   "navigation": {
     "dashboard": "Dashboard",

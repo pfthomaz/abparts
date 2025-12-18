@@ -44,7 +44,11 @@
     "na": "I/T",
     "warning": "Advarsel",
     "admin": "Administrator",
-    "remove": "Fjern"
+    "remove": "Fjern",
+    "selectAll": "Velg Alle",
+    "selectNone": "Velg Ingen",
+    "noDescription": "Ingen beskrivelse tilgjengelig",
+    "notes": "Notater"
   },
   "navigation": {
     "dashboard": "Dashbord",

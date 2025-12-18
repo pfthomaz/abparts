@@ -47,7 +47,8 @@
     "remove": "Αφαίρεση",
     "selectAll": "Επιλογή Όλων",
     "selectNone": "Καμία Επιλογή",
-    "noDescription": "Δεν υπάρχει περιγραφή"
+    "noDescription": "Δεν υπάρχει περιγραφή",
+    "notes": "Σημειώσεις"
   },
   "navigation": {
     "dashboard": "Πίνακας Ελέγχου",

@@ -44,7 +44,11 @@
     "na": "Yok",
     "warning": "Uyarı",
     "admin": "Yönetici",
-    "remove": "Kaldır"
+    "remove": "Kaldır",
+    "selectAll": "Tümünü Seç",
+    "selectNone": "Hiçbirini Seçme",
+    "noDescription": "Açıklama mevcut değil",
+    "notes": "Notlar"
   },
   "navigation": {
     "dashboard": "Kontrol Paneli",

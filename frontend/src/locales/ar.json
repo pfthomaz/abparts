@@ -44,7 +44,11 @@
     "na": "غير متاح",
     "warning": "تحذير",
     "admin": "مسؤول",
-    "remove": "إزالة"
+    "remove": "إزالة",
+    "selectAll": "تحديد الكل",
+    "selectNone": "عدم التحديد",
+    "noDescription": "لا يوجد وصف متاح",
+    "notes": "ملاحظات"
   },
   "navigation": {
     "dashboard": "لوحة التحكم",
