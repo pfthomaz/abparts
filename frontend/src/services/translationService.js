@@ -102,23 +102,35 @@ class TranslationService {
 
   // Auto-translation methods
   async autoTranslateProtocol(protocolId, targetLanguages = null) {
-    const response = await api.post(`/translations/protocols/${protocolId}/auto-translate`, {
-      target_languages: targetLanguages
-    });
+    let url = `/translations/protocols/${protocolId}/auto-translate`;
+    if (targetLanguages && targetLanguages.length > 0) {
+      const params = new URLSearchParams();
+      targetLanguages.forEach(lang => params.append('target_languages', lang));
+      url += `?${params.toString()}`;
+    }
+    const response = await api.post(url);
     return response;
   }
 
   async autoTranslateProtocolChecklist(protocolId, targetLanguages = null) {
-    const response = await api.post(`/translations/protocols/${protocolId}/auto-translate-checklist`, {
-      target_languages: targetLanguages
-    });
+    let url = `/translations/protocols/${protocolId}/auto-translate-checklist`;
+    if (targetLanguages && targetLanguages.length > 0) {
+      const params = new URLSearchParams();
+      targetLanguages.forEach(lang => params.append('target_languages', lang));
+      url += `?${params.toString()}`;
+    }
+    const response = await api.post(url);
     return response;
   }
 
   async autoTranslateCompleteProtocol(protocolId, targetLanguages = null) {
-    const response = await api.post(`/translations/protocols/${protocolId}/auto-translate-complete`, {
-      target_languages: targetLanguages
-    });
+    let url = `/translations/protocols/${protocolId}/auto-translate-complete`;
+    if (targetLanguages && targetLanguages.length > 0) {
+      const params = new URLSearchParams();
+      targetLanguages.forEach(lang => params.append('target_languages', lang));
+      url += `?${params.toString()}`;
+    }
+    const response = await api.post(url);
     return response;
   }
 
