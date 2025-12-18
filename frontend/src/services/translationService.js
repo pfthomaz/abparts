@@ -99,6 +99,33 @@ class TranslationService {
     if (percentage >= 50) return '🟠';
     return '🔴';
   }
+
+  // Auto-translation methods
+  async autoTranslateProtocol(protocolId, targetLanguages = null) {
+    const response = await api.post(`/protocol-translations/protocols/${protocolId}/auto-translate`, {
+      target_languages: targetLanguages
+    });
+    return response;
+  }
+
+  async autoTranslateProtocolChecklist(protocolId, targetLanguages = null) {
+    const response = await api.post(`/protocol-translations/protocols/${protocolId}/auto-translate-checklist`, {
+      target_languages: targetLanguages
+    });
+    return response;
+  }
+
+  async autoTranslateCompleteProtocol(protocolId, targetLanguages = null) {
+    const response = await api.post(`/protocol-translations/protocols/${protocolId}/auto-translate-complete`, {
+      target_languages: targetLanguages
+    });
+    return response;
+  }
+
+  async getAutoTranslateStatus() {
+    const response = await api.get('/protocol-translations/auto-translate/status');
+    return response;
+  }
 }
 
 const translationService = new TranslationService();

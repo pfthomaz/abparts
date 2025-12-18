@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { listProtocols } from '../services/maintenanceProtocolsService';
 import translationService from '../services/translationService';
 import TranslationManager from '../components/TranslationManager';
+import AutoTranslateModal from '../components/AutoTranslateModal';
 
 const ProtocolTranslations = () => {
   const { t } = useTranslation();
@@ -14,6 +15,8 @@ const ProtocolTranslations = () => {
   const [translationStatuses, setTranslationStatuses] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [showAutoTranslateModal, setShowAutoTranslateModal] = useState(false);
+  const [selectedProtocolForAutoTranslate, setSelectedProtocolForAutoTranslate] = useState(null);
 
   const supportedLanguages = translationService.getSupportedLanguages();
 
@@ -57,6 +60,18 @@ const ProtocolTranslations = () => {
   const handleBackToList = () => {
     setSelectedProtocol(null);
     // Reload translation statuses after potential updates
+    loadProtocols();
+  };
+
+  const handleAutoTranslateClick = (protocol) => {
+    setSelectedProtocolForAutoTranslate(protocol);
+    setShowAutoTranslateModal(true);
+  };
+
+  const handleAutoTranslateComplete = (results) => {
+    setShowAutoTranslateModal(false);
+    setSelectedProtocolForAutoTranslate(null);
+    // Reload protocols to update translation status
     loadProtocols();
   };
 
@@ -305,7 +320,19 @@ const ProtocolTranslations = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex justify-end">
+                  <div className="flex justify-end space-x-2">
+                    {stats.percentage === 0 && (
+                      <button
+                        onClick={() => handleAutoTranslateClick(protocol)}
+                        className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 transition-colors flex items-center text-sm"
+                        title={t('translations.autoTranslate.quickStart')}
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        {t('translations.autoTranslate.quickTranslate')}
+                      </button>
+                    )}
                     <button
                       onClick={() => handleProtocolSelect(protocol)}
                       className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -336,6 +363,19 @@ const ProtocolTranslations = () => {
             }
           </p>
         </div>
+      )}
+
+      {/* Auto-Translate Modal */}
+      {selectedProtocolForAutoTranslate && (
+        <AutoTranslateModal
+          isOpen={showAutoTranslateModal}
+          onClose={() => {
+            setShowAutoTranslateModal(false);
+            setSelectedProtocolForAutoTranslate(null);
+          }}
+          protocol={selectedProtocolForAutoTranslate}
+          onTranslationComplete={handleAutoTranslateComplete}
+        />
       )}
     </div>
   );

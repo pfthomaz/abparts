@@ -24,3 +24,4 @@ pytest-xdist==3.3.1
 psutil==5.9.5 # For system monitoring
 prometheus-client==0.17.0 # For metrics collection
 locust==2.15.1 # For load testing
+googletrans==4.0.0rc1 # For AI-powered auto-translation

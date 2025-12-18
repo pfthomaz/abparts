@@ -9,6 +9,7 @@ from ..database import get_db
 from ..auth import get_current_user
 from ..models import User
 from ..services.translation_service import TranslationService
+from ..services.ai_translation_service import ai_translation_service
 from ..schemas_translations import (
     ProtocolTranslationCreate, ProtocolTranslationUpdate, ProtocolTranslationResponse,
     ChecklistItemTranslationCreate, ChecklistItemTranslationUpdate, ChecklistItemTranslationResponse,
@@ -307,4 +308,315 @@ async def bulk_create_checklist_item_translations(
     return {
         "message": f"Created {len(created_translations)} translations",
         "translations": created_translations
+    }
+
+# AI-Powered Auto-Translation Endpoints
+
+@router.post("/protocols/{protocol_id}/auto-translate")
+async def auto_translate_protocol(
+    protocol_id: UUID,
+    target_languages: Optional[List[str]] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Automatically translate a protocol to specified languages using AI
+    
+    Args:
+        protocol_id: UUID of the protocol to translate
+        target_languages: List of language codes to translate to (default: all supported)
+    
+    Returns:
+        Dictionary with translation results and status
+    """
+    check_translation_permissions(current_user)
+    
+    # Check if AI translation service is available
+    if not ai_translation_service.is_translation_available():
+        raise HTTPException(
+            status_code=503, 
+            detail="AI translation service is currently unavailable"
+        )
+    
+    # Get the protocol
+    from ..models import MaintenanceProtocol
+    protocol = db.query(MaintenanceProtocol).filter(
+        MaintenanceProtocol.id == protocol_id
+    ).first()
+    
+    if not protocol:
+        raise HTTPException(status_code=404, detail="Protocol not found")
+    
+    # Use default target languages if not specified
+    if target_languages is None:
+        target_languages = ai_translation_service.get_supported_languages()
+    
+    try:
+        # Generate AI translations
+        ai_translations = await ai_translation_service.translate_protocol(
+            protocol_name=protocol.name,
+            protocol_description=protocol.description,
+            target_languages=target_languages
+        )
+        
+        # Save translations to database
+        created_translations = []
+        failed_translations = []
+        
+        for lang_code, translation_data in ai_translations.items():
+            try:
+                # Create translation data
+                translation_create = ProtocolTranslationCreate(
+                    language_code=lang_code,
+                    name=translation_data['name'],
+                    description=translation_data.get('description')
+                )
+                
+                # Save to database
+                translation = TranslationService.create_protocol_translation(
+                    protocol_id, translation_create, db
+                )
+                
+                created_translations.append({
+                    'language_code': lang_code,
+                    'name': translation_data['name'],
+                    'description': translation_data.get('description'),
+                    'status': 'success'
+                })
+                
+            except Exception as e:
+                failed_translations.append({
+                    'language_code': lang_code,
+                    'error': str(e),
+                    'status': 'failed'
+                })
+        
+        return {
+            'protocol_id': protocol_id,
+            'total_requested': len(target_languages),
+            'successful_translations': len(created_translations),
+            'failed_translations': len(failed_translations),
+            'translations': created_translations,
+            'failures': failed_translations,
+            'message': f"Auto-translated protocol to {len(created_translations)} languages"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Auto-translation failed: {str(e)}"
+        )
+
+
+@router.post("/protocols/{protocol_id}/auto-translate-checklist")
+async def auto_translate_protocol_checklist(
+    protocol_id: UUID,
+    target_languages: Optional[List[str]] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Automatically translate all checklist items for a protocol using AI
+    
+    Args:
+        protocol_id: UUID of the protocol whose checklist items to translate
+        target_languages: List of language codes to translate to (default: all supported)
+    
+    Returns:
+        Dictionary with translation results and status
+    """
+    check_translation_permissions(current_user)
+    
+    # Check if AI translation service is available
+    if not ai_translation_service.is_translation_available():
+        raise HTTPException(
+            status_code=503, 
+            detail="AI translation service is currently unavailable"
+        )
+    
+    # Get checklist items for the protocol
+    from ..models import ProtocolChecklistItem
+    checklist_items = db.query(ProtocolChecklistItem).filter(
+        ProtocolChecklistItem.protocol_id == protocol_id
+    ).order_by(ProtocolChecklistItem.item_order).all()
+    
+    if not checklist_items:
+        return {
+            'protocol_id': protocol_id,
+            'message': 'No checklist items found for this protocol',
+            'total_items': 0,
+            'successful_translations': 0,
+            'failed_translations': 0
+        }
+    
+    # Use default target languages if not specified
+    if target_languages is None:
+        target_languages = ai_translation_service.get_supported_languages()
+    
+    try:
+        # Prepare items for translation
+        items_data = []
+        for item in checklist_items:
+            items_data.append({
+                'item_description': item.item_description,
+                'notes': item.notes,
+                'item_category': item.item_category
+            })
+        
+        # Generate AI translations for all items
+        ai_translations = await ai_translation_service.translate_multiple_checklist_items(
+            items=items_data,
+            target_languages=target_languages
+        )
+        
+        # Save translations to database
+        total_successful = 0
+        total_failed = 0
+        translation_results = []
+        
+        for item_index, item in enumerate(checklist_items):
+            item_translations = ai_translations.get(item_index, {})
+            item_results = {
+                'item_id': item.id,
+                'item_order': item.item_order,
+                'original_description': item.item_description,
+                'translations': [],
+                'failures': []
+            }
+            
+            for lang_code in target_languages:
+                if lang_code in item_translations:
+                    translation_data = item_translations[lang_code]
+                    
+                    try:
+                        # Create translation data
+                        translation_create = ChecklistItemTranslationCreate(
+                            language_code=lang_code,
+                            item_description=translation_data['item_description'],
+                            notes=translation_data.get('notes'),
+                            item_category=translation_data.get('item_category')
+                        )
+                        
+                        # Save to database
+                        translation = TranslationService.create_checklist_item_translation(
+                            item.id, translation_create, db
+                        )
+                        
+                        item_results['translations'].append({
+                            'language_code': lang_code,
+                            'item_description': translation_data['item_description'],
+                            'notes': translation_data.get('notes'),
+                            'item_category': translation_data.get('item_category'),
+                            'status': 'success'
+                        })
+                        
+                        total_successful += 1
+                        
+                    except Exception as e:
+                        item_results['failures'].append({
+                            'language_code': lang_code,
+                            'error': str(e),
+                            'status': 'failed'
+                        })
+                        total_failed += 1
+                else:
+                    item_results['failures'].append({
+                        'language_code': lang_code,
+                        'error': 'AI translation not generated',
+                        'status': 'failed'
+                    })
+                    total_failed += 1
+            
+            translation_results.append(item_results)
+        
+        return {
+            'protocol_id': protocol_id,
+            'total_items': len(checklist_items),
+            'total_requested_translations': len(checklist_items) * len(target_languages),
+            'successful_translations': total_successful,
+            'failed_translations': total_failed,
+            'target_languages': target_languages,
+            'results': translation_results,
+            'message': f"Auto-translated {total_successful} checklist item translations"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Auto-translation failed: {str(e)}"
+        )
+
+
+@router.post("/protocols/{protocol_id}/auto-translate-complete")
+async def auto_translate_complete_protocol(
+    protocol_id: UUID,
+    target_languages: Optional[List[str]] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Automatically translate both protocol and all its checklist items using AI
+    
+    Args:
+        protocol_id: UUID of the protocol to translate completely
+        target_languages: List of language codes to translate to (default: all supported)
+    
+    Returns:
+        Dictionary with complete translation results and status
+    """
+    check_translation_permissions(current_user)
+    
+    # Check if AI translation service is available
+    if not ai_translation_service.is_translation_available():
+        raise HTTPException(
+            status_code=503, 
+            detail="AI translation service is currently unavailable"
+        )
+    
+    try:
+        # Translate protocol first
+        protocol_result = await auto_translate_protocol(
+            protocol_id, target_languages, db, current_user
+        )
+        
+        # Then translate checklist items
+        checklist_result = await auto_translate_protocol_checklist(
+            protocol_id, target_languages, db, current_user
+        )
+        
+        return {
+            'protocol_id': protocol_id,
+            'protocol_translation': protocol_result,
+            'checklist_translation': checklist_result,
+            'total_successful_translations': (
+                protocol_result['successful_translations'] + 
+                checklist_result['successful_translations']
+            ),
+            'total_failed_translations': (
+                protocol_result['failed_translations'] + 
+                checklist_result['failed_translations']
+            ),
+            'message': 'Complete protocol auto-translation completed'
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Complete auto-translation failed: {str(e)}"
+        )
+
+
+@router.get("/auto-translate/status")
+async def get_auto_translate_status(
+    current_user: User = Depends(get_current_user)
+):
+    """Check if auto-translation service is available"""
+    
+    is_available = ai_translation_service.is_translation_available()
+    supported_languages = ai_translation_service.get_supported_languages()
+    
+    return {
+        'service_available': is_available,
+        'supported_languages': supported_languages,
+        'total_supported_languages': len(supported_languages)
     }

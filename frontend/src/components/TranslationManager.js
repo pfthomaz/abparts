@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import translationService from '../services/translationService';
 import ProtocolTranslationForm from './ProtocolTranslationForm';
 import ChecklistTranslationManager from './ChecklistTranslationManager';
+import AutoTranslateModal from './AutoTranslateModal';
 
 const TranslationManager = ({ protocol, onBack, onUpdate }) => {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ const TranslationManager = ({ protocol, onBack, onUpdate }) => {
   const [selectedLanguage, setSelectedLanguage] = useState(null);
   const [showProtocolForm, setShowProtocolForm] = useState(false);
   const [showChecklistManager, setShowChecklistManager] = useState(false);
+  const [showAutoTranslateModal, setShowAutoTranslateModal] = useState(false);
 
   const supportedLanguages = translationService.getSupportedLanguages();
 
@@ -53,6 +55,12 @@ const TranslationManager = ({ protocol, onBack, onUpdate }) => {
   const handleChecklistTranslationSave = () => {
     setShowChecklistManager(false);
     setSelectedLanguage(null);
+    loadTranslationStatus();
+    if (onUpdate) onUpdate();
+  };
+
+  const handleAutoTranslateComplete = (results) => {
+    // Reload translation status after auto-translation
     loadTranslationStatus();
     if (onUpdate) onUpdate();
   };
@@ -172,6 +180,15 @@ const TranslationManager = ({ protocol, onBack, onUpdate }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">{t('translations.quickActions')}</h3>
           <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={() => setShowAutoTranslateModal(true)}
+              className="bg-blue-50 text-blue-700 px-4 py-2 rounded hover:bg-blue-100 flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {t('translations.autoTranslate.title')}
+            </button>
             <button className="bg-purple-50 text-purple-700 px-4 py-2 rounded hover:bg-purple-100">
               {t('translations.exportTranslations')}
             </button>
@@ -249,6 +266,14 @@ const TranslationManager = ({ protocol, onBack, onUpdate }) => {
 
       {/* Content */}
       {activeTab === 'overview' && renderTranslationOverview()}
+
+      {/* Auto-Translate Modal */}
+      <AutoTranslateModal
+        isOpen={showAutoTranslateModal}
+        onClose={() => setShowAutoTranslateModal(false)}
+        protocol={protocol}
+        onTranslationComplete={handleAutoTranslateComplete}
+      />
     </div>
   );
 };

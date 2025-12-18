@@ -44,7 +44,10 @@
     "na": "N/A",
     "warning": "Warning",
     "admin": "Admin",
-    "remove": "Remove"
+    "remove": "Remove",
+    "selectAll": "Select All",
+    "selectNone": "Select None",
+    "noDescription": "No description available"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -1580,6 +1583,28 @@
     "noProtocolsFound": "No protocols found",
     "noProtocolsYet": "No protocols available yet",
     "tryDifferentSearch": "Try adjusting your search or filter criteria",
-    "createProtocolsFirst": "Create maintenance protocols first to enable translations"
+    "createProtocolsFirst": "Create maintenance protocols first to enable translations",
+    "autoTranslate": {
+      "title": "Auto-Translate",
+      "quickTranslate": "Quick Translate",
+      "quickStart": "Quick start with AI translation",
+      "serviceUnavailable": "Auto-translation service is currently unavailable",
+      "statusCheckFailed": "Failed to check translation service status",
+      "selectLanguages": "Please select at least one language to translate to",
+      "failed": "Auto-translation failed",
+      "translating": "Translating...",
+      "startTranslation": "Start Translation",
+      "results": "Translation Results",
+      "successful": "Successful",
+      "protocolTranslations": "Protocol translations",
+      "checklistTranslations": "Checklist translations",
+      "translationType": "What would you like to translate?",
+      "completeProtocol": "Complete Protocol",
+      "completeProtocolDesc": "Translate both protocol name/description and all checklist items",
+      "protocolOnly": "Protocol Only",
+      "protocolOnlyDesc": "Translate only the protocol name and description",
+      "checklistOnly": "Checklist Items Only",
+      "checklistOnlyDesc": "Translate only the checklist items"
+    }
   }
 }
