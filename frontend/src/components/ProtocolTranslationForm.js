@@ -167,7 +167,7 @@ const ProtocolTranslationForm = ({ protocol, languageCode, onSave, onCancel }) =
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('maintenanceProtocols.name')}
+                {t('protocolForm.fields.name')}
               </label>
               <div className="bg-white p-3 rounded border text-gray-900">
                 {protocol.name}
@@ -176,7 +176,7 @@ const ProtocolTranslationForm = ({ protocol, languageCode, onSave, onCancel }) =
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('maintenanceProtocols.description')}
+                {t('protocolForm.fields.description')}
               </label>
               <div className="bg-white p-3 rounded border text-gray-900 min-h-[100px]">
                 {protocol.description || t('common.noDescription')}
@@ -185,7 +185,7 @@ const ProtocolTranslationForm = ({ protocol, languageCode, onSave, onCancel }) =
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('maintenanceProtocols.type')}
+                {t('protocolForm.fields.type')}
               </label>
               <div className="bg-white p-3 rounded border">
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
@@ -205,7 +205,7 @@ const ProtocolTranslationForm = ({ protocol, languageCode, onSave, onCancel }) =
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('maintenanceProtocols.name')} *
+                {t('protocolForm.fields.name')} *
               </label>
               <input
                 type="text"
@@ -224,7 +224,7 @@ const ProtocolTranslationForm = ({ protocol, languageCode, onSave, onCancel }) =
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('maintenanceProtocols.description')} *
+                {t('protocolForm.fields.description')} *
               </label>
               <textarea
                 value={formData.description}
