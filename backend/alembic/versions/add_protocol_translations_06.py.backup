@@ -1,6 +1,6 @@
 """Add protocol and checklist item translations
 
-Revision ID: add_protocol_translations_06
+Revision ID: 06_add_protocol_translations
 Revises: 04_add_preferred_language
 Create Date: 2024-12-11 12:00:00.000000
 
