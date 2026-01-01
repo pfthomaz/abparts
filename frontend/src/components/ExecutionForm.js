@@ -18,6 +18,7 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
   const [loading, setLoading] = useState(false);  // Start as false, will be set to true when starting execution
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Don't auto-initialize - wait for user to enter hours
 
@@ -142,8 +143,14 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
     try {
       setSaving(true);
       await completeExecution(executionId);
-      alert(t('maintenance.executionCompletedSuccessfully'));
-      onComplete();
+      
+      // Show success toast for 3 seconds
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        onComplete();
+      }, 3000);
+      
     } catch (err) {
       alert(t('maintenance.failedToCompleteExecution', { error: err.message }));
     } finally {
@@ -377,6 +384,20 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
           </button>
         </div>
       </div>
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 animate-fade-in">
+          <div className="flex-shrink-0">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-medium">{t('maintenance.executionCompletedSuccessfully')}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

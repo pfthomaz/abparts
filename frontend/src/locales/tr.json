@@ -48,7 +48,8 @@
     "selectAll": "Tümünü Seç",
     "selectNone": "Hiçbirini Seçme",
     "noDescription": "Açıklama mevcut değil",
-    "notes": "Notlar"
+    "notes": "Notlar",
+    "scope": "Kapsam"
   },
   "navigation": {
     "dashboard": "Kontrol Paneli",
@@ -1591,5 +1592,56 @@
     "noProtocolsYet": "Henüz mevcut protokol yok",
     "tryDifferentSearch": "Arama veya filtre kriterlerinizi ayarlamayı deneyin",
     "createProtocolsFirst": "Çevirileri etkinleştirmek için önce bakım protokolleri oluşturun"
+  },
+  "tour": {
+    "helpButton": "Yardıma mı ihtiyacınız var? Rehberli turlar için tıklayın",
+    "menuTitle": "Rehberli Turlar",
+    "menuDescription": "Adım adım kılavuzlarla ABParts'ı nasıl kullanacağınızı öğrenin",
+    "menuFooter": "Genel bakış için Hızlı Kılavuz'u veya uygulamalı deneyim için Etkileşimli'yi seçin",
+    "back": "Geri",
+    "close": "Kapat",
+    "finish": "Bitir",
+    "next": "İleri",
+    "skip": "Atla",
+    "partsOrdering": {
+      "title": "Parça Nasıl Sipariş Edilir",
+      "description": "Sipariş vermeyi, takip etmeyi ve parçaları deponuza almayı öğrenin",
+      "step1": "Siparişleri Bul",
+      "step2": "Yeni Sipariş Oluştur",
+      "step3": "Sipariş Türünü Seç",
+      "step4": "Parça Ara",
+      "step5": "Miktarları Belirle",
+      "step6": "Gönder ve Takip Et"
+    },
+    "partsUsage": {
+      "title": "Parça Kullanımı Nasıl Kaydedilir",
+      "description": "Makine işletimi ve bakımı sırasında tüketilen parçaları takip edin",
+      "step1": "Makinelere Git",
+      "step2": "Makine Seç",
+      "step3": "Kullanımı Kaydet",
+      "step4": "Parçayı Bul",
+      "step5": "Miktarı Gir"
+    },
+    "dailyOperations": {
+      "title": "Günlük Hizmetler Nasıl Kaydedilir",
+      "description": "Günlük makine işlemlerini, metrikleri ve bakım kontrollerini kaydedin",
+      "step1": "Buraya Git",
+      "step2": "Tarih ve Makine Seç",
+      "step3": "Metrikleri Gir",
+      "step4": "Kontrol Listesini Tamamla",
+      "step5": "Raporu Gönder"
+    },
+    "scheduledMaintenance": {
+      "title": "Planlı Hizmetler Nasıl Kaydedilir",
+      "description": "Bakım protokollerini yürütün ve hizmet tamamlanmasını takip edin",
+      "step1": "Bakımı Bul",
+      "step2": "Protokol Seç",
+      "step3": "Kaynakları Ata",
+      "step4": "Kontrol Listesini Yürüt",
+      "step5": "Çalışmayı Belgele",
+      "step6": "Tamamla ve Planla"
+    },
+    "quickGuide": "Hızlı Kılavuz",
+    "interactive": "Etkileşimli"
   }
 }

@@ -48,7 +48,8 @@
     "selectAll": "Select All",
     "selectNone": "Select None",
     "noDescription": "No description available",
-    "notes": "Notes"
+    "notes": "Notes",
+    "scope": "Scope"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -1607,5 +1608,56 @@
       "checklistOnly": "Checklist Items Only",
       "checklistOnlyDesc": "Translate only the checklist items"
     }
+  },
+  "tour": {
+    "helpButton": "Need help? Click for guided tours",
+    "menuTitle": "Guided Tours",
+    "menuDescription": "Learn how to use ABParts with step-by-step guides",
+    "menuFooter": "Choose Quick Guide for overview or Interactive for hands-on experience",
+    "back": "Back",
+    "close": "Close",
+    "finish": "Finish",
+    "next": "Next",
+    "skip": "Skip",
+    "partsOrdering": {
+      "title": "How to Order Parts",
+      "description": "Learn to place orders, track them, and receive parts into your warehouse",
+      "step1": "Find Orders",
+      "step2": "Create New Order",
+      "step3": "Select Order Type",
+      "step4": "Search Parts",
+      "step5": "Set Quantities",
+      "step6": "Submit & Track"
+    },
+    "partsUsage": {
+      "title": "How to Record Part Usage",
+      "description": "Track parts consumed during machine operation and maintenance",
+      "step1": "Go to Machines",
+      "step2": "Select Machine",
+      "step3": "Record Usage",
+      "step4": "Find Part",
+      "step5": "Enter Quantity"
+    },
+    "dailyOperations": {
+      "title": "How to Record Daily Services",
+      "description": "Log daily machine operations, metrics, and maintenance checks",
+      "step1": "Navigate Here",
+      "step2": "Choose Date & Machine",
+      "step3": "Enter Metrics",
+      "step4": "Complete Checklist",
+      "step5": "Submit Report"
+    },
+    "scheduledMaintenance": {
+      "title": "How to Record Scheduled Services",
+      "description": "Execute maintenance protocols and track service completion",
+      "step1": "Find Maintenance",
+      "step2": "Choose Protocol",
+      "step3": "Assign Resources",
+      "step4": "Execute Checklist",
+      "step5": "Document Work",
+      "step6": "Complete & Schedule"
+    },
+    "quickGuide": "Quick Guide",
+    "interactive": "Interactive"
   }
 }
