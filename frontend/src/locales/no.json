@@ -48,7 +48,8 @@
     "selectAll": "Velg Alle",
     "selectNone": "Velg Ingen",
     "noDescription": "Ingen beskrivelse tilgjengelig",
-    "notes": "Notater"
+    "notes": "Notater",
+    "scope": "Omfang"
   },
   "navigation": {
     "dashboard": "Dashbord",
@@ -1591,5 +1592,56 @@
     "noProtocolsYet": "Ingen protokoller tilgjengelig ennå",
     "tryDifferentSearch": "Prøv å justere søke- eller filterkriteriene dine",
     "createProtocolsFirst": "Opprett vedlikeholdsprotokoller først for å aktivere oversettelser"
+  },
+  "tour": {
+    "helpButton": "Trenger du hjelp? Klikk for guidede turer",
+    "menuTitle": "Guidede Turer",
+    "menuDescription": "Lær hvordan du bruker ABParts med steg-for-steg guider",
+    "menuFooter": "Velg Hurtigguide for oversikt eller Interaktiv for praktisk erfaring",
+    "back": "Tilbake",
+    "close": "Lukk",
+    "finish": "Fullfør",
+    "next": "Neste",
+    "skip": "Hopp over",
+    "partsOrdering": {
+      "title": "Hvordan Bestille Deler",
+      "description": "Lær å legge inn bestillinger, spore dem og motta deler til lageret ditt",
+      "step1": "Finn Bestillinger",
+      "step2": "Opprett Ny Bestilling",
+      "step3": "Velg Bestillingstype",
+      "step4": "Søk Deler",
+      "step5": "Angi Mengder",
+      "step6": "Send inn og Spor"
+    },
+    "partsUsage": {
+      "title": "Hvordan Registrere Delbruk",
+      "description": "Spor deler som forbrukes under maskindrift og vedlikehold",
+      "step1": "Gå til Maskiner",
+      "step2": "Velg Maskin",
+      "step3": "Registrer Bruk",
+      "step4": "Finn Del",
+      "step5": "Angi Mengde"
+    },
+    "dailyOperations": {
+      "title": "Hvordan Registrere Daglige Tjenester",
+      "description": "Logg daglige maskinoperasjoner, målinger og vedlikeholdskontroller",
+      "step1": "Naviger Hit",
+      "step2": "Velg Dato og Maskin",
+      "step3": "Angi Målinger",
+      "step4": "Fullfør Sjekkliste",
+      "step5": "Send inn Rapport"
+    },
+    "scheduledMaintenance": {
+      "title": "Hvordan Registrere Planlagte Tjenester",
+      "description": "Utfør vedlikeholdsprotokoller og spor tjenestens fullføring",
+      "step1": "Finn Vedlikehold",
+      "step2": "Velg Protokoll",
+      "step3": "Tildel Ressurser",
+      "step4": "Utfør Sjekkliste",
+      "step5": "Dokumenter Arbeid",
+      "step6": "Fullfør og Planlegg"
+    },
+    "quickGuide": "Hurtigguide",
+    "interactive": "Interaktiv"
   }
 }

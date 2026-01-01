@@ -48,7 +48,8 @@
     "selectAll": "Seleccionar Todo",
     "selectNone": "No Seleccionar",
     "noDescription": "Sin descripción disponible",
-    "notes": "Notas"
+    "notes": "Notas",
+    "scope": "Alcance"
   },
   "navigation": {
     "dashboard": "Panel de Control",
@@ -1591,5 +1592,56 @@
     "noProtocolsYet": "Aún no hay protocolos disponibles",
     "tryDifferentSearch": "Intenta ajustar tus criterios de búsqueda o filtro",
     "createProtocolsFirst": "Crea primero protocolos de mantenimiento para habilitar traducciones"
+  },
+  "tour": {
+    "helpButton": "¿Necesitas ayuda? Haz clic para tours guiados",
+    "menuTitle": "Tours Guiados",
+    "menuDescription": "Aprende a usar ABParts con guías paso a paso",
+    "menuFooter": "Elige Guía Rápida para resumen o Interactivo para experiencia práctica",
+    "back": "Atrás",
+    "close": "Cerrar",
+    "finish": "Finalizar",
+    "next": "Siguiente",
+    "skip": "Omitir",
+    "partsOrdering": {
+      "title": "Cómo Pedir Repuestos",
+      "description": "Aprende a hacer pedidos, rastrearlos y recibir repuestos en tu almacén",
+      "step1": "Encontrar Pedidos",
+      "step2": "Crear Nuevo Pedido",
+      "step3": "Seleccionar Tipo de Pedido",
+      "step4": "Buscar Repuestos",
+      "step5": "Establecer Cantidades",
+      "step6": "Enviar y Rastrear"
+    },
+    "partsUsage": {
+      "title": "Cómo Registrar Uso de Repuestos",
+      "description": "Rastrea repuestos consumidos durante operación y mantenimiento de máquinas",
+      "step1": "Ir a Máquinas",
+      "step2": "Seleccionar Máquina",
+      "step3": "Registrar Uso",
+      "step4": "Encontrar Repuesto",
+      "step5": "Ingresar Cantidad"
+    },
+    "dailyOperations": {
+      "title": "Cómo Registrar Servicios Diarios",
+      "description": "Registra operaciones diarias de máquinas, métricas y verificaciones de mantenimiento",
+      "step1": "Navegar Aquí",
+      "step2": "Elegir Fecha y Máquina",
+      "step3": "Ingresar Métricas",
+      "step4": "Completar Lista de Verificación",
+      "step5": "Enviar Reporte"
+    },
+    "scheduledMaintenance": {
+      "title": "Cómo Registrar Servicios Programados",
+      "description": "Ejecuta protocolos de mantenimiento y rastrea la finalización del servicio",
+      "step1": "Encontrar Mantenimiento",
+      "step2": "Elegir Protocolo",
+      "step3": "Asignar Recursos",
+      "step4": "Ejecutar Lista de Verificación",
+      "step5": "Documentar Trabajo",
+      "step6": "Completar y Programar"
+    },
+    "quickGuide": "Guía Rápida",
+    "interactive": "Interactivo"
   }
 }

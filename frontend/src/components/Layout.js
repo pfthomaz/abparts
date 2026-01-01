@@ -8,6 +8,7 @@ import PermissionGuard from './PermissionGuard';
 import OrganizationScopeIndicator from './OrganizationScopeIndicator';
 import MobileNavigation from './MobileNavigation';
 import OfflineStatusIndicator from './OfflineStatusIndicator';
+import TourButton from './TourButton';
 import { useTranslation } from '../hooks/useTranslation';
 
 const Layout = () => {
@@ -107,6 +108,7 @@ const Layout = () => {
                             >
                               <Link
                                 to={item.path}
+                                data-tour={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                                 className={`block px-4 py-2 text-sm hover:bg-gray-100 ${location.pathname === item.path ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                                   }`}
                               >
@@ -368,6 +370,9 @@ const Layout = () => {
 
       {/* Mobile Navigation */}
       <MobileNavigation />
+
+      {/* Tour Button - Always available for guided help */}
+      <TourButton />
     </div>
   );
 };

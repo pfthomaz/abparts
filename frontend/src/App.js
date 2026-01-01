@@ -10,7 +10,9 @@ import {
 import './index.css'; // Import Tailwind CSS base styles
 import { useAuth } from './AuthContext'; // Import useAuth hook
 import { LocalizationProvider } from './contexts/LocalizationContext'; // Import LocalizationProvider
+import { TourProvider } from './contexts/TourContext'; // Import TourProvider
 import LoginForm from './components/LoginForm'; // Import LoginForm component
+import GuidedTour from './components/GuidedTour'; // Import GuidedTour component
 import Layout from './components/Layout'; // Import Layout component
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute component
 import PermissionErrorBoundary from './components/PermissionErrorBoundary'; // Import PermissionErrorBoundary
@@ -99,22 +101,26 @@ function App() {
   }
 
   return (
-    <LocalizationProvider>
-      <Router>
-        {/* Global session timeout warning - only shows when user is authenticated */}
-        {token && <SessionTimeoutWarning />}
-        
-        {/* Machine Hours Reminder Modal */}
-        {showHoursReminder && (
-          <MachineHoursReminderModal
-            machines={machinesNeedingUpdate}
-            onClose={() => setShowHoursReminder(false)}
-            onHoursSaved={() => {
-              setShowHoursReminder(false);
-              // Optionally refresh data
-            }}
-          />
-        )}
+    <TourProvider>
+      <LocalizationProvider>
+        <Router>
+          {/* Global session timeout warning - only shows when user is authenticated */}
+          {token && <SessionTimeoutWarning />}
+          
+          {/* Machine Hours Reminder Modal */}
+          {showHoursReminder && (
+            <MachineHoursReminderModal
+              machines={machinesNeedingUpdate}
+              onClose={() => setShowHoursReminder(false)}
+              onHoursSaved={() => {
+                setShowHoursReminder(false);
+                // Optionally refresh data
+              }}
+            />
+          )}
+
+          {/* Guided Tour Component */}
+          <GuidedTour />
 
         <Routes>
           <Route
@@ -415,7 +421,8 @@ function App() {
           </Route>
         </Routes>
       </Router>
-    </LocalizationProvider>
+      </LocalizationProvider>
+    </TourProvider>
   );
 }
 
