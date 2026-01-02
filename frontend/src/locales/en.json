@@ -1627,7 +1627,17 @@
       "step3": "Select Order Type",
       "step4": "Search Parts",
       "step5": "Set Quantities",
-      "step6": "Submit & Track"
+      "step6": "Submit & Track",
+      "steps": {
+        "welcomeTitle": "📦 Parts Ordering Tutorial",
+        "welcome": "Welcome! Let's learn how to order parts step-by-step.",
+        "findOrders": "First, hover over the navigation menu to find \"Orders\".",
+        "createOrder": "Click \"New Order\" button to start creating an order.",
+        "selectType": "Choose order type: Customer Order (buying parts) or Supplier Order (selling parts).",
+        "searchParts": "Search for parts by name, number, or description.",
+        "setQuantities": "Enter quantities needed and review stock levels.",
+        "submitTrack": "Add delivery details and submit your order. You can then track its status!"
+      }
     },
     "partsUsage": {
       "title": "How to Record Part Usage",
@@ -1636,7 +1646,16 @@
       "step2": "Select Machine",
       "step3": "Record Usage",
       "step4": "Find Part",
-      "step5": "Enter Quantity"
+      "step5": "Enter Quantity",
+      "steps": {
+        "welcomeTitle": "🔧 Parts Usage Recording",
+        "welcome": "Let's learn how to record parts consumed during machine operation.",
+        "goToMachines": "Navigate to \"Machines\" in the Operations menu.",
+        "selectMachine": "Select the specific machine where parts were used.",
+        "recordUsage": "Click \"Record Usage\" to log consumed parts.",
+        "findPart": "Search and select the part that was used.",
+        "enterQuantity": "Enter quantity used - inventory updates automatically!"
+      }
     },
     "dailyOperations": {
       "title": "How to Record Daily Services",
@@ -1645,7 +1664,16 @@
       "step2": "Choose Date & Machine",
       "step3": "Enter Metrics",
       "step4": "Complete Checklist",
-      "step5": "Submit Report"
+      "step5": "Submit Report",
+      "steps": {
+        "welcomeTitle": "📋 Daily Operations",
+        "welcome": "Daily reporting helps track machine performance and maintenance.",
+        "navigate": "Find \"Daily Operations\" in the Operations menu.",
+        "chooseDateMachine": "Select the date and machine for your report.",
+        "enterMetrics": "Enter operational metrics: hours, cycles, performance data.",
+        "completeChecklist": "Complete daily checklist items and add notes.",
+        "submitReport": "Submit report to track machine health trends."
+      }
     },
     "scheduledMaintenance": {
       "title": "How to Record Scheduled Services",
@@ -1655,9 +1683,22 @@
       "step3": "Assign Resources",
       "step4": "Execute Checklist",
       "step5": "Document Work",
-      "step6": "Complete & Schedule"
+      "step6": "Complete & Schedule",
+      "steps": {
+        "welcomeTitle": "⚙️ Scheduled Maintenance",
+        "welcome": "Execute scheduled maintenance protocols systematically.",
+        "findMaintenance": "Go to \"Maintenance Executions\" in Operations.",
+        "chooseProtocol": "Select the maintenance protocol to execute.",
+        "assignResources": "Assign machine and technician for the maintenance.",
+        "executeChecklist": "Work through checklist items systematically.",
+        "documentWork": "Record parts used and add photos/notes.",
+        "completeSchedule": "Complete protocol to generate reports and schedule next service."
+      }
     },
     "quickGuide": "Quick Guide",
-    "interactive": "Interactive"
+    "interactive": "Interactive",
+    "open": "Open",
+    "step": "Step",
+    "of": "of"
   }
 }

@@ -1611,7 +1611,17 @@
       "step3": "Sipariş Türünü Seç",
       "step4": "Parça Ara",
       "step5": "Miktarları Belirle",
-      "step6": "Gönder ve Takip Et"
+      "step6": "Gönder ve Takip Et",
+      "steps": {
+        "welcomeTitle": "📦 Parça Sipariş Eğitimi",
+        "welcome": "Hoş geldiniz! Adım adım parça siparişi vermeyi öğrenelim.",
+        "findOrders": "İlk olarak, \"Siparişler\"i bulmak için gezinme menüsünün üzerine gelin.",
+        "createOrder": "Sipariş oluşturmaya başlamak için \"Yeni Sipariş\" düğmesine tıklayın.",
+        "selectType": "Sipariş türünü seçin: Müşteri Siparişi (parça satın alma) veya Tedarikçi Siparişi (parça satma).",
+        "searchParts": "Parçaları ad, numara veya açıklama ile arayın.",
+        "setQuantities": "Gerekli miktarları girin ve stok seviyelerini gözden geçirin.",
+        "submitTrack": "Teslimat detaylarını ekleyin ve siparişinizi gönderin. Daha sonra durumunu takip edebilirsiniz!"
+      }
     },
     "partsUsage": {
       "title": "Parça Kullanımı Nasıl Kaydedilir",
@@ -1620,7 +1630,16 @@
       "step2": "Makine Seç",
       "step3": "Kullanımı Kaydet",
       "step4": "Parçayı Bul",
-      "step5": "Miktarı Gir"
+      "step5": "Miktarı Gir",
+      "steps": {
+        "welcomeTitle": "🔧 Parça Kullanım Kaydı",
+        "welcome": "Makine işletimi sırasında tüketilen parçaları kaydetmeyi öğrenelim.",
+        "goToMachines": "İşlemler menüsünde \"Makineler\"e gidin.",
+        "selectMachine": "Parçaların kullanıldığı belirli makineyi seçin.",
+        "recordUsage": "Tüketilen parçaları kaydetmek için \"Kullanımı Kaydet\"e tıklayın.",
+        "findPart": "Kullanılan parçayı arayın ve seçin.",
+        "enterQuantity": "Kullanılan miktarı girin - envanter otomatik olarak güncellenir!"
+      }
     },
     "dailyOperations": {
       "title": "Günlük Hizmetler Nasıl Kaydedilir",
@@ -1629,7 +1648,16 @@
       "step2": "Tarih ve Makine Seç",
       "step3": "Metrikleri Gir",
       "step4": "Kontrol Listesini Tamamla",
-      "step5": "Raporu Gönder"
+      "step5": "Raporu Gönder",
+      "steps": {
+        "welcomeTitle": "📋 Günlük İşlemler",
+        "welcome": "Günlük raporlama makine performansını ve bakımını takip etmeye yardımcı olur.",
+        "navigate": "İşlemler menüsünde \"Günlük İşlemler\"i bulun.",
+        "chooseDateMachine": "Raporunuz için tarihi ve makineyi seçin.",
+        "enterMetrics": "İşletme metriklerini girin: saatler, döngüler, performans verileri.",
+        "completeChecklist": "Günlük kontrol listesi öğelerini tamamlayın ve notlar ekleyin.",
+        "submitReport": "Makine sağlığı eğilimlerini takip etmek için raporu gönderin."
+      }
     },
     "scheduledMaintenance": {
       "title": "Planlı Hizmetler Nasıl Kaydedilir",
@@ -1639,9 +1667,22 @@
       "step3": "Kaynakları Ata",
       "step4": "Kontrol Listesini Yürüt",
       "step5": "Çalışmayı Belgele",
-      "step6": "Tamamla ve Planla"
+      "step6": "Tamamla ve Planla",
+      "steps": {
+        "welcomeTitle": "⚙️ Planlı Bakım",
+        "welcome": "Planlı bakım protokollerini sistematik olarak yürütün.",
+        "findMaintenance": "İşlemler'de \"Bakım Yürütmeleri\"ne gidin.",
+        "chooseProtocol": "Yürütülecek bakım protokolünü seçin.",
+        "assignResources": "Bakım için makine ve teknisyen atayın.",
+        "executeChecklist": "Kontrol listesi öğelerini sistematik olarak işleyin.",
+        "documentWork": "Kullanılan parçaları kaydedin ve fotoğraf/notlar ekleyin.",
+        "completeSchedule": "Raporlar oluşturmak ve bir sonraki hizmeti planlamak için protokolü tamamlayın."
+      }
     },
     "quickGuide": "Hızlı Kılavuz",
-    "interactive": "Etkileşimli"
+    "interactive": "Etkileşimli",
+    "open": "Aç",
+    "step": "Adım",
+    "of": "/"
   }
 }

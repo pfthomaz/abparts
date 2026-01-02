@@ -30,7 +30,6 @@ export const useTranslation = () => {
 
   // Update translations when language changes
   useEffect(() => {
-    console.log('🔤 useTranslation: Current language changed to:', currentLanguage);
     setCurrentTranslations(translations[currentLanguage] || translations.en);
   }, [currentLanguage]);
 
