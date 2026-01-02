@@ -60,7 +60,6 @@ const Parts = () => {
     try {
       // Fetch more parts for better user experience (up to 1000)
       const response = await partsService.getPartsWithInventory({ limit: 1000 });
-      console.log('Fetched parts response:', response); // Debug log
 
       // Handle the new response format
       const partsData = response.items || response;

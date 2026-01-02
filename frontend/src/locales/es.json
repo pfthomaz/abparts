@@ -1611,7 +1611,17 @@
       "step3": "Seleccionar Tipo de Pedido",
       "step4": "Buscar Repuestos",
       "step5": "Establecer Cantidades",
-      "step6": "Enviar y Rastrear"
+      "step6": "Enviar y Rastrear",
+      "steps": {
+        "welcomeTitle": "📦 Tutorial de Pedidos de Repuestos",
+        "welcome": "¡Bienvenido! Aprendamos cómo pedir repuestos paso a paso.",
+        "findOrders": "Primero, pasa el cursor sobre el menú de navegación para encontrar \"Pedidos\".",
+        "createOrder": "Haz clic en el botón \"Nuevo Pedido\" para comenzar a crear un pedido.",
+        "selectType": "Elige el tipo de pedido: Pedido de Cliente (comprar repuestos) o Pedido de Proveedor (vender repuestos).",
+        "searchParts": "Busca repuestos por nombre, número o descripción.",
+        "setQuantities": "Ingresa las cantidades necesarias y revisa los niveles de stock.",
+        "submitTrack": "Agrega detalles de entrega y envía tu pedido. ¡Luego puedes rastrear su estado!"
+      }
     },
     "partsUsage": {
       "title": "Cómo Registrar Uso de Repuestos",
@@ -1620,7 +1630,16 @@
       "step2": "Seleccionar Máquina",
       "step3": "Registrar Uso",
       "step4": "Encontrar Repuesto",
-      "step5": "Ingresar Cantidad"
+      "step5": "Ingresar Cantidad",
+      "steps": {
+        "welcomeTitle": "🔧 Registro de Uso de Repuestos",
+        "welcome": "Aprendamos cómo registrar repuestos consumidos durante la operación de máquinas.",
+        "goToMachines": "Navega a \"Máquinas\" en el menú de Operaciones.",
+        "selectMachine": "Selecciona la máquina específica donde se usaron repuestos.",
+        "recordUsage": "Haz clic en \"Registrar Uso\" para registrar repuestos consumidos.",
+        "findPart": "Busca y selecciona el repuesto que se usó.",
+        "enterQuantity": "Ingresa la cantidad usada - ¡el inventario se actualiza automáticamente!"
+      }
     },
     "dailyOperations": {
       "title": "Cómo Registrar Servicios Diarios",
@@ -1629,7 +1648,16 @@
       "step2": "Elegir Fecha y Máquina",
       "step3": "Ingresar Métricas",
       "step4": "Completar Lista de Verificación",
-      "step5": "Enviar Reporte"
+      "step5": "Enviar Reporte",
+      "steps": {
+        "welcomeTitle": "📋 Operaciones Diarias",
+        "welcome": "Los informes diarios ayudan a rastrear el rendimiento y mantenimiento de máquinas.",
+        "navigate": "Encuentra \"Operaciones Diarias\" en el menú de Operaciones.",
+        "chooseDateMachine": "Selecciona la fecha y máquina para tu informe.",
+        "enterMetrics": "Ingresa métricas operacionales: horas, ciclos, datos de rendimiento.",
+        "completeChecklist": "Completa los elementos de la lista de verificación diaria y agrega notas.",
+        "submitReport": "Envía el informe para rastrear tendencias de salud de la máquina."
+      }
     },
     "scheduledMaintenance": {
       "title": "Cómo Registrar Servicios Programados",
@@ -1639,9 +1667,22 @@
       "step3": "Asignar Recursos",
       "step4": "Ejecutar Lista de Verificación",
       "step5": "Documentar Trabajo",
-      "step6": "Completar y Programar"
+      "step6": "Completar y Programar",
+      "steps": {
+        "welcomeTitle": "⚙️ Mantenimiento Programado",
+        "welcome": "Ejecuta protocolos de mantenimiento programado sistemáticamente.",
+        "findMaintenance": "Ve a \"Ejecuciones de Mantenimiento\" en Operaciones.",
+        "chooseProtocol": "Selecciona el protocolo de mantenimiento a ejecutar.",
+        "assignResources": "Asigna máquina y técnico para el mantenimiento.",
+        "executeChecklist": "Trabaja a través de elementos de lista de verificación sistemáticamente.",
+        "documentWork": "Registra repuestos usados y agrega fotos/notas.",
+        "completeSchedule": "Completa el protocolo para generar informes y programar el próximo servicio."
+      }
     },
     "quickGuide": "Guía Rápida",
-    "interactive": "Interactivo"
+    "interactive": "Interactivo",
+    "open": "Abrir",
+    "step": "Paso",
+    "of": "de"
   }
 }

@@ -162,18 +162,14 @@ export const LocalizationProvider = ({ children }) => {
 
   // Initialize localization settings
   useEffect(() => {
-    console.log('🌍 Localization: Initializing with user:', user);
-    
     // PRIORITY 1: Check if user has preferred_language from backend
     if (user?.preferred_language) {
-      console.log('🌍 Localization: User preferred_language:', user.preferred_language);
       if (SUPPORTED_LANGUAGES[user.preferred_language]) {
         setCurrentLanguage(user.preferred_language);
         setUserPreferences(prev => ({
           ...prev,
           language: user.preferred_language
         }));
-        console.log('✅ Localization: Set language to user preference:', user.preferred_language);
         return; // Exit early - user preference takes priority
       }
     }
@@ -186,7 +182,6 @@ export const LocalizationProvider = ({ children }) => {
         setUserPreferences(parsed);
         setCurrentLanguage(parsed.language || 'en');
         setCurrentCountry(parsed.country || 'GR');
-        console.log('🌍 Localization: Loaded from localStorage:', parsed.language);
         return;
       } catch (error) {
         console.error('Error parsing saved localization preferences:', error);
@@ -205,7 +200,6 @@ export const LocalizationProvider = ({ children }) => {
           country: orgCountry,
           language: countryConfig.language
         }));
-        console.log('🌍 Localization: Set language from organization country:', countryConfig.language);
       }
     }
   }, [user]);
@@ -222,6 +216,11 @@ export const LocalizationProvider = ({ children }) => {
       setUserPreferences(prev => ({
         ...prev,
         language: languageCode
+      }));
+
+      // Dispatch custom event for components that need to know about language changes
+      window.dispatchEvent(new CustomEvent('languageChanged', { 
+        detail: { language: languageCode } 
       }));
 
       // Save to backend if user is logged in
@@ -242,8 +241,6 @@ export const LocalizationProvider = ({ children }) => {
 
           if (!response.ok) {
             console.error('Failed to save language preference to backend');
-          } else {
-            console.log('✅ Language preference saved to backend:', languageCode);
           }
         } catch (error) {
           console.error('Error saving language preference:', error);
@@ -279,8 +276,6 @@ export const LocalizationProvider = ({ children }) => {
 
           if (!response.ok) {
             console.error('Failed to save country preference to backend');
-          } else {
-            console.log('✅ Country preference saved to backend:', countryCode);
           }
         } catch (error) {
           console.error('Error saving country preference:', error);

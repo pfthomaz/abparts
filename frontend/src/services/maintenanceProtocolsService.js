@@ -117,26 +117,18 @@ export const acknowledgeReminder = async (reminderId) => {
 // Localized Protocol Functions (Language-aware)
 
 export const getLocalizedProtocols = async (filters = {}, userLanguage = null) => {
-  console.log('🌍 getLocalizedProtocols called with language:', userLanguage);
-  
   // Get base protocols first
   const protocols = await listProtocols(filters);
-  console.log('📋 Base protocols loaded:', protocols.length);
   
   if (!userLanguage || userLanguage === 'en') {
-    console.log('🇺🇸 Using English (base language)');
     return protocols;
   }
   
   // Get localized versions for each protocol
-  console.log(`🔄 Getting localized versions for ${protocols.length} protocols in language: ${userLanguage}`);
-  
   const localizedProtocols = await Promise.all(
     protocols.map(async (protocol) => {
       try {
-        console.log(`🌍 Getting translation for protocol: "${protocol.name}" (${protocol.id})`);
         const localizedProtocol = await translationService.getLocalizedProtocol(protocol.id, userLanguage);
-        console.log(`✅ Translation result:`, localizedProtocol);
         
         const result = {
           ...protocol,
@@ -145,17 +137,15 @@ export const getLocalizedProtocols = async (filters = {}, userLanguage = null) =
           isTranslated: localizedProtocol.isTranslated || false
         };
         
-        console.log(`📝 Final protocol: "${result.name}" (translated: ${result.isTranslated})`);
         return result;
       } catch (error) {
         // If translation fails, return original protocol
-        console.warn(`❌ Failed to get translation for protocol ${protocol.id}:`, error);
+        console.warn(`Failed to get translation for protocol ${protocol.id}:`, error);
         return protocol;
       }
     })
   );
   
-  console.log(`🎯 Returning ${localizedProtocols.length} localized protocols`);
   return localizedProtocols;
 };
 
@@ -175,21 +165,16 @@ export const getLocalizedProtocol = async (protocolId, userLanguage = null) => {
 };
 
 export const getLocalizedChecklistItems = async (protocolId, userLanguage = null) => {
-  console.log('📝 getLocalizedChecklistItems called for protocol:', protocolId, 'language:', userLanguage);
-  
   if (!userLanguage || userLanguage === 'en') {
-    console.log('🇺🇸 Using English checklist items');
     return getChecklistItems(protocolId);
   }
   
   try {
-    console.log(`🌍 Getting localized checklist items for protocol ${protocolId} in ${userLanguage}`);
     const localizedItems = await translationService.getLocalizedChecklistItems(protocolId, userLanguage);
-    console.log('✅ Localized checklist items received:', localizedItems);
     return localizedItems;
   } catch (error) {
     // Fallback to original checklist items
-    console.warn(`❌ Failed to get localized checklist items for protocol ${protocolId}:`, error);
+    console.warn(`Failed to get localized checklist items for protocol ${protocolId}:`, error);
     return getChecklistItems(protocolId);
   }
 };

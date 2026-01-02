@@ -1611,7 +1611,17 @@
       "step3": "Velg Bestillingstype",
       "step4": "Søk Deler",
       "step5": "Angi Mengder",
-      "step6": "Send inn og Spor"
+      "step6": "Send inn og Spor",
+      "steps": {
+        "welcomeTitle": "📦 Delebestilling Opplæring",
+        "welcome": "Velkommen! La oss lære hvordan vi bestiller deler steg for steg.",
+        "findOrders": "Først, hold musepekeren over navigasjonsmenyen for å finne \"Bestillinger\".",
+        "createOrder": "Klikk på \"Ny Bestilling\" knappen for å begynne å opprette en bestilling.",
+        "selectType": "Velg bestillingstype: Kundebestilling (kjøpe deler) eller Leverandørbestilling (selge deler).",
+        "searchParts": "Søk etter deler etter navn, nummer eller beskrivelse.",
+        "setQuantities": "Angi nødvendige mengder og gjennomgå lagernivåer.",
+        "submitTrack": "Legg til leveringsdetaljer og send inn bestillingen din. Du kan deretter spore statusen!"
+      }
     },
     "partsUsage": {
       "title": "Hvordan Registrere Delbruk",
@@ -1620,7 +1630,16 @@
       "step2": "Velg Maskin",
       "step3": "Registrer Bruk",
       "step4": "Finn Del",
-      "step5": "Angi Mengde"
+      "step5": "Angi Mengde",
+      "steps": {
+        "welcomeTitle": "🔧 Delbruk Registrering",
+        "welcome": "La oss lære hvordan vi registrerer deler som forbrukes under maskindrift.",
+        "goToMachines": "Naviger til \"Maskiner\" i Operasjoner-menyen.",
+        "selectMachine": "Velg den spesifikke maskinen hvor deler ble brukt.",
+        "recordUsage": "Klikk på \"Registrer Bruk\" for å logge forbrukte deler.",
+        "findPart": "Søk og velg delen som ble brukt.",
+        "enterQuantity": "Angi mengde brukt - lageret oppdateres automatisk!"
+      }
     },
     "dailyOperations": {
       "title": "Hvordan Registrere Daglige Tjenester",
@@ -1629,7 +1648,16 @@
       "step2": "Velg Dato og Maskin",
       "step3": "Angi Målinger",
       "step4": "Fullfør Sjekkliste",
-      "step5": "Send inn Rapport"
+      "step5": "Send inn Rapport",
+      "steps": {
+        "welcomeTitle": "📋 Daglige Operasjoner",
+        "welcome": "Daglig rapportering hjelper med å spore maskinytelse og vedlikehold.",
+        "navigate": "Finn \"Daglige Operasjoner\" i Operasjoner-menyen.",
+        "chooseDateMachine": "Velg dato og maskin for rapporten din.",
+        "enterMetrics": "Angi driftsmetrikker: timer, sykluser, ytelsesdata.",
+        "completeChecklist": "Fullfør daglige sjekkliste-elementer og legg til notater.",
+        "submitReport": "Send inn rapport for å spore maskinhelsetrender."
+      }
     },
     "scheduledMaintenance": {
       "title": "Hvordan Registrere Planlagte Tjenester",
@@ -1639,9 +1667,22 @@
       "step3": "Tildel Ressurser",
       "step4": "Utfør Sjekkliste",
       "step5": "Dokumenter Arbeid",
-      "step6": "Fullfør og Planlegg"
+      "step6": "Fullfør og Planlegg",
+      "steps": {
+        "welcomeTitle": "⚙️ Planlagt Vedlikehold",
+        "welcome": "Utfør planlagte vedlikeholdsprotokoller systematisk.",
+        "findMaintenance": "Gå til \"Vedlikeholdsutførelser\" i Operasjoner.",
+        "chooseProtocol": "Velg vedlikeholdsprotokollen som skal utføres.",
+        "assignResources": "Tildel maskin og tekniker for vedlikeholdet.",
+        "executeChecklist": "Arbeid gjennom sjekkliste-elementer systematisk.",
+        "documentWork": "Registrer brukte deler og legg til bilder/notater.",
+        "completeSchedule": "Fullfør protokoll for å generere rapporter og planlegge neste service."
+      }
     },
     "quickGuide": "Hurtigguide",
-    "interactive": "Interaktiv"
+    "interactive": "Interaktiv",
+    "open": "Åpne",
+    "step": "Steg",
+    "of": "av"
   }
 }
