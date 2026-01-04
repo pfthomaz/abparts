@@ -49,7 +49,8 @@
     "selectNone": "No Seleccionar",
     "noDescription": "Sin descripción disponible",
     "notes": "Notas",
-    "scope": "Alcance"
+    "scope": "Alcance",
+    "skip": "Omitir"
   },
   "navigation": {
     "dashboard": "Panel de Control",

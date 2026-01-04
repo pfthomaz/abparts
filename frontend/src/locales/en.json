@@ -49,7 +49,8 @@
     "selectNone": "Select None",
     "noDescription": "No description available",
     "notes": "Notes",
-    "scope": "Scope"
+    "scope": "Scope",
+    "skip": "Skip"
   },
   "navigation": {
     "dashboard": "Dashboard",

@@ -49,7 +49,8 @@
     "selectNone": "عدم التحديد",
     "noDescription": "لا يوجد وصف متاح",
     "notes": "ملاحظات",
-    "scope": "النطاق"
+    "scope": "النطاق",
+    "skip": "تخطي"
   },
   "navigation": {
     "dashboard": "لوحة التحكم",
