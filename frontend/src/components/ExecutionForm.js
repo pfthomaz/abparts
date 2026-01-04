@@ -73,6 +73,11 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
     initializeExecution(machineHours);
   };
 
+  const handleSkipHours = () => {
+    // Skip hours recording and proceed with maintenance execution
+    initializeExecution(0);
+  };
+
   const handleItemComplete = async (item, itemData) => {
     if (!executionId) return;
 
@@ -181,10 +186,11 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={onCancel}
+            onClick={handleSkipHours}
+            disabled={loading}
             className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            {t('common.cancel')}
+            {loading ? t('maintenance.starting') : t('common.skip')}
           </button>
           <button
             onClick={handleStartExecution}
