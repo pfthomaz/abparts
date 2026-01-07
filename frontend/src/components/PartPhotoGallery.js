@@ -6,7 +6,7 @@ import { partsService } from '../services/partsService';
 import { useTranslation } from '../hooks/useTranslation';
 
 /**
- * PartPhotoGallery component for managing up to 4 part images
+ * PartPhotoGallery component for managing up to 20 part images
  * Supports viewing, uploading, removing, and reordering images
  * 
  * Simplified architecture to avoid circular dependencies and initialization issues
@@ -15,7 +15,7 @@ const PartPhotoGallery = forwardRef(({
   images = [],
   onImagesChange,
   isEditing = false,
-  maxImages = 4,
+  maxImages = 20,
   className = '',
   disabled = false
 }, ref) => {
@@ -26,9 +26,23 @@ const PartPhotoGallery = forwardRef(({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-
-  // Track previous image URLs to prevent unnecessary parent notifications
   const previousImageUrls = useRef([]);
+
+  // Notify parent when images change
+  useEffect(() => {
+    const currentUrls = currentImages.map(img => img.url);
+    const previousUrls = previousImageUrls.current;
+    
+    // Only notify if URLs actually changed
+    if (JSON.stringify(currentUrls) !== JSON.stringify(previousUrls)) {
+      console.log('PartPhotoGallery: Images changed, notifying parent', currentUrls);
+      previousImageUrls.current = currentUrls;
+      
+      if (onImagesChange && typeof onImagesChange === 'function') {
+        onImagesChange(currentUrls);
+      }
+    }
+  }, [currentImages, onImagesChange]);
 
   // Initialize images from props - only when props change
   useEffect(() => {
@@ -79,9 +93,11 @@ const PartPhotoGallery = forwardRef(({
       });
 
       const uploadedImages = await Promise.all(uploadPromises);
+      console.log('PartPhotoGallery: Successfully uploaded images:', uploadedImages);
 
       // Add uploaded images to current list
       const newImages = [...currentImages, ...uploadedImages];
+      console.log('PartPhotoGallery: New images list:', newImages);
       setCurrentImages(newImages);
 
     } catch (uploadError) {

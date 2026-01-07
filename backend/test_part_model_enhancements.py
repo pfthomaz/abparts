@@ -58,40 +58,29 @@ def test_part_model_enhancements():
     
     print("\n" + "-" * 30 + "\n")    
    
- # Test 2: Image URL validation (maximum 4 images)
-    print("Test 2: Image URL validation (maximum 4 images)")
+ # Test 2: Image URL validation (maximum 20 images)
+    print("Test 2: Image URL validation (maximum 20 images)")
     try:
-        # Test with exactly 4 images (should pass)
-        part_data_4_images = part_data.copy()
-        part_data_4_images["image_urls"] = [
-            "https://example.com/image1.jpg",
-            "https://example.com/image2.jpg", 
-            "https://example.com/image3.jpg",
-            "https://example.com/image4.jpg"
-        ]
-        part = schemas.PartCreate(**part_data_4_images)
-        print("✅ 4 images validation passed")
+        # Test with exactly 20 images (should pass)
+        part_data_20_images = part_data.copy()
+        part_data_20_images["image_urls"] = [f"https://example.com/image{i}.jpg" for i in range(1, 21)]
+        part = schemas.PartCreate(**part_data_20_images)
+        print("✅ 20 images validation passed")
         
-        # Test with 5 images (should fail)
-        part_data_5_images = part_data.copy()
-        part_data_5_images["image_urls"] = [
-            "https://example.com/image1.jpg",
-            "https://example.com/image2.jpg", 
-            "https://example.com/image3.jpg",
-            "https://example.com/image4.jpg",
-            "https://example.com/image5.jpg"
-        ]
+        # Test with 21 images (should fail)
+        part_data_21_images = part_data.copy()
+        part_data_21_images["image_urls"] = [f"https://example.com/image{i}.jpg" for i in range(1, 22)]
         try:
-            part = schemas.PartCreate(**part_data_5_images)
-            print("❌ Should have failed with 5 images")
-            print(f"   Actually created with {len(part_data_5_images['image_urls'])} images")
+            part = schemas.PartCreate(**part_data_21_images)
+            print("❌ Should have failed with 21 images")
+            print(f"   Actually created with {len(part_data_21_images['image_urls'])} images")
             return False
         except ValidationError as e:
-            print("✅ Correctly rejected 5 images")
+            print("✅ Correctly rejected 21 images")
             print(f"   Error: {e}")
         except Exception as e:
             print(f"   Unexpected error: {e}")
-            print("✅ Correctly rejected 5 images (different error type)")
+            print("✅ Correctly rejected 21 images (different error type)")
             
     except Exception as e:
         print(f"❌ Error: {e}")
