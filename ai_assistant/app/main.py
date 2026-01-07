@@ -88,7 +88,9 @@ app.include_router(knowledge_base.router, prefix="/api/ai", tags=["knowledge"])
 app.include_router(troubleshooting.router, prefix="/api/ai", tags=["troubleshooting"])
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+import os
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 @app.get("/admin")

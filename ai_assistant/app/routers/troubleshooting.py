@@ -424,7 +424,7 @@ async def get_troubleshooting_steps(
 @router.post("/troubleshooting/{session_id}/escalate")
 async def escalate_troubleshooting(
     session_id: str,
-    reason: str = Field(..., description="Reason for escalation"),
+    escalation_request: Dict[str, str],
     troubleshooting_service: TroubleshootingService = Depends(get_troubleshooting_service)
 ) -> Dict[str, Any]:
     """
@@ -434,6 +434,8 @@ async def escalate_troubleshooting(
     to human expert support when they need additional assistance.
     """
     try:
+        reason = escalation_request.get("reason", "Manual escalation requested")
+        
         # Update session status to escalated
         success = await session_manager.update_session_status(
             session_id=session_id,
