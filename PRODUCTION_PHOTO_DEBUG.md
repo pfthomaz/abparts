@@ -11,13 +11,13 @@ Image saving functionality works in development but not in production environmen
 **Solution**: Rebuild and restart production containers
 ```bash
 # Stop production services
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Rebuild backend with latest changes
-docker-compose -f docker-compose.prod.yml build --no-cache api
+docker compose -f docker-compose.prod.yml build --no-cache api
 
 # Start services
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### 2. Database Schema Differences
@@ -49,10 +49,10 @@ exit
 **Solution**: Rebuild frontend container
 ```bash
 # Rebuild frontend with latest changes
-docker-compose -f docker-compose.prod.yml build --no-cache web
+docker compose -f docker-compose.prod.yml build --no-cache web
 
 # Restart frontend
-docker-compose -f docker-compose.prod.yml restart web
+docker compose -f docker-compose.prod.yml restart web
 ```
 
 ### 5. Image Storage Path Issues
@@ -76,13 +76,13 @@ volumes:
 ### Step 1: Check Production Containers
 ```bash
 # Check if containers are running
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Check API logs
-docker-compose -f docker-compose.prod.yml logs api
+docker compose -f docker-compose.prod.yml logs api
 
 # Check web logs  
-docker-compose -f docker-compose.prod.yml logs web
+docker compose -f docker-compose.prod.yml logs web
 ```
 
 ### Step 2: Test Production API Directly
@@ -133,15 +133,15 @@ echo "=== Deploying Image Functionality Fixes to Production ==="
 
 # Stop services
 echo "Stopping production services..."
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Rebuild containers with latest code
 echo "Rebuilding containers..."
-docker-compose -f docker-compose.prod.yml build --no-cache api web
+docker compose -f docker-compose.prod.yml build --no-cache api web
 
 # Start services
 echo "Starting services..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be ready
 echo "Waiting for services to start..."
@@ -153,7 +153,7 @@ docker exec abparts_api_prod alembic upgrade head
 
 # Check service status
 echo "Checking service status..."
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 echo "=== Deployment Complete ==="
 echo "Test the image functionality now."
