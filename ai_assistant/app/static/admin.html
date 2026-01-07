@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoBoss AI Assistant - Knowledge Base Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 3px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .results { margin-top: 20px; }
+        .document { border: 1px solid #eee; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AutoBoss AI Assistant - Knowledge Base Admin</h1>
+        
+        <!-- Upload Section -->
+        <div class="section">
+            <h2>Upload Document</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">File (PDF or TXT):</label>
+                    <input type="file" id="file" name="file" accept=".pdf,.txt" required>
+                </div>
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="document_type">Document Type:</label>
+                    <select id="document_type" name="document_type">
+                        <option value="manual">Manual</option>
+                        <option value="procedure">Procedure</option>
+                        <option value="faq">FAQ</option>
+                        <option value="expert_input">Expert Input</option>
+                        <option value="troubleshooting_guide">Troubleshooting Guide</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="machine_models">Machine Models (comma-separated):</label>
+                    <input type="text" id="machine_models" name="machine_models" placeholder="V4.0, V3.1B, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="tags">Tags (comma-separated):</label>
+                    <input type="text" id="tags" name="tags" placeholder="maintenance, troubleshooting, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="language">Language:</label>
+                    <select id="language" name="language">
+                        <option value="en">English</option>
+                        <option value="el">Greek</option>
+                        <option value="ar">Arabic</option>
+                        <option value="es">Spanish</option>
+                        <option value="tr">Turkish</option>
+                        <option value="no">Norwegian</option>
+                    </select>
+                </div>
+                <button type="submit">Upload Document</button>
+            </form>
+            <div id="uploadResult"></div>
+        </div>
+        
+        <!-- Search Section -->
+        <div class="section">
+            <h2>Search Knowledge Base</h2>
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="query">Search Query:</label>
+                    <input type="text" id="query" name="query" required>
+                </div>
+                <div class="form-group">
+                    <label for="search_language">Language:</label>
+                    <select id="search_language" name="language">
+                        <option value="en">English</option>
+                        <option value="el">Greek</option>
+                        <option value="ar">Arabic</option>
+                        <option value="es">Spanish</option>
+                        <option value="tr">Turkish</option>
+                        <option value="no">Norwegian</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="search_type">Document Type:</label>
+                    <select id="search_type" name="document_type">
+                        <option value="">All Types</option>
+                        <option value="manual">Manual</option>
+                        <option value="procedure">Procedure</option>
+                        <option value="faq">FAQ</option>
+                        <option value="expert_input">Expert Input</option>
+                        <option value="troubleshooting_guide">Troubleshooting Guide</option>
+                    </select>
+                </div>
+                <button type="submit">Search</button>
+            </form>
+            <div id="searchResults"></div>
+        </div>
+        
+        <!-- Documents List Section -->
+        <div class="section">
+            <h2>Documents</h2>
+            <button onclick="loadDocuments()">Refresh List</button>
+            <div id="documentsList"></div>
+        </div>
+        
+        <!-- Statistics Section -->
+        <div class="section">
+            <h2>Statistics</h2>
+            <button onclick="loadStats()">Refresh Stats</button>
+            <div id="statsDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/ai/knowledge';
+        
+        // Upload form handler
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const resultDiv = document.getElementById('uploadResult');
+            
+            try {
+                resultDiv.innerHTML = 'Uploading...';
+                const response = await fetch(`${API_BASE}/documents/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">Document uploaded successfully! ID: ${result.document_id}</div>`;
+                    e.target.reset();
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.detail}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Search form handler
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const query = formData.get('query');
+            const language = formData.get('language');
+            const document_type = formData.get('document_type');
+            
+            const searchData = {
+                query: query,
+                language: language,
+                limit: 10
+            };
+            
+            if (document_type) {
+                searchData.document_type = document_type;
+            }
+            
+            const resultDiv = document.getElementById('searchResults');
+            
+            try {
+                resultDiv.innerHTML = 'Searching...';
+                const response = await fetch(`${API_BASE}/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(searchData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    let html = `<h3>Search Results (${result.total_results} found)</h3>`;
+                    result.results.forEach(item => {
+                        html += `
+                            <div class="document">
+                                <h4>${item.document.title}</h4>
+                                <p><strong>Type:</strong> ${item.document.document_type}</p>
+                                <p><strong>Score:</strong> ${item.relevance_score.toFixed(3)}</p>
+                                <p><strong>Content:</strong> ${item.matched_content}</p>
+                            </div>
+                        `;
+                    });
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.detail}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Load documents list
+        async function loadDocuments() {
+            const listDiv = document.getElementById('documentsList');
+            
+            try {
+                listDiv.innerHTML = 'Loading...';
+                const response = await fetch(`${API_BASE}/documents`);
+                const documents = await response.json();
+                
+                if (response.ok) {
+                    let html = `<h3>Documents (${documents.length} total)</h3>`;
+                    documents.forEach(doc => {
+                        html += `
+                            <div class="document">
+                                <h4>${doc.title}</h4>
+                                <p><strong>ID:</strong> ${doc.document_id}</p>
+                                <p><strong>Type:</strong> ${doc.document_type}</p>
+                                <p><strong>Language:</strong> ${doc.language}</p>
+                                <p><strong>Models:</strong> ${doc.machine_models.join(', ')}</p>
+                                <p><strong>Tags:</strong> ${doc.tags.join(', ')}</p>
+                                <p><strong>Created:</strong> ${new Date(doc.created_at).toLocaleString()}</p>
+                                <button onclick="deleteDocument('${doc.document_id}')">Delete</button>
+                            </div>
+                        `;
+                    });
+                    listDiv.innerHTML = html;
+                } else {
+                    listDiv.innerHTML = `<div class="error">Error loading documents</div>`;
+                }
+            } catch (error) {
+                listDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Delete document
+        async function deleteDocument(documentId) {
+            if (!confirm('Are you sure you want to delete this document?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/documents/${documentId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Document deleted successfully');
+                    loadDocuments();
+                } else {
+                    const result = await response.json();
+                    alert(`Error: ${result.detail}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        // Load statistics
+        async function loadStats() {
+            const statsDiv = document.getElementById('statsDisplay');
+            
+            try {
+                statsDiv.innerHTML = 'Loading...';
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    let html = `
+                        <h3>Knowledge Base Statistics</h3>
+                        <p><strong>Total Documents:</strong> ${stats.total_documents}</p>
+                        <h4>Documents by Type:</h4>
+                        <ul>
+                    `;
+                    
+                    for (const [type, count] of Object.entries(stats.documents_by_type)) {
+                        html += `<li>${type}: ${count}</li>`;
+                    }
+                    
+                    html += `
+                        </ul>
+                        <h4>Documents by Language:</h4>
+                        <ul>
+                    `;
+                    
+                    for (const [lang, count] of Object.entries(stats.documents_by_language)) {
+                        html += `<li>${lang}: ${count}</li>`;
+                    }
+                    
+                    html += `
+                        </ul>
+                        <h4>Vector Database:</h4>
+                        <p><strong>Total Vectors:</strong> ${stats.vector_database.total_vectors}</p>
+                        <p><strong>Active Vectors:</strong> ${stats.vector_database.active_vectors}</p>
+                    `;
+                    
+                    statsDiv.innerHTML = html;
+                } else {
+                    statsDiv.innerHTML = `<div class="error">Error loading statistics</div>`;
+                }
+            } catch (error) {
+                statsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Load initial data
+        loadDocuments();
+        loadStats();
+    </script>
+</body>
+</html>
