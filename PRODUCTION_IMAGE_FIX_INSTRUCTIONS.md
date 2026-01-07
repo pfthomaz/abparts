@@ -108,13 +108,13 @@ LIMIT 5;
 **Manual deployment steps:**
 ```bash
 # Stop services
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Rebuild containers
-docker-compose -f docker-compose.prod.yml build --no-cache api web
+docker compose -f docker-compose.prod.yml build --no-cache api web
 
 # Start services
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Run migrations
 docker exec abparts_api_prod alembic upgrade head
@@ -124,12 +124,12 @@ docker exec abparts_api_prod alembic upgrade head
 
 1. **Check container status:**
    ```bash
-   docker-compose -f docker-compose.prod.yml ps
+   docker compose -f docker-compose.prod.yml ps
    ```
 
 2. **Check API logs for errors:**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs api | grep -i error
+   docker compose -f docker-compose.prod.yml logs api | grep -i error
    ```
 
 3. **Test API directly:**
@@ -174,7 +174,7 @@ docker exec abparts_api_prod alembic upgrade head
 ## Success Criteria
 
 ✅ **Deployment Successful When:**
-- All containers are running (`docker-compose ps` shows "Up")
+- All containers are running (`docker compose ps` shows "Up")
 - API responds to health checks (`curl http://46.62.153.166:8000/docs`)
 - Parts API returns data sorted by creation date
 - Frontend loads without errors
