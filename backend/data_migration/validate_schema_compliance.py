@@ -368,21 +368,21 @@ class SchemaComplianceValidator:
                           f'{len(duplicate_part_numbers)} duplicate part numbers found',
                           details)
         
-        # 3. Check image URL limits (max 4 images)
+        # 3. Check image URL limits (max 20 images)
         parts_too_many_images = session.execute(text("""
             SELECT part_number, name, array_length(image_urls, 1) as image_count
             FROM parts 
-            WHERE array_length(image_urls, 1) > 4
+            WHERE array_length(image_urls, 1) > 20
         """)).fetchall()
         
         if not parts_too_many_images:
             self.add_result('Parts', 'Image URL Limits', 'PASS', 
-                          'All parts have 4 or fewer images')
+                          'All parts have 20 or fewer images')
         else:
             details = [f"Part '{row.part_number}' ({row.name}) has {row.image_count} images" 
                       for row in parts_too_many_images]
             self.add_result('Parts', 'Image URL Limits', 'FAIL', 
-                          f'{len(parts_too_many_images)} parts exceed 4 image limit',
+                          f'{len(parts_too_many_images)} parts exceed 20 image limit',
                           details)
     
     def validate_business_rules(self, session):

@@ -495,7 +495,7 @@ class PartBase(BaseModel):
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
+    image_urls: Optional[List[str]] = Field(None, max_items=20, description="Up to 20 image URLs")
     
     # Validators temporarily removed to test field definitions
     
@@ -518,7 +518,7 @@ class PartUpdate(BaseModel):
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
+    image_urls: Optional[List[str]] = Field(None, max_items=20, description="Up to 20 image URLs")
     
     # Validators temporarily removed to test field definitions
 

@@ -26,14 +26,14 @@ class PartBase(BaseModel):
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
+    image_urls: Optional[List[str]] = Field(None, max_items=20, description="Up to 20 image URLs")
     
     @field_validator('image_urls')
     @classmethod
     def validate_image_urls(cls, v):
         if v is not None:
-            if len(v) > 4:
-                raise ValueError('Maximum 4 images allowed per part')
+            if len(v) > 20:
+                raise ValueError('Maximum 20 images allowed per part')
             # Validate each URL is not empty
             for url in v:
                 if not url or not url.strip():
@@ -72,14 +72,14 @@ class PartUpdate(BaseModel):
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
-    image_urls: Optional[List[str]] = Field(None, max_items=4, description="Up to 4 image URLs")
+    image_urls: Optional[List[str]] = Field(None, max_items=20, description="Up to 20 image URLs")
     
     @field_validator('image_urls')
     @classmethod
     def validate_image_urls(cls, v):
         if v is not None:
-            if len(v) > 4:
-                raise ValueError('Maximum 4 images allowed per part')
+            if len(v) > 20:
+                raise ValueError('Maximum 20 images allowed per part')
             # Validate each URL is not empty
             for url in v:
                 if not url or not url.strip():

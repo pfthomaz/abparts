@@ -38,25 +38,19 @@ def test_part_validation():
         return False
     
     # Test 1: Try to create part with too many images (should fail)
-    print("\nTest 1: Create part with 5 images (should fail)")
+    print("\nTest 1: Create part with 21 images (should fail)")
     try:
         invalid_part_data = {
             "part_number": "INVALID-001",
             "name": "Invalid Part",
-            "image_urls": [
-                "https://example.com/image1.jpg",
-                "https://example.com/image2.jpg",
-                "https://example.com/image3.jpg",
-                "https://example.com/image4.jpg",
-                "https://example.com/image5.jpg"  # This should cause validation error
-            ]
+            "image_urls": [f"https://example.com/image{i}.jpg" for i in range(1, 22)]  # 21 images should fail
         }
         
         response = requests.post(f"{base_url}/parts/", json=invalid_part_data, headers=headers)
         print(f"Status Code: {response.status_code}")
         
         if response.status_code == 422:  # Validation error
-            print("✅ Correctly rejected part with 5 images")
+            print("✅ Correctly rejected part with 21 images")
             error_data = response.json()
             print(f"   Error: {error_data}")
         else:
