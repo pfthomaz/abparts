@@ -380,7 +380,7 @@ def test_superadmin_access_control():
     return True
 
 def test_image_validation():
-    """Test image URL validation (max 4 images)"""
+    """Test image URL validation (max 20 images)"""
     print("\n" + "="*50)
     print("TEST: Image URL Validation")
     print("="*50)
@@ -429,13 +429,7 @@ def test_image_validation():
         "part_type": "consumable",
         "is_proprietary": False,
         "unit_of_measure": "pieces",
-        "image_urls": [
-            "https://example.com/image1.jpg",
-            "https://example.com/image2.jpg",
-            "https://example.com/image3.jpg",
-            "https://example.com/image4.jpg",
-            "https://example.com/image5.jpg"
-        ]
+        "image_urls": [f"https://example.com/image{i}.jpg" for i in range(1, 22)]  # 21 images should fail
     }
     
     try:
@@ -511,7 +505,7 @@ def main():
         print("✅ POST /parts enhanced with multilingual validation")
         print("✅ PUT /parts/{id} enhanced with multilingual support")
         print("✅ Superadmin-only access control implemented")
-        print("✅ Image URL validation (max 4 images)")
+        print("✅ Image URL validation (max 20 images)")
         print("✅ Enhanced search across all part fields")
         return True
     else:

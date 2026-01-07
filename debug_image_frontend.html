@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Image Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input[type="file"] { margin: 10px 0; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+        .log { background-color: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Image Upload Functionality</h1>
+        
+        <div class="section info">
+            <h3>Instructions:</h3>
+            <p>1. First, click "Login" to authenticate</p>
+            <p>2. Then select an image file and click "Upload Image"</p>
+            <p>3. Finally, click "Create Part with Image" to test the full flow</p>
+            <p>4. Check the console logs below for detailed information</p>
+        </div>
+
+        <div class="section">
+            <h3>Step 1: Authentication</h3>
+            <button onclick="login()">Login</button>
+            <div id="auth-status">Not authenticated</div>
+        </div>
+
+        <div class="section">
+            <h3>Step 2: Image Upload</h3>
+            <input type="file" id="imageFile" accept="image/*">
+            <button onclick="uploadImage()">Upload Image</button>
+            <div id="upload-status">No image uploaded</div>
+        </div>
+
+        <div class="section">
+            <h3>Step 3: Create Part</h3>
+            <button onclick="createPart()">Create Part with Image</button>
+            <div id="part-status">No part created</div>
+        </div>
+
+        <div class="section">
+            <h3>Console Logs:</h3>
+            <div id="console-log" class="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let imageUrl = null;
+        
+        // Override console.log to show in our custom log area
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function logToPage(message, type = 'log') {
+            const logDiv = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌ ERROR' : '📝 LOG';
+            logDiv.textContent += `[${timestamp}] ${prefix}: ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Also log to browser console
+            if (type === 'error') {
+                originalError(message);
+            } else {
+                originalLog(message);
+            }
+        }
+        
+        console.log = logToPage;
+        console.error = (msg) => logToPage(msg, 'error');
+
+        async function login() {
+            try {
+                console.log('Starting authentication...');
+                
+                const response = await fetch('http://localhost:8000/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'username=dthomaz&password=amFT1999!'
+                });
+                
+                console.log('Login response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.access_token;
+                    document.getElementById('auth-status').textContent = '✅ Authenticated successfully';
+                    document.getElementById('auth-status').className = 'success';
+                    console.log('Authentication successful');
+                } else {
+                    const errorText = await response.text();
+                    console.error('Login failed:', errorText);
+                    document.getElementById('auth-status').textContent = '❌ Authentication failed';
+                    document.getElementById('auth-status').className = 'error';
+                }
+            } catch (error) {
+                console.error('Login error:', error.message);
+                document.getElementById('auth-status').textContent = '❌ Authentication error: ' + error.message;
+                document.getElementById('auth-status').className = 'error';
+            }
+        }
+
+        async function uploadImage() {
+            if (!authToken) {
+                console.error('Please login first');
+                return;
+            }
+            
+            const fileInput = document.getElementById('imageFile');
+            if (!fileInput.files[0]) {
+                console.error('Please select an image file');
+                return;
+            }
+            
+            try {
+                console.log('Starting image upload...');
+                
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                console.log('File selected:', fileInput.files[0].name, 'Size:', fileInput.files[0].size);
+                
+                const response = await fetch('http://localhost:8000/parts/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                console.log('Upload response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    imageUrl = data.url;
+                    document.getElementById('upload-status').textContent = '✅ Image uploaded successfully';
+                    document.getElementById('upload-status').className = 'success';
+                    console.log('Image upload successful, URL length:', imageUrl.length);
+                } else {
+                    const errorText = await response.text();
+                    console.error('Upload failed:', errorText);
+                    document.getElementById('upload-status').textContent = '❌ Upload failed';
+                    document.getElementById('upload-status').className = 'error';
+                }
+            } catch (error) {
+                console.error('Upload error:', error.message);
+                document.getElementById('upload-status').textContent = '❌ Upload error: ' + error.message;
+                document.getElementById('upload-status').className = 'error';
+            }
+        }
+
+        async function createPart() {
+            if (!authToken) {
+                console.error('Please login first');
+                return;
+            }
+            
+            if (!imageUrl) {
+                console.error('Please upload an image first');
+                return;
+            }
+            
+            try {
+                console.log('Creating part with image...');
+                
+                const partData = {
+                    part_number: `DEBUG-${Date.now()}`,
+                    name: 'Debug Test Part',
+                    description: 'Testing image functionality',
+                    part_type: 'consumable',
+                    is_proprietary: false,
+                    unit_of_measure: 'pieces',
+                    image_urls: [imageUrl]
+                };
+                
+                console.log('Part data:', JSON.stringify(partData, null, 2));
+                
+                const response = await fetch('http://localhost:8000/parts/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(partData)
+                });
+                
+                console.log('Create part response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('part-status').textContent = `✅ Part created: ${data.part_number}`;
+                    document.getElementById('part-status').className = 'success';
+                    console.log('Part created successfully:', data.id);
+                    console.log('Part image URLs:', data.image_urls);
+                } else {
+                    const errorText = await response.text();
+                    console.error('Part creation failed:', errorText);
+                    document.getElementById('part-status').textContent = '❌ Part creation failed';
+                    document.getElementById('part-status').className = 'error';
+                }
+            } catch (error) {
+                console.error('Part creation error:', error.message);
+                document.getElementById('part-status').textContent = '❌ Part creation error: ' + error.message;
+                document.getElementById('part-status').className = 'error';
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('console-log').textContent = '';
+        }
+        
+        // Log initial state
+        console.log('Debug page loaded successfully');
+        console.log('Ready to test image upload functionality');
+    </script>
+</body>
+</html>

@@ -1,148 +1,178 @@
-# Production Profile Photo Debug Steps
+# Production Photo/Image Functionality Debug Guide
 
 ## Issue
-- Profile photos work in dev
-- Don't work in production
-- Console shows: `currentPhotoUrl: null`
-- Photo data EXISTS in database
+Image saving functionality works in development but not in production environment.
 
-## Root Cause
-The `/api/users/me/` endpoint is returning `profile_photo_url: null` even though photo data exists.
+## Potential Causes & Solutions
+
+### 1. Backend Code Not Deployed
+**Problem**: The CRUD fixes we made might not be deployed to production containers.
+
+**Solution**: Rebuild and restart production containers
+```bash
+# Stop production services
+docker compose -f docker-compose.prod.yml down
+
+# Rebuild backend with latest changes
+docker compose -f docker-compose.prod.yml build --no-cache api
+
+# Start services
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### 2. Database Schema Differences
+**Problem**: Production database might have different schema or missing columns.
+
+**Solution**: Run database migrations in production
+```bash
+# Connect to production API container
+docker exec -it abparts_api_prod bash
+
+# Run migrations
+alembic upgrade head
+
+# Exit container
+exit
+```
+
+### 3. Environment Configuration Issues
+**Problem**: Production environment variables might be different.
+
+**Check**: Verify production environment file has correct settings
+- Image storage paths
+- API base URLs
+- CORS settings
+
+### 4. Frontend Build Issues
+**Problem**: Frontend production build might not include latest changes.
+
+**Solution**: Rebuild frontend container
+```bash
+# Rebuild frontend with latest changes
+docker compose -f docker-compose.prod.yml build --no-cache web
+
+# Restart frontend
+docker compose -f docker-compose.prod.yml restart web
+```
+
+### 5. Image Storage Path Issues
+**Problem**: Production might use different image storage configuration.
+
+**Check**: Verify volume mounts in docker-compose.prod.yml
+```yaml
+volumes:
+  - /var/www/abparts_images:/app/static/images:ro
+```
+
+### 6. API Endpoint Differences
+**Problem**: Production API might be behind proxy with different paths.
+
+**Check**: Verify REACT_APP_API_BASE_URL in production
+- Should be `/api` if behind nginx proxy
+- Should be full URL if direct access
 
 ## Debug Steps
 
-### 1. Check what the API actually returns
+### Step 1: Check Production Containers
+```bash
+# Check if containers are running
+docker compose -f docker-compose.prod.yml ps
 
-In production, open browser console and run:
+# Check API logs
+docker compose -f docker-compose.prod.yml logs api
 
-```javascript
-fetch('https://abparts.oraseas.com/api/users/me/', {
-  headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
-})
-.then(r => r.json())
-.then(d => console.log('API Response:', JSON.stringify(d, null, 2)))
+# Check web logs  
+docker compose -f docker-compose.prod.yml logs web
 ```
 
-**Look for:** Does `profile_photo_url` field exist? Is it null or a URL?
+### Step 2: Test Production API Directly
+```bash
+# Test login endpoint
+curl -X POST "http://46.62.153.166:8000/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=dthomaz&password=amFT1999!"
 
-### 2. Check if production code is updated
+# Test parts endpoint (use token from above)
+curl -X GET "http://46.62.153.166:8000/parts/with-inventory?limit=3" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
 
-SSH to production server:
+### Step 3: Check Database in Production
+```bash
+# Connect to production database
+docker exec -it abparts_db_prod psql -U abparts_user -d abparts_prod
+
+# Check recent parts
+SELECT part_number, name, 
+       array_length(image_urls, 1) as url_count,
+       created_at 
+FROM parts 
+ORDER BY created_at DESC 
+LIMIT 5;
+
+# Exit database
+\q
+```
+
+### Step 4: Check Frontend Network Requests
+1. Open browser developer tools (F12)
+2. Go to Network tab
+3. Try creating a part with images
+4. Check if API requests are being made
+5. Look for any 404, 500, or CORS errors
+
+## Quick Fix Script
+
+Create and run this script on production server:
 
 ```bash
-# Check the actual code in production
-grep -A 5 "profile_photo_url.*profile_photo_data" /home/abparts/abparts/backend/app/crud/users.py
+#!/bin/bash
+# production_image_fix.sh
+
+echo "=== Deploying Image Functionality Fixes to Production ==="
+
+# Stop services
+echo "Stopping production services..."
+docker compose -f docker-compose.prod.yml down
+
+# Rebuild containers with latest code
+echo "Rebuilding containers..."
+docker compose -f docker-compose.prod.yml build --no-cache api web
+
+# Start services
+echo "Starting services..."
+docker compose -f docker-compose.prod.yml up -d
+
+# Wait for services to be ready
+echo "Waiting for services to start..."
+sleep 30
+
+# Run database migrations
+echo "Running database migrations..."
+docker exec abparts_api_prod alembic upgrade head
+
+# Check service status
+echo "Checking service status..."
+docker compose -f docker-compose.prod.yml ps
+
+echo "=== Deployment Complete ==="
+echo "Test the image functionality now."
 ```
 
-**Expected:** Should see the line with `f"/images/users/{user.id}/profile" if user.profile_photo_data else None`
+## Expected Behavior After Fix
 
-**If not found:** Production code is not updated! You need to:
-```bash
-cd /home/abparts/abparts
-git pull
-sudo systemctl restart abparts-api
-```
+1. ✅ Parts created with images should appear at top of list
+2. ✅ Image count should display correctly  
+3. ✅ Success message should appear after creation
+4. ✅ API should return parts sorted by creation date
+5. ✅ Up to 20 images should be supported per part
 
-### 3. Check if nginx is caching
+## If Still Not Working
 
-```bash
-# Check nginx cache headers
-curl -I https://abparts.oraseas.com/api/users/me/ \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+1. **Check browser console** for JavaScript errors
+2. **Check network tab** for failed API requests
+3. **Check API logs** for backend errors
+4. **Verify database** has the new parts with images
+5. **Test API directly** with curl commands above
 
-**Look for:** `Cache-Control` headers. If caching is enabled for `/api/users/me/`, disable it.
-
-### 4. Force clear browser cache
-
-In production site:
-1. Open DevTools (F12)
-2. Right-click refresh button
-3. Select "Empty Cache and Hard Reload"
-4. Or: DevTools → Network tab → Check "Disable cache"
-
-### 5. Check if photo data exists in production DB
-
-```bash
-# On production server
-docker-compose exec db psql -U abparts_user -d abparts_prod -c \
-  "SELECT id, username, profile_photo_data IS NOT NULL as has_photo FROM users WHERE username = 'your_username';"
-```
-
-### 6. Test the image endpoint directly
-
-```bash
-# Get your user ID first
-USER_ID="your-user-id-from-api"
-
-# Try to fetch the image
-curl https://abparts.oraseas.com/api/images/users/$USER_ID/profile -o test.webp
-
-# Check if it worked
-file test.webp
-```
-
-## Most Likely Issues
-
-### Issue A: Production code not updated
-**Solution:** 
-```bash
-cd /home/abparts/abparts
-git pull origin main
-sudo systemctl restart abparts-api
-```
-
-### Issue B: Nginx not proxying /images/
-**Check:** Does your nginx config have this?
-```nginx
-location /images/ {
-    proxy_pass http://localhost:8000/images/;
-    # ... proxy headers
-}
-```
-
-**If missing, add it and reload:**
-```bash
-sudo nano /etc/nginx/sites-available/abparts
-# Add the location block
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### Issue C: API returning old cached response
-**Solution:**
-```bash
-# Restart API
-sudo systemctl restart abparts-api
-
-# Clear any API-level cache
-# (if you have Redis caching enabled)
-docker-compose exec redis redis-cli FLUSHALL
-```
-
-## Quick Fix Command
-
-Run this on production server:
-
-```bash
-cd /home/abparts/abparts && \
-git pull && \
-sudo systemctl restart abparts-api && \
-echo "✅ Code updated and API restarted"
-```
-
-Then hard-refresh your browser (Ctrl+Shift+R or Cmd+Shift+R).
-
-## Verify Fix
-
-After applying fix, check in browser console:
-
-```javascript
-fetch('https://abparts.oraseas.com/api/users/me/', {
-  headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
-})
-.then(r => r.json())
-.then(d => console.log('profile_photo_url:', d.profile_photo_url))
-```
-
-Should show: `profile_photo_url: "/images/users/xxx-xxx-xxx/profile"`
+The issue is likely that the production containers need to be rebuilt with the latest code changes we made to fix the image functionality.

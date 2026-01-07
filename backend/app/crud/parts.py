@@ -653,12 +653,16 @@ def get_part_with_inventory(db: Session, part_id: uuid.UUID, organization_id: Op
         "is_low_stock": is_low_stock
     }
     
-    # Convert binary image data to URLs for frontend compatibility
+    # Handle image data - preserve existing image_urls if no image_data
     if part.image_data and len(part.image_data) > 0:
-        # Always use absolute URLs to bypass frontend proxy issues
+        # Convert binary image data to URLs for frontend compatibility
         base_url = "http://localhost:8000"
         result["image_urls"] = [f"{base_url}/images/parts/{part.id}?index={i}" for i in range(len(part.image_data))]
+    elif part.image_urls and len(part.image_urls) > 0:
+        # Keep existing image_urls (base64 data URLs or regular URLs)
+        result["image_urls"] = part.image_urls
     else:
+        # No images at all
         result["image_urls"] = []
     
     return result
@@ -731,8 +735,8 @@ def get_parts_with_inventory_with_count(db: Session, organization_id: Optional[u
     Returns:
         Dictionary with items, total_count (if requested), and has_more flag
     """
-    # Start with base query for parts
-    parts_query = db.query(models.Part)
+    # Start with base query for parts - ORDER BY created_at DESC to show newest first
+    parts_query = db.query(models.Part).order_by(models.Part.created_at.desc())
     
     # Apply filters if provided
     if part_type:

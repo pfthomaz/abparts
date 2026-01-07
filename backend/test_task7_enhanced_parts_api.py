@@ -131,13 +131,7 @@ def test_enhanced_parts_api():
             
             # Test image URL limit validation (try to update with too many images)
             too_many_images = {
-                'image_urls': [
-                    'http://example.com/image1.jpg',
-                    'http://example.com/image2.jpg',
-                    'http://example.com/image3.jpg',
-                    'http://example.com/image4.jpg',
-                    'http://example.com/image5.jpg'  # This should fail
-                ]
+                'image_urls': [f'http://example.com/image{i}.jpg' for i in range(1, 22)]  # 21 images should fail
             }
             
             response = requests.put(f'http://localhost:8000/parts/{test_part_id}', 
@@ -275,7 +269,7 @@ def test_enhanced_parts_api():
     print("✅ Enhanced POST /parts validation for new fields and multilingual names")
     print("✅ PUT /parts/{id} with multilingual update support")
     print("✅ Superadmin-only access control for parts CRUD operations")
-    print("✅ Image URL limit validation (maximum 4 images)")
+    print("✅ Image URL limit validation (maximum 20 images)")
     print("✅ Multilingual name format validation")
     print("✅ Enhanced fields support (manufacturer, part_code, serial_number)")
     

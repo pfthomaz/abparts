@@ -64,22 +64,27 @@ const SuperAdminPartsManager = () => {
   const fetchParts = async () => {
     if (!isUserSuperAdmin) return;
 
+    console.log('SuperAdminPartsManager: fetchParts called');
     setLoading(true);
     setError(null);
 
     try {
       // Fetch ALL parts for SuperAdmin interface (use max API limit)
+      console.log('SuperAdminPartsManager: Calling partsService.getPartsWithInventory...');
       const response = await partsService.getPartsWithInventory({ limit: 1000 });
-      console.log('Fetched parts response:', response); // Debug log
+      console.log('SuperAdminPartsManager: Fetched parts response:', response); // Debug log
 
       // Handle the new response format
       const partsData = response.items || response;
       const totalCount = response.total_count || partsData.length;
 
+      console.log(`SuperAdminPartsManager: Setting ${partsData.length} parts in state`);
       setParts(partsData);
       calculateAnalytics(partsData, totalCount);
+      
+      console.log('SuperAdminPartsManager: fetchParts completed successfully');
     } catch (err) {
-      console.error('Error fetching parts:', err); // Debug log
+      console.error('SuperAdminPartsManager: Error fetching parts:', err); // Debug log
       setError(err.message || 'Failed to fetch parts');
     } finally {
       setLoading(false);
@@ -275,14 +280,21 @@ const SuperAdminPartsManager = () => {
       console.log('SuperAdminPartsManager: Submitting part data:', partData); // Debug log
       console.log('SuperAdminPartsManager: Image URLs in part data:', partData.image_urls); // Debug log
 
+      let result;
       if (editingPart) {
-        await partsService.updatePart(editingPart.id, partData);
+        console.log('SuperAdminPartsManager: Updating existing part:', editingPart.id);
+        result = await partsService.updatePart(editingPart.id, partData);
+        console.log('SuperAdminPartsManager: Part updated successfully:', result);
       } else {
-        await partsService.createPart(partData);
+        console.log('SuperAdminPartsManager: Creating new part');
+        result = await partsService.createPart(partData);
+        console.log('SuperAdminPartsManager: Part created successfully:', result);
       }
 
       // Small delay to ensure backend processing is complete
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log('SuperAdminPartsManager: Refreshing parts list...');
 
       // Reset filters first to ensure new part is visible
       setFilters({
@@ -303,9 +315,16 @@ const SuperAdminPartsManager = () => {
       // Force refresh the parts data with a fresh API call
       await fetchParts();
 
+      console.log('SuperAdminPartsManager: Parts list refreshed, closing modal');
+
       setShowModal(false);
       setEditingPart(null);
+
+      // Show success message (you can replace this with a proper toast notification)
+      alert(`Part ${editingPart ? 'updated' : 'created'} successfully!`);
+      
     } catch (err) {
+      console.error('SuperAdminPartsManager: Error in handleCreateOrUpdate:', err);
       throw err; // Re-throw to be handled by form
     }
   };

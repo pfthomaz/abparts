@@ -294,7 +294,7 @@ async def create_part(
             detail="Invalid multilingual name format. Use format: 'English Name|Greek Name GR|Spanish Name ES' or single language."
         )
     
-    # Note: Image URL limit validation is handled by Pydantic schema (max_items=4)
+    # Note: Image URL limit validation is handled by Pydantic schema (max_items=20)
     # This provides automatic validation with 422 status code
     
     db_part = crud.parts.create_part_enhanced(db, part)
@@ -322,7 +322,7 @@ async def update_part(
             detail="Invalid multilingual name format. Use format: 'English Name|Greek Name GR|Spanish Name ES' or single language."
         )
     
-    # Note: Image URL limit validation is handled by Pydantic schema (max_items=4)
+    # Note: Image URL limit validation is handled by Pydantic schema (max_items=20)
     # This provides automatic validation with 422 status code
     
     updated_part = crud.parts.update_part_enhanced(db, part_id, part_update)
