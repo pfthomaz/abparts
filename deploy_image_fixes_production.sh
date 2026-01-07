@@ -42,26 +42,26 @@ print_status "Starting production deployment..."
 
 # Step 1: Backup current state
 print_status "Creating backup of current containers..."
-docker-compose -f docker-compose.prod.yml ps > production_containers_backup_$(date +%Y%m%d_%H%M%S).txt
+docker compose -f docker-compose.prod.yml ps > production_containers_backup_$(date +%Y%m%d_%H%M%S).txt
 
 # Step 2: Stop production services gracefully
 print_status "Stopping production services..."
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 print_success "Services stopped successfully"
 
 # Step 3: Rebuild containers with latest code
 print_status "Rebuilding backend container with latest fixes..."
-docker-compose -f docker-compose.prod.yml build --no-cache api
+docker compose -f docker-compose.prod.yml build --no-cache api
 
 print_status "Rebuilding frontend container with latest fixes..."
-docker-compose -f docker-compose.prod.yml build --no-cache web
+docker compose -f docker-compose.prod.yml build --no-cache web
 
 print_success "Containers rebuilt successfully"
 
 # Step 4: Start database and redis first
 print_status "Starting database and Redis services..."
-docker-compose -f docker-compose.prod.yml up -d db redis
+docker compose -f docker-compose.prod.yml up -d db redis
 
 # Wait for database to be ready
 print_status "Waiting for database to be ready..."
@@ -70,7 +70,7 @@ sleep 15
 # Check database health
 DB_READY=false
 for i in {1..30}; do
-    if docker-compose -f docker-compose.prod.yml exec -T db pg_isready -U abparts_user -d abparts_prod > /dev/null 2>&1; then
+    if docker compose -f docker-compose.prod.yml exec -T db pg_isready -U abparts_user -d abparts_prod > /dev/null 2>&1; then
         DB_READY=true
         break
     fi
@@ -87,7 +87,7 @@ print_success "Database is ready"
 
 # Step 5: Start API service
 print_status "Starting API service..."
-docker-compose -f docker-compose.prod.yml up -d api celery_worker
+docker compose -f docker-compose.prod.yml up -d api celery_worker
 
 # Wait for API to be ready
 print_status "Waiting for API to be ready..."
@@ -110,13 +110,13 @@ fi
 
 # Step 6: Run database migrations
 print_status "Running database migrations..."
-docker-compose -f docker-compose.prod.yml exec -T api alembic upgrade head
+docker compose -f docker-compose.prod.yml exec -T api alembic upgrade head
 
 print_success "Database migrations completed"
 
 # Step 7: Start frontend service
 print_status "Starting frontend service..."
-docker-compose -f docker-compose.prod.yml up -d web
+docker compose -f docker-compose.prod.yml up -d web
 
 print_success "All services started"
 
@@ -125,7 +125,7 @@ print_status "Verifying deployment..."
 
 # Check container status
 print_status "Container status:"
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Test API endpoints
 print_status "Testing API endpoints..."
@@ -149,7 +149,7 @@ fi
 
 # Step 9: Check recent database entries
 print_status "Checking database for recent parts..."
-RECENT_PARTS=$(docker-compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod -t -c "SELECT COUNT(*) FROM parts WHERE created_at > NOW() - INTERVAL '1 hour';" 2>/dev/null | tr -d ' ')
+RECENT_PARTS=$(docker compose -f docker-compose.prod.yml exec -T db psql -U abparts_user -d abparts_prod -t -c "SELECT COUNT(*) FROM parts WHERE created_at > NOW() - INTERVAL '1 hour';" 2>/dev/null | tr -d ' ')
 
 if [ ! -z "$RECENT_PARTS" ] && [ "$RECENT_PARTS" -gt 0 ]; then
     print_success "✅ Found $RECENT_PARTS recent parts in database"
@@ -188,8 +188,8 @@ echo "   3. Check API logs: docker-compose -f docker-compose.prod.yml logs api"
 echo "   4. Check database: docker-compose -f docker-compose.prod.yml exec db psql -U abparts_user -d abparts_prod"
 echo ""
 echo "📊 MONITORING:"
-echo "   - API logs: docker-compose -f docker-compose.prod.yml logs -f api"
-echo "   - All services: docker-compose -f docker-compose.prod.yml logs -f"
+echo "   - API logs: docker compose -f docker-compose.prod.yml logs -f api"
+echo "   - All services: docker compose -f docker-compose.prod.yml logs -f"
 echo ""
 
 # Step 11: Show service URLs
