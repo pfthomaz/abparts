@@ -1424,6 +1424,182 @@
       "inactive": "غير نشط"
     }
   },
+  "aiAssistant": {
+    "title": "مساعد AutoBoss الذكي",
+    "subtitle": "دعم ذكي لاستكشاف الأخطاء وإصلاحها لآلات AutoBoss الخاصة بك",
+    "selectMachine": "اختيار الآلة",
+    "clearMachine": "مسح الاختيار",
+    "noMachines": "لا توجد آلات متاحة",
+    "maximize": "تكبير",
+    "minimize": "تصغير",
+    "chatWidget": {
+      "typing": "الذكي الاصطناعي يكتب..."
+    },
+    "messages": {
+      "welcomeMessage": "مرحباً! أنا مساعد AutoBoss الذكي. يمكنني مساعدتك في استكشاف مشاكل الآلات وإصلاحها، والعثور على القطع، وإرشادك خلال إجراءات الصيانة. كيف يمكنني مساعدتك اليوم؟",
+      "placeholder": "اكتب رسالتك هنا...",
+      "machineSelected": "الآلة المختارة: {{machineName}} ({{modelType}})",
+      "machineCleared": "تم مسح اختيار الآلة. أقدم المساعدة العامة."
+    },
+    "voice": {
+      "enableVoice": "تفعيل الصوت",
+      "disableVoice": "إلغاء تفعيل الصوت",
+      "stopSpeaking": "إيقاف التحدث",
+      "speakResponse": "نطق الرد"
+    },
+    "errors": {
+      "connectionError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى."
+    },
+    "chatWidget": {
+      "openChat": "فتح المساعد الذكي",
+      "closeChat": "إغلاق المساعد الذكي",
+      "minimize": "تصغير",
+      "maximize": "تكبير",
+      "newChat": "محادثة جديدة",
+      "chatHistory": "تاريخ المحادثة",
+      "clearHistory": "مسح التاريخ",
+      "typing": "الذكي الاصطناعي يكتب...",
+      "connecting": "جاري الاتصال...",
+      "connected": "متصل",
+      "disconnected": "منقطع",
+      "reconnecting": "إعادة الاتصال...",
+      "offline": "غير متصل"
+    },
+    "messages": {
+      "welcomeMessage": "مرحباً! أنا مساعد AutoBoss الذكي. يمكنني مساعدتك في استكشاف مشاكل الآلات وإصلاحها، والعثور على قطع الغيار، وإرشادك خلال إجراءات الصيانة. كيف يمكنني مساعدتك اليوم؟",
+      "placeholder": "اكتب رسالتك هنا...",
+      "send": "إرسال",
+      "retry": "إعادة المحاولة",
+      "copy": "نسخ",
+      "copied": "تم النسخ!",
+      "regenerate": "إعادة توليد الإجابة",
+      "thumbsUp": "مفيد",
+      "thumbsDown": "غير مفيد",
+      "feedback": "تقديم ملاحظات",
+      "reportIssue": "الإبلاغ عن مشكلة"
+    },
+    "troubleshooting": {
+      "startTroubleshooting": "بدء استكشاف الأخطاء وإصلاحها",
+      "selectMachine": "اختيار الآلة",
+      "selectMachinePlaceholder": "اختر الآلة التي تحتاج المساعدة معها",
+      "describeProblem": "وصف المشكلة",
+      "problemPlaceholder": "أخبرني ما يحدث مع آلتك...",
+      "urgencyLevel": "مستوى الإلحاح",
+      "urgencyLow": "منخفض - يمكن الانتظار",
+      "urgencyMedium": "متوسط - يجب الإصلاح قريباً",
+      "urgencyHigh": "عالي - يحتاج انتباه فوري",
+      "urgencyCritical": "حرج - الآلة معطلة",
+      "beginDiagnosis": "بدء التشخيص",
+      "nextStep": "الخطوة التالية",
+      "previousStep": "الخطوة السابقة",
+      "skipStep": "تخطي الخطوة",
+      "completeStep": "تحديد كمكتمل",
+      "stepCompleted": "اكتملت الخطوة",
+      "allStepsCompleted": "اكتملت جميع الخطوات!",
+      "problemResolved": "تم حل المشكلة",
+      "problemNotResolved": "ما زلت بحاجة للمساعدة",
+      "escalateToExpert": "تصعيد إلى خبير"
+    },
+    "machineContext": {
+      "noMachineSelected": "لم يتم اختيار آلة",
+      "machineInfo": "معلومات الآلة",
+      "serialNumber": "الرقم التسلسلي",
+      "model": "الطراز",
+      "location": "الموقع",
+      "operatingHours": "ساعات التشغيل",
+      "lastMaintenance": "آخر صيانة",
+      "maintenanceHistory": "تاريخ الصيانة",
+      "recentIssues": "المشاكل الحديثة",
+      "compatibleParts": "قطع الغيار المتوافقة",
+      "changeMachine": "تغيير الآلة"
+    },
+    "voice": {
+      "startListening": "بدء الإدخال الصوتي",
+      "stopListening": "إيقاف الاستماع",
+      "listening": "أستمع...",
+      "processing": "معالجة الكلام...",
+      "speakResponse": "نطق الإجابة",
+      "stopSpeaking": "إيقاف النطق",
+      "voiceNotSupported": "الإدخال الصوتي غير مدعوم في هذا المتصفح",
+      "microphonePermissionDenied": "تم رفض إذن الميكروفون",
+      "speechRecognitionError": "خطأ في التعرف على الكلام",
+      "enableVoice": "تمكين الصوت",
+      "disableVoice": "تعطيل الصوت"
+    },
+    "escalation": {
+      "escalateToSupport": "تصعيد إلى الدعم",
+      "contactExpert": "الاتصال بخبير",
+      "createTicket": "إنشاء تذكرة دعم",
+      "ticketCreated": "تم إنشاء تذكرة الدعم بنجاح",
+      "ticketNumber": "رقم التذكرة",
+      "expertContacted": "تم إشعار الخبير",
+      "estimatedResponse": "وقت الاستجابة المقدر",
+      "urgentSupport": "دعم عاجل مطلوب",
+      "escalationReason": "سبب التصعيد",
+      "additionalDetails": "تفاصيل إضافية لفريق الدعم",
+      "attachDiagnosticData": "إرفاق بيانات التشخيص",
+      "sendToSupport": "إرسال إلى الدعم"
+    },
+    "session": {
+      "newSession": "جلسة جديدة",
+      "resumeSession": "استئناف الجلسة",
+      "sessionHistory": "تاريخ الجلسات",
+      "saveSession": "حفظ الجلسة",
+      "deleteSession": "حذف الجلسة",
+      "sessionSaved": "تم حفظ الجلسة",
+      "sessionDeleted": "تم حذف الجلسة",
+      "noSessions": "لا توجد جلسات سابقة",
+      "sessionExpired": "انتهت صلاحية الجلسة",
+      "sessionResumed": "تم استئناف الجلسة",
+      "unsavedChanges": "لديك تغييرات غير محفوظة",
+      "confirmDeleteSession": "هل أنت متأكد من أنك تريد حذف هذه الجلسة؟"
+    },
+    "settings": {
+      "aiSettings": "إعدادات المساعد الذكي",
+      "language": "اللغة",
+      "voiceEnabled": "تمكين الإدخال الصوتي",
+      "autoSpeak": "نطق الإجابات تلقائياً",
+      "notifications": "الإشعارات",
+      "soundEffects": "المؤثرات الصوتية",
+      "theme": "المظهر",
+      "fontSize": "حجم الخط",
+      "resetSettings": "إعادة تعيين إلى الافتراضي",
+      "settingsSaved": "تم حفظ الإعدادات"
+    },
+    "errors": {
+      "connectionError": "خطأ في الاتصال. يرجى التحقق من اتصالك بالإنترنت.",
+      "serviceUnavailable": "خدمة الذكي الاصطناعي غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى لاحقاً.",
+      "sessionError": "حدث خطأ في الجلسة. بدء جلسة جديدة.",
+      "messageError": "فشل في إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+      "voiceError": "خطأ في الإدخال الصوتي. يرجى المحاولة مرة أخرى.",
+      "unknownError": "حدث خطأ غير متوقع. يرجى التحديث والمحاولة مرة أخرى.",
+      "rateLimitExceeded": "طلبات كثيرة جداً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.",
+      "invalidInput": "إدخال غير صالح. يرجى التحقق من رسالتك والمحاولة مرة أخرى."
+    },
+    "status": {
+      "initializing": "تهيئة المساعد الذكي...",
+      "ready": "جاهز للمساعدة",
+      "thinking": "أفكر...",
+      "analyzing": "تحليل طلبك...",
+      "searching": "البحث في قاعدة المعرفة...",
+      "generating": "توليد الإجابة...",
+      "complete": "مكتمل"
+    },
+    "feedback": {
+      "wasHelpful": "هل كانت هذه الإجابة مفيدة؟",
+      "yes": "نعم، مفيدة",
+      "no": "لا، غير مفيدة",
+      "improvementSuggestion": "كيف يمكننا التحسن؟",
+      "feedbackPlaceholder": "أخبرنا كيف يمكننا جعل هذا أفضل...",
+      "submitFeedback": "إرسال الملاحظات",
+      "feedbackSubmitted": "شكراً لك على ملاحظاتك!",
+      "rating": "قيم هذا التفاعل",
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "fair": "مقبول",
+      "poor": "ضعيف"
+    }
+  },
   "protocolForm": {
     "editTitle": "تحرير البروتوكول",
     "createTitle": "إنشاء بروتوكول جديد",

@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/config.py
+# hypothesis_version: 6.150.0
+
+[0.7, 1000, ',', '.env', 'ABPARTS_API_BASE_URL', 'ABPARTS_API_URL', 'CORS_ALLOWED_ORIGINS', 'DATABASE_URL', 'DEBUG', 'ENVIRONMENT', 'INFO', 'LOG_LEVEL', 'OPENAI_API_KEY', 'OPENAI_MAX_RETRIES', 'OPENAI_MAX_TOKENS', 'OPENAI_MODEL', 'OPENAI_TEMPERATURE', 'OPENAI_TIMEOUT', 'REDIS_URL', 'development', 'gpt-3.5-turbo', 'gpt-4', 'http://api:8000', 'http://api:8000/api']

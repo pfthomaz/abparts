@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/routers/chat.py
+# hypothesis_version: 6.150.0
+
+[500, 503, '/analyze-problem', '/chat', '/models', 'Arabic (العربية)', 'AutoBoss machine ID', 'Bearer ', 'English', 'Greek (Ελληνικά)', 'Message content', 'Message timestamp', 'Norwegian (Norsk)', 'Session ID', 'Spanish (Español)', 'Turkish (Türkçe)', 'User message', 'active', 'ar', 'code', 'created_at', 'el', 'en', 'es', 'fallback_model', 'last_activity', 'llm_client', 'max_tokens', 'message_count', 'name', 'no', 'primary_model', 'session_id', 'status', 'supported_languages', 'temperature', 'tr', 'user']

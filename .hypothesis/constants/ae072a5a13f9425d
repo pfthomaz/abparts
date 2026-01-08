@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/services/troubleshooting_types.py
+# hypothesis_version: 6.150.0
+
+['completed', 'failed', 'high', 'in_progress', 'low', 'medium', 'pending', 'skipped', 'very_low']

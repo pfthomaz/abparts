@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Analytics Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .controls select, .controls button {
+            padding: 0.5rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .controls button {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover {
+            background: #5a6fd8;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .metric-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .metric-value.success {
+            color: #28a745;
+        }
+
+        .metric-value.warning {
+            color: #ffc107;
+        }
+
+        .metric-value.danger {
+            color: #dc3545;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .insights-list {
+            list-style: none;
+        }
+
+        .insights-list li {
+            background: #f8f9fa;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .insight-type {
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .insight-description {
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-recommendation {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .experiments-list {
+            list-style: none;
+        }
+
+        .experiments-list li {
+            background: #f8f9fa;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+
+        .experiment-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .experiment-progress {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .experiment-progress-bar {
+            background: #28a745;
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .solutions-list {
+            list-style: none;
+        }
+
+        .solutions-list li {
+            background: #f8f9fa;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .solution-text {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .solution-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Assistant Analytics</h1>
+        <p>Performance Monitoring & Learning Insights Dashboard</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <label for="periodSelect">Analysis Period:</label>
+            <select id="periodSelect">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+            </select>
+            
+            <button onclick="refreshDashboard()">🔄 Refresh Data</button>
+            <button onclick="exportData()">📊 Export Data</button>
+        </div>
+
+        <div id="loading" class="loading">
+            <p>Loading analytics data...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="dashboard-grid">
+                <!-- Session Metrics Card -->
+                <div class="card">
+                    <h3>📈 Session Performance</h3>
+                    <div id="sessionMetrics">
+                        <div class="metric">
+                            <span class="metric-label">Total Sessions</span>
+                            <span class="metric-value" id="totalSessions">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Success Rate</span>
+                            <span class="metric-value success" id="successRate">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Resolution Time</span>
+                            <span class="metric-value" id="avgResolutionTime">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">User Satisfaction</span>
+                            <span class="metric-value" id="userSatisfaction">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Response Quality Card -->
+                <div class="card">
+                    <h3>⚡ Response Quality</h3>
+                    <div id="responseQuality">
+                        <div class="metric">
+                            <span class="metric-label">Avg Response Time</span>
+                            <span class="metric-value" id="avgResponseTime">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Confidence</span>
+                            <span class="metric-value" id="avgConfidence">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Knowledge Sources Used</span>
+                            <span class="metric-value" id="avgKnowledgeSources">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Expert Reviews Needed</span>
+                            <span class="metric-value warning" id="expertReviews">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Performance Card -->
+                <div class="card">
+                    <h3>🔧 System Health</h3>
+                    <div id="systemPerformance">
+                        <div class="metric">
+                            <span class="metric-label">Daily Success Rate</span>
+                            <span class="metric-value" id="dailySuccessRate">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Daily Avg Response Time</span>
+                            <span class="metric-value" id="dailyResponseTime">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Daily User Satisfaction</span>
+                            <span class="metric-value" id="dailySatisfaction">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- A/B Testing Card -->
+                <div class="card">
+                    <h3>🧪 Active Experiments</h3>
+                    <div id="activeExperiments">
+                        <ul class="experiments-list" id="experimentsList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Insights Section -->
+            <div class="card">
+                <h3>🧠 Learning Insights</h3>
+                <div id="learningInsights">
+                    <ul class="insights-list" id="insightsList"></ul>
+                </div>
+            </div>
+
+            <!-- Top Solutions Section -->
+            <div class="card">
+                <h3>🏆 Top Performing Solutions</h3>
+                <div id="topSolutions">
+                    <ul class="solutions-list" id="solutionsList"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="refresh-info">
+            <p>Last updated: <span id="lastUpdated">-</span></p>
+        </div>
+    </div>
+
+    <script>
+        let currentPeriod = 30;
+
+        async function loadDashboard() {
+            try {
+                showLoading();
+                
+                const response = await fetch(`/api/ai/dashboard?days=${currentPeriod}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                updateDashboard(data);
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showError(`Failed to load dashboard data: ${error.message}`);
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update session metrics
+            const summary = data.session_metrics.summary || {};
+            document.getElementById('totalSessions').textContent = summary.total_sessions || 0;
+            document.getElementById('successRate').textContent = `${(summary.overall_success_rate || 0).toFixed(1)}%`;
+            document.getElementById('avgResolutionTime').textContent = `${(summary.avg_resolution_time_minutes || 0).toFixed(1)} min`;
+            document.getElementById('userSatisfaction').textContent = `${(summary.avg_user_satisfaction || 0).toFixed(1)}/5`;
+
+            // Update response quality
+            const responseMetrics = data.response_quality.metrics || [];
+            if (responseMetrics.length > 0) {
+                const latest = responseMetrics[0];
+                document.getElementById('avgResponseTime').textContent = `${latest.avg_response_time_ms || 0} ms`;
+                document.getElementById('avgConfidence').textContent = `${(latest.avg_confidence_score || 0).toFixed(2)}`;
+                document.getElementById('avgKnowledgeSources').textContent = `${(latest.avg_knowledge_sources_used || 0).toFixed(1)}`;
+                document.getElementById('expertReviews').textContent = latest.responses_needing_review || 0;
+            }
+
+            // Update system performance
+            const sysPerf = data.system_performance || {};
+            document.getElementById('dailySuccessRate').textContent = `${(sysPerf.daily_success_rate || 0).toFixed(1)}%`;
+            document.getElementById('dailyResponseTime').textContent = `${(sysPerf.daily_avg_response_time_ms || 0).toFixed(0)} ms`;
+            document.getElementById('dailySatisfaction').textContent = `${(sysPerf.daily_avg_user_satisfaction || 0).toFixed(1)}/5`;
+
+            // Update active experiments
+            const experimentsList = document.getElementById('experimentsList');
+            experimentsList.innerHTML = '';
+            
+            if (data.active_experiments && data.active_experiments.length > 0) {
+                data.active_experiments.forEach(exp => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="experiment-name">${exp.experiment_name}</div>
+                        <div>${exp.description}</div>
+                        <div class="experiment-progress">
+                            <div class="experiment-progress-bar" style="width: ${exp.progress_percentage}%"></div>
+                        </div>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            Progress: ${exp.total_assignments}/${exp.target_sample_size} (${exp.progress_percentage.toFixed(1)}%)
+                        </div>
+                    `;
+                    experimentsList.appendChild(li);
+                });
+            } else {
+                experimentsList.innerHTML = '<li>No active experiments</li>';
+            }
+
+            // Update learning insights
+            const insightsList = document.getElementById('insightsList');
+            insightsList.innerHTML = '';
+            
+            if (data.learning_insights && data.learning_insights.length > 0) {
+                data.learning_insights.forEach(insight => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="insight-type">${insight.insight_type}</div>
+                        <div class="insight-description">${insight.description}</div>
+                        <div class="insight-recommendation">${insight.actionable_recommendation}</div>
+                    `;
+                    insightsList.appendChild(li);
+                });
+            } else {
+                insightsList.innerHTML = '<li>No insights available for this period</li>';
+            }
+
+            // Update top solutions
+            const solutionsList = document.getElementById('solutionsList');
+            solutionsList.innerHTML = '';
+            
+            if (data.top_solutions && data.top_solutions.length > 0) {
+                data.top_solutions.slice(0, 5).forEach(solution => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="solution-text">${solution.solution_text.substring(0, 100)}${solution.solution_text.length > 100 ? '...' : ''}</div>
+                        <div class="solution-stats">
+                            <span>Success Rate: ${solution.success_rate.toFixed(1)}%</span>
+                            <span>Used: ${solution.times_suggested} times</span>
+                            <span>Category: ${solution.problem_category}</span>
+                        </div>
+                    `;
+                    solutionsList.appendChild(li);
+                });
+            } else {
+                solutionsList.innerHTML = '<li>No solution data available</li>';
+            }
+
+            // Update timestamp
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+        }
+
+        function refreshDashboard() {
+            currentPeriod = parseInt(document.getElementById('periodSelect').value);
+            loadDashboard();
+        }
+
+        function exportData() {
+            // Simple CSV export functionality
+            const data = {
+                period: currentPeriod,
+                exported_at: new Date().toISOString(),
+                note: "Export functionality would be implemented here"
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ai_assistant_analytics_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Event listeners
+        document.getElementById('periodSelect').addEventListener('change', refreshDashboard);
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadDashboard, 5 * 60 * 1000);
+
+        // Initial load
+        loadDashboard();
+    </script>
+</body>
+</html>

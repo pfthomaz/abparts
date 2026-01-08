@@ -1816,3 +1816,78 @@ class ChecklistItemTranslation(Base):
 
     def __repr__(self):
         return f"<ChecklistItemTranslation(item_id={self.checklist_item_id}, language={self.language_code}, description='{self.item_description[:30]}...')>"
+
+
+# AI Assistant Models
+class AISessionStatus(enum.Enum):
+    """Status of an AI troubleshooting session."""
+    active = "active"
+    completed = "completed"
+    escalated = "escalated"
+    abandoned = "abandoned"
+
+
+class AIMessageSender(enum.Enum):
+    """Who sent the AI message."""
+    user = "user"
+    assistant = "assistant"
+    system = "system"
+
+
+class AIMessageType(enum.Enum):
+    """Type of AI message content."""
+    text = "text"
+    voice = "voice"
+    image = "image"
+    diagnostic_step = "diagnostic_step"
+    escalation = "escalation"
+
+
+class AISession(Base):
+    """
+    SQLAlchemy model for AI troubleshooting sessions.
+    Stores session metadata and links to messages.
+    """
+    __tablename__ = "ai_sessions"
+
+    session_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
+    status = Column(Enum(AISessionStatus), nullable=False, default=AISessionStatus.active)
+    problem_description = Column(Text, nullable=True)
+    resolution_summary = Column(Text, nullable=True)
+    language = Column(String(10), nullable=False, server_default='en')
+    session_metadata = Column(Text, nullable=True)  # JSON string for additional session data
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    machine = relationship("Machine", foreign_keys=[machine_id])
+    messages = relationship("AIMessage", back_populates="session", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<AISession(id={self.session_id}, user_id={self.user_id}, status='{self.status.value}')>"
+
+
+class AIMessage(Base):
+    """
+    SQLAlchemy model for AI conversation messages.
+    Stores individual messages within a session.
+    """
+    __tablename__ = "ai_messages"
+
+    message_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id = Column(UUID(as_uuid=True), ForeignKey("ai_sessions.session_id", ondelete="CASCADE"), nullable=False)
+    sender = Column(Enum(AIMessageSender), nullable=False)
+    content = Column(Text, nullable=False)
+    message_type = Column(Enum(AIMessageType), nullable=False, server_default='text')
+    language = Column(String(10), nullable=False, server_default='en')
+    message_metadata = Column(Text, nullable=True)  # JSON string for additional message data
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    session = relationship("AISession", back_populates="messages")
+
+    def __repr__(self):
+        return f"<AIMessage(id={self.message_id}, session_id={self.session_id}, sender='{self.sender.value}')>"

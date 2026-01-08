@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/schemas.py
+# hypothesis_version: 6.150.0
+
+[0.3, '1.0', 'Additional metadata', 'Document content', 'Document language', 'Document tags', 'Document title', 'Document version', 'Expert solution', 'Knowledge tags', 'Message content', 'Message language', 'New session status', 'New ticket status', 'Rating from 1-5', 'Resolution notes', 'Search language', 'Search query', 'Ticket priority', 'Type of document', 'Type of feedback', 'Type of message', 'abandoned', 'accuracy', 'active', 'assistant', 'closed', 'completed', 'completeness', 'complex_issue', 'created', 'diagnostic_step', 'en', 'escalated', 'escalation', 'expert_input', 'expert_required', 'faq', 'high', 'image', 'improvement', 'in_progress', 'low', 'low_confidence', 'manual', 'medium', 'open', 'procedure', 'resolved', 'safety', 'safety_concern', 'sent', 'steps_exceeded', 'system', 'text', 'urgent', 'user', 'user_request', 'voice']
