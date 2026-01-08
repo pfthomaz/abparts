@@ -121,7 +121,13 @@ const ChatWidget = ({ isOpen, onToggle }) => {
   const handleEscalateSession = async (escalationData) => {
     try {
       const token = localStorage.getItem('token');
-      const apiUrl = `${process.env.REACT_APP_AI_ASSISTANT_URL || 'http://localhost:8001'}/api/ai/sessions/${currentSessionId}/escalate`;
+      
+      // In production, use the nginx proxy path; in development, use the environment variable
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? '/ai' // Use nginx proxy path in production
+        : (process.env.REACT_APP_AI_ASSISTANT_URL || 'http://localhost:8001');
+      
+      const apiUrl = `${baseUrl}/api/ai/sessions/${currentSessionId}/escalate`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -335,7 +341,12 @@ const ChatWidget = ({ isOpen, onToggle }) => {
       // Get auth token
       const token = localStorage.getItem('token');
       
-      const apiUrl = `${process.env.REACT_APP_AI_ASSISTANT_URL || 'http://localhost:8001'}/api/ai/chat`;
+      // In production, use the nginx proxy path; in development, use the environment variable
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? '/ai' // Use nginx proxy path in production
+        : (process.env.REACT_APP_AI_ASSISTANT_URL || 'http://localhost:8001');
+      
+      const apiUrl = `${baseUrl}/api/ai/chat`;
       console.log('AI Assistant API URL:', apiUrl);
       console.log('Request payload:', requestPayload);
       
