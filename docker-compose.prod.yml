@@ -105,12 +105,43 @@ services:
       target: production # Use production build stage
       args:
         REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-/api}
+        REACT_APP_AI_ASSISTANT_URL: ${REACT_APP_AI_ASSISTANT_URL:-http://localhost:8001}
     container_name: abparts_web_prod
     ports:
       - "3001:80" # Docker nginx on port 80, exposed as 3001 on host
     depends_on:
       api:
         condition: service_started
+    restart: unless-stopped
+
+  # AI Assistant Service
+  ai_assistant:
+    build:
+      context: ./ai_assistant
+      dockerfile: Dockerfile
+    container_name: abparts_ai_assistant_prod
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
+      REDIS_URL: redis://redis:6379/2  # Use different Redis database for AI Assistant
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+      OPENAI_FALLBACK_MODEL: ${OPENAI_FALLBACK_MODEL:-gpt-3.5-turbo}
+      ABPARTS_API_URL: http://api:8000
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
 
   # Optional: PgAdmin (can be disabled in production)
