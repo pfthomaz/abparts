@@ -18,7 +18,7 @@ from .config import settings
 from .llm_client import LLMClient
 from .session_manager import session_manager
 from .database import init_database, close_database
-from .routers import health, chat, sessions, knowledge_base, troubleshooting
+from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -86,6 +86,7 @@ app.include_router(chat.router, prefix="/api/ai", tags=["chat"])
 app.include_router(sessions.router, prefix="/api/ai", tags=["sessions"])
 app.include_router(knowledge_base.router, prefix="/api/ai", tags=["knowledge"])
 app.include_router(troubleshooting.router, prefix="/api/ai", tags=["troubleshooting"])
+app.include_router(machines.router, tags=["machines"])
 
 # Mount static files
 import os
@@ -130,7 +131,7 @@ async def info() -> Dict[str, Any]:
             "multilingual_support": True,
             "auto_language_detection": True,
             "voice_input": False,  # Will be implemented in later tasks
-            "machine_context": False,  # Will be implemented in later tasks
+            "machine_context": True,  # Implemented in Task 8
             "knowledge_base": True  # Implemented in Task 5
         }
     }

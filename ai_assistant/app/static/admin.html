@@ -46,12 +46,70 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="machine_models">Machine Models (comma-separated):</label>
-                    <input type="text" id="machine_models" name="machine_models" placeholder="V4.0, V3.1B, etc.">
+                    <label for="machine_models">Machine Models:</label>
+                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 3px; background: #f9f9f9;">
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="machine_models" value="V4.0" style="width: auto; margin-right: 8px;">
+                            AutoBoss V4.0
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="machine_models" value="V3.1B" style="width: auto; margin-right: 8px;">
+                            AutoBoss V3.1B
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="machine_models" value="V3.0" style="width: auto; margin-right: 8px;">
+                            AutoBoss V3.0
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="machine_models" value="V2.0" style="width: auto; margin-right: 8px;">
+                            AutoBoss V2.0
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="machine_models" value="ALL" style="width: auto; margin-right: 8px;">
+                            All Models (Generic)
+                        </label>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="tags">Tags (comma-separated):</label>
-                    <input type="text" id="tags" name="tags" placeholder="maintenance, troubleshooting, etc.">
+                    <label for="tags">Tags:</label>
+                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 3px; background: #f9f9f9;">
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="startup" style="width: auto; margin-right: 8px;">
+                            Startup Procedures
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="troubleshooting" style="width: auto; margin-right: 8px;">
+                            Troubleshooting
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="maintenance" style="width: auto; margin-right: 8px;">
+                            Maintenance
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="safety" style="width: auto; margin-right: 8px;">
+                            Safety
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="operation" style="width: auto; margin-right: 8px;">
+                            Operation
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="parts" style="width: auto; margin-right: 8px;">
+                            Parts & Components
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="hp_gauge" style="width: auto; margin-right: 8px;">
+                            HP Gauge Issues
+                        </label>
+                        <label style="font-weight: normal; display: flex; align-items: center; margin: 5px 0;">
+                            <input type="checkbox" name="tags" value="walking_wheels" style="width: auto; margin-right: 8px;">
+                            Walking Wheels
+                        </label>
+                        <div style="margin-top: 10px;">
+                            <label for="custom_tags" style="font-weight: normal;">Custom Tags (comma-separated):</label>
+                            <input type="text" id="custom_tags" name="custom_tags" placeholder="custom, tag1, tag2" style="margin-top: 5px;">
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="language">Language:</label>
@@ -99,6 +157,17 @@
                         <option value="troubleshooting_guide">Troubleshooting Guide</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="search_machine_model">Machine Model:</label>
+                    <select id="search_machine_model" name="machine_model">
+                        <option value="">All Models</option>
+                        <option value="V4.0">AutoBoss V4.0</option>
+                        <option value="V3.1B">AutoBoss V3.1B</option>
+                        <option value="V3.0">AutoBoss V3.0</option>
+                        <option value="V2.0">AutoBoss V2.0</option>
+                        <option value="ALL">All Models (Generic)</option>
+                    </select>
+                </div>
                 <button type="submit">Search</button>
             </form>
             <div id="searchResults"></div>
@@ -125,8 +194,41 @@
         // Upload form handler
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
+            const formData = new FormData();
             const resultDiv = document.getElementById('uploadResult');
+            
+            // Get file
+            const fileInput = document.getElementById('file');
+            if (fileInput.files[0]) {
+                formData.append('file', fileInput.files[0]);
+            }
+            
+            // Get basic fields
+            formData.append('title', document.getElementById('title').value);
+            formData.append('document_type', document.getElementById('document_type').value);
+            formData.append('language', document.getElementById('language').value);
+            
+            // Get selected machine models
+            const selectedModels = [];
+            document.querySelectorAll('input[name="machine_models"]:checked').forEach(checkbox => {
+                selectedModels.push(checkbox.value);
+            });
+            formData.append('machine_models', selectedModels.join(','));
+            
+            // Get selected tags
+            const selectedTags = [];
+            document.querySelectorAll('input[name="tags"]:checked').forEach(checkbox => {
+                selectedTags.push(checkbox.value);
+            });
+            
+            // Add custom tags
+            const customTags = document.getElementById('custom_tags').value;
+            if (customTags.trim()) {
+                const customTagsArray = customTags.split(',').map(tag => tag.trim()).filter(tag => tag);
+                selectedTags.push(...customTagsArray);
+            }
+            
+            formData.append('tags', selectedTags.join(','));
             
             try {
                 resultDiv.innerHTML = 'Uploading...';
@@ -139,7 +241,8 @@
                 
                 if (response.ok) {
                     resultDiv.innerHTML = `<div class="success">Document uploaded successfully! ID: ${result.document_id}</div>`;
-                    e.target.reset();
+                    // Reset form
+                    document.getElementById('uploadForm').reset();
                 } else {
                     resultDiv.innerHTML = `<div class="error">Error: ${result.detail}</div>`;
                 }
@@ -155,6 +258,7 @@
             const query = formData.get('query');
             const language = formData.get('language');
             const document_type = formData.get('document_type');
+            const machine_model = document.getElementById('search_machine_model').value;
             
             const searchData = {
                 query: query,
@@ -164,6 +268,10 @@
             
             if (document_type) {
                 searchData.document_type = document_type;
+            }
+            
+            if (machine_model) {
+                searchData.machine_model = machine_model;
             }
             
             const resultDiv = document.getElementById('searchResults');
@@ -187,8 +295,9 @@
                             <div class="document">
                                 <h4>${item.document.title}</h4>
                                 <p><strong>Type:</strong> ${item.document.document_type}</p>
+                                <p><strong>Models:</strong> ${item.document.machine_models.join(', ')}</p>
                                 <p><strong>Score:</strong> ${item.relevance_score.toFixed(3)}</p>
-                                <p><strong>Content:</strong> ${item.matched_content}</p>
+                                <p><strong>Content:</strong> ${item.matched_content.substring(0, 300)}...</p>
                             </div>
                         `;
                     });

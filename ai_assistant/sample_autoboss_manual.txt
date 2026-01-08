@@ -1,0 +1,88 @@
+# AutoBoss V3.1B Operator Manual - Troubleshooting Section
+
+## HP Gauge Issues
+
+### When HP Gauge is in the Red Zone
+
+**Problem**: HP gauge shows red indication
+**Cause**: High pressure in the system, typically due to:
+1. Clogged nozzles or spray tips
+2. Blocked filters
+3. Pump wear or malfunction
+4. Incorrect chemical mixture
+
+**Solution Steps**:
+1. **Immediate Action**: Stop the machine immediately to prevent damage
+2. **Check Nozzles**: Remove and clean all spray nozzles and tips
+3. **Inspect Filters**: Check and clean/replace water and chemical filters
+4. **Verify Chemical Mix**: Ensure proper dilution ratios (typically 1:10 for standard cleaning)
+5. **Pump Inspection**: Check pump seals and valves for wear
+6. **Pressure Relief**: Use pressure relief valve to reduce system pressure
+7. **Restart Procedure**: Restart machine and monitor HP gauge
+
+**Prevention**:
+- Regular nozzle cleaning (daily)
+- Filter replacement every 100 operating hours
+- Proper chemical mixing procedures
+- Regular pump maintenance
+
+### HP Gauge Troubleshooting Chart
+
+| HP Reading | Action Required | Urgency |
+|------------|----------------|---------|
+| Green Zone | Normal operation | Continue |
+| Yellow Zone | Monitor closely, check filters | Medium |
+| Red Zone | Stop immediately, troubleshoot | High |
+
+## Common AutoBoss V3.1B Issues
+
+### Machine Won't Start
+1. Check power connection
+2. Verify emergency stop is not engaged
+3. Check water supply
+4. Inspect control panel connections
+
+### Poor Cleaning Performance
+1. Check chemical levels
+2. Verify proper dilution ratios
+3. Clean spray nozzles
+4. Check water temperature (optimal: 140-160°F)
+
+### Excessive Noise
+1. Check pump alignment
+2. Inspect drive belts
+3. Verify proper lubrication
+4. Check for loose components
+
+## Maintenance Schedule
+
+### Daily Maintenance
+- Check HP gauge readings
+- Clean spray nozzles
+- Verify chemical levels
+- Inspect hoses for damage
+
+### Weekly Maintenance
+- Clean filters
+- Check pump oil level
+- Inspect electrical connections
+- Test emergency stops
+
+### Monthly Maintenance
+- Replace filters
+- Lubricate moving parts
+- Calibrate pressure settings
+- Inspect pump seals
+
+## Safety Warnings
+
+⚠️ **DANGER**: Never operate machine with HP gauge in red zone
+⚠️ **WARNING**: Always wear protective equipment
+⚠️ **CAUTION**: Use only approved chemicals and dilution ratios
+
+## Technical Specifications
+
+- Operating Pressure: 1000-3000 PSI
+- Water Temperature: 140-180°F
+- Chemical Tank Capacity: 50 gallons
+- Power Requirements: 220V, 30A

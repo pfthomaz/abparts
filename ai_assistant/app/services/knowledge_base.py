@@ -69,21 +69,19 @@ class KnowledgeBaseService:
             with get_db_session() as db:
                 db.execute(text("""
                     INSERT INTO knowledge_documents 
-                    (document_id, title, content, document_type, machine_models, tags, 
-                     language, version, file_path, document_metadata, created_at, updated_at)
-                    VALUES (:document_id, :title, :content, :document_type, :machine_models, 
-                            :tags, :language, :version, :file_path, :metadata, NOW(), NOW())
+                    (id, title, document_type, language, version, file_path, document_metadata, chunk_count, machine_models, tags)
+                    VALUES (:document_id, :title, :document_type, :language, :version, :file_path, :metadata, :chunk_count, :machine_models, :tags)
                 """), {
                     'document_id': document_id,
                     'title': title,
-                    'content': content,
                     'document_type': document_type,
-                    'machine_models': machine_models,
-                    'tags': tags,
                     'language': language,
                     'version': version,
                     'file_path': file_path,
-                    'metadata': json.dumps(metadata or {})
+                    'metadata': json.dumps(metadata or {}),
+                    'chunk_count': 0,  # Will be updated after chunking
+                    'machine_models': machine_models,
+                    'tags': tags
                 })
             
             # Generate embeddings and store in vector database
@@ -95,6 +93,29 @@ class KnowledgeBaseService:
                 'language': language,
                 'version': version
             })
+            
+            # Store content chunks in document_chunks table
+            chunks = self._chunk_text(content)
+            with get_db_session() as db:
+                for i, chunk in enumerate(chunks):
+                    chunk_id = f"{document_id}_chunk_{i}"
+                    db.execute(text("""
+                        INSERT INTO document_chunks (id, document_id, chunk_index, content)
+                        VALUES (:chunk_id, :document_id, :chunk_index, :content)
+                    """), {
+                        'chunk_id': chunk_id,
+                        'document_id': document_id,
+                        'chunk_index': i,
+                        'content': chunk
+                    })
+                
+                # Update chunk count
+                db.execute(text("""
+                    UPDATE knowledge_documents SET chunk_count = :chunk_count WHERE id = :document_id
+                """), {
+                    'chunk_count': len(chunks),
+                    'document_id': document_id
+                })
             
             logger.info(f"Created knowledge document: {document_id}")
             return document_id
@@ -128,7 +149,7 @@ class KnowledgeBaseService:
             params = {'document_id': document_id}
             
             for field, value in updates.items():
-                if field in ['title', 'content', 'document_type', 'language', 'version', 'file_path']:
+                if field in ['title', 'document_type', 'language', 'version', 'file_path']:
                     set_clauses.append(f"{field} = :{field}")
                     params[field] = value
                 elif field in ['machine_models', 'tags']:
@@ -142,7 +163,7 @@ class KnowledgeBaseService:
                 return True
             
             set_clauses.append("updated_at = NOW()")
-            query = f"UPDATE knowledge_documents SET {', '.join(set_clauses)} WHERE document_id = :document_id"
+            query = f"UPDATE knowledge_documents SET {', '.join(set_clauses)} WHERE id = :document_id"
             
             with get_db_session() as db:
                 result = db.execute(text(query), params)
@@ -182,10 +203,10 @@ class KnowledgeBaseService:
             # Delete from vector database
             self.vector_db.delete_document(document_id)
             
-            # Delete from SQL database
+            # Delete from SQL database (document_chunks will be deleted by CASCADE)
             with get_db_session() as db:
                 result = db.execute(text("""
-                    DELETE FROM knowledge_documents WHERE document_id = :document_id
+                    DELETE FROM knowledge_documents WHERE id = :document_id
                 """), {'document_id': document_id})
                 
                 if result.rowcount == 0:
@@ -323,9 +344,8 @@ class KnowledgeBaseService:
             where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
             
             query = f"""
-                SELECT document_id, title, document_type, machine_models, tags, 
-                       language, version, file_path, created_at, updated_at,
-                       LEFT(content, 200) as content_preview
+                SELECT id, title, document_type, language, version, file_path, created_at, updated_at,
+                       machine_models, tags, LEFT(document_metadata::text, 200) as content_preview
                 FROM knowledge_documents
                 {where_clause}
                 ORDER BY created_at DESC
@@ -338,7 +358,7 @@ class KnowledgeBaseService:
                 
                 for row in result:
                     documents.append({
-                        'document_id': str(row.document_id),
+                        'document_id': str(row.id),
                         'title': row.title,
                         'document_type': row.document_type,
                         'machine_models': row.machine_models or [],
@@ -450,10 +470,9 @@ class KnowledgeBaseService:
         try:
             with get_db_session() as db:
                 result = db.execute(text("""
-                    SELECT document_id, title, content, document_type, machine_models, tags,
-                           language, version, file_path, document_metadata, created_at, updated_at
+                    SELECT id, title, document_type, language, version, file_path, document_metadata, created_at, updated_at, machine_models, tags
                     FROM knowledge_documents
-                    WHERE document_id = :document_id
+                    WHERE id = :document_id
                 """), {'document_id': document_id})
                 
                 row = result.fetchone()
@@ -467,10 +486,20 @@ class KnowledgeBaseService:
                     except:
                         pass
                 
+                # Get content from document_chunks
+                content_result = db.execute(text("""
+                    SELECT content FROM document_chunks 
+                    WHERE document_id = :document_id 
+                    ORDER BY chunk_index
+                """), {'document_id': document_id})
+                
+                content_chunks = [chunk_row.content for chunk_row in content_result]
+                full_content = '\n\n'.join(content_chunks)
+                
                 return {
-                    'document_id': str(row.document_id),
+                    'document_id': str(row.id),
                     'title': row.title,
-                    'content': row.content,
+                    'content': full_content,
                     'document_type': row.document_type,
                     'machine_models': row.machine_models or [],
                     'tags': row.tags or [],
@@ -491,9 +520,9 @@ class KnowledgeBaseService:
         try:
             with get_db_session() as db:
                 result = db.execute(text("""
-                    SELECT title, document_type, machine_models, tags, language, version
+                    SELECT title, document_type, language, version, machine_models, tags
                     FROM knowledge_documents
-                    WHERE document_id = :document_id
+                    WHERE id = :document_id
                 """), {'document_id': document_id})
                 
                 row = result.fetchone()

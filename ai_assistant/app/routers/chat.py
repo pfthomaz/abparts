@@ -89,11 +89,9 @@ async def chat(
         language = request.language or "en"
         
         # Auto-detect language from user profile if user_id provided and no explicit language
-        if request.user_id and not request.language and authorization:
+        if request.user_id and not request.language:
             try:
-                # Extract token from Authorization header
-                auth_token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-                detected_language = await user_service.get_user_language(request.user_id, auth_token)
+                detected_language = await user_service.get_user_language(request.user_id)
                 language = detected_language
                 logger.info(f"Auto-detected language {language} for user {request.user_id}")
             except Exception as e:
@@ -102,10 +100,9 @@ async def chat(
         
         # Get machine context if machine_id provided
         machine_context = None
-        if request.machine_id and authorization:
+        if request.machine_id:
             try:
-                auth_token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-                machine_context = await user_service.get_machine_context(request.machine_id, auth_token)
+                machine_context = await user_service.get_machine_context(request.machine_id)
             except Exception as e:
                 logger.warning(f"Failed to get machine context for machine {request.machine_id}: {e}")
         
@@ -169,11 +166,9 @@ async def analyze_problem(
         language = request.language or "en"
         
         # Auto-detect language from user profile if user_id provided and no explicit language
-        if request.user_id and not request.language and authorization:
+        if request.user_id and not request.language:
             try:
-                # Extract token from Authorization header
-                auth_token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-                detected_language = await user_service.get_user_language(request.user_id, auth_token)
+                detected_language = await user_service.get_user_language(request.user_id)
                 language = detected_language
                 logger.info(f"Auto-detected language {language} for user {request.user_id}")
             except Exception as e:
@@ -182,10 +177,9 @@ async def analyze_problem(
         
         # Get machine context if machine_id provided
         machine_context = request.machine_context
-        if request.machine_id and authorization and not machine_context:
+        if request.machine_id and not machine_context:
             try:
-                auth_token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
-                machine_context = await user_service.get_machine_context(request.machine_id, auth_token)
+                machine_context = await user_service.get_machine_context(request.machine_id)
             except Exception as e:
                 logger.warning(f"Failed to get machine context for machine {request.machine_id}: {e}")
         
@@ -209,6 +203,72 @@ async def analyze_problem(
     except Exception as e:
         logger.error(f"Problem analysis endpoint error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze problem: {str(e)}")
+
+
+@router.get("/users/{user_id}/machines")
+async def get_user_machines(
+    user_id: str,
+    authorization: Optional[str] = Header(None),
+    user_service: UserService = Depends(get_user_service)
+) -> Dict[str, Any]:
+    """
+    Get all machines accessible to a user.
+    
+    This endpoint returns all AutoBoss machines that the user can access
+    based on their organization and role permissions.
+    """
+    try:
+        # Extract token from Authorization header if provided
+        auth_token = None
+        if authorization:
+            auth_token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+        
+        machines = await user_service.get_user_machines(user_id)
+        
+        return {
+            "user_id": user_id,
+            "machines": machines,
+            "count": len(machines)
+        }
+        
+    except Exception as e:
+        logger.error(f"Get user machines endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve user machines: {str(e)}")
+
+
+@router.get("/machines/{machine_id}/context")
+async def get_machine_context(
+    machine_id: str,
+    authorization: Optional[str] = Header(None),
+    user_service: UserService = Depends(get_user_service)
+) -> Dict[str, Any]:
+    """
+    Get comprehensive machine context for troubleshooting.
+    
+    This endpoint returns detailed machine information including maintenance history,
+    parts usage, and preventive maintenance suggestions.
+    """
+    try:
+        # Extract token from Authorization header if provided
+        auth_token = None
+        if authorization:
+            auth_token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+        
+        machine_context = await user_service.get_machine_context(machine_id)
+        
+        if not machine_context:
+            raise HTTPException(status_code=404, detail=f"Machine not found: {machine_id}")
+        
+        return {
+            "machine_id": machine_id,
+            "context": machine_context
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get machine context endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve machine context: {str(e)}")
 
 
 @router.get("/models")

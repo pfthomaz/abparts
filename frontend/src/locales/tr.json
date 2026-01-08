@@ -1433,6 +1433,29 @@
   "aiAssistant": {
     "title": "AutoBoss AI Asistanı",
     "subtitle": "AutoBoss makineleriniz için akıllı sorun giderme desteği",
+    "selectMachine": "Makine Seç",
+    "clearMachine": "Seçimi Temizle",
+    "noMachines": "Kullanılabilir makine yok",
+    "maximize": "Büyüt",
+    "minimize": "Küçült",
+    "chatWidget": {
+      "typing": "AI yazıyor..."
+    },
+    "messages": {
+      "welcomeMessage": "Merhaba! Ben AutoBoss AI Asistanınızım. Makine sorunlarını gidermenize, parça bulmanıza ve bakım prosedürlerinde size rehberlik etmeme yardımcı olabilirim. Bugün size nasıl yardımcı olabilirim?",
+      "placeholder": "Mesajınızı buraya yazın...",
+      "machineSelected": "Seçilen makine: {{machineName}} ({{modelType}})",
+      "machineCleared": "Makine seçimi temizlendi. Genel yardım sağlıyorum."
+    },
+    "voice": {
+      "enableVoice": "Sesi Etkinleştir",
+      "disableVoice": "Sesi Devre Dışı Bırak",
+      "stopSpeaking": "Konuşmayı Durdur",
+      "speakResponse": "Yanıtı Seslendir"
+    },
+    "errors": {
+      "connectionError": "Bağlantı hatası. Lütfen tekrar deneyin."
+    },
     "chatWidget": {
       "openChat": "AI Asistanını Aç",
       "closeChat": "AI Asistanını Kapat",

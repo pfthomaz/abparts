@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/services/abparts_integration.py
+# hypothesis_version: 6.150.0
+
+[1.2, 100, 250, 500, 1000, '1000h', '250h', '500h', '50h', 'cost', 'country', 'created_at', 'current_hours', 'description', 'email', 'en', 'high', 'hours', 'hours_since_last', 'hours_spent', 'hours_value', 'id', 'is_active', 'is_proprietary', 'latest_hours', 'location', 'low', 'maintenance_date', 'maintenance_type', 'medium', 'model_type', 'name', 'notes', 'organization', 'organization_type', 'overdue_hours', 'part', 'part_id', 'part_name', 'part_number', 'part_type', 'parts_used', 'performed_by', 'preferred_language', 'priority', 'quantity', 'recommended_hours', 'recorded_by', 'recorded_date', 'role', 'serial_number', 'super_admin', 'total_hours_records', 'type', 'updated_at', 'usage_date', 'user_id', 'username', 'warehouse']

@@ -1427,6 +1427,29 @@
   "aiAssistant": {
     "title": "مساعد AutoBoss الذكي",
     "subtitle": "دعم ذكي لاستكشاف الأخطاء وإصلاحها لآلات AutoBoss الخاصة بك",
+    "selectMachine": "اختيار الآلة",
+    "clearMachine": "مسح الاختيار",
+    "noMachines": "لا توجد آلات متاحة",
+    "maximize": "تكبير",
+    "minimize": "تصغير",
+    "chatWidget": {
+      "typing": "الذكي الاصطناعي يكتب..."
+    },
+    "messages": {
+      "welcomeMessage": "مرحباً! أنا مساعد AutoBoss الذكي. يمكنني مساعدتك في استكشاف مشاكل الآلات وإصلاحها، والعثور على القطع، وإرشادك خلال إجراءات الصيانة. كيف يمكنني مساعدتك اليوم؟",
+      "placeholder": "اكتب رسالتك هنا...",
+      "machineSelected": "الآلة المختارة: {{machineName}} ({{modelType}})",
+      "machineCleared": "تم مسح اختيار الآلة. أقدم المساعدة العامة."
+    },
+    "voice": {
+      "enableVoice": "تفعيل الصوت",
+      "disableVoice": "إلغاء تفعيل الصوت",
+      "stopSpeaking": "إيقاف التحدث",
+      "speakResponse": "نطق الرد"
+    },
+    "errors": {
+      "connectionError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى."
+    },
     "chatWidget": {
       "openChat": "فتح المساعد الذكي",
       "closeChat": "إغلاق المساعد الذكي",

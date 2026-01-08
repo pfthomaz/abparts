@@ -196,12 +196,32 @@ class LLMClient:
                         "Remote working intermittently"
                     ])
                 
+                # Search for HP gauge specific issues
+                if any(word in user_message.lower() for word in ['hp', 'pressure', 'gauge', 'red', 'low', 'high']):
+                    search_queries.extend([
+                        "HP Water Gauge Reading Low in low red zone",
+                        "HP Water Gauge Reading High in high red zone", 
+                        "charge pressure gauge",
+                        "water pressure system",
+                        "unloader valve system"
+                    ])
+                
+                # Search for maintenance related queries
+                if any(word in user_message.lower() for word in ['maintenance', 'service', 'repair', 'replace', 'check']):
+                    search_queries.extend([
+                        "Daily Monitoring and Maintenance",
+                        "Weekly Monitoring and Maintenance",
+                        "250 hour maintenance requirements",
+                        "500 hour maintenance requirements",
+                        "maintenance check sheet"
+                    ])
+                
                 all_results = []
                 for query in search_queries:
                     search_results = await knowledge_service.search_documents(
                         query=query,
                         language=language,
-                        limit=3  # Get top 3 results per query
+                        limit=5  # Get top 5 results per query
                     )
                     all_results.extend(search_results)
                 
@@ -215,9 +235,9 @@ class LLMClient:
                         seen_docs.add(chunk_key)
                         unique_results.append(result)
                 
-                # Sort by relevance and take top 5 for better coverage
+                # Sort by relevance and take top 8 for better coverage
                 unique_results.sort(key=lambda x: x['relevance_score'], reverse=True)
-                final_results = unique_results[:5]
+                final_results = unique_results[:8]
                 
                 # Build context from search results with better formatting
                 if final_results:
@@ -226,9 +246,15 @@ class LLMClient:
                         doc = result['document']
                         content = result['matched_content']
                         # Include more content for better context
-                        if len(content) > 1000:
-                            content = content[:1000] + "..."
-                        context_parts.append(f"=== MANUAL SECTION {i+1} ===\nFrom: {doc['title']} (AutoBoss {', '.join(doc['machine_models'])})\nContent: {content}")
+                        if len(content) > 1500:
+                            content = content[:1500] + "..."
+                        
+                        # Add machine model info if available
+                        model_info = ""
+                        if doc.get('machine_models'):
+                            model_info = f" (AutoBoss {', '.join(doc['machine_models'])})"
+                        
+                        context_parts.append(f"=== MANUAL SECTION {i+1} ===\nFrom: {doc['title']}{model_info}\nRelevance: {result['relevance_score']:.3f}\nContent: {content}")
                     
                     knowledge_context = "\n\n".join(context_parts)
                     logger.info(f"Found {len(final_results)} relevant knowledge base entries")
@@ -249,17 +275,34 @@ class LLMClient:
         system_content = ""
         
         if knowledge_context:
-            # Create a very direct and simple system prompt
-            system_content = f"""MANUAL CONTENT:
+            # Create a comprehensive system prompt with better instructions
+            system_content = f"""You are AutoBoss AI Assistant, an expert troubleshooting and operation guide for AutoBoss net cleaning machines.
+
+MANUAL CONTENT:
 {knowledge_context}
 
-You are AutoBoss AI Assistant. Answer the user's question using ONLY the manual content shown above. Quote directly from the manual. Respond in {language}."""
-            logger.info(f"Using direct system prompt with {len(knowledge_context)} characters of manual content")
+INSTRUCTIONS:
+1. Use ONLY the manual content provided above to answer questions
+2. Provide step-by-step instructions when appropriate
+3. Include specific section references from the manual when available
+4. If the user asks about troubleshooting, provide the complete diagnostic process
+5. Always prioritize safety considerations
+6. If multiple manual sections are relevant, synthesize the information comprehensively
+7. Quote directly from the manual when giving specific procedures
+8. Respond in {language}
+
+RESPONSE GUIDELINES:
+- Be thorough and detailed in your explanations
+- Include all relevant steps and checks mentioned in the manual
+- Mention specific gauge readings, pressure values, and technical specifications when provided
+- If the manual mentions contacting support or technicians, include that information
+- Structure your response clearly with numbered steps or bullet points when appropriate"""
+            logger.info(f"Using comprehensive system prompt with {len(knowledge_context)} characters of manual content")
         else:
             # No knowledge context - use basic system prompt
             system_content = f"""You are AutoBoss AI Assistant. You help with AutoBoss net cleaning machine troubleshooting and operation.
 
-Respond in {language}. If you don't have specific information about AutoBoss procedures, clearly state that you need to refer to the official manual."""
+Respond in {language}. If you don't have specific information about AutoBoss procedures, clearly state that you need to refer to the official manual and suggest contacting Oraseas support or an accredited AutoBoss technician."""
             logger.info("Using basic system prompt - no knowledge context found")
         
         openai_messages.insert(0, {
@@ -497,72 +540,226 @@ Vær alltid hjelpsom, klar og sikkerhetsbevisst i dine svar."""
         base_prompt = base_prompts.get(language, base_prompts["en"])
 
         if machine_context:
+            # Extract machine details
+            machine_details = machine_context.get("machine_details", {})
+            recent_maintenance = machine_context.get("recent_maintenance", [])
+            recent_parts_usage = machine_context.get("recent_parts_usage", [])
+            hours_trend = machine_context.get("hours_trend", [])
+            maintenance_suggestions = machine_context.get("maintenance_suggestions", [])
+            
             machine_info_prompts = {
                 "en": f"""
 
-Machine Information:
-- Model: {machine_context.get('model', 'Unknown')}
-- Serial Number: {machine_context.get('serial_number', 'Unknown')}
-- Installation Date: {machine_context.get('installation_date', 'Unknown')}
-- Last Maintenance: {machine_context.get('last_maintenance', 'Unknown')}
+MACHINE CONTEXT:
+- Model: {machine_details.get('model_type', 'Unknown')}
+- Serial Number: {machine_details.get('serial_number', 'Unknown')}
+- Current Hours: {machine_details.get('current_hours', 0)}
+- Organization: {machine_details.get('organization', 'Unknown')}
+- Country: {machine_details.get('country', 'Unknown')}
 
-Use this machine-specific information to provide more targeted troubleshooting advice.""",
+RECENT MAINTENANCE HISTORY:
+{self._format_maintenance_history(recent_maintenance, language)}
+
+RECENT PARTS USAGE:
+{self._format_parts_usage(recent_parts_usage, language)}
+
+MACHINE HOURS TREND:
+{self._format_hours_trend(hours_trend, language)}
+
+MAINTENANCE RECOMMENDATIONS:
+{self._format_maintenance_suggestions(maintenance_suggestions, language)}
+
+Use this comprehensive machine information to provide highly targeted troubleshooting advice. Consider the machine's usage patterns, maintenance history, and any overdue maintenance when diagnosing problems.""",
                 
                 "el": f"""
 
-Πληροφορίες Μηχανήματος:
-- Μοντέλο: {machine_context.get('model', 'Άγνωστο')}
-- Σειριακός Αριθμός: {machine_context.get('serial_number', 'Άγνωστος')}
-- Ημερομηνία Εγκατάστασης: {machine_context.get('installation_date', 'Άγνωστη')}
-- Τελευταία Συντήρηση: {machine_context.get('last_maintenance', 'Άγνωστη')}
+ΠΛΑΙΣΙΟ ΜΗΧΑΝΗΜΑΤΟΣ:
+- Μοντέλο: {machine_details.get('model_type', 'Άγνωστο')}
+- Σειριακός Αριθμός: {machine_details.get('serial_number', 'Άγνωστος')}
+- Τρέχουσες Ώρες: {machine_details.get('current_hours', 0)}
+- Οργανισμός: {machine_details.get('organization', 'Άγνωστος')}
+- Χώρα: {machine_details.get('country', 'Άγνωστη')}
 
-Χρησιμοποιήστε αυτές τις πληροφορίες για το συγκεκριμένο μηχάνημα για να παρέχετε πιο στοχευμένες συμβουλές αντιμετώπισης προβλημάτων.""",
+ΠΡΌΣΦΑΤΟ ΙΣΤΟΡΙΚΟ ΣΥΝΤΗΡΗΣΗΣ:
+{self._format_maintenance_history(recent_maintenance, language)}
+
+ΠΡΟΣΦΑΤΗ ΧΡΗΣΗ ΑΝΤΑΛΛΑΚΤΙΚΩΝ:
+{self._format_parts_usage(recent_parts_usage, language)}
+
+ΤΑΣΗ ΩΡΩΝ ΜΗΧΑΝΗΜΑΤΟΣ:
+{self._format_hours_trend(hours_trend, language)}
+
+ΣΥΣΤΑΣΕΙΣ ΣΥΝΤΗΡΗΣΗΣ:
+{self._format_maintenance_suggestions(maintenance_suggestions, language)}
+
+Χρησιμοποιήστε αυτές τις περιεκτικές πληροφορίες μηχανήματος για να παρέχετε εξαιρετικά στοχευμένες συμβουλές αντιμετώπισης προβλημάτων.""",
                 
                 "ar": f"""
 
-معلومات الآلة:
-- الطراز: {machine_context.get('model', 'غير معروف')}
-- الرقم التسلسلي: {machine_context.get('serial_number', 'غير معروف')}
-- تاريخ التركيب: {machine_context.get('installation_date', 'غير معروف')}
-- آخر صيانة: {machine_context.get('last_maintenance', 'غير معروف')}
+سياق الآلة:
+- الطراز: {machine_details.get('model_type', 'غير معروف')}
+- الرقم التسلسلي: {machine_details.get('serial_number', 'غير معروف')}
+- الساعات الحالية: {machine_details.get('current_hours', 0)}
+- المنظمة: {machine_details.get('organization', 'غير معروف')}
+- البلد: {machine_details.get('country', 'غير معروف')}
 
-استخدم هذه المعلومات الخاصة بالآلة لتقديم نصائح أكثر تحديداً لاستكشاف الأخطاء وإصلاحها.""",
+تاريخ الصيانة الحديث:
+{self._format_maintenance_history(recent_maintenance, language)}
+
+استخدام القطع الحديث:
+{self._format_parts_usage(recent_parts_usage, language)}
+
+اتجاه ساعات الآلة:
+{self._format_hours_trend(hours_trend, language)}
+
+توصيات الصيانة:
+{self._format_maintenance_suggestions(maintenance_suggestions, language)}
+
+استخدم هذه المعلومات الشاملة للآلة لتقديم نصائح استكشاف أخطاء مستهدفة للغاية.""",
                 
                 "es": f"""
 
-Información de la Máquina:
-- Modelo: {machine_context.get('model', 'Desconocido')}
-- Número de Serie: {machine_context.get('serial_number', 'Desconocido')}
-- Fecha de Instalación: {machine_context.get('installation_date', 'Desconocida')}
-- Último Mantenimiento: {machine_context.get('last_maintenance', 'Desconocido')}
+CONTEXTO DE LA MÁQUINA:
+- Modelo: {machine_details.get('model_type', 'Desconocido')}
+- Número de Serie: {machine_details.get('serial_number', 'Desconocido')}
+- Horas Actuales: {machine_details.get('current_hours', 0)}
+- Organización: {machine_details.get('organization', 'Desconocida')}
+- País: {machine_details.get('country', 'Desconocido')}
 
-Usa esta información específica de la máquina para proporcionar consejos de solución de problemas más dirigidos.""",
+HISTORIAL DE MANTENIMIENTO RECIENTE:
+{self._format_maintenance_history(recent_maintenance, language)}
+
+USO RECIENTE DE PIEZAS:
+{self._format_parts_usage(recent_parts_usage, language)}
+
+TENDENCIA DE HORAS DE MÁQUINA:
+{self._format_hours_trend(hours_trend, language)}
+
+RECOMENDACIONES DE MANTENIMIENTO:
+{self._format_maintenance_suggestions(maintenance_suggestions, language)}
+
+Usa esta información integral de la máquina para proporcionar consejos de solución de problemas altamente dirigidos.""",
                 
                 "tr": f"""
 
-Makine Bilgileri:
-- Model: {machine_context.get('model', 'Bilinmiyor')}
-- Seri Numarası: {machine_context.get('serial_number', 'Bilinmiyor')}
-- Kurulum Tarihi: {machine_context.get('installation_date', 'Bilinmiyor')}
-- Son Bakım: {machine_context.get('last_maintenance', 'Bilinmiyor')}
+MAKİNE BAĞLAMI:
+- Model: {machine_details.get('model_type', 'Bilinmiyor')}
+- Seri Numarası: {machine_details.get('serial_number', 'Bilinmiyor')}
+- Mevcut Saatler: {machine_details.get('current_hours', 0)}
+- Organizasyon: {machine_details.get('organization', 'Bilinmiyor')}
+- Ülke: {machine_details.get('country', 'Bilinmiyor')}
 
-Daha hedefli sorun giderme tavsiyeleri sağlamak için bu makineye özgü bilgileri kullanın.""",
+SON BAKIM GEÇMİŞİ:
+{self._format_maintenance_history(recent_maintenance, language)}
+
+SON PARÇA KULLANIMI:
+{self._format_parts_usage(recent_parts_usage, language)}
+
+MAKİNE SAATLERİ EĞİLİMİ:
+{self._format_hours_trend(hours_trend, language)}
+
+BAKIM ÖNERİLERİ:
+{self._format_maintenance_suggestions(maintenance_suggestions, language)}
+
+Son derece hedefli sorun giderme tavsiyeleri sağlamak için bu kapsamlı makine bilgilerini kullanın.""",
                 
                 "no": f"""
 
-Maskininformasjon:
-- Modell: {machine_context.get('model', 'Ukjent')}
-- Serienummer: {machine_context.get('serial_number', 'Ukjent')}
-- Installasjonsdato: {machine_context.get('installation_date', 'Ukjent')}
-- Siste vedlikehold: {machine_context.get('last_maintenance', 'Ukjent')}
+MASKINKONTEKST:
+- Modell: {machine_details.get('model_type', 'Ukjent')}
+- Serienummer: {machine_details.get('serial_number', 'Ukjent')}
+- Nåværende timer: {machine_details.get('current_hours', 0)}
+- Organisasjon: {machine_details.get('organization', 'Ukjent')}
+- Land: {machine_details.get('country', 'Ukjent')}
 
-Bruk denne maskinspesifikke informasjonen til å gi mer målrettet feilsøkingsråd."""
+NYLIG VEDLIKEHOLDSHISTORIKK:
+{self._format_maintenance_history(recent_maintenance, language)}
+
+NYLIG DELEBRUK:
+{self._format_parts_usage(recent_parts_usage, language)}
+
+MASKINTIMERTREND:
+{self._format_hours_trend(hours_trend, language)}
+
+VEDLIKEHOLDSANBEFALINGER:
+{self._format_maintenance_suggestions(maintenance_suggestions, language)}
+
+Bruk denne omfattende maskininformasjonen til å gi svært målrettet feilsøkingsråd."""
             }
             
             machine_info = machine_info_prompts.get(language, machine_info_prompts["en"])
             base_prompt += machine_info
         
         return base_prompt
+    
+    def _format_maintenance_history(self, maintenance_history: List[Dict[str, Any]], language: str) -> str:
+        """Format maintenance history for display in prompts."""
+        if not maintenance_history:
+            return "No recent maintenance records available."
+        
+        formatted_records = []
+        for record in maintenance_history:
+            date = record.get("date", "Unknown")
+            maintenance_type = record.get("type", "Unknown")
+            description = record.get("description", "No description")
+            parts_used = record.get("parts_used", 0)
+            performed_by = record.get("performed_by", "Unknown")
+            
+            formatted_records.append(f"- {date}: {maintenance_type} - {description} ({parts_used} parts used, by {performed_by})")
+        
+        return "\n".join(formatted_records)
+    
+    def _format_parts_usage(self, parts_usage: List[Dict[str, Any]], language: str) -> str:
+        """Format parts usage for display in prompts."""
+        if not parts_usage:
+            return "No recent parts usage records available."
+        
+        formatted_usage = []
+        for usage in parts_usage:
+            date = usage.get("date", "Unknown")
+            part_name = usage.get("part_name", "Unknown part")
+            part_number = usage.get("part_number", "Unknown")
+            quantity = usage.get("quantity", 0)
+            is_proprietary = usage.get("is_proprietary", False)
+            proprietary_note = " (Proprietary)" if is_proprietary else ""
+            
+            formatted_usage.append(f"- {date}: {part_name} ({part_number}){proprietary_note} - Qty: {quantity}")
+        
+        return "\n".join(formatted_usage)
+    
+    def _format_hours_trend(self, hours_trend: List[Dict[str, Any]], language: str) -> str:
+        """Format machine hours trend for display in prompts."""
+        if not hours_trend:
+            return "No recent hours records available."
+        
+        formatted_hours = []
+        for record in hours_trend:
+            date = record.get("date", "Unknown")
+            hours = record.get("hours", 0)
+            recorded_by = record.get("recorded_by", "Unknown")
+            
+            formatted_hours.append(f"- {date}: {hours} hours (recorded by {recorded_by})")
+        
+        return "\n".join(formatted_hours)
+    
+    def _format_maintenance_suggestions(self, suggestions: List[Dict[str, Any]], language: str) -> str:
+        """Format maintenance suggestions for display in prompts."""
+        if not suggestions:
+            return "No maintenance recommendations at this time."
+        
+        formatted_suggestions = []
+        for suggestion in suggestions:
+            suggestion_type = suggestion.get("type", "Unknown")
+            description = suggestion.get("description", "No description")
+            priority = suggestion.get("priority", "medium")
+            overdue_hours = suggestion.get("overdue_hours", 0)
+            
+            priority_indicator = "🔴" if priority == "high" else "🟡" if priority == "medium" else "🟢"
+            overdue_note = f" (Overdue by {overdue_hours} hours)" if overdue_hours > 0 else ""
+            
+            formatted_suggestions.append(f"- {priority_indicator} {suggestion_type}: {description}{overdue_note}")
+        
+        return "\n".join(formatted_suggestions)
     
     async def generate_simple_response(
         self,

@@ -18,6 +18,7 @@ from ..llm_client import LLMClient, ConversationMessage
 from ..session_manager import SessionManager
 from ..database import get_db_session
 from .problem_analyzer import ProblemAnalyzer
+from .abparts_integration import abparts_integration
 from .troubleshooting_types import (
     DiagnosticAssessment, TroubleshootingStepData, WorkflowState,
     ConfidenceLevel, StepStatus
@@ -39,7 +40,8 @@ class TroubleshootingService:
         self,
         session_id: str,
         problem_description: str,
-        machine_context: Optional[Dict[str, Any]] = None,
+        machine_id: Optional[str] = None,
+        user_id: Optional[str] = None,
         language: str = "en"
     ) -> DiagnosticAssessment:
         """
@@ -48,7 +50,8 @@ class TroubleshootingService:
         Args:
             session_id: ID of the troubleshooting session
             problem_description: User's description of the problem
-            machine_context: Information about the specific machine
+            machine_id: ID of the specific machine (optional)
+            user_id: ID of the user for context (optional)
             language: Language for responses
             
         Returns:
@@ -56,18 +59,51 @@ class TroubleshootingService:
         """
         logger.info(f"Starting troubleshooting workflow for session {session_id}")
         
-        # Generate initial diagnostic assessment
+        # Get machine context if machine_id is provided
+        machine_context = None
+        if machine_id:
+            machine_details = await abparts_integration.get_machine_details(machine_id)
+            if machine_details:
+                # Get additional context
+                maintenance_history = await abparts_integration.get_maintenance_history(machine_id, limit=5)
+                parts_usage = await abparts_integration.get_parts_usage_data(machine_id, days=30)
+                hours_history = await abparts_integration.get_machine_hours_history(machine_id, limit=5)
+                maintenance_suggestions = await abparts_integration.get_preventive_maintenance_suggestions(machine_id)
+                
+                machine_context = {
+                    "machine_details": machine_details,
+                    "recent_maintenance": maintenance_history,
+                    "recent_parts_usage": parts_usage,
+                    "hours_history": hours_history,
+                    "maintenance_suggestions": maintenance_suggestions
+                }
+                
+                logger.info(f"Retrieved machine context for {machine_id}: {machine_details['name']} ({machine_details['model_type']})")
+        
+        # Get user preferences if user_id is provided
+        user_context = None
+        if user_id:
+            user_preferences = await abparts_integration.get_user_preferences(user_id)
+            if user_preferences:
+                user_context = user_preferences
+                # Use user's preferred language if not explicitly specified
+                if language == "en" and user_preferences.get("preferred_language"):
+                    language = user_preferences["preferred_language"]
+                
+                logger.info(f"Retrieved user context for {user_id}: {user_preferences['name']} (lang: {language})")
+        
+        # Generate initial diagnostic assessment with enhanced context
         assessment = await self._analyze_problem_description(
-            problem_description, machine_context, language
+            problem_description, machine_context, user_context, language
         )
         
-        # Store assessment in database
-        await self._store_diagnostic_assessment(session_id, assessment)
+        # Store assessment in database with enhanced context
+        await self._store_diagnostic_assessment(session_id, assessment, machine_context, user_context)
         
         # Generate first troubleshooting step
         if assessment.confidence_level != ConfidenceLevel.very_low:
             first_step = await self._generate_first_step(
-                session_id, assessment, language
+                session_id, assessment, machine_context, language
             )
             await self._store_troubleshooting_step(session_id, first_step)
         
@@ -78,6 +114,7 @@ class TroubleshootingService:
         self,
         problem_description: str,
         machine_context: Optional[Dict[str, Any]] = None,
+        user_context: Optional[Dict[str, Any]] = None,
         language: str = "en"
     ) -> DiagnosticAssessment:
         """Analyze problem description and generate diagnostic assessment using advanced analyzer."""
@@ -86,6 +123,7 @@ class TroubleshootingService:
         assessment, confidence_score = await self.problem_analyzer.analyze_problem_with_confidence(
             problem_description=problem_description,
             machine_context=machine_context,
+            user_context=user_context,
             language=language
         )
         
@@ -96,7 +134,8 @@ class TroubleshootingService:
     
     def _build_diagnostic_system_prompt(
         self, 
-        machine_context: Optional[Dict[str, Any]] = None, 
+        machine_context: Optional[Dict[str, Any]] = None,
+        user_context: Optional[Dict[str, Any]] = None,
         language: str = "en"
     ) -> str:
         """Build system prompt for diagnostic analysis."""
@@ -201,18 +240,46 @@ Tillitsnivåer: high (80-100%), medium (50-79%), low (20-49%), very_low (0-19%)"
         
         prompt = base_prompts.get(language, base_prompts["en"])
         
-        if machine_context:
+        # Add machine context information
+        if machine_context and machine_context.get("machine_details"):
+            machine_details = machine_context["machine_details"]
             machine_info = f"""
 
 Machine Information:
-- Model: {machine_context.get('model', 'Unknown')}
-- Serial Number: {machine_context.get('serial_number', 'Unknown')}
-- Installation Date: {machine_context.get('installation_date', 'Unknown')}
-- Last Maintenance: {machine_context.get('last_maintenance', 'Unknown')}
-- Operating Hours: {machine_context.get('operating_hours', 'Unknown')}
-
-Use this machine-specific information to provide more targeted diagnostic analysis."""
+- Model: {machine_details.get('model_type', 'Unknown')}
+- Serial Number: {machine_details.get('serial_number', 'Unknown')}
+- Name: {machine_details.get('name', 'Unknown')}
+- Current Hours: {machine_details.get('latest_hours', 'Unknown')}
+- Organization: {machine_details.get('customer_organization', {}).get('name', 'Unknown')}"""
+            
+            # Add recent maintenance history
+            if machine_context.get("recent_maintenance"):
+                maintenance_history = machine_context["recent_maintenance"][:3]  # Last 3 records
+                machine_info += "\n\nRecent Maintenance History:"
+                for i, record in enumerate(maintenance_history, 1):
+                    machine_info += f"\n{i}. {record['maintenance_date'][:10]} - {record['maintenance_type']} - {record['description'][:100]}"
+            
+            # Add maintenance suggestions
+            if machine_context.get("maintenance_suggestions"):
+                suggestions = machine_context["maintenance_suggestions"][:2]  # Top 2 suggestions
+                machine_info += "\n\nMaintenance Suggestions:"
+                for i, suggestion in enumerate(suggestions, 1):
+                    machine_info += f"\n{i}. {suggestion['type']} service ({suggestion['priority']} priority) - {suggestion['description']}"
+            
+            machine_info += "\n\nUse this machine-specific information to provide more targeted diagnostic analysis."
             prompt += machine_info
+        
+        # Add user context information
+        if user_context:
+            user_info = f"""
+
+User Context:
+- Organization: {user_context.get('organization', {}).get('name', 'Unknown')}
+- Role: {user_context.get('role', 'Unknown')}
+- Preferred Language: {user_context.get('preferred_language', 'en')}
+
+Consider the user's role and organization when providing recommendations."""
+            prompt += user_info
         
         return prompt
     
@@ -413,14 +480,31 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
         self,
         session_id: str,
         assessment: DiagnosticAssessment,
-        language: str
+        machine_context: Optional[Dict[str, Any]] = None,
+        language: str = "en"
     ) -> TroubleshootingStepData:
         """Generate the first troubleshooting step based on assessment."""
         
         step_id = str(uuid.uuid4())
         
-        # Use the first recommended step from assessment
-        instruction = assessment.recommended_steps[0] if assessment.recommended_steps else "Begin troubleshooting"
+        # Use the first recommended step from assessment, enhanced with machine context
+        base_instruction = assessment.recommended_steps[0] if assessment.recommended_steps else "Begin troubleshooting"
+        
+        # Enhance instruction with machine-specific information
+        if machine_context and machine_context.get("machine_details"):
+            machine_details = machine_context["machine_details"]
+            model_type = machine_details.get("model_type", "")
+            current_hours = machine_details.get("latest_hours", 0)
+            
+            # Add model-specific guidance
+            if model_type in ["V3.1B", "V4.0"]:
+                base_instruction += f" (for {model_type} model)"
+            
+            # Add hours-based context
+            if current_hours > 0:
+                base_instruction += f" - Machine has {current_hours} operating hours"
+        
+        instruction = base_instruction
         
         # Generate expected outcomes based on the step
         expected_outcomes = await self._generate_step_outcomes(instruction, language)
@@ -468,7 +552,9 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
     async def _store_diagnostic_assessment(
         self, 
         session_id: str, 
-        assessment: DiagnosticAssessment
+        assessment: DiagnosticAssessment,
+        machine_context: Optional[Dict[str, Any]] = None,
+        user_context: Optional[Dict[str, Any]] = None
     ) -> None:
         """Store diagnostic assessment in database."""
         try:
@@ -486,6 +572,14 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
                         "created_at": datetime.utcnow().isoformat()
                     }
                 }
+                
+                # Add machine context to metadata
+                if machine_context:
+                    metadata["machine_context"] = machine_context
+                
+                # Add user context to metadata
+                if user_context:
+                    metadata["user_context"] = user_context
                 
                 query = text("""
                     UPDATE ai_sessions 

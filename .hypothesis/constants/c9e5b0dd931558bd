@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/session_manager.py
+# hypothesis_version: 6.150.0
+
+[100, 3600, 'active', 'ar', 'content', 'created_at', 'el', 'en', 'es', 'language', 'limit', 'machine_id', 'message_id', 'message_type', 'metadata', 'no', 'problem_description', 'resolution_summary', 'sender', 'session_id', 'status', 'text', 'tr', 'updated_at', 'user_id', 'utf-8', '{}']

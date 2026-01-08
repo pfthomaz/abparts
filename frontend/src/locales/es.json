@@ -1433,6 +1433,29 @@
   "aiAssistant": {
     "title": "Asistente IA AutoBoss",
     "subtitle": "Soporte inteligente para solución de problemas de sus máquinas AutoBoss",
+    "selectMachine": "Seleccionar Máquina",
+    "clearMachine": "Limpiar Selección",
+    "noMachines": "No hay máquinas disponibles",
+    "maximize": "Maximizar",
+    "minimize": "Minimizar",
+    "chatWidget": {
+      "typing": "La IA está escribiendo..."
+    },
+    "messages": {
+      "welcomeMessage": "¡Hola! Soy tu Asistente IA AutoBoss. Puedo ayudarte a solucionar problemas de máquinas, encontrar piezas y guiarte a través de procedimientos de mantenimiento. ¿Cómo puedo asistirte hoy?",
+      "placeholder": "Escribe tu mensaje aquí...",
+      "machineSelected": "Máquina seleccionada: {{machineName}} ({{modelType}})",
+      "machineCleared": "Selección de máquina eliminada. Proporcionando asistencia general."
+    },
+    "voice": {
+      "enableVoice": "Habilitar Voz",
+      "disableVoice": "Deshabilitar Voz",
+      "stopSpeaking": "Detener Habla",
+      "speakResponse": "Hablar Respuesta"
+    },
+    "errors": {
+      "connectionError": "Error de conexión. Por favor, inténtalo de nuevo."
+    },
     "chatWidget": {
       "openChat": "Abrir Asistente IA",
       "closeChat": "Cerrar Asistente IA",

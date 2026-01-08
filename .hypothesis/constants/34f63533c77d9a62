@@ -1,0 +1,4 @@
+# file: /Users/diogothomaz/dev/abparts/ai_assistant/app/models.py
+# hypothesis_version: 6.150.0
+
+['AIMessage', 'AISession', 'DocumentChunk', 'KnowledgeDocument', 'MessageData', 'abandoned', 'active', 'ai_messages', 'ai_sessions', 'ai_sessions.id', 'all, delete-orphan', 'assistant', 'chunks', 'completed', 'diagnostic_step', 'document', 'document_chunks', 'en', 'escalated', 'escalation', 'expert_input', 'expert_knowledge', 'faq', 'image', 'knowledge_documents', 'manual', 'messages', 'procedure', 'session', 'system', 'text', 'user', 'voice']

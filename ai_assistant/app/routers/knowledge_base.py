@@ -24,14 +24,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/knowledge", tags=["knowledge_base"])
 
 # Initialize services (these will be dependency injected in production)
-llm_client = LLMClient()
-vector_db = VectorDatabase()
-knowledge_service = KnowledgeBaseService(llm_client, vector_db)
+def get_llm_client() -> LLMClient:
+    """Get LLM client from app state."""
+    from ..main import app
+    if not hasattr(app.state, 'llm_client') or app.state.llm_client is None:
+        raise HTTPException(status_code=503, detail="LLM client not initialized")
+    return app.state.llm_client
 
+vector_db = VectorDatabase()
 
 async def get_knowledge_service() -> KnowledgeBaseService:
     """Dependency to get knowledge base service."""
-    return knowledge_service
+    llm_client = get_llm_client()
+    return KnowledgeBaseService(llm_client, vector_db)
 
 
 @router.post("/documents", response_model=KnowledgeDocumentResponse)

@@ -1427,6 +1427,9 @@
   "aiAssistant": {
     "title": "AutoBoss AI Assistant",
     "subtitle": "Intelligent troubleshooting support for your AutoBoss machines",
+    "selectMachine": "Select Machine",
+    "clearMachine": "Clear Selection",
+    "noMachines": "No machines available",
     "chatWidget": {
       "openChat": "Open AI Assistant",
       "closeChat": "Close AI Assistant",
@@ -1453,7 +1456,9 @@
       "thumbsUp": "Helpful",
       "thumbsDown": "Not helpful",
       "feedback": "Provide feedback",
-      "reportIssue": "Report issue"
+      "reportIssue": "Report issue",
+      "machineSelected": "Selected machine: {{machineName}} ({{modelType}})",
+      "machineCleared": "Machine selection cleared. Providing general assistance."
     },
     "troubleshooting": {
       "startTroubleshooting": "Start Troubleshooting",

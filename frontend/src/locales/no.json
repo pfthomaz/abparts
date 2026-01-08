@@ -1433,6 +1433,29 @@
   "aiAssistant": {
     "title": "AutoBoss AI-assistent",
     "subtitle": "Intelligent feilsøkingsstøtte for dine AutoBoss-maskiner",
+    "selectMachine": "Velg Maskin",
+    "clearMachine": "Fjern Valg",
+    "noMachines": "Ingen maskiner tilgjengelig",
+    "maximize": "Maksimer",
+    "minimize": "Minimer",
+    "chatWidget": {
+      "typing": "AI skriver..."
+    },
+    "messages": {
+      "welcomeMessage": "Hei! Jeg er din AutoBoss AI-assistent. Jeg kan hjelpe deg med å feilsøke maskinproblemer, finne deler og veilede deg gjennom vedlikeholdsprosedyrer. Hvordan kan jeg hjelpe deg i dag?",
+      "placeholder": "Skriv meldingen din her...",
+      "machineSelected": "Valgt maskin: {{machineName}} ({{modelType}})",
+      "machineCleared": "Maskinvalg fjernet. Gir generell assistanse."
+    },
+    "voice": {
+      "enableVoice": "Aktiver Stemme",
+      "disableVoice": "Deaktiver Stemme",
+      "stopSpeaking": "Stopp Tale",
+      "speakResponse": "Snakk Svar"
+    },
+    "errors": {
+      "connectionError": "Tilkoblingsfeil. Vennligst prøv igjen."
+    },
     "chatWidget": {
       "openChat": "Åpne AI-assistent",
       "closeChat": "Lukk AI-assistent",

@@ -92,6 +92,7 @@ class ProblemAnalyzer:
         self,
         problem_description: str,
         machine_context: Optional[Dict] = None,
+        user_context: Optional[Dict] = None,
         language: str = "en"
     ) -> Tuple[DiagnosticAssessment, float]:
         """
@@ -100,6 +101,7 @@ class ProblemAnalyzer:
         Args:
             problem_description: User's description of the problem
             machine_context: Information about the specific machine
+            user_context: Information about the user and their context
             language: Language for responses
             
         Returns:
@@ -112,19 +114,19 @@ class ProblemAnalyzer:
         
         # Step 2: LLM-based analysis for detailed assessment
         llm_assessment = await self._llm_problem_analysis(
-            problem_description, machine_context, language, problem_type
+            problem_description, machine_context, user_context, language, problem_type
         )
         
         # Step 3: Calculate overall confidence score
         overall_confidence = self._calculate_confidence_score(
-            keyword_confidence, llm_assessment, problem_description, machine_context
+            keyword_confidence, llm_assessment, problem_description, machine_context, user_context
         )
         
         # Step 4: Apply fallback mechanisms if confidence is low
         if overall_confidence < 0.5:
             logger.info(f"Low confidence ({overall_confidence:.2f}), applying fallback mechanisms")
             llm_assessment = await self._apply_fallback_analysis(
-                problem_description, machine_context, language, overall_confidence
+                problem_description, machine_context, user_context, language, overall_confidence
             )
         
         # Step 5: Adjust confidence level in assessment
@@ -210,6 +212,7 @@ class ProblemAnalyzer:
         self,
         problem_description: str,
         machine_context: Optional[Dict],
+        user_context: Optional[Dict],
         language: str,
         suggested_type: ProblemType
     ) -> DiagnosticAssessment:
@@ -217,7 +220,7 @@ class ProblemAnalyzer:
         
         # Build enhanced system prompt with suggested type
         system_prompt = self._build_enhanced_diagnostic_prompt(
-            machine_context, language, suggested_type
+            machine_context, user_context, language, suggested_type
         )
         
         # Build analysis prompt
@@ -244,6 +247,7 @@ class ProblemAnalyzer:
     def _build_enhanced_diagnostic_prompt(
         self,
         machine_context: Optional[Dict],
+        user_context: Optional[Dict],
         language: str,
         suggested_type: ProblemType
     ) -> str:
@@ -297,18 +301,46 @@ Focus on providing:
         
         prompt = base_prompts.get(language, base_prompts["en"])
         
-        if machine_context:
+        # Add machine context information
+        if machine_context and machine_context.get("machine_details"):
+            machine_details = machine_context["machine_details"]
             machine_info = f"""
 
 Machine Information:
-- Model: {machine_context.get('model', 'Unknown')}
-- Serial Number: {machine_context.get('serial_number', 'Unknown')}
-- Operating Hours: {machine_context.get('operating_hours', 'Unknown')}
-- Last Maintenance: {machine_context.get('last_maintenance', 'Unknown')}
-- Installation Date: {machine_context.get('installation_date', 'Unknown')}
-
-Use this machine-specific information to provide more targeted diagnostic analysis."""
+- Model: {machine_details.get('model_type', 'Unknown')}
+- Serial Number: {machine_details.get('serial_number', 'Unknown')}
+- Name: {machine_details.get('name', 'Unknown')}
+- Current Hours: {machine_details.get('latest_hours', 'Unknown')}
+- Organization: {machine_details.get('customer_organization', {}).get('name', 'Unknown')}"""
+            
+            # Add recent maintenance history
+            if machine_context.get("recent_maintenance"):
+                maintenance_history = machine_context["recent_maintenance"][:3]  # Last 3 records
+                machine_info += "\n\nRecent Maintenance History:"
+                for i, record in enumerate(maintenance_history, 1):
+                    machine_info += f"\n{i}. {record['maintenance_date'][:10]} - {record['maintenance_type']} - {record['description'][:100]}"
+            
+            # Add maintenance suggestions
+            if machine_context.get("maintenance_suggestions"):
+                suggestions = machine_context["maintenance_suggestions"][:2]  # Top 2 suggestions
+                machine_info += "\n\nMaintenance Suggestions:"
+                for i, suggestion in enumerate(suggestions, 1):
+                    machine_info += f"\n{i}. {suggestion['type']} service ({suggestion['priority']} priority) - {suggestion['description']}"
+            
+            machine_info += "\n\nUse this machine-specific information to provide more targeted diagnostic analysis."
             prompt += machine_info
+        
+        # Add user context information
+        if user_context:
+            user_info = f"""
+
+User Context:
+- Organization: {user_context.get('organization', {}).get('name', 'Unknown')}
+- Role: {user_context.get('role', 'Unknown')}
+- Preferred Language: {user_context.get('preferred_language', 'en')}
+
+Consider the user's role and organization when providing recommendations."""
+            prompt += user_info
         
         return prompt
     
@@ -409,7 +441,8 @@ Focus on actionable, specific guidance that a technician can follow.""",
         keyword_confidence: float,
         llm_assessment: DiagnosticAssessment,
         problem_description: str,
-        machine_context: Optional[Dict]
+        machine_context: Optional[Dict],
+        user_context: Optional[Dict] = None
     ) -> float:
         """Calculate overall confidence score from multiple factors."""
         
@@ -427,12 +460,29 @@ Focus on actionable, specific guidance that a technician can follow.""",
         confidence += llm_confidence * 0.4
         
         # Machine context bonus
-        if machine_context:
+        if machine_context and machine_context.get("machine_details"):
+            machine_details = machine_context["machine_details"]
             context_completeness = sum([
-                1 for key in ['model', 'serial_number', 'operating_hours', 'last_maintenance']
-                if machine_context.get(key) and machine_context[key] != 'Unknown'
+                1 for key in ['model_type', 'serial_number', 'latest_hours', 'name']
+                if machine_details.get(key) and str(machine_details[key]) != 'Unknown'
             ]) / 4
             confidence += context_completeness * 0.1
+            
+            # Additional bonus for maintenance history
+            if machine_context.get("recent_maintenance"):
+                confidence += 0.05
+            
+            # Additional bonus for maintenance suggestions
+            if machine_context.get("maintenance_suggestions"):
+                confidence += 0.05
+        
+        # User context bonus
+        if user_context:
+            user_completeness = sum([
+                1 for key in ['role', 'organization', 'preferred_language']
+                if user_context.get(key) and str(user_context[key]) != 'Unknown'
+            ]) / 3
+            confidence += user_completeness * 0.05
         
         # Problem description quality bonus
         description_quality = self._assess_description_quality(problem_description)
@@ -444,6 +494,7 @@ Focus on actionable, specific guidance that a technician can follow.""",
         self,
         problem_description: str,
         machine_context: Optional[Dict],
+        user_context: Optional[Dict],
         language: str,
         current_confidence: float
     ) -> DiagnosticAssessment:
@@ -458,7 +509,7 @@ Focus on actionable, specific guidance that a technician can follow.""",
         # Fallback strategy 2: Simplified LLM analysis with more specific prompts
         elif current_confidence < 0.4:
             return await self._simplified_llm_analysis(
-                problem_description, machine_context, language
+                problem_description, machine_context, user_context, language
             )
         
         # Fallback strategy 3: Enhanced keyword-based analysis
@@ -529,6 +580,7 @@ Focus on actionable, specific guidance that a technician can follow.""",
         self,
         problem_description: str,
         machine_context: Optional[Dict],
+        user_context: Optional[Dict],
         language: str
     ) -> DiagnosticAssessment:
         """Perform simplified LLM analysis with more specific prompts."""

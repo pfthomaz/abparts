@@ -158,7 +158,8 @@ async def start_troubleshooting(
         diagnostic_assessment = await troubleshooting_service.start_troubleshooting_workflow(
             session_id=session_id,
             problem_description=request.problem_description,
-            machine_context=machine_context,
+            machine_id=request.machine_id,
+            user_id=request.user_id,
             language=language
         )
         
