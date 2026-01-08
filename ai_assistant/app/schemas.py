@@ -41,6 +41,40 @@ class DocumentTypeEnum(str, Enum):
     troubleshooting_guide = "troubleshooting_guide"
 
 
+class EscalationReasonEnum(str, Enum):
+    """Escalation reason enumeration."""
+    low_confidence = "low_confidence"
+    steps_exceeded = "steps_exceeded"
+    user_request = "user_request"
+    expert_required = "expert_required"
+    safety_concern = "safety_concern"
+    complex_issue = "complex_issue"
+
+
+class TicketPriorityEnum(str, Enum):
+    """Support ticket priority enumeration."""
+    low = "low"
+    medium = "medium"
+    high = "high"
+    urgent = "urgent"
+
+
+class TicketStatusEnum(str, Enum):
+    """Support ticket status enumeration."""
+    open = "open"
+    in_progress = "in_progress"
+    resolved = "resolved"
+    closed = "closed"
+
+
+class FeedbackTypeEnum(str, Enum):
+    """Expert feedback type enumeration."""
+    accuracy = "accuracy"
+    completeness = "completeness"
+    safety = "safety"
+    improvement = "improvement"
+
+
 # Request schemas
 class CreateSessionRequest(BaseModel):
     """Request to create a new AI session."""
@@ -84,6 +118,45 @@ class UpdateKnowledgeDocumentRequest(BaseModel):
     tags: Optional[List[str]] = Field(None, description="Document tags")
     version: Optional[str] = Field(None, description="Document version")
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+
+
+class CreateExpertKnowledgeRequest(BaseModel):
+    """Request to create expert knowledge entry."""
+    problem_description: str = Field(..., description="Description of the problem")
+    solution: str = Field(..., description="Expert solution")
+    machine_version: Optional[str] = Field(None, description="Applicable machine version")
+    tags: List[str] = Field(default_factory=list, description="Knowledge tags")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+
+
+class CreateSupportTicketRequest(BaseModel):
+    """Request to create a support ticket."""
+    escalation_reason: EscalationReasonEnum = Field(..., description="Reason for escalation")
+    priority: TicketPriorityEnum = Field(TicketPriorityEnum.medium, description="Ticket priority")
+    additional_notes: Optional[str] = Field(None, description="Additional notes from user")
+
+
+class UpdateSupportTicketRequest(BaseModel):
+    """Request to update a support ticket."""
+    status: Optional[TicketStatusEnum] = Field(None, description="New ticket status")
+    resolution_notes: Optional[str] = Field(None, description="Resolution notes")
+    assigned_expert_id: Optional[str] = Field(None, description="Assigned expert user ID")
+
+
+class CreateExpertFeedbackRequest(BaseModel):
+    """Request to create expert feedback."""
+    message_id: Optional[str] = Field(None, description="ID of the AI message being reviewed")
+    feedback_type: FeedbackTypeEnum = Field(..., description="Type of feedback")
+    rating: int = Field(..., description="Rating from 1-5", ge=1, le=5)
+    feedback_text: Optional[str] = Field(None, description="Detailed feedback text")
+    suggested_improvement: Optional[str] = Field(None, description="Suggested improvement")
+
+
+class EscalationDecisionRequest(BaseModel):
+    """Request for escalation decision."""
+    confidence_threshold: Optional[float] = Field(0.3, description="Confidence threshold for escalation")
+    max_steps: Optional[int] = Field(10, description="Maximum troubleshooting steps before escalation")
+    force_escalation: bool = Field(False, description="Force escalation regardless of other factors")
 
 
 class SearchKnowledgeRequest(BaseModel):
@@ -202,3 +275,76 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: datetime
     services: Dict[str, str]
+
+
+class ExpertKnowledgeResponse(BaseModel):
+    """Response containing expert knowledge information."""
+    knowledge_id: str
+    expert_user_id: str
+    problem_description: str
+    solution: str
+    machine_version: Optional[str] = None
+    tags: List[str]
+    verified: bool
+    created_at: datetime
+    updated_at: datetime
+    metadata: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SupportTicketResponse(BaseModel):
+    """Response containing support ticket information."""
+    ticket_id: str
+    session_id: str
+    ticket_number: str
+    priority: TicketPriorityEnum
+    status: TicketStatusEnum
+    escalation_reason: str
+    session_summary: str
+    machine_context: Optional[Dict[str, Any]] = None
+    expert_contact_info: Optional[Dict[str, Any]] = None
+    resolution_notes: Optional[str] = None
+    assigned_expert_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    resolved_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ExpertFeedbackResponse(BaseModel):
+    """Response containing expert feedback information."""
+    feedback_id: str
+    session_id: str
+    message_id: Optional[str] = None
+    expert_user_id: str
+    feedback_type: FeedbackTypeEnum
+    rating: int
+    feedback_text: Optional[str] = None
+    suggested_improvement: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class EscalationDecisionResponse(BaseModel):
+    """Response containing escalation decision."""
+    should_escalate: bool
+    escalation_reason: Optional[EscalationReasonEnum] = None
+    confidence_score: float
+    steps_completed: int
+    decision_factors: Dict[str, Any]
+    recommended_action: str
+
+
+class CreateSupportTicketResponse(BaseModel):
+    """Response after creating a support ticket."""
+    ticket_id: str
+    ticket_number: str
+    status: str = "created"
+    message: str = "Support ticket created successfully"
+    expert_contact_info: Optional[Dict[str, Any]] = None

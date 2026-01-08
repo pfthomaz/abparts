@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { useLocalization } from '../contexts/LocalizationContext';
 import VoiceInterface from './VoiceInterface';
+import EscalationModal from './EscalationModal';
 import { machinesService } from '../services/machinesService';
 
 const ChatWidget = ({ isOpen, onToggle }) => {
@@ -23,6 +24,9 @@ const ChatWidget = ({ isOpen, onToggle }) => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showEscalationModal, setShowEscalationModal] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [confidenceScore, setConfidenceScore] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const voiceInterfaceRef = useRef(null);
@@ -111,6 +115,78 @@ const ChatWidget = ({ isOpen, onToggle }) => {
       type: 'info'
     };
     setMessages(prev => [...prev, clearMessage]);
+  };
+
+  // Escalation handlers
+  const handleEscalateSession = async (escalationData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = `${process.env.REACT_APP_AI_ASSISTANT_URL || 'http://localhost:8001'}/api/ai/sessions/${currentSessionId}/escalate`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(escalationData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Add escalation confirmation message
+      const escalationMessage = {
+        id: Date.now(),
+        sender: 'system',
+        content: t('aiAssistant.messages.escalationCreated', { 
+          ticketNumber: data.ticket_number 
+        }),
+        timestamp: new Date(),
+        type: 'escalation',
+        ticketInfo: data
+      };
+      
+      setMessages(prev => [...prev, escalationMessage]);
+      
+      // Show expert contact information if available
+      if (data.expert_contact_info) {
+        const contactMessage = {
+          id: Date.now() + 1,
+          sender: 'assistant',
+          content: t('aiAssistant.messages.expertContact', {
+            contactName: data.expert_contact_info.primary_contact?.name,
+            contactPhone: data.expert_contact_info.primary_contact?.phone,
+            contactEmail: data.expert_contact_info.primary_contact?.email
+          }),
+          timestamp: new Date(),
+          type: 'contact'
+        };
+        
+        setMessages(prev => [...prev, contactMessage]);
+      }
+      
+    } catch (error) {
+      console.error('Error escalating session:', error);
+      
+      // Add error message
+      const errorMessage = {
+        id: Date.now(),
+        sender: 'system',
+        content: t('aiAssistant.messages.escalationError'),
+        timestamp: new Date(),
+        type: 'error'
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
+  const handleShowEscalation = () => {
+    setShowEscalationModal(true);
   };
 
   // Voice input handlers
@@ -398,6 +474,16 @@ const ChatWidget = ({ isOpen, onToggle }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </button>
+            {/* Escalation button */}
+            <button
+              onClick={handleShowEscalation}
+              className="p-1 hover:bg-red-700 bg-red-600 rounded transition-colors"
+              title={t('aiAssistant.escalate')}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </button>
             <button
               onClick={handleMinimize}
               className="p-1 hover:bg-blue-700 rounded transition-colors"
@@ -576,6 +662,15 @@ const ChatWidget = ({ isOpen, onToggle }) => {
           </div>
         )}
       </div>
+      
+      {/* Escalation Modal */}
+      <EscalationModal
+        isOpen={showEscalationModal}
+        onClose={() => setShowEscalationModal(false)}
+        onEscalate={handleEscalateSession}
+        sessionId={currentSessionId}
+        confidenceScore={confidenceScore}
+      />
     </div>
   );
 };

@@ -18,7 +18,7 @@ from .config import settings
 from .llm_client import LLMClient
 from .session_manager import session_manager
 from .database import init_database, close_database
-from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines
+from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines, escalation, analytics
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -86,6 +86,8 @@ app.include_router(chat.router, prefix="/api/ai", tags=["chat"])
 app.include_router(sessions.router, prefix="/api/ai", tags=["sessions"])
 app.include_router(knowledge_base.router, prefix="/api/ai", tags=["knowledge"])
 app.include_router(troubleshooting.router, prefix="/api/ai", tags=["troubleshooting"])
+app.include_router(escalation.router, prefix="/api/ai", tags=["escalation"])
+app.include_router(analytics.router, prefix="/api/ai", tags=["analytics"])
 app.include_router(machines.router, tags=["machines"])
 
 # Mount static files
@@ -98,6 +100,12 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 async def admin_interface():
     """Serve the knowledge base admin interface."""
     return FileResponse("app/static/admin.html")
+
+
+@app.get("/analytics")
+async def analytics_dashboard():
+    """Serve the analytics dashboard interface."""
+    return FileResponse("app/static/analytics_dashboard.html")
 
 
 @app.get("/")

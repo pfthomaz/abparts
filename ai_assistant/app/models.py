@@ -152,6 +152,64 @@ class ExpertKnowledge(Base):
     expert_metadata = Column(JSON, nullable=True)
 
 
+class SupportTicket(Base):
+    """Support ticket for escalated troubleshooting sessions."""
+    __tablename__ = "support_tickets"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id = Column(String, ForeignKey("ai_sessions.id"), nullable=False)
+    ticket_number = Column(String, nullable=False, unique=True)
+    priority = Column(String, nullable=False, default="medium")  # low, medium, high, urgent
+    status = Column(String, nullable=False, default="open")  # open, in_progress, resolved, closed
+    escalation_reason = Column(Text, nullable=False)
+    session_summary = Column(Text, nullable=False)
+    machine_context = Column(JSON, nullable=True)
+    expert_contact_info = Column(JSON, nullable=True)
+    resolution_notes = Column(Text, nullable=True)
+    assigned_expert_id = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    session = relationship("AISession")
+
+
+class EscalationTrigger(Base):
+    """Escalation trigger configuration and history."""
+    __tablename__ = "escalation_triggers"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id = Column(String, ForeignKey("ai_sessions.id"), nullable=False)
+    trigger_type = Column(String, nullable=False)  # confidence_low, steps_exceeded, user_request, expert_required
+    trigger_value = Column(Float, nullable=True)  # confidence score or step count
+    triggered_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    escalation_decision = Column(String, nullable=False)  # escalate, continue, expert_review
+    decision_reason = Column(Text, nullable=True)
+    
+    # Relationships
+    session = relationship("AISession")
+
+
+class ExpertFeedback(Base):
+    """Feedback from experts on AI responses and troubleshooting accuracy."""
+    __tablename__ = "expert_feedback"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id = Column(String, ForeignKey("ai_sessions.id"), nullable=False)
+    message_id = Column(String, ForeignKey("ai_messages.id"), nullable=True)
+    expert_user_id = Column(String, nullable=False)
+    feedback_type = Column(String, nullable=False)  # accuracy, completeness, safety, improvement
+    rating = Column(Integer, nullable=False)  # 1-5 scale
+    feedback_text = Column(Text, nullable=True)
+    suggested_improvement = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationships
+    session = relationship("AISession")
+    message = relationship("AIMessage")
+
+
 # Pydantic models for API requests/responses (keeping for compatibility)
 from dataclasses import dataclass
 

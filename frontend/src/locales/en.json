@@ -1458,7 +1458,10 @@
       "feedback": "Provide feedback",
       "reportIssue": "Report issue",
       "machineSelected": "Selected machine: {{machineName}} ({{modelType}})",
-      "machineCleared": "Machine selection cleared. Providing general assistance."
+      "machineCleared": "Machine selection cleared. Providing general assistance.",
+      "escalationCreated": "Support ticket {{ticketNumber}} has been created. An expert will contact you soon.",
+      "expertContact": "Expert Contact: {{contactName}} - Phone: {{contactPhone}} - Email: {{contactEmail}}",
+      "escalationError": "Failed to create support ticket. Please try again or contact support directly."
     },
     "troubleshooting": {
       "startTroubleshooting": "Start Troubleshooting",
@@ -1520,7 +1523,47 @@
       "escalationReason": "Reason for escalation",
       "additionalDetails": "Additional details for support team",
       "attachDiagnosticData": "Attach diagnostic data",
-      "sendToSupport": "Send to Support"
+      "sendToSupport": "Send to Support",
+      "title": "Escalate to Expert Support",
+      "description": "If you're unable to resolve the issue, our expert technicians can provide direct assistance.",
+      "escalate": "Get Expert Help",
+      "escalate_button": "Create Support Ticket",
+      "escalating": "Creating ticket...",
+      "confidence_score": "AI Confidence",
+      "additional_notes": "Additional Notes",
+      "notes_placeholder": "Describe any additional details or specific concerns...",
+      "reason": {
+        "label": "Escalation Reason",
+        "user_request": "I need expert help",
+        "low_confidence": "AI has low confidence",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety concern",
+        "complex_issue": "Complex technical issue",
+        "expert_required": "Expert knowledge required"
+      },
+      "priority": {
+        "label": "Priority Level",
+        "low": "Low - Can wait",
+        "medium": "Medium - Normal priority",
+        "high": "High - Urgent",
+        "urgent": "Urgent - Critical issue"
+      }
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "remove": "Remove",
+      "confirm": "Confirm",
+      "close": "Close",
+      "submit": "Submit",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Information"
     },
     "session": {
       "newSession": "New Session",
@@ -1547,6 +1590,24 @@
       "fontSize": "Font Size",
       "resetSettings": "Reset to Defaults",
       "settingsSaved": "Settings saved"
+    },
+    "expertKnowledge": {
+      "add_title": "Add Expert Knowledge",
+      "problem_description": "Problem Description",
+      "solution": "Solution",
+      "machine_version": "Machine Version",
+      "tags": "Tags",
+      "common_tags": "Common Tags",
+      "custom_tag_placeholder": "Enter custom tag",
+      "add_tag": "Add",
+      "selected_tags": "Selected Tags",
+      "all_versions": "All Versions",
+      "problem_placeholder": "Describe the problem that was encountered...",
+      "solution_placeholder": "Provide the step-by-step solution...",
+      "submit": "Submit Knowledge",
+      "submitting": "Submitting...",
+      "success": "Expert knowledge added successfully",
+      "error": "Failed to add expert knowledge"
     },
     "errors": {
       "connectionError": "Connection error. Please check your internet connection.",
