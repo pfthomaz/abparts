@@ -84,7 +84,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(chat.router, prefix="/api/ai", tags=["chat"])
 app.include_router(sessions.router, prefix="/api/ai", tags=["sessions"])
-app.include_router(knowledge_base.router, prefix="", tags=["knowledge"])
+app.include_router(knowledge_base.router, prefix="/knowledge", tags=["knowledge"])
 app.include_router(troubleshooting.router, prefix="/api/ai", tags=["troubleshooting"])
 app.include_router(escalation.router, prefix="/api/ai", tags=["escalation"])
 app.include_router(analytics.router, prefix="/api/ai", tags=["analytics"])
