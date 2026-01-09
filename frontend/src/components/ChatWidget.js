@@ -366,6 +366,11 @@ const ChatWidget = ({ isOpen, onToggle }) => {
 
       const data = await response.json();
       
+      // Store session ID from response for escalation
+      if (data.session_id && !currentSessionId) {
+        setCurrentSessionId(data.session_id);
+      }
+      
       const assistantMessage = {
         id: Date.now() + 1,
         sender: 'assistant',

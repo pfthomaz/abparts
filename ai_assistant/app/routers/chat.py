@@ -85,6 +85,48 @@ async def chat(
         # Generate or use provided session ID
         session_id = request.session_id or str(uuid.uuid4())
         
+        # Create or update session record if user_id is provided
+        if request.user_id:
+            try:
+                from ..database import get_db_session
+                from sqlalchemy import text
+                
+                with get_db_session() as db:
+                    # Check if session exists
+                    existing_session = db.execute(
+                        text("SELECT session_id FROM ai_sessions WHERE session_id = :session_id"),
+                        {'session_id': session_id}
+                    ).fetchone()
+                    
+                    if not existing_session:
+                        # Create new session
+                        db.execute(text("""
+                            INSERT INTO ai_sessions (session_id, user_id, machine_id, status, language, created_at, updated_at)
+                            VALUES (:session_id, :user_id, :machine_id, :status, :language, NOW(), NOW())
+                        """), {
+                            'session_id': session_id,
+                            'user_id': request.user_id,
+                            'machine_id': request.machine_id,
+                            'status': 'active',
+                            'language': request.language or 'en'
+                        })
+                        logger.info(f"Created new AI session {session_id} for user {request.user_id}")
+                    else:
+                        # Update existing session
+                        db.execute(text("""
+                            UPDATE ai_sessions 
+                            SET updated_at = NOW(), machine_id = :machine_id, language = :language
+                            WHERE session_id = :session_id
+                        """), {
+                            'session_id': session_id,
+                            'machine_id': request.machine_id,
+                            'language': request.language or 'en'
+                        })
+                        
+            except Exception as e:
+                logger.warning(f"Failed to create/update session record: {e}")
+                # Continue without session record - escalation won't work but chat will
+        
         # Determine language to use
         language = request.language or "en"
         

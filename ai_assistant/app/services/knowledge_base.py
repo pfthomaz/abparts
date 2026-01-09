@@ -344,11 +344,15 @@ class KnowledgeBaseService:
             where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
             
             query = f"""
-                SELECT id, title, document_type, language, version, file_path, created_at, updated_at,
-                       machine_models, tags, LEFT(document_metadata::text, 200) as content_preview
-                FROM knowledge_documents
+                SELECT kd.id, kd.title, kd.document_type, kd.language, kd.version, kd.file_path, 
+                       kd.created_at, kd.updated_at, kd.machine_models, kd.tags, kd.document_metadata,
+                       STRING_AGG(dc.content, ' ' ORDER BY dc.chunk_index) as content
+                FROM knowledge_documents kd
+                LEFT JOIN document_chunks dc ON kd.id = dc.document_id
                 {where_clause}
-                ORDER BY created_at DESC
+                GROUP BY kd.id, kd.title, kd.document_type, kd.language, kd.version, kd.file_path,
+                         kd.created_at, kd.updated_at, kd.machine_models, kd.tags, kd.document_metadata
+                ORDER BY kd.created_at DESC
                 LIMIT :limit OFFSET :offset
             """
             
@@ -360,15 +364,16 @@ class KnowledgeBaseService:
                     documents.append({
                         'document_id': str(row.id),
                         'title': row.title,
+                        'content': row.content or '',  # Handle case where no chunks exist
                         'document_type': row.document_type,
                         'machine_models': row.machine_models or [],
                         'tags': row.tags or [],
                         'language': row.language,
                         'version': row.version,
                         'file_path': row.file_path,
-                        'content_preview': row.content_preview,
                         'created_at': row.created_at,
-                        'updated_at': row.updated_at
+                        'updated_at': row.updated_at,
+                        'metadata': row.document_metadata or {}
                     })
                 
                 return documents

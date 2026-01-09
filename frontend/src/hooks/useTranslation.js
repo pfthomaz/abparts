@@ -52,14 +52,14 @@ export const useTranslation = () => {
         value = value[k];
       } else {
         // Key not found, return the key itself as fallback
-        console.warn(`Translation key not found: ${key}`);
+        console.warn(`Translation key not found: ${key} (failed at: ${k})`);
         return key;
       }
     }
 
     // If value is not a string, return the key
     if (typeof value !== 'string') {
-      console.warn(`Translation value is not a string: ${key}`);
+      console.warn(`Translation value is not a string: ${key}, got:`, typeof value, value);
       return key;
     }
 
@@ -71,7 +71,7 @@ export const useTranslation = () => {
     });
 
     return translatedText;
-  }, [currentTranslations]);
+  }, [currentTranslations, currentLanguage]);
 
   /**
    * Check if a translation key exists

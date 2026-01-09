@@ -35,29 +35,29 @@ const EscalationModal = ({
 
   if (!isOpen) return null;
 
-  // Define translations inside render to ensure they're fresh
+  // Use translation system for all text - escalation is under aiAssistant section
   const escalationReasons = [
-    { value: 'user_request', label: 'Χρειάζομαι βοήθεια από ειδικό' },
-    { value: 'low_confidence', label: 'Το AI έχει χαμηλή εμπιστοσύνη' },
-    { value: 'steps_exceeded', label: 'Πάρα πολλά βήματα αντιμετώπισης' },
-    { value: 'safety_concern', label: 'Ανησυχία ασφάλειας' },
-    { value: 'complex_issue', label: 'Σύνθετο τεχνικό πρόβλημα' },
-    { value: 'expert_required', label: 'Απαιτείται γνώση ειδικού' }
+    { value: 'user_request', label: t('aiAssistant.escalation.reason.user_request') },
+    { value: 'low_confidence', label: t('aiAssistant.escalation.reason.low_confidence') },
+    { value: 'steps_exceeded', label: t('aiAssistant.escalation.reason.steps_exceeded') },
+    { value: 'safety_concern', label: t('aiAssistant.escalation.reason.safety_concern') },
+    { value: 'complex_issue', label: t('aiAssistant.escalation.reason.complex_issue') },
+    { value: 'expert_required', label: t('aiAssistant.escalation.reason.expert_required') }
   ];
 
   const priorities = [
-    { value: 'low', label: 'Χαμηλή - Μπορεί να περιμένει' },
-    { value: 'medium', label: 'Μέση - Κανονική προτεραιότητα' },
-    { value: 'high', label: 'Υψηλή - Επείγον' },
-    { value: 'urgent', label: 'Επείγον - Κρίσιμο πρόβλημα' }
+    { value: 'low', label: t('aiAssistant.escalation.priority.low') },
+    { value: 'medium', label: t('aiAssistant.escalation.priority.medium') },
+    { value: 'high', label: t('aiAssistant.escalation.priority.high') },
+    { value: 'urgent', label: t('aiAssistant.escalation.priority.urgent') }
   ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4" data-testid="escalation-modal">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            Κλιμάκωση σε Ειδικό Υποστήριξης
+            {t('aiAssistant.escalation.title')}
           </h2>
           <button
             onClick={onClose}
@@ -71,11 +71,11 @@ const EscalationModal = ({
 
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            Εάν δεν μπορείτε να επιλύσετε το πρόβλημα, οι ειδικοί τεχνικοί μας μπορούν να παρέχουν άμεση βοήθεια.
+            {t('aiAssistant.escalation.description')}
           </p>
           {confidenceScore !== undefined && (
             <p className="text-xs text-blue-600 mt-1">
-              Εμπιστοσύνη AI: {(confidenceScore * 100).toFixed(1)}%
+              {t('aiAssistant.escalation.confidence_score')}: {(confidenceScore * 100).toFixed(1)}%
             </p>
           )}
         </div>
@@ -83,7 +83,7 @@ const EscalationModal = ({
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Λόγος Κλιμάκωσης
+              {t('aiAssistant.escalation.reason.label')}
             </label>
             <select
               value={escalationReason}
@@ -101,7 +101,7 @@ const EscalationModal = ({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Επίπεδο Προτεραιότητας
+              {t('aiAssistant.escalation.priority.label')}
             </label>
             <select
               value={priority}
@@ -119,14 +119,14 @@ const EscalationModal = ({
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Επιπλέον Σημειώσεις
+              {t('aiAssistant.escalation.additional_notes')}
             </label>
             <textarea
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
               rows={3}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Περιγράψτε τυχόν επιπλέον λεπτομέρειες ή συγκεκριμένες ανησυχίες..."
+              placeholder={t('aiAssistant.escalation.notes_placeholder')}
             />
           </div>
 
@@ -143,7 +143,7 @@ const EscalationModal = ({
               disabled={isSubmitting}
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
             >
-              {isSubmitting ? 'Δημιουργία δελτίου...' : 'Δημιουργία Δελτίου Υποστήριξης'}
+              {isSubmitting ? t('aiAssistant.escalation.escalating') : t('aiAssistant.escalation.escalate_button')}
             </button>
           </div>
         </form>

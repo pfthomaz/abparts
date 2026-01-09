@@ -24,6 +24,7 @@ from ..schemas import (
 )
 from .abparts_integration import abparts_integration
 from .troubleshooting_types import ConfidenceLevel
+from .email_service import email_service
 
 logger = logging.getLogger(__name__)
 
@@ -280,6 +281,42 @@ class EscalationService:
             # Update session status to escalated
             await self._update_session_status_escalated(session_id, ticket_number)
             
+            # Prepare ticket data for email
+            ticket_email_data = {
+                "ticket_id": ticket_id,
+                "ticket_number": ticket_number,
+                "priority": priority.value,
+                "status": TicketStatusEnum.open.value,
+                "escalation_reason": escalation_reason.value,
+                "session_id": session_id,
+                "session_summary": session_summary,
+                "machine_context": machine_context,
+                "expert_contact_info": expert_contact_info,
+                "created_at": datetime.utcnow().isoformat(),
+                "additional_notes": additional_notes
+            }
+            
+            # Get user and machine information for email
+            user_info = await self._get_user_info_for_email(session_id)
+            machine_info = await self._get_machine_info_for_email(session_id)
+            
+            # Send escalation notification email
+            try:
+                email_sent = email_service.send_escalation_notification(
+                    ticket_data=ticket_email_data,
+                    user_info=user_info,
+                    machine_info=machine_info
+                )
+                
+                if email_sent:
+                    self.logger.info(f"Escalation email sent successfully for ticket {ticket_number}")
+                else:
+                    self.logger.warning(f"Failed to send escalation email for ticket {ticket_number}")
+                    
+            except Exception as e:
+                self.logger.error(f"Error sending escalation email for ticket {ticket_number}: {e}")
+                # Don't fail the ticket creation if email fails
+            
             self.logger.info(f"Created support ticket {ticket_number} for session {session_id}")
             
             return {
@@ -290,7 +327,8 @@ class EscalationService:
                 "session_summary": session_summary,
                 "machine_context": machine_context,
                 "expert_contact_info": expert_contact_info,
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.utcnow().isoformat(),
+                "email_sent": email_sent if 'email_sent' in locals() else False
             }
             
         except Exception as e:
@@ -521,6 +559,74 @@ class EscalationService:
                 
         except Exception as e:
             self.logger.error(f"Failed to update session status: {e}")
+    
+    async def _get_user_info_for_email(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get user information for email notification."""
+        try:
+            with get_db_session() as db:
+                # Get user info from session
+                query = text("""
+                    SELECT s.user_id, u.name, u.email, u.role, o.name as organization_name
+                    FROM ai_sessions s
+                    LEFT JOIN users u ON s.user_id = u.id
+                    LEFT JOIN organizations o ON u.organization_id = o.id
+                    WHERE s.session_id = :session_id
+                """)
+                result = db.execute(query, {'session_id': session_id}).fetchone()
+                
+                if result:
+                    return {
+                        "user_id": result.user_id,
+                        "full_name": result.name,  # Map name to full_name for email template
+                        "email": result.email,
+                        "role": result.role,
+                        "organization_name": result.organization_name
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Error getting user info for email: {e}")
+        
+        return None
+    
+    async def _get_machine_info_for_email(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get machine information for email notification."""
+        try:
+            with get_db_session() as db:
+                # Get machine info from session
+                query = text("""
+                    SELECT s.machine_id, m.name, m.model_type, m.serial_number, 
+                           m.location
+                    FROM ai_sessions s
+                    LEFT JOIN machines m ON s.machine_id = m.id
+                    WHERE s.session_id = :session_id AND s.machine_id IS NOT NULL
+                """)
+                result = db.execute(query, {'session_id': session_id}).fetchone()
+                
+                if result:
+                    # Get latest hours from machine_hours table
+                    hours_query = text("""
+                        SELECT hours_value 
+                        FROM machine_hours 
+                        WHERE machine_id = :machine_id 
+                        ORDER BY recorded_date DESC 
+                        LIMIT 1
+                    """)
+                    hours_result = db.execute(hours_query, {'machine_id': result.machine_id}).fetchone()
+                    latest_hours = hours_result.hours_value if hours_result else 0
+                    
+                    return {
+                        "machine_id": result.machine_id,
+                        "name": result.name,
+                        "model_type": result.model_type,
+                        "serial_number": result.serial_number,
+                        "latest_hours": float(latest_hours) if latest_hours else 0,
+                        "location": result.location
+                    }
+                    
+        except Exception as e:
+            self.logger.error(f"Error getting machine info for email: {e}")
+        
+        return None
     
     async def create_expert_knowledge(
         self,

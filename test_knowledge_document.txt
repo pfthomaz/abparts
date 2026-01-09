@@ -1,0 +1,20 @@
+AutoBoss Machine Troubleshooting Guide
+
+This is a test knowledge document for the AI Assistant system.
+
+Common Issues:
+1. Machine not starting - Check power connection and fuses
+2. Low pressure - Inspect hydraulic fluid levels and connections
+3. Unusual noises - Check for loose components or worn parts
+
+Maintenance Schedule:
+- Daily: Check fluid levels
+- Weekly: Inspect connections and hoses
+- Monthly: Replace filters and check pressure settings
+
+Safety Warnings:
+- Always disconnect power before maintenance
+- Use proper PPE when working with hydraulic systems
+- Never exceed recommended pressure limits
+
+For additional support, contact AutoBoss Technical Support at support@autoboss.com
