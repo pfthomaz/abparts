@@ -21,7 +21,7 @@ from ..llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/knowledge", tags=["knowledge_base"])
+router = APIRouter(prefix="", tags=["knowledge_base"])
 
 # Initialize services (these will be dependency injected in production)
 def get_llm_client() -> LLMClient:
