@@ -1,0 +1,623 @@
+            table_name             |            column_name            |          data_type          | is_nullable |          column_default          
+-----------------------------------+-----------------------------------+-----------------------------+-------------+----------------------------------
+ ai_messages                       | message_id                        | uuid                        | NO          | gen_random_uuid()
+ ai_messages                       | session_id                        | uuid                        | NO          | 
+ ai_messages                       | sender                            | USER-DEFINED                | NO          | 
+ ai_messages                       | content                           | text                        | NO          | 
+ ai_messages                       | message_type                      | USER-DEFINED                | NO          | 'text'::ai_message_type
+ ai_messages                       | language                          | character varying           | NO          | 'en'::character varying
+ ai_messages                       | message_metadata                  | text                        | YES         | 
+ ai_messages                       | created_at                        | timestamp with time zone    | NO          | now()
+ ai_sessions                       | session_id                        | uuid                        | NO          | gen_random_uuid()
+ ai_sessions                       | user_id                           | uuid                        | NO          | 
+ ai_sessions                       | machine_id                        | uuid                        | YES         | 
+ ai_sessions                       | status                            | USER-DEFINED                | NO          | 'active'::ai_session_status
+ ai_sessions                       | problem_description               | text                        | YES         | 
+ ai_sessions                       | resolution_summary                | text                        | YES         | 
+ ai_sessions                       | language                          | character varying           | NO          | 'en'::character varying
+ ai_sessions                       | session_metadata                  | text                        | YES         | 
+ ai_sessions                       | created_at                        | timestamp with time zone    | NO          | now()
+ ai_sessions                       | updated_at                        | timestamp with time zone    | NO          | now()
+ alembic_version                   | version_num                       | character varying           | NO          | 
+ audit_logs                        | id                                | uuid                        | NO          | 
+ audit_logs                        | timestamp                         | timestamp with time zone    | NO          | 
+ audit_logs                        | user_id                           | uuid                        | NO          | 
+ audit_logs                        | organization_id                   | uuid                        | YES         | 
+ audit_logs                        | resource_type                     | character varying           | NO          | 
+ audit_logs                        | resource_id                       | uuid                        | NO          | 
+ audit_logs                        | action                            | character varying           | NO          | 
+ audit_logs                        | old_values                        | text                        | YES         | 
+ audit_logs                        | new_values                        | text                        | YES         | 
+ audit_logs                        | details                           | text                        | YES         | 
+ audit_logs                        | ip_address                        | character varying           | YES         | 
+ audit_logs                        | user_agent                        | text                        | YES         | 
+ audit_logs                        | endpoint                          | character varying           | YES         | 
+ audit_logs                        | http_method                       | character varying           | YES         | 
+ audit_logs                        | created_at                        | timestamp with time zone    | NO          | now()
+ checklist_item_translations       | id                                | uuid                        | NO          | gen_random_uuid()
+ checklist_item_translations       | checklist_item_id                 | uuid                        | NO          | 
+ checklist_item_translations       | language_code                     | character varying           | NO          | 
+ checklist_item_translations       | item_description                  | text                        | NO          | 
+ checklist_item_translations       | notes                             | text                        | YES         | 
+ checklist_item_translations       | item_category                     | character varying           | YES         | 
+ checklist_item_translations       | created_at                        | timestamp with time zone    | NO          | now()
+ checklist_item_translations       | updated_at                        | timestamp with time zone    | NO          | now()
+ customer_order_items              | id                                | uuid                        | NO          | uuid_generate_v4()
+ customer_order_items              | customer_order_id                 | uuid                        | NO          | 
+ customer_order_items              | part_id                           | uuid                        | NO          | 
+ customer_order_items              | quantity                          | numeric                     | NO          | 1
+ customer_order_items              | unit_price                        | numeric                     | YES         | 
+ customer_order_items              | created_at                        | timestamp with time zone    | NO          | now()
+ customer_order_items              | updated_at                        | timestamp with time zone    | NO          | now()
+ customer_orders                   | id                                | uuid                        | NO          | uuid_generate_v4()
+ customer_orders                   | customer_organization_id          | uuid                        | NO          | 
+ customer_orders                   | oraseas_organization_id           | uuid                        | NO          | 
+ customer_orders                   | order_date                        | timestamp with time zone    | NO          | 
+ customer_orders                   | expected_delivery_date            | timestamp with time zone    | YES         | 
+ customer_orders                   | actual_delivery_date              | timestamp with time zone    | YES         | 
+ customer_orders                   | status                            | character varying           | NO          | 
+ customer_orders                   | ordered_by_user_id                | uuid                        | YES         | 
+ customer_orders                   | notes                             | text                        | YES         | 
+ customer_orders                   | created_at                        | timestamp with time zone    | NO          | now()
+ customer_orders                   | updated_at                        | timestamp with time zone    | NO          | now()
+ customer_orders                   | shipped_by_user_id                | uuid                        | YES         | 
+ customer_orders                   | shipped_date                      | timestamp without time zone | YES         | 
+ document_embeddings               | embedding_id                      | uuid                        | NO          | gen_random_uuid()
+ document_embeddings               | document_id                       | uuid                        | NO          | 
+ document_embeddings               | content_chunk                     | text                        | NO          | 
+ document_embeddings               | embedding_vector                  | ARRAY                       | YES         | 
+ document_embeddings               | chunk_index                       | integer                     | NO          | 
+ document_embeddings               | created_at                        | timestamp with time zone    | NO          | now()
+ escalation_triggers               | id                                | uuid                        | NO          | gen_random_uuid()
+ escalation_triggers               | session_id                        | uuid                        | NO          | 
+ escalation_triggers               | trigger_type                      | character varying           | NO          | 
+ escalation_triggers               | trigger_value                     | double precision            | YES         | 
+ escalation_triggers               | triggered_at                      | timestamp without time zone | YES         | now()
+ escalation_triggers               | escalation_decision               | character varying           | NO          | 
+ escalation_triggers               | decision_reason                   | text                        | YES         | 
+ expert_feedback                   | id                                | uuid                        | NO          | gen_random_uuid()
+ expert_feedback                   | session_id                        | uuid                        | NO          | 
+ expert_feedback                   | message_id                        | uuid                        | YES         | 
+ expert_feedback                   | expert_user_id                    | uuid                        | NO          | 
+ expert_feedback                   | feedback_type                     | character varying           | NO          | 
+ expert_feedback                   | rating                            | integer                     | NO          | 
+ expert_feedback                   | feedback_text                     | text                        | YES         | 
+ expert_feedback                   | suggested_improvement             | text                        | YES         | 
+ expert_feedback                   | created_at                        | timestamp without time zone | YES         | now()
+ expert_knowledge                  | id                                | character varying           | NO          | 
+ expert_knowledge                  | expert_user_id                    | character varying           | NO          | 
+ expert_knowledge                  | problem_description               | text                        | NO          | 
+ expert_knowledge                  | solution                          | text                        | NO          | 
+ expert_knowledge                  | machine_version                   | character varying           | YES         | 
+ expert_knowledge                  | tags                              | jsonb                       | YES         | 
+ expert_knowledge                  | verified                          | boolean                     | NO          | false
+ expert_knowledge                  | created_at                        | timestamp without time zone | YES         | now()
+ expert_knowledge                  | updated_at                        | timestamp without time zone | YES         | now()
+ expert_knowledge                  | expert_metadata                   | jsonb                       | YES         | 
+ inventory                         | id                                | uuid                        | NO          | uuid_generate_v4()
+ inventory                         | warehouse_id                      | uuid                        | NO          | 
+ inventory                         | part_id                           | uuid                        | NO          | 
+ inventory                         | current_stock                     | numeric                     | NO          | 0
+ inventory                         | minimum_stock_recommendation      | numeric                     | NO          | 0
+ inventory                         | unit_of_measure                   | character varying           | NO          | 
+ inventory                         | reorder_threshold_set_by          | character varying           | YES         | 
+ inventory                         | last_recommendation_update        | timestamp with time zone    | YES         | 
+ inventory                         | last_updated                      | timestamp with time zone    | NO          | now()
+ inventory                         | created_at                        | timestamp with time zone    | NO          | now()
+ inventory_alerts                  | id                                | uuid                        | NO          | gen_random_uuid()
+ inventory_alerts                  | warehouse_id                      | uuid                        | NO          | 
+ inventory_alerts                  | part_id                           | uuid                        | NO          | 
+ inventory_alerts                  | alert_type                        | USER-DEFINED                | NO          | 
+ inventory_alerts                  | severity                          | USER-DEFINED                | NO          | 
+ inventory_alerts                  | threshold_value                   | numeric                     | YES         | 
+ inventory_alerts                  | current_value                     | numeric                     | NO          | 
+ inventory_alerts                  | message                           | text                        | NO          | 
+ inventory_alerts                  | is_active                         | boolean                     | NO          | true
+ inventory_alerts                  | resolved_at                       | timestamp with time zone    | YES         | 
+ inventory_alerts                  | resolved_by_user_id               | uuid                        | YES         | 
+ inventory_alerts                  | resolution_notes                  | text                        | YES         | 
+ inventory_alerts                  | created_at                        | timestamp with time zone    | NO          | now()
+ inventory_alerts                  | updated_at                        | timestamp with time zone    | NO          | now()
+ invitation_audit_logs             | id                                | uuid                        | NO          | gen_random_uuid()
+ invitation_audit_logs             | user_id                           | uuid                        | NO          | 
+ invitation_audit_logs             | action                            | character varying           | NO          | 
+ invitation_audit_logs             | performed_by_user_id              | uuid                        | YES         | 
+ invitation_audit_logs             | timestamp                         | timestamp with time zone    | NO          | now()
+ invitation_audit_logs             | details                           | text                        | YES         | 
+ machine_hours                     | id                                | uuid                        | NO          | 
+ machine_hours                     | machine_id                        | uuid                        | NO          | 
+ machine_hours                     | recorded_by_user_id               | uuid                        | NO          | 
+ machine_hours                     | hours_value                       | numeric                     | NO          | 
+ machine_hours                     | recorded_date                     | timestamp with time zone    | NO          | 
+ machine_hours                     | notes                             | text                        | YES         | 
+ machine_hours                     | created_at                        | timestamp with time zone    | NO          | now()
+ machine_hours                     | updated_at                        | timestamp with time zone    | NO          | now()
+ machine_maintenance               | id                                | uuid                        | NO          | uuid_generate_v4()
+ machine_maintenance               | machine_id                        | uuid                        | NO          | 
+ machine_maintenance               | maintenance_date                  | timestamp with time zone    | NO          | 
+ machine_maintenance               | maintenance_type                  | USER-DEFINED                | NO          | 
+ machine_maintenance               | performed_by_user_id              | uuid                        | NO          | 
+ machine_maintenance               | description                       | text                        | NO          | 
+ machine_maintenance               | hours_spent                       | numeric                     | YES         | 
+ machine_maintenance               | cost                              | numeric                     | YES         | 
+ machine_maintenance               | next_maintenance_date             | timestamp with time zone    | YES         | 
+ machine_maintenance               | notes                             | text                        | YES         | 
+ machine_maintenance               | created_at                        | timestamp with time zone    | NO          | now()
+ machine_maintenance               | updated_at                        | timestamp with time zone    | NO          | now()
+ machine_maintenance               | execution_id                      | uuid                        | YES         | 
+ machine_part_compatibility        | id                                | uuid                        | NO          | uuid_generate_v4()
+ machine_part_compatibility        | machine_id                        | uuid                        | NO          | 
+ machine_part_compatibility        | part_id                           | uuid                        | NO          | 
+ machine_part_compatibility        | is_recommended                    | boolean                     | NO          | false
+ machine_part_compatibility        | notes                             | text                        | YES         | 
+ machine_part_compatibility        | created_at                        | timestamp with time zone    | NO          | now()
+ machine_part_compatibility        | updated_at                        | timestamp with time zone    | NO          | now()
+ machine_predictions               | id                                | uuid                        | NO          | uuid_generate_v4()
+ machine_predictions               | machine_id                        | uuid                        | NO          | 
+ machine_predictions               | predictive_model_id               | uuid                        | NO          | 
+ machine_predictions               | prediction_date                   | timestamp with time zone    | NO          | now()
+ machine_predictions               | failure_probability               | numeric                     | YES         | 
+ machine_predictions               | remaining_useful_life             | integer                     | YES         | 
+ machine_predictions               | predicted_failure_date            | timestamp with time zone    | YES         | 
+ machine_predictions               | risk_level                        | USER-DEFINED                | NO          | 
+ machine_predictions               | prediction_details                | text                        | YES         | 
+ machine_predictions               | created_at                        | timestamp with time zone    | NO          | now()
+ machine_sales                     | id                                | uuid                        | NO          | 
+ machine_sales                     | machine_id                        | uuid                        | NO          | 
+ machine_sales                     | from_organization_id              | uuid                        | NO          | 
+ machine_sales                     | to_organization_id                | uuid                        | NO          | 
+ machine_sales                     | sale_price                        | numeric                     | YES         | 
+ machine_sales                     | sale_date                         | timestamp with time zone    | NO          | 
+ machine_sales                     | performed_by_user_id              | uuid                        | NO          | 
+ machine_sales                     | notes                             | text                        | YES         | 
+ machine_sales                     | reference_number                  | character varying           | YES         | 
+ machine_sales                     | created_at                        | timestamp with time zone    | NO          | now()
+ machine_sales                     | updated_at                        | timestamp with time zone    | NO          | now()
+ machines                          | id                                | uuid                        | NO          | uuid_generate_v4()
+ machines                          | customer_organization_id          | uuid                        | NO          | 
+ machines                          | name                              | character varying           | NO          | 
+ machines                          | serial_number                     | character varying           | NO          | 
+ machines                          | created_at                        | timestamp with time zone    | NO          | now()
+ machines                          | updated_at                        | timestamp with time zone    | NO          | now()
+ machines                          | purchase_date                     | date                        | YES         | 
+ machines                          | warranty_expiry_date              | date                        | YES         | 
+ machines                          | last_service_date                 | date                        | YES         | 
+ machines                          | next_service_due                  | date                        | YES         | 
+ machines                          | service_interval_hours            | integer                     | YES         | 
+ machines                          | installation_date                 | date                        | YES         | 
+ machines                          | machine_condition                 | character varying           | YES         | 
+ machines                          | notes                             | text                        | YES         | 
+ machines                          | status                            | character varying           | YES         | 'active'::character varying
+ machines                          | machine_status                    | character varying           | YES         | 'operational'::character varying
+ machines                          | operational_status                | character varying           | YES         | 'running'::character varying
+ machines                          | maintenance_status                | character varying           | YES         | 'up_to_date'::character varying
+ machines                          | location                          | character varying           | YES         | 
+ machines                          | operator_name                     | character varying           | YES         | 
+ machines                          | last_maintenance_date             | date                        | YES         | 
+ machines                          | next_maintenance_date             | date                        | YES         | 
+ machines                          | maintenance_interval_days         | integer                     | YES         | 90
+ machines                          | total_operating_hours             | integer                     | YES         | 0
+ machines                          | hours_since_maintenance           | integer                     | YES         | 0
+ machines                          | maintenance_notes                 | text                        | YES         | 
+ machines                          | technician_name                   | character varying           | YES         | 
+ machines                          | maintenance_cost                  | numeric                     | YES         | 
+ machines                          | manufacturer                      | character varying           | YES         | 'BossAqua'::character varying
+ machines                          | year_manufactured                 | integer                     | YES         | 
+ machines                          | current_hours                     | integer                     | YES         | 0
+ machines                          | max_operating_hours               | integer                     | YES         | 10000
+ machines                          | model_type                        | character varying           | NO          | 
+ machines                          | machine_model                     | character varying           | YES         | 
+ maintenance_checklist_completions | id                                | uuid                        | NO          | 
+ maintenance_checklist_completions | execution_id                      | uuid                        | NO          | 
+ maintenance_checklist_completions | checklist_item_id                 | uuid                        | NO          | 
+ maintenance_checklist_completions | is_completed                      | boolean                     | YES         | 
+ maintenance_checklist_completions | completed_at                      | timestamp without time zone | YES         | 
+ maintenance_checklist_completions | part_usage_id                     | uuid                        | YES         | 
+ maintenance_checklist_completions | notes                             | text                        | YES         | 
+ maintenance_checklist_completions | created_at                        | timestamp without time zone | YES         | now()
+ maintenance_executions            | id                                | uuid                        | NO          | 
+ maintenance_executions            | machine_id                        | uuid                        | NO          | 
+ maintenance_executions            | protocol_id                       | uuid                        | YES         | 
+ maintenance_executions            | performed_by_user_id              | uuid                        | NO          | 
+ maintenance_executions            | performed_date                    | timestamp without time zone | YES         | 
+ maintenance_executions            | machine_hours_at_service          | numeric                     | YES         | 
+ maintenance_executions            | next_service_due_hours            | numeric                     | YES         | 
+ maintenance_executions            | status                            | character varying           | YES         | 
+ maintenance_executions            | notes                             | text                        | YES         | 
+ maintenance_executions            | created_at                        | timestamp without time zone | YES         | now()
+ maintenance_executions            | updated_at                        | timestamp without time zone | YES         | now()
+ maintenance_part_usage            | id                                | uuid                        | NO          | uuid_generate_v4()
+ maintenance_part_usage            | maintenance_id                    | uuid                        | NO          | 
+ maintenance_part_usage            | part_id                           | uuid                        | NO          | 
+ maintenance_part_usage            | quantity                          | numeric                     | NO          | 
+ maintenance_part_usage            | warehouse_id                      | uuid                        | NO          | 
+ maintenance_part_usage            | notes                             | text                        | YES         | 
+ maintenance_part_usage            | created_at                        | timestamp with time zone    | NO          | now()
+ maintenance_protocols             | id                                | uuid                        | NO          | 
+ maintenance_protocols             | name                              | character varying           | NO          | 
+ maintenance_protocols             | protocol_type                     | character varying           | NO          | 
+ maintenance_protocols             | service_interval_hours            | numeric                     | YES         | 
+ maintenance_protocols             | is_recurring                      | boolean                     | YES         | 
+ maintenance_protocols             | machine_model                     | character varying           | YES         | 
+ maintenance_protocols             | description                       | text                        | YES         | 
+ maintenance_protocols             | is_active                         | boolean                     | YES         | 
+ maintenance_protocols             | display_order                     | integer                     | YES         | 
+ maintenance_protocols             | created_at                        | timestamp without time zone | YES         | now()
+ maintenance_protocols             | updated_at                        | timestamp without time zone | YES         | now()
+ maintenance_protocols             | base_language                     | character varying           | NO          | 'en'::character varying
+ maintenance_recommendations       | id                                | uuid                        | NO          | uuid_generate_v4()
+ maintenance_recommendations       | machine_id                        | uuid                        | NO          | 
+ maintenance_recommendations       | prediction_id                     | uuid                        | NO          | 
+ maintenance_recommendations       | recommendation_date               | timestamp with time zone    | NO          | now()
+ maintenance_recommendations       | recommended_maintenance_type      | character varying           | NO          | 
+ maintenance_recommendations       | priority                          | USER-DEFINED                | NO          | 
+ maintenance_recommendations       | recommended_completion_date       | timestamp with time zone    | NO          | 
+ maintenance_recommendations       | description                       | text                        | NO          | 
+ maintenance_recommendations       | status                            | USER-DEFINED                | NO          | 
+ maintenance_recommendations       | resolved_by_maintenance_id        | uuid                        | YES         | 
+ maintenance_recommendations       | created_at                        | timestamp with time zone    | NO          | now()
+ maintenance_recommendations       | updated_at                        | timestamp with time zone    | NO          | now()
+ maintenance_reminders             | id                                | uuid                        | NO          | 
+ maintenance_reminders             | machine_id                        | uuid                        | NO          | 
+ maintenance_reminders             | protocol_id                       | uuid                        | NO          | 
+ maintenance_reminders             | reminder_type                     | character varying           | NO          | 
+ maintenance_reminders             | due_date                          | date                        | YES         | 
+ maintenance_reminders             | due_hours                         | numeric                     | YES         | 
+ maintenance_reminders             | status                            | character varying           | YES         | 
+ maintenance_reminders             | acknowledged_by_user_id           | uuid                        | YES         | 
+ maintenance_reminders             | acknowledged_at                   | timestamp without time zone | YES         | 
+ maintenance_reminders             | created_at                        | timestamp without time zone | YES         | now()
+ organization_configurations       | id                                | uuid                        | NO          | 
+ organization_configurations       | organization_id                   | uuid                        | NO          | 
+ organization_configurations       | configuration_key                 | character varying           | NO          | 
+ organization_configurations       | value                             | text                        | YES         | 
+ organization_configurations       | is_active                         | boolean                     | NO          | true
+ organization_configurations       | created_by_user_id                | uuid                        | YES         | 
+ organization_configurations       | updated_by_user_id                | uuid                        | YES         | 
+ organization_configurations       | created_at                        | timestamp with time zone    | NO          | now()
+ organization_configurations       | updated_at                        | timestamp with time zone    | NO          | now()
+ organizations                     | id                                | uuid                        | NO          | uuid_generate_v4()
+ organizations                     | name                              | character varying           | NO          | 
+ organizations                     | organization_type                 | USER-DEFINED                | NO          | 
+ organizations                     | parent_organization_id            | uuid                        | YES         | 
+ organizations                     | address                           | text                        | YES         | 
+ organizations                     | contact_info                      | text                        | YES         | 
+ organizations                     | is_active                         | boolean                     | NO          | true
+ organizations                     | created_at                        | timestamp with time zone    | NO          | now()
+ organizations                     | updated_at                        | timestamp with time zone    | NO          | now()
+ organizations                     | country                           | character varying           | YES         | 
+ organizations                     | logo_url                          | character varying           | YES         | 
+ organizations                     | logo_data                         | bytea                       | YES         | 
+ part_order_items                  | id                                | uuid                        | NO          | 
+ part_order_items                  | order_request_id                  | uuid                        | NO          | 
+ part_order_items                  | part_id                           | uuid                        | NO          | 
+ part_order_items                  | quantity                          | numeric                     | NO          | 
+ part_order_items                  | unit_price                        | numeric                     | YES         | 
+ part_order_items                  | destination_warehouse_id          | uuid                        | NO          | 
+ part_order_items                  | received_quantity                 | numeric                     | YES         | '0'::numeric
+ part_order_items                  | notes                             | text                        | YES         | 
+ part_order_items                  | created_at                        | timestamp with time zone    | NO          | now()
+ part_order_items                  | updated_at                        | timestamp with time zone    | NO          | now()
+ part_order_requests               | id                                | uuid                        | NO          | 
+ part_order_requests               | order_number                      | character varying           | NO          | 
+ part_order_requests               | customer_organization_id          | uuid                        | NO          | 
+ part_order_requests               | supplier_type                     | USER-DEFINED                | NO          | 
+ part_order_requests               | supplier_organization_id          | uuid                        | YES         | 
+ part_order_requests               | supplier_name                     | character varying           | YES         | 
+ part_order_requests               | status                            | USER-DEFINED                | NO          | 
+ part_order_requests               | priority                          | USER-DEFINED                | NO          | 
+ part_order_requests               | requested_delivery_date           | timestamp with time zone    | YES         | 
+ part_order_requests               | expected_delivery_date            | timestamp with time zone    | YES         | 
+ part_order_requests               | actual_delivery_date              | timestamp with time zone    | YES         | 
+ part_order_requests               | notes                             | text                        | YES         | 
+ part_order_requests               | fulfillment_notes                 | text                        | YES         | 
+ part_order_requests               | requested_by_user_id              | uuid                        | NO          | 
+ part_order_requests               | approved_by_user_id               | uuid                        | YES         | 
+ part_order_requests               | received_by_user_id               | uuid                        | YES         | 
+ part_order_requests               | created_at                        | timestamp with time zone    | NO          | now()
+ part_order_requests               | updated_at                        | timestamp with time zone    | NO          | now()
+ part_usage                        | id                                | uuid                        | NO          | uuid_generate_v4()
+ part_usage                        | customer_organization_id          | uuid                        | NO          | 
+ part_usage                        | part_id                           | uuid                        | NO          | 
+ part_usage                        | usage_date                        | timestamp with time zone    | NO          | 
+ part_usage                        | quantity                          | numeric                     | NO          | 1
+ part_usage                        | machine_id                        | uuid                        | YES         | 
+ part_usage                        | recorded_by_user_id               | uuid                        | YES         | 
+ part_usage                        | notes                             | text                        | YES         | 
+ part_usage                        | created_at                        | timestamp with time zone    | NO          | now()
+ part_usage                        | updated_at                        | timestamp with time zone    | NO          | now()
+ part_usage                        | warehouse_id                      | uuid                        | NO          | 
+ part_usage_items                  | id                                | uuid                        | NO          | 
+ part_usage_items                  | usage_record_id                   | uuid                        | NO          | 
+ part_usage_items                  | part_id                           | uuid                        | NO          | 
+ part_usage_items                  | quantity                          | numeric                     | NO          | 
+ part_usage_items                  | notes                             | text                        | YES         | 
+ part_usage_items                  | created_at                        | timestamp with time zone    | NO          | now()
+ part_usage_items                  | updated_at                        | timestamp with time zone    | NO          | now()
+ part_usage_records                | id                                | uuid                        | NO          | 
+ part_usage_records                | machine_id                        | uuid                        | NO          | 
+ part_usage_records                | from_warehouse_id                 | uuid                        | NO          | 
+ part_usage_records                | usage_date                        | timestamp with time zone    | NO          | 
+ part_usage_records                | performed_by_user_id              | uuid                        | NO          | 
+ part_usage_records                | service_type                      | character varying           | YES         | 
+ part_usage_records                | machine_hours                     | numeric                     | YES         | 
+ part_usage_records                | notes                             | text                        | YES         | 
+ part_usage_records                | reference_number                  | character varying           | YES         | 
+ part_usage_records                | created_at                        | timestamp with time zone    | NO          | now()
+ part_usage_records                | updated_at                        | timestamp with time zone    | NO          | now()
+ part_videos                       | id                                | uuid                        | NO          | gen_random_uuid()
+ part_videos                       | part_id                           | uuid                        | NO          | 
+ part_videos                       | video_type                        | character varying           | NO          | 
+ part_videos                       | file_path                         | character varying           | NO          | 
+ part_videos                       | file_size_mb                      | numeric                     | YES         | 
+ part_videos                       | duration_seconds                  | integer                     | YES         | 
+ part_videos                       | thumbnail_data                    | bytea                       | YES         | 
+ part_videos                       | created_at                        | timestamp with time zone    | NO          | now()
+ part_videos                       | updated_at                        | timestamp with time zone    | NO          | now()
+ parts                             | id                                | uuid                        | NO          | uuid_generate_v4()
+ parts                             | part_number                       | character varying           | NO          | 
+ parts                             | name                              | character varying           | NO          | 
+ parts                             | description                       | text                        | YES         | 
+ parts                             | part_type                         | USER-DEFINED                | NO          | 'consumable'::parttype
+ parts                             | is_proprietary                    | boolean                     | NO          | false
+ parts                             | unit_of_measure                   | character varying           | NO          | 'pieces'::character varying
+ parts                             | manufacturer_part_number          | character varying           | YES         | 
+ parts                             | manufacturer_delivery_time_days   | integer                     | YES         | 
+ parts                             | local_supplier_delivery_time_days | integer                     | YES         | 
+ parts                             | image_urls                        | ARRAY                       | YES         | 
+ parts                             | created_at                        | timestamp with time zone    | NO          | now()
+ parts                             | updated_at                        | timestamp with time zone    | NO          | now()
+ parts                             | supplier_part_number              | character varying           | YES         | 
+ parts                             | manufacturer                      | character varying           | YES         | 
+ parts                             | category                          | character varying           | YES         | 
+ parts                             | weight                            | numeric                     | YES         | 
+ parts                             | dimensions                        | character varying           | YES         | 
+ parts                             | material                          | character varying           | YES         | 
+ parts                             | color                             | character varying           | YES         | 
+ parts                             | warranty_period                   | integer                     | YES         | 
+ parts                             | part_code                         | character varying           | YES         | 
+ parts                             | serial_number                     | character varying           | YES         | 
+ parts                             | image_data                        | ARRAY                       | YES         | 
+ predictive_maintenance_models     | id                                | uuid                        | NO          | uuid_generate_v4()
+ predictive_maintenance_models     | name                              | character varying           | NO          | 
+ predictive_maintenance_models     | description                       | text                        | YES         | 
+ predictive_maintenance_models     | model_type                        | character varying           | NO          | 
+ predictive_maintenance_models     | target_metric                     | character varying           | NO          | 
+ predictive_maintenance_models     | features                          | text                        | NO          | 
+ predictive_maintenance_models     | hyperparameters                   | text                        | YES         | 
+ predictive_maintenance_models     | performance_metrics               | text                        | YES         | 
+ predictive_maintenance_models     | version                           | character varying           | NO          | 
+ predictive_maintenance_models     | is_active                         | boolean                     | NO          | true
+ predictive_maintenance_models     | created_at                        | timestamp with time zone    | NO          | now()
+ predictive_maintenance_models     | updated_at                        | timestamp with time zone    | NO          | now()
+ predictive_maintenance_models     | created_by_user_id                | uuid                        | NO          | 
+ protocol_checklist_items          | id                                | uuid                        | NO          | 
+ protocol_checklist_items          | protocol_id                       | uuid                        | NO          | 
+ protocol_checklist_items          | item_order                        | integer                     | NO          | 
+ protocol_checklist_items          | item_description                  | text                        | NO          | 
+ protocol_checklist_items          | item_type                         | character varying           | NO          | 
+ protocol_checklist_items          | item_category                     | character varying           | YES         | 
+ protocol_checklist_items          | part_id                           | uuid                        | YES         | 
+ protocol_checklist_items          | estimated_quantity                | numeric                     | YES         | 
+ protocol_checklist_items          | is_critical                       | boolean                     | YES         | 
+ protocol_checklist_items          | estimated_duration_minutes        | integer                     | YES         | 
+ protocol_checklist_items          | notes                             | text                        | YES         | 
+ protocol_checklist_items          | created_at                        | timestamp without time zone | YES         | now()
+ protocol_checklist_items          | base_language                     | character varying           | NO          | 'en'::character varying
+ protocol_translations             | id                                | uuid                        | NO          | gen_random_uuid()
+ protocol_translations             | protocol_id                       | uuid                        | NO          | 
+ protocol_translations             | language_code                     | character varying           | NO          | 
+ protocol_translations             | name                              | text                        | NO          | 
+ protocol_translations             | description                       | text                        | YES         | 
+ protocol_translations             | created_at                        | timestamp with time zone    | NO          | now()
+ protocol_translations             | updated_at                        | timestamp with time zone    | NO          | now()
+ security_event_logs               | id                                | uuid                        | NO          | 
+ security_event_logs               | timestamp                         | timestamp with time zone    | NO          | 
+ security_event_logs               | event_type                        | character varying           | NO          | 
+ security_event_logs               | severity                          | character varying           | NO          | 
+ security_event_logs               | user_id                           | uuid                        | YES         | 
+ security_event_logs               | organization_id                   | uuid                        | YES         | 
+ security_event_logs               | description                       | text                        | NO          | 
+ security_event_logs               | details                           | text                        | YES         | 
+ security_event_logs               | ip_address                        | character varying           | YES         | 
+ security_event_logs               | user_agent                        | text                        | YES         | 
+ security_event_logs               | endpoint                          | character varying           | YES         | 
+ security_event_logs               | resolved                          | character varying           | NO          | 
+ security_event_logs               | resolved_at                       | timestamp with time zone    | YES         | 
+ security_event_logs               | resolved_by                       | uuid                        | YES         | 
+ security_event_logs               | resolution_notes                  | text                        | YES         | 
+ security_event_logs               | created_at                        | timestamp with time zone    | NO          | now()
+ security_event_logs               | updated_at                        | timestamp with time zone    | NO          | now()
+ security_events                   | id                                | uuid                        | NO          | 
+ security_events                   | user_id                           | uuid                        | YES         | 
+ security_events                   | event_type                        | character varying           | NO          | 
+ security_events                   | ip_address                        | character varying           | YES         | 
+ security_events                   | user_agent                        | text                        | YES         | 
+ security_events                   | session_id                        | character varying           | YES         | 
+ security_events                   | details                           | text                        | YES         | 
+ security_events                   | timestamp                         | timestamp with time zone    | NO          | now()
+ security_events                   | risk_level                        | character varying           | NO          | 'low'::character varying
+ stock_adjustment_items            | id                                | uuid                        | NO          | gen_random_uuid()
+ stock_adjustment_items            | stock_adjustment_id               | uuid                        | NO          | 
+ stock_adjustment_items            | part_id                           | uuid                        | NO          | 
+ stock_adjustment_items            | quantity_before                   | numeric                     | NO          | 
+ stock_adjustment_items            | quantity_after                    | numeric                     | NO          | 
+ stock_adjustment_items            | quantity_change                   | numeric                     | NO          | 
+ stock_adjustment_items            | reason                            | text                        | YES         | 
+ stock_adjustment_items            | created_at                        | timestamp with time zone    | NO          | now()
+ stock_adjustments                 | id                                | uuid                        | NO          | uuid_generate_v4()
+ stock_adjustments                 | user_id                           | uuid                        | NO          | 
+ stock_adjustments                 | adjustment_date                   | timestamp with time zone    | NO          | now()
+ stock_adjustments                 | total_items_adjusted              | integer                     | NO          | 0
+ stock_adjustments                 | reason_code                       | character varying           | YES         | 
+ stock_adjustments                 | notes                             | text                        | YES         | 
+ stock_adjustments                 | created_at                        | timestamp with time zone    | NO          | now()
+ stock_adjustments                 | updated_at                        | timestamp with time zone    | NO          | now()
+ stock_adjustments                 | warehouse_id                      | uuid                        | NO          | 
+ stock_adjustments                 | reason                            | text                        | YES         | 
+ stock_adjustments                 | adjustment_type                   | USER-DEFINED                | NO          | 
+ stock_adjustments_backup          | id                                | uuid                        | YES         | 
+ stock_adjustments_backup          | inventory_id                      | uuid                        | YES         | 
+ stock_adjustments_backup          | user_id                           | uuid                        | YES         | 
+ stock_adjustments_backup          | adjustment_date                   | timestamp with time zone    | YES         | 
+ stock_adjustments_backup          | quantity_adjusted                 | numeric                     | YES         | 
+ stock_adjustments_backup          | reason_code                       | character varying           | YES         | 
+ stock_adjustments_backup          | notes                             | text                        | YES         | 
+ stock_adjustments_backup          | created_at                        | timestamp with time zone    | YES         | 
+ stock_adjustments_backup          | updated_at                        | timestamp with time zone    | YES         | 
+ stocktake_items                   | id                                | uuid                        | NO          | gen_random_uuid()
+ stocktake_items                   | stocktake_id                      | uuid                        | NO          | 
+ stocktake_items                   | part_id                           | uuid                        | NO          | 
+ stocktake_items                   | expected_quantity                 | numeric                     | NO          | 
+ stocktake_items                   | actual_quantity                   | numeric                     | YES         | 
+ stocktake_items                   | counted_at                        | timestamp with time zone    | YES         | 
+ stocktake_items                   | counted_by_user_id                | uuid                        | YES         | 
+ stocktake_items                   | notes                             | text                        | YES         | 
+ stocktake_items                   | created_at                        | timestamp with time zone    | NO          | now()
+ stocktake_items                   | updated_at                        | timestamp with time zone    | NO          | now()
+ stocktakes                        | id                                | uuid                        | NO          | gen_random_uuid()
+ stocktakes                        | warehouse_id                      | uuid                        | NO          | 
+ stocktakes                        | scheduled_date                    | timestamp with time zone    | NO          | 
+ stocktakes                        | status                            | USER-DEFINED                | NO          | 'planned'::stocktakestatus
+ stocktakes                        | notes                             | text                        | YES         | 
+ stocktakes                        | scheduled_by_user_id              | uuid                        | NO          | 
+ stocktakes                        | completed_date                    | timestamp with time zone    | YES         | 
+ stocktakes                        | completed_by_user_id              | uuid                        | YES         | 
+ stocktakes                        | created_at                        | timestamp with time zone    | NO          | now()
+ stocktakes                        | updated_at                        | timestamp with time zone    | NO          | now()
+ supplier_order_items              | id                                | uuid                        | NO          | uuid_generate_v4()
+ supplier_order_items              | supplier_order_id                 | uuid                        | NO          | 
+ supplier_order_items              | part_id                           | uuid                        | NO          | 
+ supplier_order_items              | quantity                          | numeric                     | NO          | 1
+ supplier_order_items              | unit_price                        | numeric                     | YES         | 
+ supplier_order_items              | created_at                        | timestamp with time zone    | NO          | now()
+ supplier_order_items              | updated_at                        | timestamp with time zone    | NO          | now()
+ supplier_orders                   | id                                | uuid                        | NO          | uuid_generate_v4()
+ supplier_orders                   | ordering_organization_id          | uuid                        | NO          | 
+ supplier_orders                   | supplier_name                     | character varying           | NO          | 
+ supplier_orders                   | order_date                        | timestamp with time zone    | NO          | 
+ supplier_orders                   | expected_delivery_date            | timestamp with time zone    | YES         | 
+ supplier_orders                   | actual_delivery_date              | timestamp with time zone    | YES         | 
+ supplier_orders                   | status                            | character varying           | NO          | 
+ supplier_orders                   | notes                             | text                        | YES         | 
+ supplier_orders                   | created_at                        | timestamp with time zone    | NO          | now()
+ supplier_orders                   | updated_at                        | timestamp with time zone    | NO          | now()
+ support_tickets                   | id                                | uuid                        | NO          | gen_random_uuid()
+ support_tickets                   | session_id                        | uuid                        | NO          | 
+ support_tickets                   | ticket_number                     | character varying           | NO          | 
+ support_tickets                   | priority                          | character varying           | NO          | 'medium'::character varying
+ support_tickets                   | status                            | character varying           | NO          | 'open'::character varying
+ support_tickets                   | escalation_reason                 | text                        | NO          | 
+ support_tickets                   | session_summary                   | text                        | NO          | 
+ support_tickets                   | machine_context                   | jsonb                       | YES         | 
+ support_tickets                   | expert_contact_info               | jsonb                       | YES         | 
+ support_tickets                   | resolution_notes                  | text                        | YES         | 
+ support_tickets                   | assigned_expert_id                | uuid                        | YES         | 
+ support_tickets                   | created_at                        | timestamp without time zone | YES         | now()
+ support_tickets                   | updated_at                        | timestamp without time zone | YES         | now()
+ support_tickets                   | resolved_at                       | timestamp without time zone | YES         | 
+ support_videos                    | id                                | uuid                        | NO          | gen_random_uuid()
+ support_videos                    | title                             | character varying           | NO          | 
+ support_videos                    | description                       | text                        | YES         | 
+ support_videos                    | category                          | character varying           | NO          | 
+ support_videos                    | file_path                         | character varying           | NO          | 
+ support_videos                    | file_size_mb                      | numeric                     | YES         | 
+ support_videos                    | duration_seconds                  | integer                     | YES         | 
+ support_videos                    | thumbnail_data                    | bytea                       | YES         | 
+ support_videos                    | created_at                        | timestamp with time zone    | NO          | now()
+ support_videos                    | updated_at                        | timestamp with time zone    | NO          | now()
+ system_configurations             | id                                | uuid                        | NO          | 
+ system_configurations             | category                          | USER-DEFINED                | NO          | 
+ system_configurations             | key                               | character varying           | NO          | 
+ system_configurations             | value                             | text                        | YES         | 
+ system_configurations             | data_type                         | USER-DEFINED                | NO          | 
+ system_configurations             | description                       | text                        | YES         | 
+ system_configurations             | is_system_managed                 | boolean                     | NO          | false
+ system_configurations             | is_user_configurable              | boolean                     | NO          | true
+ system_configurations             | requires_restart                  | boolean                     | NO          | false
+ system_configurations             | validation_rules                  | json                        | YES         | 
+ system_configurations             | default_value                     | text                        | YES         | 
+ system_configurations             | created_by_user_id                | uuid                        | YES         | 
+ system_configurations             | updated_by_user_id                | uuid                        | YES         | 
+ system_configurations             | created_at                        | timestamp with time zone    | NO          | now()
+ system_configurations             | updated_at                        | timestamp with time zone    | NO          | now()
+ transaction_approvals             | id                                | uuid                        | NO          | 
+ transaction_approvals             | transaction_id                    | uuid                        | NO          | 
+ transaction_approvals             | approver_id                       | uuid                        | NO          | 
+ transaction_approvals             | status                            | USER-DEFINED                | NO          | 
+ transaction_approvals             | notes                             | text                        | YES         | 
+ transaction_approvals             | created_at                        | timestamp with time zone    | NO          | now()
+ transactions                      | id                                | uuid                        | NO          | uuid_generate_v4()
+ transactions                      | transaction_type                  | USER-DEFINED                | NO          | 
+ transactions                      | part_id                           | uuid                        | NO          | 
+ transactions                      | from_warehouse_id                 | uuid                        | YES         | 
+ transactions                      | to_warehouse_id                   | uuid                        | YES         | 
+ transactions                      | machine_id                        | uuid                        | YES         | 
+ transactions                      | quantity                          | numeric                     | NO          | 
+ transactions                      | unit_of_measure                   | character varying           | NO          | 
+ transactions                      | performed_by_user_id              | uuid                        | NO          | 
+ transactions                      | transaction_date                  | timestamp with time zone    | NO          | 
+ transactions                      | notes                             | text                        | YES         | 
+ transactions                      | reference_number                  | character varying           | YES         | 
+ transactions                      | created_at                        | timestamp with time zone    | NO          | now()
+ transactions                      | customer_order_id                 | uuid                        | YES         | 
+ transactions                      | updated_at                        | timestamp with time zone    | NO          | CURRENT_TIMESTAMP
+ user_management_audit_logs        | id                                | uuid                        | NO          | 
+ user_management_audit_logs        | user_id                           | uuid                        | NO          | 
+ user_management_audit_logs        | action                            | character varying           | NO          | 
+ user_management_audit_logs        | performed_by_user_id              | uuid                        | NO          | 
+ user_management_audit_logs        | timestamp                         | timestamp with time zone    | NO          | now()
+ user_management_audit_logs        | details                           | text                        | YES         | 
+ user_sessions                     | id                                | uuid                        | NO          | 
+ user_sessions                     | user_id                           | uuid                        | NO          | 
+ user_sessions                     | session_token                     | character varying           | NO          | 
+ user_sessions                     | ip_address                        | character varying           | YES         | 
+ user_sessions                     | user_agent                        | text                        | YES         | 
+ user_sessions                     | created_at                        | timestamp with time zone    | NO          | now()
+ user_sessions                     | last_activity                     | timestamp with time zone    | NO          | now()
+ user_sessions                     | expires_at                        | timestamp with time zone    | NO          | 
+ user_sessions                     | is_active                         | boolean                     | NO          | true
+ user_sessions                     | terminated_reason                 | character varying           | YES         | 
+ users                             | id                                | uuid                        | NO          | uuid_generate_v4()
+ users                             | organization_id                   | uuid                        | NO          | 
+ users                             | username                          | character varying           | NO          | 
+ users                             | password_hash                     | text                        | NO          | 
+ users                             | email                             | character varying           | NO          | 
+ users                             | name                              | character varying           | YES         | 
+ users                             | role                              | USER-DEFINED                | NO          | 
+ users                             | user_status                       | USER-DEFINED                | NO          | 'active'::userstatus
+ users                             | failed_login_attempts             | integer                     | NO          | 0
+ users                             | locked_until                      | timestamp with time zone    | YES         | 
+ users                             | last_login                        | timestamp with time zone    | YES         | 
+ users                             | invitation_token                  | character varying           | YES         | 
+ users                             | invitation_expires_at             | timestamp with time zone    | YES         | 
+ users                             | password_reset_token              | character varying           | YES         | 
+ users                             | password_reset_expires_at         | timestamp with time zone    | YES         | 
+ users                             | is_active                         | boolean                     | NO          | true
+ users                             | created_at                        | timestamp with time zone    | NO          | now()
+ users                             | updated_at                        | timestamp with time zone    | NO          | now()
+ users                             | invited_by_user_id                | uuid                        | YES         | 
+ users                             | email_verification_token          | character varying           | YES         | 
+ users                             | email_verification_expires_at     | timestamp without time zone | YES         | 
+ users                             | pending_email                     | character varying           | YES         | 
+ users                             | preferred_language                | character varying           | YES         | 
+ users                             | preferred_country                 | character varying           | YES         | 
+ users                             | localization_preferences          | jsonb                       | YES         | 
+ users                             | profile_photo_url                 | character varying           | YES         | 
+ users                             | profile_photo_data                | bytea                       | YES         | 
+ warehouses                        | id                                | uuid                        | NO          | uuid_generate_v4()
+ warehouses                        | organization_id                   | uuid                        | NO          | 
+ warehouses                        | name                              | character varying           | NO          | 
+ warehouses                        | location                          | character varying           | YES         | 
+ warehouses                        | description                       | text                        | YES         | 
+ warehouses                        | is_active                         | boolean                     | NO          | true
+ warehouses                        | created_at                        | timestamp with time zone    | NO          | now()
+ warehouses                        | updated_at                        | timestamp with time zone    | NO          | now()
+ warehouses                        | address                           | text                        | YES         | 
+ warehouses                        | contact_person                    | character varying           | YES         | 
+ warehouses                        | phone                             | character varying           | YES         | 
+ warehouses                        | email                             | character varying           | YES         | 
+ warehouses                        | capacity_limit                    | integer                     | YES         | 
+ warehouses                        | warehouse_type                    | character varying           | YES         | 
+(619 rows)
+
