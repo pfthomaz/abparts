@@ -24,7 +24,7 @@ fi
 
 # Step 3: Pull latest changes from repository
 echo "📥 Pulling latest changes from repository..."
-git pull origin main
+echo "Skipping git pull for now"
 
 if [ $? -ne 0 ]; then
     echo "❌ Error pulling from repository. Please resolve conflicts first."
