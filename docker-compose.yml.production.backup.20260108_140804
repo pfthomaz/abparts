@@ -1,0 +1,192 @@
+# docker-compose.yml for ABParts Local Development
+# version: "3.9"
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:16
+    container_name: abparts_db
+    ports:
+      - "5432:5432" # Expose PostgreSQL port to the host
+    environment:
+      # Use environment variables from a .env file (recommended) or set directly here
+      POSTGRES_DB: ${POSTGRES_DB:-abparts_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-abparts_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abparts_pass}
+    volumes:
+      - db_data:/var/lib/postgresql/data # Persist database data
+      - ./init_db:/docker-entrypoint-initdb.d # For initial DB scripts (e.g., creating users, initial data)
+    healthcheck:
+      # Healthcheck to ensure DB is ready before dependent services start
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Service (for Caching and Celery Broker)
+  redis:
+    image: redis:latest
+    container_name: abparts_redis
+    ports:
+      - "6379:6379" # Expose Redis port to the host (optional for internal communication)
+    volumes:
+      - redis_data:/data # Persist Redis data (optional, can be ephemeral for dev)
+    command: redis-server --appendonly yes # Enable AOF persistence for Redis
+    healthcheck:
+      # Healthcheck to ensure Redis is ready
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # FastAPI Backend Service
+  api:
+    build:
+      context: ./backend # Path to your backend directory containing Dockerfile
+      dockerfile: Dockerfile.backend # Assuming your Dockerfile is named Dockerfile.backend
+    container_name: abparts_api
+    ports:
+      - "8000:8000" # Expose FastAPI port to the host
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD:-abparts_pass}@db:5432/${POSTGRES_DB:-abparts_dev}
+      REDIS_URL: redis://redis:6379/0
+      # Email configuration for user profile features
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+      # CORS configuration for development
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,http://192.168.1.67:3000,http://192.168.1.67:3001,http://192.168.1.67:8000,http://46.62.153.166:8001,53.166:81,http://46.62.153.166:3000,http://46.62.153.166:8000,https://abparts.oraseas.com}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      # Add any other FastAPI environment variables here (e.g., AUTH0_DOMAIN, KEYCLOAK_URL)
+    volumes:
+      - ./backend:/app # Mount your backend code for live reloading during development
+      - ./backend/static/images:/app/static/images # Mount local images directory for development
+    depends_on:
+      db:
+        condition: service_healthy # Ensure DB is healthy before starting API
+      redis:
+        condition: service_healthy # Ensure Redis is healthy before starting API
+    # Command to run FastAPI with Uvicorn in development mode (with auto-reload)
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude /app/static/images
+  # Celery Worker Service for ML Engine and Async Tasks
+  celery_worker:
+    build:
+      context: ./backend # Use the same backend Dockerfile
+      dockerfile: Dockerfile.backend
+    container_name: abparts_celery_worker
+    environment:
+      # Celery needs access to Redis for the broker and DB for tasks that interact with data
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD:-abparts_pass}@db:5432/${POSTGRES_DB:-abparts_dev}
+      # Email configuration for user profile features (needed for email tasks)
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+    volumes:
+      - ./backend:/app # Mount backend code for the worker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Command to run the Celery worker
+    # Adjust `app.celery_worker` based on your actual Celery app instantiation
+    command: celery -A app.celery_app worker --loglevel=info
+
+  # PgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: abparts_pgadmin
+    ports:
+      - "8080:80" # Expose PgAdmin UI
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@abparts.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      # Point pgAdmin to the database service within the Docker network
+      # This setting in config_local.py (if used for pre-configured servers) would override this
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # Persist pgAdmin configuration and server connections
+      - ./pgadmin_config/config_local.py:/pgadmin4/config_local.py # Mount custom config_local.py
+    depends_on:
+      db:
+        condition: service_healthy # Ensure DB is healthy before starting PgAdmin
+
+  # React Web Frontend Development Server
+  web:
+    build:
+      context: ./frontend # Path to your frontend directory
+      dockerfile: Dockerfile.frontend # Assuming your Dockerfile is named Dockerfile.frontend
+      target: development # Use the development stage
+    container_name: abparts_web
+    ports:
+      - "3000:3000" # React development server port
+    volumes:
+      - ./frontend:/app # Mount frontend code for live reloading
+      - /app/node_modules # Avoid overwriting node_modules inside the container with host's
+    environment:
+      # Point the React app to the backend API - uses environment variable for mobile access
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_started # Web depends on API being started (not necessarily healthy for dev)
+    # Command to start the React development server
+    command: sh -c "npm install && npm start"
+
+  # Test Database Service (separate from development database)
+  test_db:
+    image: postgres:16
+    container_name: abparts_test_db
+    ports:
+      - "5433:5432" # Different port to avoid conflicts with main db
+    environment:
+      POSTGRES_DB: ${TEST_POSTGRES_DB:-abparts_test}
+      POSTGRES_USER: ${TEST_POSTGRES_USER:-abparts_test_user}
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD:-abparts_test_pass}
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - testing
+
+  # Test Service for running tests in isolated environment
+  test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_test
+    environment:
+      DATABASE_URL: postgresql://${TEST_POSTGRES_USER:-abparts_test_user}:${TEST_POSTGRES_PASSWORD:-abparts_test_pass}@test_db:5432/${TEST_POSTGRES_DB:-abparts_test}
+      REDIS_URL: redis://redis:6379/1  # Use different Redis database for tests
+      ENVIRONMENT: testing
+      PYTHONPATH: /app
+    volumes:
+      - ./backend:/app
+    depends_on:
+      test_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - testing
+    command: pytest
+
+# Docker Volumes for data persistence
+volumes:
+  db_data: # For PostgreSQL data
+  redis_data: # For Redis data
+  pgadmin_data: # For PgAdmin configuration
+  api_static_images: # New: Declared the volume for API static images
+  test_db_data: # For test database data

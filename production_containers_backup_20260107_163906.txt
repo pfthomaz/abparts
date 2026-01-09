@@ -1,0 +1,6 @@
+NAME                         IMAGE                   COMMAND                  SERVICE         CREATED          STATUS                    PORTS
+abparts_api_prod             abparts-api             "uvicorn app.main:ap…"   api             17 minutes ago   Up 11 minutes             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+abparts_celery_worker_prod   abparts-celery_worker   "celery -A app.celer…"   celery_worker   17 minutes ago   Up 16 minutes             8000/tcp
+abparts_db_prod              postgres:16             "docker-entrypoint.s…"   db              17 minutes ago   Up 17 minutes (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+abparts_redis_prod           redis:latest            "docker-entrypoint.s…"   redis           17 minutes ago   Up 17 minutes (healthy)   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
+abparts_web_prod             abparts-web             "/docker-entrypoint.…"   web             17 minutes ago   Up 11 minutes             0.0.0.0:3001->80/tcp, [::]:3001->80/tcp

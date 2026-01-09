@@ -1,0 +1,222 @@
+==========================================
+Starting backup at Sun Dec 21 01:00:01 PM UTC 2025
+Target: ./backups/abparts_dump_20251221_130001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Sun Dec 21 01:00:02 PM UTC 2025
+==========================================
+==========================================
+Starting backup at Mon Dec 22 12:00:02 AM UTC 2025
+Target: ./backups/abparts_dump_20251222_000002.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Mon Dec 22 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Tue Dec 23 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251223_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Tue Dec 23 12:00:01 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Wed Dec 24 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251224_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Wed Dec 24 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Thu Dec 25 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251225_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Thu Dec 25 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Fri Dec 26 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251226_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Fri Dec 26 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Sat Dec 27 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251227_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Sat Dec 27 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Sun Dec 28 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251228_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Sun Dec 28 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Mon Dec 29 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251229_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Mon Dec 29 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Tue Dec 30 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251230_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Tue Dec 30 12:00:01 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Wed Dec 31 12:00:01 AM UTC 2025
+Target: ./backups/abparts_dump_20251231_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Wed Dec 31 12:00:02 AM UTC 2025
+==========================================
+==========================================
+Starting backup at Thu Jan  1 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260101_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Thu Jan  1 12:00:02 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Fri Jan  2 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260102_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Fri Jan  2 12:00:02 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Sat Jan  3 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260103_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Sat Jan  3 12:00:02 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Sun Jan  4 12:00:02 AM UTC 2026
+Target: ./backups/abparts_dump_20260104_000002.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Sun Jan  4 12:00:03 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Mon Jan  5 12:00:02 AM UTC 2026
+Target: ./backups/abparts_dump_20260105_000002.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Mon Jan  5 12:00:03 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Tue Jan  6 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260106_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Tue Jan  6 12:00:02 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Wed Jan  7 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260107_000001.sql.gz
+✅ Backup successful!
+Size: 2.2M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Wed Jan  7 12:00:01 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Thu Jan  8 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260108_000001.sql.gz
+✅ Backup successful!
+Size: 2.5M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Thu Jan  8 12:00:02 AM UTC 2026
+==========================================
+==========================================
+Starting backup at Thu Jan  8 02:13:42 PM UTC 2026
+Target: ./backups/abparts_dump_20260108_141342.sql.gz
+Error response from daemon: No such container: abparts_db_prod
+✅ Backup successful!
+Size: 4.0K
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Thu Jan  8 02:13:42 PM UTC 2026
+==========================================
+==========================================
+Starting backup at Thu Jan  8 02:14:14 PM UTC 2026
+Target: ./backups/abparts_dump_20260108_141414.sql.gz
+Error response from daemon: No such container: abparts_db_prod
+✅ Backup successful!
+Size: 4.0K
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Thu Jan  8 02:14:14 PM UTC 2026
+==========================================
+==========================================
+Starting backup at Fri Jan  9 12:00:01 AM UTC 2026
+Target: ./backups/abparts_dump_20260109_000001.sql.gz
+✅ Backup successful!
+Size: 3.5M
+--- Cleanup ---
+Deleting backups older than 30 days...
+Cleanup complete.
+Backup process finished at Fri Jan  9 12:00:02 AM UTC 2026
+==========================================
