@@ -160,7 +160,7 @@ class EscalationService:
             with get_db_session() as db:
                 query = text("""
                     SELECT session_metadata FROM ai_sessions 
-                    WHERE session_id = :session_id
+                    WHERE id = :session_id
                 """)
                 result = db.execute(query, {'session_id': session_id}).fetchone()
                 
@@ -366,7 +366,7 @@ class EscalationService:
                 # Get session info
                 session_query = text("""
                     SELECT user_id, machine_id, status, language, session_metadata, created_at
-                    FROM ai_sessions WHERE session_id = :session_id
+                    FROM ai_sessions WHERE id = :session_id
                 """)
                 session_result = db.execute(session_query, {'session_id': session_id}).fetchone()
                 
@@ -446,7 +446,7 @@ class EscalationService:
             with get_db_session() as db:
                 query = text("""
                     SELECT machine_id, session_metadata FROM ai_sessions 
-                    WHERE session_id = :session_id
+                    WHERE id = :session_id
                 """)
                 result = db.execute(query, {'session_id': session_id}).fetchone()
                 
@@ -550,7 +550,7 @@ class EscalationService:
                     SET status = 'escalated', 
                         resolution_summary = :resolution_summary,
                         updated_at = NOW()
-                    WHERE session_id = :session_id
+                    WHERE id = :session_id
                 """)
                 db.execute(query, {
                     'session_id': session_id,
@@ -570,7 +570,7 @@ class EscalationService:
                     FROM ai_sessions s
                     LEFT JOIN users u ON s.user_id = u.id
                     LEFT JOIN organizations o ON u.organization_id = o.id
-                    WHERE s.session_id = :session_id
+                    WHERE s.id = :session_id
                 """)
                 result = db.execute(query, {'session_id': session_id}).fetchone()
                 
@@ -598,7 +598,7 @@ class EscalationService:
                            m.location
                     FROM ai_sessions s
                     LEFT JOIN machines m ON s.machine_id = m.id
-                    WHERE s.session_id = :session_id AND s.machine_id IS NOT NULL
+                    WHERE s.id = :session_id AND s.machine_id IS NOT NULL
                 """)
                 result = db.execute(query, {'session_id': session_id}).fetchone()
                 
