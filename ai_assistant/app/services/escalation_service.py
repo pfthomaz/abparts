@@ -562,23 +562,31 @@ class EscalationService:
         """Get user information for email notification."""
         try:
             with get_db_session() as db:
-                # Get user info from session
-                query = text("""
-                    SELECT s.user_id, u.name, u.email, u.role, o.name as organization_name
-                    FROM ai_sessions s
-                    LEFT JOIN users u ON s.user_id::uuid = u.id
-                    LEFT JOIN organizations o ON u.organization_id = o.id
-                    WHERE s.id = :session_id
+                # Get user_id from session first
+                session_query = text("""
+                    SELECT user_id FROM ai_sessions WHERE id = :session_id
                 """)
-                result = db.execute(query, {'session_id': session_id}).fetchone()
+                session_result = db.execute(session_query, {'session_id': session_id}).fetchone()
                 
-                if result:
+                if not session_result or not session_result.user_id:
+                    return None
+                
+                # Then get user info using the user_id
+                user_query = text("""
+                    SELECT u.name, u.email, u.role, o.name as organization_name
+                    FROM users u
+                    LEFT JOIN organizations o ON u.organization_id = o.id
+                    WHERE u.id = CAST(:user_id AS UUID)
+                """)
+                user_result = db.execute(user_query, {'user_id': session_result.user_id}).fetchone()
+                
+                if user_result:
                     return {
-                        "user_id": result.user_id,
-                        "full_name": result.name,  # Map name to full_name for email template
-                        "email": result.email,
-                        "role": result.role,
-                        "organization_name": result.organization_name
+                        "user_id": session_result.user_id,
+                        "full_name": user_result.name,
+                        "email": user_result.email,
+                        "role": user_result.role,
+                        "organization_name": user_result.organization_name
                     }
                     
         except Exception as e:
@@ -590,35 +598,43 @@ class EscalationService:
         """Get machine information for email notification."""
         try:
             with get_db_session() as db:
-                # Get machine info from session
-                query = text("""
-                    SELECT s.machine_id, m.name, m.model_type, m.serial_number, 
-                           m.location
-                    FROM ai_sessions s
-                    LEFT JOIN machines m ON s.machine_id::uuid = m.id
-                    WHERE s.id = :session_id AND s.machine_id IS NOT NULL
+                # Get machine_id from session first
+                session_query = text("""
+                    SELECT machine_id FROM ai_sessions 
+                    WHERE id = :session_id AND machine_id IS NOT NULL
                 """)
-                result = db.execute(query, {'session_id': session_id}).fetchone()
+                session_result = db.execute(session_query, {'session_id': session_id}).fetchone()
                 
-                if result:
+                if not session_result or not session_result.machine_id:
+                    return None
+                
+                # Then get machine info using the machine_id
+                machine_query = text("""
+                    SELECT name, model_type, serial_number, location
+                    FROM machines 
+                    WHERE id = CAST(:machine_id AS UUID)
+                """)
+                machine_result = db.execute(machine_query, {'machine_id': session_result.machine_id}).fetchone()
+                
+                if machine_result:
                     # Get latest hours from machine_hours table
                     hours_query = text("""
                         SELECT hours_value 
                         FROM machine_hours 
-                        WHERE machine_id = :machine_id 
+                        WHERE machine_id = CAST(:machine_id AS UUID)
                         ORDER BY recorded_date DESC 
                         LIMIT 1
                     """)
-                    hours_result = db.execute(hours_query, {'machine_id': result.machine_id}).fetchone()
+                    hours_result = db.execute(hours_query, {'machine_id': session_result.machine_id}).fetchone()
                     latest_hours = hours_result.hours_value if hours_result else 0
                     
                     return {
-                        "machine_id": result.machine_id,
-                        "name": result.name,
-                        "model_type": result.model_type,
-                        "serial_number": result.serial_number,
+                        "machine_id": session_result.machine_id,
+                        "name": machine_result.name,
+                        "model_type": machine_result.model_type,
+                        "serial_number": machine_result.serial_number,
                         "latest_hours": float(latest_hours) if latest_hours else 0,
-                        "location": result.location
+                        "location": machine_result.location
                     }
                     
         except Exception as e:
