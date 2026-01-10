@@ -1430,6 +1430,8 @@
     "selectMachine": "Select Machine",
     "clearMachine": "Clear Selection",
     "noMachines": "No machines available",
+    "escalate": "Escalate to Expert",
+    "escalateTooltip": "Get help from a technical expert",
     "chatWidget": {
       "openChat": "Open AI Assistant",
       "closeChat": "Close AI Assistant",
@@ -1485,6 +1487,38 @@
       "problemNotResolved": "Still Need Help",
       "escalateToExpert": "Escalate to Expert"
     },
+    "escalationModal": {
+      "title": "Escalate to Expert Support",
+      "description": "Our AI assistant will create a support ticket and connect you with a technical expert.",
+      "reasonLabel": "Escalation Reason",
+      "priorityLabel": "Priority Level",
+      "notesLabel": "Additional Notes",
+      "notesPlaceholder": "Please describe your issue in detail...",
+      "submitButton": "Create Support Ticket",
+      "cancelButton": "Cancel",
+      "reasons": {
+        "user_request": "I need expert help",
+        "low_confidence": "AI is uncertain",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety issue detected",
+        "expert_required": "Complex technical issue"
+      },
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium", 
+        "high": "High",
+        "urgent": "Urgent"
+      }
+    },
+    "escalationSuccess": {
+      "title": "Support Ticket Created",
+      "message": "Your escalation has been processed successfully.",
+      "ticketNumber": "Ticket Number",
+      "expertContact": "Expert Contact Information",
+      "nextSteps": "Next Steps",
+      "contactExpert": "Contact the expert using the information provided above.",
+      "referenceTicket": "Reference your ticket number when contacting support."
+    },
     "machineContext": {
       "noMachineSelected": "No machine selected",
       "machineInfo": "Machine Information",
@@ -1526,7 +1560,7 @@
       "sendToSupport": "Send to Support",
       "title": "Escalate to Expert Support",
       "description": "If you're unable to resolve the issue, our expert technicians can provide direct assistance.",
-      "escalate": "Get Expert Help",
+      "escalateButton": "Get Expert Help",
       "escalate_button": "Create Support Ticket",
       "escalating": "Creating ticket...",
       "confidence_score": "AI Confidence",

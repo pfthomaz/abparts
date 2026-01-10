@@ -1430,6 +1430,8 @@
     "selectMachine": "اختيار الآلة",
     "clearMachine": "مسح الاختيار",
     "noMachines": "لا توجد آلات متاحة",
+    "escalate": "تصعيد إلى خبير",
+    "escalateTooltip": "احصل على مساعدة من خبير تقني",
     "maximize": "تكبير",
     "minimize": "تصغير",
     "chatWidget": {
@@ -1477,6 +1479,38 @@
       "thumbsDown": "غير مفيد",
       "feedback": "تقديم ملاحظات",
       "reportIssue": "الإبلاغ عن مشكلة"
+    },
+    "escalationModal": {
+      "title": "تصعيد إلى دعم الخبراء",
+      "description": "سيقوم مساعد الذكي الاصطناعي بإنشاء تذكرة دعم وربطك بخبير تقني.",
+      "reasonLabel": "سبب التصعيد",
+      "priorityLabel": "مستوى الأولوية",
+      "notesLabel": "ملاحظات إضافية",
+      "notesPlaceholder": "يرجى وصف مشكلتك بالتفصيل...",
+      "submitButton": "إنشاء تذكرة دعم",
+      "cancelButton": "إلغاء",
+      "reasons": {
+        "user_request": "أحتاج مساعدة خبير",
+        "low_confidence": "الذكي الاصطناعي غير متأكد",
+        "steps_exceeded": "خطوات استكشاف الأخطاء كثيرة جداً",
+        "safety_concern": "تم اكتشاف مشكلة أمان",
+        "expert_required": "مشكلة تقنية معقدة"
+      },
+      "priorities": {
+        "low": "منخفضة",
+        "medium": "متوسطة",
+        "high": "عالية",
+        "urgent": "عاجلة"
+      }
+    },
+    "escalationSuccess": {
+      "title": "تم إنشاء تذكرة الدعم",
+      "message": "تم معالجة تصعيدك بنجاح.",
+      "ticketNumber": "رقم التذكرة",
+      "expertContact": "معلومات الاتصال بالخبير",
+      "nextSteps": "الخطوات التالية",
+      "contactExpert": "اتصل بالخبير باستخدام المعلومات المقدمة أعلاه.",
+      "referenceTicket": "اذكر رقم تذكرتك عند الاتصال بالدعم."
     },
     "troubleshooting": {
       "startTroubleshooting": "بدء استكشاف الأخطاء وإصلاحها",

@@ -548,13 +548,11 @@ class EscalationService:
                 query = text("""
                     UPDATE ai_sessions 
                     SET status = 'escalated', 
-                        resolution_summary = :resolution_summary,
                         updated_at = NOW()
                     WHERE id = :session_id
                 """)
                 db.execute(query, {
-                    'session_id': session_id,
-                    'resolution_summary': f"Escalated to expert support - Ticket #{ticket_number}"
+                    'session_id': session_id
                 })
                 
         except Exception as e:
@@ -568,7 +566,7 @@ class EscalationService:
                 query = text("""
                     SELECT s.user_id, u.name, u.email, u.role, o.name as organization_name
                     FROM ai_sessions s
-                    LEFT JOIN users u ON s.user_id = u.id
+                    LEFT JOIN users u ON s.user_id::uuid = u.id
                     LEFT JOIN organizations o ON u.organization_id = o.id
                     WHERE s.id = :session_id
                 """)
@@ -597,7 +595,7 @@ class EscalationService:
                     SELECT s.machine_id, m.name, m.model_type, m.serial_number, 
                            m.location
                     FROM ai_sessions s
-                    LEFT JOIN machines m ON s.machine_id = m.id
+                    LEFT JOIN machines m ON s.machine_id::uuid = m.id
                     WHERE s.id = :session_id AND s.machine_id IS NOT NULL
                 """)
                 result = db.execute(query, {'session_id': session_id}).fetchone()
