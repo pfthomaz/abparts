@@ -94,14 +94,14 @@ async def chat(
                 with get_db_session() as db:
                     # Check if session exists
                     existing_session = db.execute(
-                        text("SELECT session_id FROM ai_sessions WHERE session_id = :session_id"),
+                        text("SELECT id FROM ai_sessions WHERE id = :session_id"),
                         {'session_id': session_id}
                     ).fetchone()
                     
                     if not existing_session:
                         # Create new session
                         db.execute(text("""
-                            INSERT INTO ai_sessions (session_id, user_id, machine_id, status, language, created_at, updated_at)
+                            INSERT INTO ai_sessions (id, user_id, machine_id, status, language, created_at, updated_at)
                             VALUES (:session_id, :user_id, :machine_id, :status, :language, NOW(), NOW())
                         """), {
                             'session_id': session_id,
@@ -116,7 +116,7 @@ async def chat(
                         db.execute(text("""
                             UPDATE ai_sessions 
                             SET updated_at = NOW(), machine_id = :machine_id, language = :language
-                            WHERE session_id = :session_id
+                            WHERE id = :session_id
                         """), {
                             'session_id': session_id,
                             'machine_id': request.machine_id,

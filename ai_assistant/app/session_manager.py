@@ -70,7 +70,7 @@ class SessionManager:
         # Create session in database
         with get_db_session() as db:
             query = text("""
-                INSERT INTO ai_sessions (session_id, user_id, machine_id, status, problem_description, language, session_metadata)
+                INSERT INTO ai_sessions (id, user_id, machine_id, status, problem_description, language, session_metadata)
                 VALUES (:session_id, :user_id, :machine_id, 'active', :problem_description, :language, '{}')
             """)
             db.execute(query, {
@@ -127,10 +127,10 @@ class SessionManager:
         # Fallback to database
         with get_db_session() as db:
             query = text("""
-                SELECT session_id, user_id, machine_id, status, problem_description, 
+                SELECT id, user_id, machine_id, status, problem_description, 
                        resolution_summary, language, session_metadata, created_at, updated_at
                 FROM ai_sessions 
-                WHERE session_id = :session_id
+                WHERE id = :session_id
             """)
             result = db.execute(query, {'session_id': session_id}).fetchone()
             
@@ -138,7 +138,7 @@ class SessionManager:
                 return None
             
             session_data = {
-                "session_id": str(result.session_id),
+                "session_id": str(result.id),
                 "user_id": str(result.user_id),
                 "machine_id": str(result.machine_id) if result.machine_id else None,
                 "status": result.status,
@@ -187,7 +187,7 @@ class SessionManager:
                     query = text("""
                         UPDATE ai_sessions 
                         SET status = :status, resolution_summary = :resolution_summary, updated_at = NOW()
-                        WHERE session_id = :session_id
+                        WHERE id = :session_id
                     """)
                     result = db.execute(query, {
                         'session_id': session_id,
@@ -198,7 +198,7 @@ class SessionManager:
                     query = text("""
                         UPDATE ai_sessions 
                         SET status = :status, updated_at = NOW()
-                        WHERE session_id = :session_id
+                        WHERE id = :session_id
                     """)
                     result = db.execute(query, {
                         'session_id': session_id,
@@ -296,7 +296,7 @@ class SessionManager:
                 query = text("""
                     SELECT preferred_language 
                     FROM users 
-                    WHERE user_id = :user_id
+                    WHERE id = :user_id
                 """)
                 result = db.execute(query, {'user_id': user_id}).fetchone()
                 
@@ -360,44 +360,6 @@ class SessionManager:
         
         return messages
     
-    async def get_user_language(self, user_id: str) -> str:
-        """
-        Get user's preferred language from ABParts database.
-        
-        Args:
-            user_id: ID of the user
-            
-        Returns:
-            User's preferred language code (defaults to 'en' if not found)
-        """
-        try:
-            with get_db_session() as db:
-                # Query user's preferred language from ABParts users table
-                query = text("""
-                    SELECT preferred_language 
-                    FROM users 
-                    WHERE user_id = :user_id
-                """)
-                result = db.execute(query, {'user_id': user_id}).fetchone()
-                
-                if result and result.preferred_language:
-                    # Map ABParts language codes to supported AI languages
-                    language_mapping = {
-                        'en': 'en',  # English
-                        'el': 'el',  # Greek
-                        'ar': 'ar',  # Arabic
-                        'es': 'es',  # Spanish
-                        'tr': 'tr',  # Turkish
-                        'no': 'no'   # Norwegian
-                    }
-                    return language_mapping.get(result.preferred_language, 'en')
-                
-        except Exception as e:
-            logger.warning(f"Failed to get user language for {user_id}: {e}")
-        
-        # Default to English if language detection fails
-        return 'en'
-    
     async def get_user_sessions(
         self, 
         user_id: str, 
@@ -417,7 +379,7 @@ class SessionManager:
         
         with get_db_session() as db:
             query = text("""
-                SELECT session_id, user_id, machine_id, status, problem_description, 
+                SELECT id, user_id, machine_id, status, problem_description, 
                        resolution_summary, language, session_metadata, created_at, updated_at
                 FROM ai_sessions 
                 WHERE user_id = :user_id 
@@ -428,7 +390,7 @@ class SessionManager:
             
             for row in results:
                 session_data = {
-                    "session_id": str(row.session_id),
+                    "session_id": str(row.id),
                     "user_id": str(row.user_id),
                     "machine_id": str(row.machine_id) if row.machine_id else None,
                     "status": row.status,
