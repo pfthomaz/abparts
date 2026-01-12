@@ -80,7 +80,7 @@ const getOrganization = (id) => {
  * @param {object} orgData The data for the new organization.
  */
 const createOrganization = (orgData) => {
-  return api.post('/organizations', orgData);
+  return api.post('/organizations/', orgData);
 };
 
 /**
