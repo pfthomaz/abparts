@@ -111,6 +111,46 @@ class LLMClient:
             logger.error(f"OpenAI API connection test failed: {e}")
             raise
     
+    def _clean_response_formatting(self, content: str) -> str:
+        """
+        Clean up markdown formatting and make text speech-friendly.
+        
+        Args:
+            content: Raw response content
+            
+        Returns:
+            Cleaned content without markdown formatting
+        """
+        if not content:
+            return content
+            
+        # Remove markdown bold formatting
+        content = content.replace('**', '')
+        content = content.replace('__', '')
+        
+        # Remove markdown italic formatting
+        content = content.replace('*', '')
+        content = content.replace('_', '')
+        
+        # Clean up any remaining markdown-style formatting
+        import re
+        
+        # Remove markdown headers
+        content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+        
+        # Remove markdown links but keep the text
+        content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
+        
+        # Remove markdown code blocks
+        content = re.sub(r'```[^`]*```', '', content)
+        content = re.sub(r'`([^`]+)`', r'\1', content)
+        
+        # Clean up extra whitespace
+        content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
+        content = content.strip()
+        
+        return content
+
     async def generate_response(
         self,
         messages: List[ConversationMessage],
@@ -137,7 +177,7 @@ class LLMClient:
         # If client is not initialized, return a mock response
         if not self.client:
             return LLMResponse(
-                content="I'm sorry, but the AI assistant is currently unavailable. Please check that the OpenAI API key is configured correctly.",
+                content="AI assistant unavailable. Check OpenAI API configuration.",
                 model_used="mock",
                 tokens_used=0,
                 response_time=time.time() - start_time,
@@ -275,34 +315,38 @@ class LLMClient:
         system_content = ""
         
         if knowledge_context:
-            # Create a comprehensive system prompt with better instructions
-            system_content = f"""You are AutoBoss AI Assistant, an expert troubleshooting and operation guide for AutoBoss net cleaning machines.
+            # Create a concise system prompt with proper formatting
+            system_content = f"""You are AutoBoss AI Assistant for AutoBoss net cleaning machines.
 
 MANUAL CONTENT:
 {knowledge_context}
 
 INSTRUCTIONS:
-1. Use ONLY the manual content provided above to answer questions
-2. Provide step-by-step instructions when appropriate
-3. Include specific section references from the manual when available
-4. If the user asks about troubleshooting, provide the complete diagnostic process
-5. Always prioritize safety considerations
-6. If multiple manual sections are relevant, synthesize the information comprehensively
-7. Quote directly from the manual when giving specific procedures
+1. Use ONLY the manual content above
+2. Be direct and concise - avoid phrases like "I'm sorry to hear that"
+3. Provide step-by-step instructions when needed
+4. Include section references when available
+5. Prioritize safety
+6. Use plain text formatting - NO markdown asterisks or bold formatting
+7. For emphasis, use CAPITAL LETTERS or numbered lists
 8. Respond in {language}
 
-RESPONSE GUIDELINES:
-- Be thorough and detailed in your explanations
-- Include all relevant steps and checks mentioned in the manual
-- Mention specific gauge readings, pressure values, and technical specifications when provided
-- If the manual mentions contacting support or technicians, include that information
-- Structure your response clearly with numbered steps or bullet points when appropriate"""
+RESPONSE STYLE:
+- Direct and to-the-point
+- Clear numbered steps
+- No unnecessary pleasantries
+- Technical but accessible language
+- Include specific values and readings from manual"""
             logger.info(f"Using comprehensive system prompt with {len(knowledge_context)} characters of manual content")
         else:
-            # No knowledge context - use basic system prompt
-            system_content = f"""You are AutoBoss AI Assistant. You help with AutoBoss net cleaning machine troubleshooting and operation.
+            # No knowledge context - use concise basic system prompt
+            system_content = f"""You are AutoBoss AI Assistant for AutoBoss net cleaning machines.
 
-Respond in {language}. If you don't have specific information about AutoBoss procedures, clearly state that you need to refer to the official manual and suggest contacting Oraseas support or an accredited AutoBoss technician."""
+Be direct and concise. Avoid phrases like "I'm sorry to hear that". Use plain text - NO markdown formatting or asterisks. 
+
+If you don't have specific AutoBoss information, state this clearly and suggest contacting Oraseas support.
+
+Respond in {language}."""
             logger.info("Using basic system prompt - no knowledge context found")
         
         openai_messages.insert(0, {
@@ -322,8 +366,11 @@ Respond in {language}. If you don't have specific information about AutoBoss pro
                 
                 response_time = time.time() - start_time
                 
+                # Clean the response content to remove markdown formatting
+                cleaned_content = self._clean_response_formatting(response.choices[0].message.content)
+                
                 return LLMResponse(
-                    content=response.choices[0].message.content,
+                    content=cleaned_content,
                     model_used=response.model,
                     tokens_used=response.usage.total_tokens,
                     response_time=response_time,
@@ -427,7 +474,7 @@ Respond in {language}. If you don't have specific information about AutoBoss pro
     def _create_error_response(self, error_message: str, response_time: float) -> LLMResponse:
         """Create an error response."""
         return LLMResponse(
-            content="I apologize, but I'm experiencing technical difficulties. Please try again later.",
+            content="AI assistant temporarily unavailable. Please try again.",
             model_used="error",
             tokens_used=0,
             response_time=response_time,
@@ -780,7 +827,7 @@ Bruk denne omfattende maskininformasjonen til å gi svært målrettet feilsøkin
         """
         # If client is not initialized, return a mock response
         if not self.client:
-            return "I'm sorry, but the AI assistant is currently unavailable. Please check that the OpenAI API key is configured correctly."
+            return "AI assistant unavailable. Check OpenAI API configuration."
         
         # Convert context to messages format
         messages = []
@@ -806,7 +853,7 @@ Bruk denne omfattende maskininformasjonen til å gi svært målrettet feilsøkin
             language=language
         )
         
-        return response.content if response.success else response.error_message or "I'm sorry, I couldn't generate a response."
+        return response.content if response.success else (response.error_message or "Could not generate response.")
     
     async def generate_embedding(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
         """
