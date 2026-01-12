@@ -422,10 +422,12 @@ const ChatWidget = ({ isOpen, onToggle }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed left-4 z-50" style={{ bottom: '6.5rem' }}>
+    <div className="fixed left-4 z-50" style={{ 
+      bottom: 'max(10.5rem, calc(5.5rem + env(safe-area-inset-bottom)))' 
+    }}>
       {/* Chat Window */}
       <div className={`bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 ${
-        isMinimized ? 'h-14 w-80 sm:w-96 md:w-[28rem]' : 'w-80 sm:w-96 md:w-[28rem]'
+        isMinimized ? 'h-14 w-[calc(100vw-2rem)] max-w-sm sm:w-96 md:w-[28rem]' : 'w-[calc(100vw-2rem)] max-w-sm sm:w-96 md:w-[28rem]'
       }`}
       style={{
         height: isMinimized ? '3.5rem' : 'min(32rem, calc(100vh - 13rem))',

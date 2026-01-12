@@ -64,23 +64,33 @@ const TourButton = () => {
   return (
     <>
       {/* Help Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div 
+        className="fixed right-4 z-50"
+        style={{
+          bottom: 'max(5rem, calc(0.75rem + env(safe-area-inset-bottom)))'
+        }}
+      >
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-105"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105 p-3 sm:p-4"
           title={t('tour.helpButton')}
         >
           {isMenuOpen ? (
-            <XMarkIcon className="h-6 w-6" />
+            <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
           ) : (
-            <QuestionMarkCircleIcon className="h-6 w-6" />
+            <QuestionMarkCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
           )}
         </button>
       </div>
 
       {/* Tour Menu */}
       {isMenuOpen && (
-        <div className="fixed bottom-20 right-6 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-80 max-h-96 overflow-y-auto">
+        <div 
+          className="fixed right-4 z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-80 max-h-96 overflow-y-auto"
+          style={{
+            bottom: 'max(9rem, calc(4.75rem + env(safe-area-inset-bottom)))'
+          }}
+        >
           <div className="p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">
               {t('tour.menuTitle')}
