@@ -59,7 +59,7 @@ const Inventory = () => {
       let partsResponse = [];
 
       try {
-        orgsData = await api.get('/organizations');
+        orgsData = await api.get('/organizations/');
       } catch (orgError) {
         console.error('Failed to fetch organizations:', orgError);
         orgsData = [];

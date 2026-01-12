@@ -21,7 +21,7 @@ const MachineTransferForm = ({ machine, onSubmit, onClose }) => {
 
   const fetchOrganizations = async () => {
     try {
-      const data = await api.get('/organizations');
+      const data = await api.get('/organizations/');
       // Filter to only show customer organizations (excluding current owner)
       const customerOrgs = data.filter(org =>
         org.organization_type === 'customer' &&

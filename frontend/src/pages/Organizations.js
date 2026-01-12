@@ -333,7 +333,7 @@ const Organizations = () => {
                   <div className="mt-4 flex justify-between items-center">
                     <div className="text-xs text-gray-500">
                       <div>{t('organizations.warehouses')}: {org.warehouses_count || 0}</div>
-                      <div>{t('users.users')}: {org.users_count || 0}</div>
+                      <div>{t('organizations.users')}: {org.users_count || 0}</div>
                     </div>
 
                     <PermissionGuard permission={PERMISSIONS.MANAGE_ORGANIZATIONS} hideIfNoPermission={true}>

@@ -171,6 +171,7 @@
     "address": "Address",
     "contact": "Contact",
     "warehouses": "Warehouses",
+    "users": "Users",
     "loadingHierarchy": "Loading hierarchy...",
     "noHierarchyData": "No Hierarchy Data",
     "unableToLoadHierarchy": "Unable to load organization hierarchy.",
