@@ -380,16 +380,14 @@ const Layout = () => {
       {/* Tour Button - Always available for guided help */}
       <TourButton />
 
-      {/* AI Assistant Chat Widget - Only visible to dthomaz for testing */}
-      {user?.username === 'dthomaz' && (
-        <ChatWidget 
-          isOpen={showChatWidget} 
-          onToggle={toggleChatWidget}
-        />
-      )}
+      {/* AI Assistant Chat Widget - Available to all users */}
+      <ChatWidget 
+        isOpen={showChatWidget} 
+        onToggle={toggleChatWidget}
+      />
 
-      {/* Floating Chat Icon - Only show when chat is closed and only for dthomaz */}
-      {!showChatWidget && user?.username === 'dthomaz' && (
+      {/* Floating Chat Icon - Show when chat is closed for all users */}
+      {!showChatWidget && (
         <button
           onClick={toggleChatWidget}
           className="fixed left-4 z-40 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 p-3 sm:p-4"
