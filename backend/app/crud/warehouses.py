@@ -115,65 +115,94 @@ def update_warehouse(db: Session, warehouse_id: uuid.UUID, warehouse_update: "sc
 
 
 def delete_warehouse(db: Session, warehouse_id: uuid.UUID) -> bool:
-    """Delete (deactivate) a warehouse."""
+    """Delete a warehouse after checking all constraints."""
     logger.info(f"Starting warehouse deletion for ID: {warehouse_id}")
     db_warehouse = get_warehouse(db, warehouse_id)
     if not db_warehouse:
         logger.warning(f"Warehouse not found: {warehouse_id}")
         return False
     
-    # Check if warehouse has inventory items with non-zero stock
-    inventory_with_stock = db.query(models.Inventory).filter(
-        models.Inventory.warehouse_id == warehouse_id,
-        models.Inventory.current_stock > 0
-    ).count()
-    if inventory_with_stock > 0:
-        raise ValueError("Cannot delete warehouse with existing inventory stock. Transfer or adjust inventory to zero first.")
-    
-    # Clean up any zero-stock inventory records before deletion
-    zero_stock_inventory = db.query(models.Inventory).filter(
-        models.Inventory.warehouse_id == warehouse_id,
-        models.Inventory.current_stock == 0
-    )
-    zero_stock_count = zero_stock_inventory.count()
-    if zero_stock_count > 0:
-        logger.info(f"Cleaning up {zero_stock_count} zero-stock inventory records for warehouse {warehouse_id}")
-        zero_stock_inventory.delete(synchronize_session=False)
-    
-    # Check if warehouse has transactions
-    transaction_count = db.query(models.Transaction).filter(
-        or_(
-            models.Transaction.from_warehouse_id == warehouse_id,
-            models.Transaction.to_warehouse_id == warehouse_id
-        )
-    ).count()
-    
-    if transaction_count > 0:
-        raise ValueError("Cannot delete warehouse with existing transactions. Deactivate instead.")
-    
-    # Check if warehouse has stock adjustments (through inventory items)
-    adjustments_count = db.query(models.StockAdjustment).join(
-        models.Inventory, models.StockAdjustment.inventory_id == models.Inventory.id
-    ).filter(
-        models.Inventory.warehouse_id == warehouse_id
-    ).count()
-    if adjustments_count > 0:
-        raise ValueError("Cannot delete warehouse with existing stock adjustments. Deactivate instead.")
-    
-    # Note: Stocktake and MachineWarehouseAssignment models don't exist in current schema
-    # Additional constraint checks can be added here when those models are implemented
-    
-    # Safe to delete
-    logger.info(f"All checks passed, proceeding with warehouse deletion: {warehouse_id}")
     try:
+        # Check if warehouse has inventory items with non-zero stock
+        inventory_with_stock = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == warehouse_id,
+            models.Inventory.current_stock > 0
+        ).count()
+        if inventory_with_stock > 0:
+            raise ValueError("Cannot delete warehouse with existing inventory stock. Transfer or adjust inventory to zero first.")
+        
+        # Check if warehouse has transactions
+        transaction_count = db.query(models.Transaction).filter(
+            or_(
+                models.Transaction.from_warehouse_id == warehouse_id,
+                models.Transaction.to_warehouse_id == warehouse_id
+            )
+        ).count()
+        
+        if transaction_count > 0:
+            raise ValueError("Cannot delete warehouse with existing transactions. Deactivate instead.")
+        
+        # Check if warehouse has stock adjustments
+        adjustments_count = db.query(models.StockAdjustment).filter(
+            models.StockAdjustment.warehouse_id == warehouse_id
+        ).count()
+        if adjustments_count > 0:
+            raise ValueError("Cannot delete warehouse with existing stock adjustments. Deactivate instead.")
+        
+        # Check for stocktakes
+        stocktakes_count = db.query(models.Stocktake).filter(
+            models.Stocktake.warehouse_id == warehouse_id
+        ).count()
+        if stocktakes_count > 0:
+            raise ValueError("Cannot delete warehouse with existing stocktakes. Deactivate instead.")
+        
+        # Check for part usage records
+        part_usage_count = db.query(models.PartUsage).filter(
+            models.PartUsage.warehouse_id == warehouse_id
+        ).count()
+        if part_usage_count > 0:
+            raise ValueError("Cannot delete warehouse with existing part usage records. Deactivate instead.")
+        
+        # Check for part usage records (from_warehouse_id)
+        part_usage_records_count = db.query(models.PartUsageRecord).filter(
+            models.PartUsageRecord.from_warehouse_id == warehouse_id
+        ).count()
+        if part_usage_records_count > 0:
+            raise ValueError("Cannot delete warehouse with existing part usage records. Deactivate instead.")
+        
+        # Check for maintenance part usage
+        maintenance_usage_count = db.query(models.MaintenancePartUsage).filter(
+            models.MaintenancePartUsage.warehouse_id == warehouse_id
+        ).count()
+        if maintenance_usage_count > 0:
+            raise ValueError("Cannot delete warehouse with existing maintenance part usage. Deactivate instead.")
+        
+        # Clean up any zero-stock inventory records
+        zero_stock_inventory = db.query(models.Inventory).filter(
+            models.Inventory.warehouse_id == warehouse_id,
+            models.Inventory.current_stock == 0
+        )
+        zero_stock_count = zero_stock_inventory.count()
+        if zero_stock_count > 0:
+            logger.info(f"Cleaning up {zero_stock_count} zero-stock inventory records for warehouse {warehouse_id}")
+            zero_stock_inventory.delete(synchronize_session=False)
+        
+        # All checks passed, safe to delete
+        logger.info(f"All checks passed, proceeding with warehouse deletion: {warehouse_id}")
         db.delete(db_warehouse)
         db.commit()
         logger.info(f"Warehouse successfully deleted: {warehouse_id}")
         return True
-    except Exception as e:
-        logger.error(f"Error during warehouse deletion: {e}")
-        db.rollback()
+        
+    except ValueError as ve:
+        # Business logic errors - don't rollback, just re-raise
+        logger.warning(f"Cannot delete warehouse {warehouse_id}: {ve}")
         raise
+    except Exception as e:
+        # Database errors - rollback and re-raise with more detail
+        logger.error(f"Database error during warehouse deletion {warehouse_id}: {type(e).__name__}: {e}")
+        db.rollback()
+        raise Exception(f"Database error during deletion: {str(e)}")
 
 
 def activate_warehouse(db: Session, warehouse_id: uuid.UUID) -> Optional[models.Warehouse]:

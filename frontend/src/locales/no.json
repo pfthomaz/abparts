@@ -185,7 +185,8 @@
     "deleteConfirm": "Er du sikker på at du vil slette denne organisasjonen? Denne handlingen kan ikke angres.",
     "failedToFetch": "Kunne ikke laste organisasjoner.",
     "failedToDelete": "Kunne ikke slette organisasjon.",
-    "noLogo": "Ingen Logo"
+    "noLogo": "Ingen Logo",
+    "users": "Brukere"
   },
   "parts": {
     "title": "Deler",

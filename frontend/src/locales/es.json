@@ -185,7 +185,8 @@
     "deleteConfirm": "¿Estás seguro de que quieres eliminar esta organización? Esta acción no se puede deshacer.",
     "failedToFetch": "Error al cargar organizaciones.",
     "failedToDelete": "Error al eliminar organización.",
-    "noLogo": "Sin Logo"
+    "noLogo": "Sin Logo",
+    "users": "Usuarios"
   },
   "parts": {
     "title": "Piezas",

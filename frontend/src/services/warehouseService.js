@@ -81,7 +81,7 @@ const updateWarehouse = (warehouseId, warehouseData) => {
  * @param {string} warehouseId The ID of the warehouse to activate
  */
 const activateWarehouse = (warehouseId) => {
-  return api.post(`/warehouses/${warehouseId}/activate`);
+  return api.patch(`/warehouses/${warehouseId}/activate`);
 };
 
 /**
@@ -89,7 +89,7 @@ const activateWarehouse = (warehouseId) => {
  * @param {string} warehouseId The ID of the warehouse to deactivate
  */
 const deactivateWarehouse = (warehouseId) => {
-  return api.post(`/warehouses/${warehouseId}/deactivate`);
+  return api.patch(`/warehouses/${warehouseId}/deactivate`);
 };
 
 /**

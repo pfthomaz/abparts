@@ -185,7 +185,8 @@
     "deleteConfirm": "Bu organizasyonu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
     "failedToFetch": "Organizasyonlar yüklenemedi.",
     "failedToDelete": "Organizasyon silinemedi.",
-    "noLogo": "Logo Yok"
+    "noLogo": "Logo Yok",
+    "users": "Kullanıcılar"
   },
   "parts": {
     "title": "Parçalar",
