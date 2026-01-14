@@ -713,7 +713,18 @@
       "completed": "مكتمل",
       "cancelled": "ملغى",
       "skipped": "متخطى"
-    }
+    },
+    "resume": "استئناف",
+    "resumeExecution": "استئناف التنفيذ",
+    "resuming": "جاري الاستئناف",
+    "continuingIncompleteExecution": "متابعة التنفيذ الجاري",
+    "incomplete": "جاري",
+    "resumeNow": "استئناف الآن",
+    "incompleteDailyProtocols": "البروتوكولات اليومية الجارية",
+    "incompleteDailyProtocolsMessage": "لديك بروتوكولات صيانة يومية جارية يجب إكمالها:",
+    "ongoing": "جاري",
+    "confirmFinishWithIncompleteCritical": "{{count}} عناصر حرجة غير مكتملة. هل أنت متأكد من أنك تريد الإنهاء؟",
+    "complete": "مكتمل"
   },
   "dashboard": {
     "welcomeBack": "مرحباً بعودتك، {{name}}!",
@@ -852,7 +863,8 @@
     "beginStartOfDayChecks": "ابدأ فحوصات بداية اليوم",
     "noProtocolConfigured": "لم يتم تكوين بروتوكول",
     "completeEndOfDayChecks": "أكمل فحوصات نهاية اليوم",
-    "completeStartOfDayFirst": "أكمل فحوصات بداية اليوم أولاً"
+    "completeStartOfDayFirst": "أكمل فحوصات بداية اليوم أولاً",
+    "continueOngoing": "متابعة الجاري"
   },
   "stockAdjustments": {
     "title": "تعديلات المخزون",
@@ -1436,24 +1448,6 @@
     "maximize": "تكبير",
     "minimize": "تصغير",
     "chatWidget": {
-      "typing": "الذكي الاصطناعي يكتب..."
-    },
-    "messages": {
-      "welcomeMessage": "مرحباً! أنا مساعد AutoBoss الذكي. يمكنني مساعدتك في استكشاف مشاكل الآلات وإصلاحها، والعثور على القطع، وإرشادك خلال إجراءات الصيانة. كيف يمكنني مساعدتك اليوم؟",
-      "placeholder": "اكتب رسالتك هنا...",
-      "machineSelected": "الآلة المختارة: {{machineName}} ({{modelType}})",
-      "machineCleared": "تم مسح اختيار الآلة. أقدم المساعدة العامة."
-    },
-    "voice": {
-      "enableVoice": "تفعيل الصوت",
-      "disableVoice": "إلغاء تفعيل الصوت",
-      "stopSpeaking": "إيقاف التحدث",
-      "speakResponse": "نطق الرد"
-    },
-    "errors": {
-      "connectionError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى."
-    },
-    "chatWidget": {
       "openChat": "فتح المساعد الذكي",
       "closeChat": "إغلاق المساعد الذكي",
       "minimize": "تصغير",
@@ -1480,6 +1474,29 @@
       "thumbsDown": "غير مفيد",
       "feedback": "تقديم ملاحظات",
       "reportIssue": "الإبلاغ عن مشكلة"
+    },
+    "voice": {
+      "startListening": "بدء الإدخال الصوتي",
+      "stopListening": "إيقاف الاستماع",
+      "listening": "أستمع...",
+      "processing": "معالجة الكلام...",
+      "speakResponse": "نطق الإجابة",
+      "stopSpeaking": "إيقاف النطق",
+      "voiceNotSupported": "الإدخال الصوتي غير مدعوم في هذا المتصفح",
+      "microphonePermissionDenied": "تم رفض إذن الميكروفون",
+      "speechRecognitionError": "خطأ في التعرف على الكلام",
+      "enableVoice": "تمكين الصوت",
+      "disableVoice": "تعطيل الصوت"
+    },
+    "errors": {
+      "connectionError": "خطأ في الاتصال. يرجى التحقق من اتصالك بالإنترنت.",
+      "serviceUnavailable": "خدمة الذكي الاصطناعي غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى لاحقاً.",
+      "sessionError": "حدث خطأ في الجلسة. بدء جلسة جديدة.",
+      "messageError": "فشل في إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+      "voiceError": "خطأ في الإدخال الصوتي. يرجى المحاولة مرة أخرى.",
+      "unknownError": "حدث خطأ غير متوقع. يرجى التحديث والمحاولة مرة أخرى.",
+      "rateLimitExceeded": "طلبات كثيرة جداً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.",
+      "invalidInput": "إدخال غير صالح. يرجى التحقق من رسالتك والمحاولة مرة أخرى."
     },
     "escalationModal": {
       "title": "تصعيد إلى دعم الخبراء",
@@ -1548,19 +1565,6 @@
       "compatibleParts": "قطع الغيار المتوافقة",
       "changeMachine": "تغيير الآلة"
     },
-    "voice": {
-      "startListening": "بدء الإدخال الصوتي",
-      "stopListening": "إيقاف الاستماع",
-      "listening": "أستمع...",
-      "processing": "معالجة الكلام...",
-      "speakResponse": "نطق الإجابة",
-      "stopSpeaking": "إيقاف النطق",
-      "voiceNotSupported": "الإدخال الصوتي غير مدعوم في هذا المتصفح",
-      "microphonePermissionDenied": "تم رفض إذن الميكروفون",
-      "speechRecognitionError": "خطأ في التعرف على الكلام",
-      "enableVoice": "تمكين الصوت",
-      "disableVoice": "تعطيل الصوت"
-    },
     "escalation": {
       "escalateToSupport": "تصعيد إلى الدعم",
       "contactExpert": "الاتصال بخبير",
@@ -1600,16 +1604,6 @@
       "fontSize": "حجم الخط",
       "resetSettings": "إعادة تعيين إلى الافتراضي",
       "settingsSaved": "تم حفظ الإعدادات"
-    },
-    "errors": {
-      "connectionError": "خطأ في الاتصال. يرجى التحقق من اتصالك بالإنترنت.",
-      "serviceUnavailable": "خدمة الذكي الاصطناعي غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى لاحقاً.",
-      "sessionError": "حدث خطأ في الجلسة. بدء جلسة جديدة.",
-      "messageError": "فشل في إرسال الرسالة. يرجى المحاولة مرة أخرى.",
-      "voiceError": "خطأ في الإدخال الصوتي. يرجى المحاولة مرة أخرى.",
-      "unknownError": "حدث خطأ غير متوقع. يرجى التحديث والمحاولة مرة أخرى.",
-      "rateLimitExceeded": "طلبات كثيرة جداً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.",
-      "invalidInput": "إدخال غير صالح. يرجى التحقق من رسالتك والمحاولة مرة أخرى."
     },
     "status": {
       "initializing": "تهيئة المساعد الذكي...",

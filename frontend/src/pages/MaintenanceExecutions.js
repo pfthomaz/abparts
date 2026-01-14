@@ -19,6 +19,7 @@ const MaintenanceExecutions = () => {
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [selectedProtocol, setSelectedProtocol] = useState(null);
   const [showExecutionForm, setShowExecutionForm] = useState(false);
+  const [resumingExecution, setResumingExecution] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'history'
@@ -29,10 +30,17 @@ const MaintenanceExecutions = () => {
 
   // Handle preselected machine/protocol from navigation state
   useEffect(() => {
-    if (location.state?.preselectedMachine && location.state?.preselectedProtocol) {
+    if (location.state?.resumeExecution) {
+      // Resume an ongoing execution
+      const execution = location.state.resumeExecution;
+      setSelectedMachine(execution.machine);
+      setSelectedProtocol(execution.protocol);
+      setResumingExecution(execution);
+      setShowExecutionForm(true);
+    } else if (location.state?.preselectedMachine && location.state?.preselectedProtocol) {
+      // Start new execution
       setSelectedMachine(location.state.preselectedMachine);
       setSelectedProtocol(location.state.preselectedProtocol);
-      // Auto-start execution
       setShowExecutionForm(true);
     }
   }, [location.state]);
@@ -70,6 +78,14 @@ const MaintenanceExecutions = () => {
     setShowExecutionForm(true);
   };
 
+  const handleResumeExecution = (execution) => {
+    console.log('Resuming execution:', execution);
+    setSelectedMachine(execution.machine);
+    setSelectedProtocol(execution.protocol);
+    setResumingExecution(execution);
+    setShowExecutionForm(true);
+  };
+
   const handleExecutionComplete = () => {
     // If we came from DailyOperations, navigate back with the machine selected
     if (location.state?.sessionType) {
@@ -82,6 +98,7 @@ const MaintenanceExecutions = () => {
       setShowExecutionForm(false);
       setSelectedMachine(null);
       setSelectedProtocol(null);
+      setResumingExecution(null);
       loadData();
     }
   };
@@ -99,11 +116,13 @@ const MaintenanceExecutions = () => {
       <ExecutionForm
         machine={selectedMachine}
         protocol={selectedProtocol}
+        existingExecution={resumingExecution}
         onComplete={handleExecutionComplete}
         onCancel={() => {
           setShowExecutionForm(false);
           setSelectedMachine(null);
           setSelectedProtocol(null);
+          setResumingExecution(null);
         }}
       />
     );
@@ -118,6 +137,47 @@ const MaintenanceExecutions = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
+        </div>
+      )}
+
+      {/* Incomplete Daily Protocols Banner */}
+      {executions.filter(e => 
+        e.status === 'in_progress' && 
+        e.protocol?.protocol_type === 'daily'
+      ).length > 0 && (
+        <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-md shadow-sm">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-orange-800">
+                {t('maintenance.incompleteDailyProtocols')}
+              </h3>
+              <div className="mt-2 text-sm text-orange-700">
+                <p>{t('maintenance.incompleteDailyProtocolsMessage')}</p>
+                <div className="mt-3 space-y-2">
+                  {executions
+                    .filter(e => e.status === 'in_progress' && e.protocol?.protocol_type === 'daily')
+                    .map(execution => (
+                      <div key={execution.id} className="flex items-center justify-between bg-white p-2 rounded">
+                        <span className="font-medium">
+                          {execution.protocol?.name} - {execution.machine?.name || execution.machine?.serial_number}
+                        </span>
+                        <button
+                          onClick={() => handleResumeExecution(execution)}
+                          className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm"
+                        >
+                          {t('maintenance.resumeNow')}
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -233,7 +293,11 @@ const MaintenanceExecutions = () => {
       )}
 
       {activeTab === 'history' && (
-        <ExecutionHistory executions={executions} onRefresh={loadData} />
+        <ExecutionHistory 
+          executions={executions} 
+          onRefresh={loadData}
+          onResumeExecution={handleResumeExecution}
+        />
       )}
 
 

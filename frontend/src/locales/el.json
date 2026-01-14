@@ -713,7 +713,18 @@
       "completed": "Ολοκληρώθηκε",
       "cancelled": "Ακυρώθηκε",
       "skipped": "Παραλείφθηκε"
-    }
+    },
+    "resume": "Συνέχιση",
+    "resumeExecution": "Συνέχιση Εκτέλεσης",
+    "resuming": "Συνέχιση",
+    "continuingIncompleteExecution": "Συνέχιση εκτέλεσης σε εξέλιξη",
+    "incomplete": "Σε Εξέλιξη",
+    "resumeNow": "Συνέχιση Τώρα",
+    "incompleteDailyProtocols": "Ημερήσια Πρωτόκολλα σε Εξέλιξη",
+    "incompleteDailyProtocolsMessage": "Έχετε ημερήσια πρωτόκολλα συντήρησης σε εξέλιξη που πρέπει να ολοκληρωθούν:",
+    "ongoing": "Σε Εξέλιξη",
+    "confirmFinishWithIncompleteCritical": "{{count}} κρίσιμα στοιχεία δεν έχουν ολοκληρωθεί. Είστε σίγουροι ότι θέλετε να ολοκληρώσετε;",
+    "complete": "ολοκληρώθηκε"
   },
   "dashboard": {
     "welcomeBack": "Καλώς ήρθες πίσω, {{name}}!",
@@ -852,7 +863,8 @@
     "beginStartOfDayChecks": "Ξεκινήστε τους Ελέγχους Έναρξης Ημέρας",
     "noProtocolConfigured": "Δεν έχει ρυθμιστεί πρωτόκολλο",
     "completeEndOfDayChecks": "Ολοκληρώστε τους Ελέγχους Τέλους Ημέρας",
-    "completeStartOfDayFirst": "Ολοκληρώστε πρώτα τους ελέγχους έναρξης ημέρας"
+    "completeStartOfDayFirst": "Ολοκληρώστε πρώτα τους ελέγχους έναρξης ημέρας",
+    "continueOngoing": "Συνέχιση σε Εξέλιξη"
   },
   "stockAdjustments": {
     "title": "Προσαρμογές Αποθέματος",

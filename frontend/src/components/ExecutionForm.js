@@ -8,11 +8,11 @@ import {
   completeExecution
 } from '../services/maintenanceProtocolsService';
 
-const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
+const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete, onCancel }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [checklistItems, setChecklistItems] = useState([]);
-  const [executionId, setExecutionId] = useState(null);
+  const [executionId, setExecutionId] = useState(existingExecution?.id || null);
   const [completedItems, setCompletedItems] = useState({});
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);  // Start as false, will be set to true when starting execution
@@ -20,10 +20,55 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
   const [error, setError] = useState(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  // Don't auto-initialize - wait for user to enter hours
+  // Don't auto-initialize - wait for user to enter hours (unless resuming)
 
   const [machineHours, setMachineHours] = useState(machine.current_hours || 0);
-  const [showHoursInput, setShowHoursInput] = useState(true);
+  const [showHoursInput, setShowHoursInput] = useState(!existingExecution); // Skip hours input if resuming
+
+  // Load existing execution data if resuming
+  useEffect(() => {
+    if (existingExecution) {
+      loadExistingExecution();
+    }
+  }, [existingExecution]);
+
+  const loadExistingExecution = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Loading existing execution:', existingExecution);
+      
+      // Load localized checklist items
+      const items = await getLocalizedChecklistItems(protocol.id, user.preferred_language);
+      console.log('Loaded localized checklist items:', items);
+      setChecklistItems(items);
+
+      // Map existing completions to completedItems state
+      if (existingExecution.checklist_completions && existingExecution.checklist_completions.length > 0) {
+        const completionsMap = {};
+        existingExecution.checklist_completions.forEach(completion => {
+          completionsMap[completion.checklist_item_id] = {
+            completed: completion.status === 'completed',
+            notes: completion.notes || '',
+            quantity: completion.actual_quantity_used || '',
+            saved: true
+          };
+        });
+        setCompletedItems(completionsMap);
+        console.log('Loaded existing completions:', completionsMap);
+      }
+      
+      setExecutionId(existingExecution.id);
+      setShowHoursInput(false);
+    } catch (err) {
+      console.error('Error loading existing execution:', err);
+      setError(err.message);
+      alert(`Failed to load execution: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const initializeExecution = async (hours) => {
     try {
@@ -120,17 +165,6 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
   };
 
   const handleFinish = async () => {
-    // Check if all critical items are completed
-    const criticalItems = checklistItems.filter(item => item.is_critical);
-    const incompleteCritical = criticalItems.filter(
-      item => !completedItems[item.id]?.completed
-    );
-
-    if (incompleteCritical.length > 0) {
-      alert(t('maintenance.completeAllCriticalItems', { count: incompleteCritical.length }));
-      return;
-    }
-
     // Check if any items are not saved
     const unsavedItems = Object.entries(completedItems).filter(
       ([_, data]) => !data.saved
@@ -141,7 +175,21 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
       return;
     }
 
-    if (!window.confirm(t('maintenance.confirmFinishExecution'))) {
+    // Warn about uncompleted critical items but allow finishing
+    const criticalItems = checklistItems.filter(item => item.is_critical);
+    const incompleteCritical = criticalItems.filter(
+      item => !completedItems[item.id]?.completed
+    );
+
+    if (incompleteCritical.length > 0) {
+      const confirmMessage = t('maintenance.confirmFinishWithIncompleteCritical', { 
+        count: incompleteCritical.length 
+      }) || `${incompleteCritical.length} critical items are not completed. Are you sure you want to finish?`;
+      
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    } else if (!window.confirm(t('maintenance.confirmFinishExecution'))) {
       return;
     }
 
@@ -237,10 +285,17 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{protocol.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {existingExecution ? `${t('maintenance.resuming')}: ${protocol.name}` : protocol.name}
+            </h1>
             <p className="text-gray-600 mt-1">
               {t('maintenance.machine')}: {machine.serial_number} - {machine.model}
             </p>
+            {existingExecution && (
+              <p className="text-sm text-orange-600 mt-1">
+                {t('maintenance.continuingIncompleteExecution')}
+              </p>
+            )}
           </div>
           <button
             onClick={onCancel}
@@ -381,13 +436,19 @@ const ExecutionForm = ({ machine, protocol, onComplete, onCancel }) => {
           >
             {t('common.cancel')}
           </button>
-          <button
-            onClick={handleFinish}
-            disabled={progress < 100}
-            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {t('maintenance.finishMaintenance')}
-          </button>
+          <div className="flex items-center gap-4">
+            {progress < 100 && (
+              <span className="text-sm text-gray-600">
+                {Math.round(progress)}% {t('maintenance.complete')}
+              </span>
+            )}
+            <button
+              onClick={handleFinish}
+              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              {t('maintenance.finishMaintenance')}
+            </button>
+          </div>
         </div>
       </div>
 

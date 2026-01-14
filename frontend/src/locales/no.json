@@ -719,7 +719,18 @@
       "completed": "Fullført",
       "cancelled": "Kansellert",
       "skipped": "Hoppet Over"
-    }
+    },
+    "resume": "Gjenoppta",
+    "resumeExecution": "Gjenoppta Utførelse",
+    "resuming": "Gjenopptar",
+    "continuingIncompleteExecution": "Fortsetter pågående utførelse",
+    "incomplete": "Pågående",
+    "resumeNow": "Gjenoppta Nå",
+    "incompleteDailyProtocols": "Pågående Daglige Protokoller",
+    "incompleteDailyProtocolsMessage": "Du har pågående daglige vedlikeholdsprotokoller som må fullføres:",
+    "ongoing": "Pågående",
+    "confirmFinishWithIncompleteCritical": "{{count}} kritiske elementer er ikke fullført. Er du sikker på at du vil fullføre?",
+    "complete": "fullført"
   },
   "dashboard": {
     "welcomeBack": "Velkommen tilbake, {{name}}!",
@@ -858,7 +869,8 @@
     "beginStartOfDayChecks": "Begynn Start av Dag Sjekker",
     "noProtocolConfigured": "Ingen protokoll konfigurert",
     "completeEndOfDayChecks": "Fullfør Slutt av Dag Sjekker",
-    "completeStartOfDayFirst": "Fullfør start av dag sjekker først"
+    "completeStartOfDayFirst": "Fullfør start av dag sjekker først",
+    "continueOngoing": "Fortsett Pågående"
   },
   "stockAdjustments": {
     "title": "Lagerjusteringer",
@@ -1440,24 +1452,6 @@
     "maximize": "Maksimer",
     "minimize": "Minimer",
     "chatWidget": {
-      "typing": "AI skriver..."
-    },
-    "messages": {
-      "welcomeMessage": "Hei! Jeg er din AutoBoss AI-assistent. Jeg kan hjelpe deg med å feilsøke maskinproblemer, finne deler og veilede deg gjennom vedlikeholdsprosedyrer. Hvordan kan jeg hjelpe deg i dag?",
-      "placeholder": "Skriv meldingen din her...",
-      "machineSelected": "Valgt maskin: {{machineName}} ({{modelType}})",
-      "machineCleared": "Maskinvalg fjernet. Gir generell assistanse."
-    },
-    "voice": {
-      "enableVoice": "Aktiver Stemme",
-      "disableVoice": "Deaktiver Stemme",
-      "stopSpeaking": "Stopp Tale",
-      "speakResponse": "Snakk Svar"
-    },
-    "errors": {
-      "connectionError": "Tilkoblingsfeil. Vennligst prøv igjen."
-    },
-    "chatWidget": {
       "openChat": "Åpne AI-assistent",
       "closeChat": "Lukk AI-assistent",
       "minimize": "Minimer",
@@ -1484,6 +1478,29 @@
       "thumbsDown": "Ikke nyttig",
       "feedback": "Gi tilbakemelding",
       "reportIssue": "Rapporter problem"
+    },
+    "voice": {
+      "startListening": "Start Taleinndata",
+      "stopListening": "Stopp Lytting",
+      "listening": "Lytter...",
+      "processing": "Behandler tale...",
+      "speakResponse": "Snakk Svar",
+      "stopSpeaking": "Stopp Tale",
+      "voiceNotSupported": "Taleinndata støttes ikke i denne nettleseren",
+      "microphonePermissionDenied": "Mikrofontillatelse nektet",
+      "speechRecognitionError": "Talegjenkjenningsfeil",
+      "enableVoice": "Aktiver Tale",
+      "disableVoice": "Deaktiver Tale"
+    },
+    "errors": {
+      "connectionError": "Tilkoblingsfeil. Vennligst sjekk internettforbindelsen din.",
+      "serviceUnavailable": "AI-tjenesten er midlertidig utilgjengelig. Vennligst prøv igjen senere.",
+      "sessionError": "Øktfeil oppstod. Starter ny økt.",
+      "messageError": "Kunne ikke sende melding. Vennligst prøv igjen.",
+      "voiceError": "Taleinndata-feil. Vennligst prøv igjen.",
+      "unknownError": "En uventet feil oppstod. Vennligst oppdater og prøv igjen.",
+      "rateLimitExceeded": "For mange forespørsler. Vennligst vent litt før du prøver igjen.",
+      "invalidInput": "Ugyldig inndata. Vennligst sjekk meldingen din og prøv igjen."
     },
     "troubleshooting": {
       "startTroubleshooting": "Start Feilsøking",
@@ -1519,19 +1536,6 @@
       "recentIssues": "Nylige Problemer",
       "compatibleParts": "Kompatible Deler",
       "changeMachine": "Bytt Maskin"
-    },
-    "voice": {
-      "startListening": "Start Taleinndata",
-      "stopListening": "Stopp Lytting",
-      "listening": "Lytter...",
-      "processing": "Behandler tale...",
-      "speakResponse": "Snakk Svar",
-      "stopSpeaking": "Stopp Tale",
-      "voiceNotSupported": "Taleinndata støttes ikke i denne nettleseren",
-      "microphonePermissionDenied": "Mikrofontillatelse nektet",
-      "speechRecognitionError": "Talegjenkjenningsfeil",
-      "enableVoice": "Aktiver Tale",
-      "disableVoice": "Deaktiver Tale"
     },
     "escalation": {
       "escalateToSupport": "Eskaler til Support",
@@ -1572,16 +1576,6 @@
       "fontSize": "Skriftstørrelse",
       "resetSettings": "Tilbakestill til Standard",
       "settingsSaved": "Innstillinger lagret"
-    },
-    "errors": {
-      "connectionError": "Tilkoblingsfeil. Vennligst sjekk internettforbindelsen din.",
-      "serviceUnavailable": "AI-tjenesten er midlertidig utilgjengelig. Vennligst prøv igjen senere.",
-      "sessionError": "Øktfeil oppstod. Starter ny økt.",
-      "messageError": "Kunne ikke sende melding. Vennligst prøv igjen.",
-      "voiceError": "Taleinndata-feil. Vennligst prøv igjen.",
-      "unknownError": "En uventet feil oppstod. Vennligst oppdater og prøv igjen.",
-      "rateLimitExceeded": "For mange forespørsler. Vennligst vent litt før du prøver igjen.",
-      "invalidInput": "Ugyldig inndata. Vennligst sjekk meldingen din og prøv igjen."
     },
     "status": {
       "initializing": "Initialiserer AI-assistent...",

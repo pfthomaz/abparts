@@ -16,7 +16,7 @@ const DailyOperations = () => {
   const [endProtocol, setEndProtocol] = useState(null);
   const [todayExecutions, setTodayExecutions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sessionStatus, setSessionStatus] = useState(null); // 'not_started', 'in_progress', 'completed'
+  const [sessionStatus, setSessionStatus] = useState(null); // { status: 'not_started'|'in_progress'|'completed', ongoingStart, ongoingEnd, hasCompletedStart, hasCompletedEnd }
 
   useEffect(() => {
     loadData();
@@ -101,44 +101,91 @@ const DailyOperations = () => {
     }
 
     const machineExecs = todayExecutions.filter(e => e.machine_id === selectedMachine.id);
-    const hasStart = machineExecs.some(e => 
-      e.protocol?.name.toLowerCase().includes('start') || 
-      e.protocol?.name.toLowerCase().includes('pre-operation')
+    
+    // Check for ongoing (in_progress) executions
+    const ongoingStart = machineExecs.find(e => 
+      e.status === 'in_progress' &&
+      (e.protocol?.name.toLowerCase().includes('start') || 
+       e.protocol?.name.toLowerCase().includes('pre-operation') ||
+       e.protocol?.name.toLowerCase().includes('έναρξη'))
     );
-    const hasEnd = machineExecs.some(e => 
-      e.protocol?.name.toLowerCase().includes('end') || 
-      e.protocol?.name.toLowerCase().includes('post-operation')
+    
+    const ongoingEnd = machineExecs.find(e => 
+      e.status === 'in_progress' &&
+      (e.protocol?.name.toLowerCase().includes('end') || 
+       e.protocol?.name.toLowerCase().includes('post-operation') ||
+       e.protocol?.name.toLowerCase().includes('τέλος'))
+    );
+    
+    // Check for completed executions
+    const hasCompletedStart = machineExecs.some(e => 
+      e.status === 'completed' &&
+      (e.protocol?.name.toLowerCase().includes('start') || 
+       e.protocol?.name.toLowerCase().includes('pre-operation') ||
+       e.protocol?.name.toLowerCase().includes('έναρξη'))
+    );
+    
+    const hasCompletedEnd = machineExecs.some(e => 
+      e.status === 'completed' &&
+      (e.protocol?.name.toLowerCase().includes('end') || 
+       e.protocol?.name.toLowerCase().includes('post-operation') ||
+       e.protocol?.name.toLowerCase().includes('τέλος'))
     );
 
-    if (hasEnd) {
-      setSessionStatus('completed');
-    } else if (hasStart) {
-      setSessionStatus('in_progress');
-    } else {
-      setSessionStatus('not_started');
-    }
+    // Store ongoing executions for resume functionality
+    setSessionStatus({
+      status: hasCompletedEnd ? 'completed' : (hasCompletedStart || ongoingStart) ? 'in_progress' : 'not_started',
+      ongoingStart,
+      ongoingEnd,
+      hasCompletedStart,
+      hasCompletedEnd
+    });
   }, [selectedMachine, todayExecutions]);
 
   const handleStartDay = () => {
     if (!selectedMachine || !startProtocol) return;
-    navigate('/maintenance-executions', {
-      state: {
-        preselectedMachine: selectedMachine,
-        preselectedProtocol: startProtocol,
-        sessionType: 'start_of_day'
-      }
-    });
+    
+    // If there's an ongoing start execution, resume it
+    if (sessionStatus?.ongoingStart) {
+      navigate('/maintenance-executions', {
+        state: {
+          resumeExecution: sessionStatus.ongoingStart,
+          sessionType: 'start_of_day'
+        }
+      });
+    } else {
+      // Start new execution
+      navigate('/maintenance-executions', {
+        state: {
+          preselectedMachine: selectedMachine,
+          preselectedProtocol: startProtocol,
+          sessionType: 'start_of_day'
+        }
+      });
+    }
   };
 
   const handleEndDay = () => {
     if (!selectedMachine || !endProtocol) return;
-    navigate('/maintenance-executions', {
-      state: {
-        preselectedMachine: selectedMachine,
-        preselectedProtocol: endProtocol,
-        sessionType: 'end_of_day'
-      }
-    });
+    
+    // If there's an ongoing end execution, resume it
+    if (sessionStatus?.ongoingEnd) {
+      navigate('/maintenance-executions', {
+        state: {
+          resumeExecution: sessionStatus.ongoingEnd,
+          sessionType: 'end_of_day'
+        }
+      });
+    } else {
+      // Start new execution
+      navigate('/maintenance-executions', {
+        state: {
+          preselectedMachine: selectedMachine,
+          preselectedProtocol: endProtocol,
+          sessionType: 'end_of_day'
+        }
+      });
+    }
   };
 
   if (loading) {
@@ -180,28 +227,28 @@ const DailyOperations = () => {
         </select>
       </div>
 
-      {selectedMachine && (
+      {selectedMachine && sessionStatus && (
         <>
           {/* Session Status */}
           <div className={`rounded-lg shadow p-6 ${
-            sessionStatus === 'completed' ? 'bg-green-50 border-2 border-green-200' :
-            sessionStatus === 'in_progress' ? 'bg-yellow-50 border-2 border-yellow-200' :
+            sessionStatus.status === 'completed' ? 'bg-green-50 border-2 border-green-200' :
+            sessionStatus.status === 'in_progress' ? 'bg-yellow-50 border-2 border-yellow-200' :
             'bg-gray-50 border-2 border-gray-200'
           }`}>
             <div className="flex items-center gap-3 mb-2">
               <span className="text-2xl">
-                {sessionStatus === 'completed' ? '✅' :
-                 sessionStatus === 'in_progress' ? '⚙️' : '🔵'}
+                {sessionStatus.status === 'completed' ? '✅' :
+                 sessionStatus.status === 'in_progress' ? '⚙️' : '🔵'}
               </span>
               <h2 className="text-xl font-bold text-gray-900">
-                {sessionStatus === 'completed' ? t('dailyOperations.dayCompleted') :
-                 sessionStatus === 'in_progress' ? t('dailyOperations.operationsInProgress') :
+                {sessionStatus.status === 'completed' ? t('dailyOperations.dayCompleted') :
+                 sessionStatus.status === 'in_progress' ? t('dailyOperations.operationsInProgress') :
                  t('dailyOperations.readyToStart')}
               </h2>
             </div>
             <p className="text-gray-600">
-              {sessionStatus === 'completed' ? t('dailyOperations.allDailyChecksCompleted') :
-               sessionStatus === 'in_progress' ? t('dailyOperations.startCompletedRememberEnd') :
+              {sessionStatus.status === 'completed' ? t('dailyOperations.allDailyChecksCompleted') :
+               sessionStatus.status === 'in_progress' ? t('dailyOperations.startCompletedRememberEnd') :
                t('dailyOperations.beginDayWithStartChecks')}
             </p>
           </div>
@@ -210,7 +257,8 @@ const DailyOperations = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Start of Day */}
             <div className={`bg-white rounded-lg shadow-lg p-6 ${
-              sessionStatus === 'not_started' ? 'ring-2 ring-cyan-500' : ''
+              sessionStatus.status === 'not_started' ? 'ring-2 ring-cyan-500' : 
+              sessionStatus.ongoingStart ? 'ring-2 ring-orange-500' : ''
             }`}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
@@ -222,7 +270,22 @@ const DailyOperations = () => {
                 </div>
               </div>
               
-              {sessionStatus === 'not_started' ? (
+              {sessionStatus.ongoingStart ? (
+                <button
+                  onClick={handleStartDay}
+                  className="w-full px-4 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium flex items-center justify-center gap-2"
+                >
+                  <span className="animate-pulse">⚙️</span>
+                  {t('dailyOperations.continueOngoing')}
+                </button>
+              ) : sessionStatus.hasCompletedStart ? (
+                <div className="flex items-center gap-2 text-green-600">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">{t('dailyOperations.completed')}</span>
+                </div>
+              ) : (
                 <button
                   onClick={handleStartDay}
                   disabled={!startProtocol}
@@ -230,19 +293,13 @@ const DailyOperations = () => {
                 >
                   {startProtocol ? t('dailyOperations.beginStartOfDayChecks') : t('dailyOperations.noProtocolConfigured')}
                 </button>
-              ) : (
-                <div className="flex items-center gap-2 text-green-600">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="font-medium">{t('dailyOperations.completed')}</span>
-                </div>
               )}
             </div>
 
             {/* End of Day */}
             <div className={`bg-white rounded-lg shadow-lg p-6 ${
-              sessionStatus === 'in_progress' ? 'ring-2 ring-orange-500' : ''
+              sessionStatus.status === 'in_progress' && !sessionStatus.ongoingStart ? 'ring-2 ring-orange-500' : 
+              sessionStatus.ongoingEnd ? 'ring-2 ring-orange-500' : ''
             }`}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
@@ -254,14 +311,22 @@ const DailyOperations = () => {
                 </div>
               </div>
               
-              {sessionStatus === 'completed' ? (
+              {sessionStatus.ongoingEnd ? (
+                <button
+                  onClick={handleEndDay}
+                  className="w-full px-4 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium flex items-center justify-center gap-2"
+                >
+                  <span className="animate-pulse">⚙️</span>
+                  {t('dailyOperations.continueOngoing')}
+                </button>
+              ) : sessionStatus.hasCompletedEnd ? (
                 <div className="flex items-center gap-2 text-green-600">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className="font-medium">{t('dailyOperations.completed')}</span>
                 </div>
-              ) : sessionStatus === 'in_progress' ? (
+              ) : sessionStatus.hasCompletedStart ? (
                 <button
                   onClick={handleEndDay}
                   disabled={!endProtocol}

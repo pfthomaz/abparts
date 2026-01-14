@@ -719,7 +719,18 @@
       "completed": "Tamamlandı",
       "cancelled": "İptal Edildi",
       "skipped": "Atlandı"
-    }
+    },
+    "resume": "Devam Et",
+    "resumeExecution": "Yürütmeye Devam Et",
+    "resuming": "Devam Ediyor",
+    "continuingIncompleteExecution": "Devam eden yürütmeye devam ediliyor",
+    "incomplete": "Devam Ediyor",
+    "resumeNow": "Şimdi Devam Et",
+    "incompleteDailyProtocols": "Devam Eden Günlük Protokoller",
+    "incompleteDailyProtocolsMessage": "Tamamlanması gereken devam eden günlük bakım protokolleriniz var:",
+    "ongoing": "Devam Ediyor",
+    "confirmFinishWithIncompleteCritical": "{{count}} kritik öğe tamamlanmadı. Bitirmek istediğinizden emin misiniz?",
+    "complete": "tamamlandı"
   },
   "dashboard": {
     "welcomeBack": "Tekrar hoş geldin, {{name}}!",
@@ -858,7 +869,8 @@
     "beginStartOfDayChecks": "Gün Başı Kontrollerini Başlat",
     "noProtocolConfigured": "Protokol yapılandırılmamış",
     "completeEndOfDayChecks": "Gün Sonu Kontrollerini Tamamla",
-    "completeStartOfDayFirst": "Önce gün başı kontrollerini tamamlayın"
+    "completeStartOfDayFirst": "Önce gün başı kontrollerini tamamlayın",
+    "continueOngoing": "Devam Edene Devam Et"
   },
   "stockAdjustments": {
     "title": "Stok Ayarlamaları",
@@ -1440,24 +1452,6 @@
     "maximize": "Büyüt",
     "minimize": "Küçült",
     "chatWidget": {
-      "typing": "AI yazıyor..."
-    },
-    "messages": {
-      "welcomeMessage": "Merhaba! Ben AutoBoss AI Asistanınızım. Makine sorunlarını gidermenize, parça bulmanıza ve bakım prosedürlerinde size rehberlik etmeme yardımcı olabilirim. Bugün size nasıl yardımcı olabilirim?",
-      "placeholder": "Mesajınızı buraya yazın...",
-      "machineSelected": "Seçilen makine: {{machineName}} ({{modelType}})",
-      "machineCleared": "Makine seçimi temizlendi. Genel yardım sağlıyorum."
-    },
-    "voice": {
-      "enableVoice": "Sesi Etkinleştir",
-      "disableVoice": "Sesi Devre Dışı Bırak",
-      "stopSpeaking": "Konuşmayı Durdur",
-      "speakResponse": "Yanıtı Seslendir"
-    },
-    "errors": {
-      "connectionError": "Bağlantı hatası. Lütfen tekrar deneyin."
-    },
-    "chatWidget": {
       "openChat": "AI Asistanını Aç",
       "closeChat": "AI Asistanını Kapat",
       "minimize": "Küçült",
@@ -1484,6 +1478,29 @@
       "thumbsDown": "Yararlı değil",
       "feedback": "Geri bildirim ver",
       "reportIssue": "Sorun bildir"
+    },
+    "voice": {
+      "startListening": "Sesli Girişi Başlat",
+      "stopListening": "Dinlemeyi Durdur",
+      "listening": "Dinleniyor...",
+      "processing": "Konuşma işleniyor...",
+      "speakResponse": "Yanıtı Seslendir",
+      "stopSpeaking": "Konuşmayı Durdur",
+      "voiceNotSupported": "Bu tarayıcıda sesli giriş desteklenmiyor",
+      "microphonePermissionDenied": "Mikrofon izni reddedildi",
+      "speechRecognitionError": "Konuşma tanıma hatası",
+      "enableVoice": "Sesi Etkinleştir",
+      "disableVoice": "Sesi Devre Dışı Bırak"
+    },
+    "errors": {
+      "connectionError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
+      "serviceUnavailable": "AI hizmeti geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+      "sessionError": "Oturum hatası oluştu. Yeni oturum başlatılıyor.",
+      "messageError": "Mesaj gönderme başarısız. Lütfen tekrar deneyin.",
+      "voiceError": "Sesli giriş hatası. Lütfen tekrar deneyin.",
+      "unknownError": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin ve tekrar deneyin.",
+      "rateLimitExceeded": "Çok fazla istek. Lütfen tekrar denemeden önce biraz bekleyin.",
+      "invalidInput": "Geçersiz giriş. Lütfen mesajınızı kontrol edin ve tekrar deneyin."
     },
     "troubleshooting": {
       "startTroubleshooting": "Sorun Gidermeyi Başlat",
@@ -1519,19 +1536,6 @@
       "recentIssues": "Son Sorunlar",
       "compatibleParts": "Uyumlu Parçalar",
       "changeMachine": "Makine Değiştir"
-    },
-    "voice": {
-      "startListening": "Sesli Girişi Başlat",
-      "stopListening": "Dinlemeyi Durdur",
-      "listening": "Dinleniyor...",
-      "processing": "Konuşma işleniyor...",
-      "speakResponse": "Yanıtı Seslendir",
-      "stopSpeaking": "Konuşmayı Durdur",
-      "voiceNotSupported": "Bu tarayıcıda sesli giriş desteklenmiyor",
-      "microphonePermissionDenied": "Mikrofon izni reddedildi",
-      "speechRecognitionError": "Konuşma tanıma hatası",
-      "enableVoice": "Sesi Etkinleştir",
-      "disableVoice": "Sesi Devre Dışı Bırak"
     },
     "escalation": {
       "escalateToSupport": "Desteğe Yönlendir",
@@ -1572,16 +1576,6 @@
       "fontSize": "Yazı Boyutu",
       "resetSettings": "Varsayılanlara Sıfırla",
       "settingsSaved": "Ayarlar kaydedildi"
-    },
-    "errors": {
-      "connectionError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
-      "serviceUnavailable": "AI hizmeti geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
-      "sessionError": "Oturum hatası oluştu. Yeni oturum başlatılıyor.",
-      "messageError": "Mesaj gönderme başarısız. Lütfen tekrar deneyin.",
-      "voiceError": "Sesli giriş hatası. Lütfen tekrar deneyin.",
-      "unknownError": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin ve tekrar deneyin.",
-      "rateLimitExceeded": "Çok fazla istek. Lütfen tekrar denemeden önce biraz bekleyin.",
-      "invalidInput": "Geçersiz giriş. Lütfen mesajınızı kontrol edin ve tekrar deneyin."
     },
     "status": {
       "initializing": "AI Asistanı başlatılıyor...",

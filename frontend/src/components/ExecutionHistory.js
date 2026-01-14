@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { formatDate } from '../utils';
 import { useTranslation } from '../hooks/useTranslation';
 
-const ExecutionHistory = ({ executions, onRefresh }) => {
+const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
   const { t } = useTranslation();
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -40,12 +40,25 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
     return (
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b border-gray-200">
-          <button
-            onClick={() => setSelectedExecution(null)}
-            className="text-blue-600 hover:text-blue-800 mb-4"
-          >
-            ← {t('maintenance.backToHistory')}
-          </button>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setSelectedExecution(null)}
+              className="text-blue-600 hover:text-blue-800 mb-4"
+            >
+              ← {t('maintenance.backToHistory')}
+            </button>
+            {selectedExecution.status === 'in_progress' && onResumeExecution && (
+              <button
+                onClick={() => {
+                  setSelectedExecution(null);
+                  onResumeExecution(selectedExecution);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {t('maintenance.resumeExecution')}
+              </button>
+            )}
+          </div>
           <h2 className="text-2xl font-bold text-gray-900">{t('maintenance.executionDetails')}</h2>
         </div>
 
@@ -174,17 +187,26 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
         {filteredExecutions.map((execution) => (
           <div
             key={execution.id}
-            className="p-6 hover:bg-gray-50 cursor-pointer transition-colors"
-            onClick={() => setSelectedExecution(execution)}
+            className={`p-6 hover:bg-gray-50 transition-colors ${
+              execution.status === 'in_progress' ? 'bg-yellow-50 border-l-4 border-yellow-500' : ''
+            }`}
           >
             <div className="flex items-start justify-between">
-              <div className="flex-1">
+              <div 
+                className="flex-1 cursor-pointer"
+                onClick={() => setSelectedExecution(execution)}
+              >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-xl">{getStatusIcon(execution.status)}</span>
                   <h3 className="font-medium text-gray-900">{execution.protocol?.name}</h3>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(execution.status)}`}>
                     {t(`maintenance.status.${execution.status}`)}
                   </span>
+                  {execution.status === 'in_progress' && (
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 animate-pulse">
+                      {t('maintenance.incomplete')}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <span>
@@ -198,9 +220,25 @@ const ExecutionHistory = ({ executions, onRefresh }) => {
                   </span>
                 </div>
               </div>
-              <button className="text-blue-600 hover:text-blue-800 text-sm">
-                {t('maintenance.viewDetails')} →
-              </button>
+              <div className="flex gap-2">
+                {execution.status === 'in_progress' && onResumeExecution && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResumeExecution(execution);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+                  >
+                    {t('maintenance.resume')}
+                  </button>
+                )}
+                <button 
+                  onClick={() => setSelectedExecution(execution)}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  {t('maintenance.viewDetails')} →
+                </button>
+              </div>
             </div>
           </div>
         ))}

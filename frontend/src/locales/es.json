@@ -719,7 +719,18 @@
       "completed": "Completado",
       "cancelled": "Cancelado",
       "skipped": "Omitido"
-    }
+    },
+    "resume": "Reanudar",
+    "resumeExecution": "Reanudar Ejecución",
+    "resuming": "Reanudando",
+    "continuingIncompleteExecution": "Continuando ejecución en curso",
+    "incomplete": "En Curso",
+    "resumeNow": "Reanudar Ahora",
+    "incompleteDailyProtocols": "Protocolos Diarios en Curso",
+    "incompleteDailyProtocolsMessage": "Tiene protocolos de mantenimiento diarios en curso que deben completarse:",
+    "ongoing": "En Curso",
+    "confirmFinishWithIncompleteCritical": "{{count}} elementos críticos no están completados. ¿Está seguro de que desea finalizar?",
+    "complete": "completo"
   },
   "dashboard": {
     "welcomeBack": "¡Bienvenido de nuevo, {{name}}!",
@@ -858,7 +869,8 @@
     "beginStartOfDayChecks": "Comenzar Verificaciones de Inicio de Día",
     "noProtocolConfigured": "No hay protocolo configurado",
     "completeEndOfDayChecks": "Completar Verificaciones de Fin de Día",
-    "completeStartOfDayFirst": "Completa primero las verificaciones de inicio de día"
+    "completeStartOfDayFirst": "Completa primero las verificaciones de inicio de día",
+    "continueOngoing": "Continuar en Curso"
   },
   "stockAdjustments": {
     "title": "Ajustes de Stock",

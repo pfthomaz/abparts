@@ -713,7 +713,18 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "skipped": "Skipped"
-    }
+    },
+    "resume": "Resume",
+    "resumeExecution": "Resume Execution",
+    "resuming": "Resuming",
+    "continuingIncompleteExecution": "Continuing ongoing execution",
+    "incomplete": "Ongoing",
+    "resumeNow": "Resume Now",
+    "incompleteDailyProtocols": "Ongoing Daily Protocols",
+    "incompleteDailyProtocolsMessage": "You have ongoing daily maintenance protocols that need to be completed:",
+    "ongoing": "Ongoing",
+    "confirmFinishWithIncompleteCritical": "{{count}} critical items are not completed. Are you sure you want to finish?",
+    "complete": "complete"
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {{name}}!",
@@ -852,7 +863,8 @@
     "beginStartOfDayChecks": "Begin Start of Day Checks",
     "noProtocolConfigured": "No protocol configured",
     "completeEndOfDayChecks": "Complete End of Day Checks",
-    "completeStartOfDayFirst": "Complete start of day checks first"
+    "completeStartOfDayFirst": "Complete start of day checks first",
+    "continueOngoing": "Continue Ongoing"
   },
   "stockAdjustments": {
     "title": "Stock Adjustments",
