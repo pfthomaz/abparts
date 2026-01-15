@@ -730,7 +730,10 @@
     "incompleteDailyProtocolsMessage": "Tamamlanması gereken devam eden günlük bakım protokolleriniz var:",
     "ongoing": "Devam Ediyor",
     "confirmFinishWithIncompleteCritical": "{{count}} kritik öğe tamamlanmadı. Bitirmek istediğinizden emin misiniz?",
-    "complete": "tamamlandı"
+    "complete": "tamamlandı",
+    "confirmDeleteExecution": "Bu bakım yürütmesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "executionDeletedSuccessfully": "Bakım yürütmesi başarıyla silindi",
+    "failedToDeleteExecution": "Bakım yürütmesi silinemedi"
   },
   "dashboard": {
     "welcomeBack": "Tekrar hoş geldin, {{name}}!",

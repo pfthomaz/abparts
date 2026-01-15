@@ -179,3 +179,7 @@ export const getLocalizedChecklistItems = async (protocolId, userLanguage = null
   }
 };
 
+export const deleteExecution = async (executionId) => {
+  return api.delete(`/maintenance-protocols/executions/${executionId}`);
+};
+

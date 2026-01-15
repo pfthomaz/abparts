@@ -57,6 +57,12 @@ const MaintenanceExecutions = () => {
       setMachines(machinesData);
       setProtocols(protocolsData.filter(p => p.is_active));
       setExecutions(executionsData);
+      
+      // Auto-select machine if there's only one
+      if (machinesData.length === 1 && !selectedMachine) {
+        setSelectedMachine(machinesData[0]);
+      }
+      
       setError(null);
     } catch (err) {
       console.error('Error loading data:', err);

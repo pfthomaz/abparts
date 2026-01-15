@@ -433,6 +433,23 @@ def complete_execution(db: Session, execution_id: uuid.UUID) -> Optional[models.
     return execution
 
 
+def delete_execution(db: Session, execution_id: uuid.UUID) -> bool:
+    """Delete a maintenance execution and its related checklist completions."""
+    execution = get_execution(db, execution_id)
+    if not execution:
+        return False
+    
+    # Delete related checklist completions first (cascade should handle this, but being explicit)
+    db.query(models.MaintenanceChecklistCompletion).filter(
+        models.MaintenanceChecklistCompletion.execution_id == execution_id
+    ).delete()
+    
+    # Delete the execution
+    db.delete(execution)
+    db.commit()
+    return True
+
+
 # Maintenance Reminder CRUD Operations
 
 def get_reminder(db: Session, reminder_id: uuid.UUID) -> Optional[models.MaintenanceReminder]:

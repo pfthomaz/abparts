@@ -1,13 +1,55 @@
 import React, { useState } from 'react';
 import { formatDate } from '../utils';
 import { useTranslation } from '../hooks/useTranslation';
+import { useAuth } from '../AuthContext';
+import { deleteExecution } from '../services/maintenanceProtocolsService';
 
 const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   console.log('ExecutionHistory received executions:', executions);
+
+  const canDeleteExecution = (execution) => {
+    console.log('canDeleteExecution check:', {
+      user,
+      userRole: user?.role,
+      executionMachineOrgId: execution.machine?.customer_organization_id,
+      userOrgId: user?.organization_id,
+      canDelete: user && (user.role === 'super_admin' || (user.role === 'admin' && execution.machine?.customer_organization_id === user.organization_id))
+    });
+    
+    if (!user) return false;
+    // Super admin can delete any execution
+    if (user.role === 'super_admin') return true;
+    // Admin can delete executions in their organization
+    if (user.role === 'admin' && execution.machine?.customer_organization_id === user.organization_id) return true;
+    return false;
+  };
+
+  const handleDeleteExecution = async (execution) => {
+    if (!window.confirm(t('maintenance.confirmDeleteExecution'))) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteExecution(execution.id);
+      alert(t('maintenance.executionDeletedSuccessfully'));
+      setSelectedExecution(null);
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Failed to delete execution:', error);
+      alert(t('maintenance.failedToDeleteExecution'));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredExecutions = executions.filter(exec => {
     if (filterStatus === 'all') return true;
@@ -47,17 +89,28 @@ const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
             >
               ← {t('maintenance.backToHistory')}
             </button>
-            {selectedExecution.status === 'in_progress' && onResumeExecution && (
-              <button
-                onClick={() => {
-                  setSelectedExecution(null);
-                  onResumeExecution(selectedExecution);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                {t('maintenance.resumeExecution')}
-              </button>
-            )}
+            <div className="flex gap-2">
+              {selectedExecution.status === 'in_progress' && onResumeExecution && (
+                <button
+                  onClick={() => {
+                    setSelectedExecution(null);
+                    onResumeExecution(selectedExecution);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {t('maintenance.resumeExecution')}
+                </button>
+              )}
+              {canDeleteExecution(selectedExecution) && (
+                <button
+                  onClick={() => handleDeleteExecution(selectedExecution)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? t('common.loading') : t('common.delete')}
+                </button>
+              )}
+            </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900">{t('maintenance.executionDetails')}</h2>
         </div>

@@ -730,7 +730,10 @@
     "incompleteDailyProtocolsMessage": "Du har pågående daglige vedlikeholdsprotokoller som må fullføres:",
     "ongoing": "Pågående",
     "confirmFinishWithIncompleteCritical": "{{count}} kritiske elementer er ikke fullført. Er du sikker på at du vil fullføre?",
-    "complete": "fullført"
+    "complete": "fullført",
+    "confirmDeleteExecution": "Er du sikker på at du vil slette denne vedlikeholdsutførelsen? Denne handlingen kan ikke angres.",
+    "executionDeletedSuccessfully": "Vedlikeholdsutførelse slettet",
+    "failedToDeleteExecution": "Kunne ikke slette vedlikeholdsutførelse"
   },
   "dashboard": {
     "welcomeBack": "Velkommen tilbake, {{name}}!",

@@ -289,7 +289,7 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
               {existingExecution ? `${t('maintenance.resuming')}: ${protocol.name}` : protocol.name}
             </h1>
             <p className="text-gray-600 mt-1">
-              {t('maintenance.machine')}: {machine.serial_number} - {machine.model}
+              {t('maintenance.machine')}: {machine.name} ({machine.serial_number})
             </p>
             {existingExecution && (
               <p className="text-sm text-orange-600 mt-1">

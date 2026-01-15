@@ -393,6 +393,40 @@ def complete_execution(
     return execution
 
 
+@router.delete("/executions/{execution_id}", status_code=204)
+def delete_execution(
+    execution_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Delete a maintenance execution. Admin and super-admin only."""
+    # Check if user is admin or super-admin
+    if not permission_checker.is_admin(current_user) and not permission_checker.is_super_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can delete maintenance executions")
+    
+    # Verify execution exists and belongs to user's organization
+    execution = db.query(models.MaintenanceExecution).filter(
+        models.MaintenanceExecution.id == execution_id
+    ).first()
+    
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    
+    # Verify execution belongs to user's organization (unless super-admin)
+    if not permission_checker.is_super_admin(current_user):
+        machine = db.query(models.Machine).filter(
+            models.Machine.id == execution.machine_id
+        ).first()
+        
+        if machine and machine.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot delete execution from another organization")
+    
+    # Delete the execution
+    success = crud_maintenance.delete_execution(db=db, execution_id=execution_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete execution")
+
+
 @router.get("/reminders/pending", response_model=List[schemas.MaintenanceReminderResponse])
 def get_pending_reminders(
     db: Session = Depends(get_db),

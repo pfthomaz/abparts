@@ -44,6 +44,11 @@ const DailyOperations = () => {
       ]);
 
       setMachines(machinesData);
+      
+      // Auto-select machine if there's only one
+      if (machinesData.length === 1 && !selectedMachine) {
+        setSelectedMachine(machinesData[0]);
+      }
 
       // Find start and end of day protocols
       // Use specific protocol IDs for reliable detection (language-independent)

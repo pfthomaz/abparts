@@ -730,7 +730,10 @@
     "incompleteDailyProtocolsMessage": "Tiene protocolos de mantenimiento diarios en curso que deben completarse:",
     "ongoing": "En Curso",
     "confirmFinishWithIncompleteCritical": "{{count}} elementos críticos no están completados. ¿Está seguro de que desea finalizar?",
-    "complete": "completo"
+    "complete": "completo",
+    "confirmDeleteExecution": "¿Está seguro de que desea eliminar esta ejecución de mantenimiento? Esta acción no se puede deshacer.",
+    "executionDeletedSuccessfully": "Ejecución de mantenimiento eliminada con éxito",
+    "failedToDeleteExecution": "Error al eliminar la ejecución de mantenimiento"
   },
   "dashboard": {
     "welcomeBack": "¡Bienvenido de nuevo, {{name}}!",
@@ -1452,24 +1455,6 @@
     "maximize": "Maximizar",
     "minimize": "Minimizar",
     "chatWidget": {
-      "typing": "La IA está escribiendo..."
-    },
-    "messages": {
-      "welcomeMessage": "¡Hola! Soy tu Asistente IA AutoBoss. Puedo ayudarte a solucionar problemas de máquinas, encontrar piezas y guiarte a través de procedimientos de mantenimiento. ¿Cómo puedo asistirte hoy?",
-      "placeholder": "Escribe tu mensaje aquí...",
-      "machineSelected": "Máquina seleccionada: {{machineName}} ({{modelType}})",
-      "machineCleared": "Selección de máquina eliminada. Proporcionando asistencia general."
-    },
-    "voice": {
-      "enableVoice": "Habilitar Voz",
-      "disableVoice": "Deshabilitar Voz",
-      "stopSpeaking": "Detener Habla",
-      "speakResponse": "Hablar Respuesta"
-    },
-    "errors": {
-      "connectionError": "Error de conexión. Por favor, inténtalo de nuevo."
-    },
-    "chatWidget": {
       "openChat": "Abrir Asistente IA",
       "closeChat": "Cerrar Asistente IA",
       "minimize": "Minimizar",
@@ -1496,6 +1481,29 @@
       "thumbsDown": "No útil",
       "feedback": "Proporcionar comentarios",
       "reportIssue": "Reportar problema"
+    },
+    "voice": {
+      "startListening": "Iniciar Entrada de Voz",
+      "stopListening": "Detener Escucha",
+      "listening": "Escuchando...",
+      "processing": "Procesando habla...",
+      "speakResponse": "Hablar Respuesta",
+      "stopSpeaking": "Detener Habla",
+      "voiceNotSupported": "La entrada de voz no es compatible con este navegador",
+      "microphonePermissionDenied": "Permiso de micrófono denegado",
+      "speechRecognitionError": "Error de reconocimiento de voz",
+      "enableVoice": "Habilitar Voz",
+      "disableVoice": "Deshabilitar Voz"
+    },
+    "errors": {
+      "connectionError": "Error de conexión. Por favor verifica tu conexión a internet.",
+      "serviceUnavailable": "El servicio de IA está temporalmente no disponible. Por favor intenta de nuevo más tarde.",
+      "sessionError": "Ocurrió un error de sesión. Iniciando una nueva sesión.",
+      "messageError": "Error al enviar mensaje. Por favor intenta de nuevo.",
+      "voiceError": "Error de entrada de voz. Por favor intenta de nuevo.",
+      "unknownError": "Ocurrió un error inesperado. Por favor actualiza e intenta de nuevo.",
+      "rateLimitExceeded": "Demasiadas solicitudes. Por favor espera un momento antes de intentar de nuevo.",
+      "invalidInput": "Entrada inválida. Por favor verifica tu mensaje e intenta de nuevo."
     },
     "troubleshooting": {
       "startTroubleshooting": "Iniciar Solución de Problemas",
@@ -1531,19 +1539,6 @@
       "recentIssues": "Problemas Recientes",
       "compatibleParts": "Piezas Compatibles",
       "changeMachine": "Cambiar Máquina"
-    },
-    "voice": {
-      "startListening": "Iniciar Entrada de Voz",
-      "stopListening": "Detener Escucha",
-      "listening": "Escuchando...",
-      "processing": "Procesando habla...",
-      "speakResponse": "Hablar Respuesta",
-      "stopSpeaking": "Detener Habla",
-      "voiceNotSupported": "La entrada de voz no es compatible con este navegador",
-      "microphonePermissionDenied": "Permiso de micrófono denegado",
-      "speechRecognitionError": "Error de reconocimiento de voz",
-      "enableVoice": "Habilitar Voz",
-      "disableVoice": "Deshabilitar Voz"
     },
     "escalation": {
       "escalateToSupport": "Escalar a Soporte",
@@ -1584,16 +1579,6 @@
       "fontSize": "Tamaño de Fuente",
       "resetSettings": "Restablecer a Predeterminados",
       "settingsSaved": "Configuración guardada"
-    },
-    "errors": {
-      "connectionError": "Error de conexión. Por favor verifica tu conexión a internet.",
-      "serviceUnavailable": "El servicio de IA está temporalmente no disponible. Por favor intenta de nuevo más tarde.",
-      "sessionError": "Ocurrió un error de sesión. Iniciando una nueva sesión.",
-      "messageError": "Error al enviar mensaje. Por favor intenta de nuevo.",
-      "voiceError": "Error de entrada de voz. Por favor intenta de nuevo.",
-      "unknownError": "Ocurrió un error inesperado. Por favor actualiza e intenta de nuevo.",
-      "rateLimitExceeded": "Demasiadas solicitudes. Por favor espera un momento antes de intentar de nuevo.",
-      "invalidInput": "Entrada inválida. Por favor verifica tu mensaje e intenta de nuevo."
     },
     "status": {
       "initializing": "Inicializando Asistente IA...",

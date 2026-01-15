@@ -724,7 +724,10 @@
     "incompleteDailyProtocolsMessage": "لديك بروتوكولات صيانة يومية جارية يجب إكمالها:",
     "ongoing": "جاري",
     "confirmFinishWithIncompleteCritical": "{{count}} عناصر حرجة غير مكتملة. هل أنت متأكد من أنك تريد الإنهاء؟",
-    "complete": "مكتمل"
+    "complete": "مكتمل",
+    "confirmDeleteExecution": "هل أنت متأكد من أنك تريد حذف تنفيذ الصيانة هذا؟ لا يمكن التراجع عن هذا الإجراء.",
+    "executionDeletedSuccessfully": "تم حذف تنفيذ الصيانة بنجاح",
+    "failedToDeleteExecution": "فشل في حذف تنفيذ الصيانة"
   },
   "dashboard": {
     "welcomeBack": "مرحباً بعودتك، {{name}}!",

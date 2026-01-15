@@ -724,7 +724,10 @@
     "incompleteDailyProtocolsMessage": "You have ongoing daily maintenance protocols that need to be completed:",
     "ongoing": "Ongoing",
     "confirmFinishWithIncompleteCritical": "{{count}} critical items are not completed. Are you sure you want to finish?",
-    "complete": "complete"
+    "complete": "complete",
+    "confirmDeleteExecution": "Are you sure you want to delete this maintenance execution? This action cannot be undone.",
+    "executionDeletedSuccessfully": "Maintenance execution deleted successfully",
+    "failedToDeleteExecution": "Failed to delete maintenance execution"
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {{name}}!",
@@ -1518,7 +1521,7 @@
       },
       "priorities": {
         "low": "Low",
-        "medium": "Medium", 
+        "medium": "Medium",
         "high": "High",
         "urgent": "Urgent"
       }
