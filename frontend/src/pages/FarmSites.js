@@ -147,11 +147,11 @@ const FarmSites = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFarmSites.map((site) => (
-          <div key={site.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">{site.name}</h3>
+          <div key={site.id} className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="text-lg font-semibold text-gray-800">{site.name}</h3>
               {!site.active && (
                 <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded">{t('netCleaning.farmSites.inactive')}</span>
               )}
@@ -164,10 +164,10 @@ const FarmSites = () => {
             )}
             
             {site.description && (
-              <p className="text-gray-600 text-sm mb-4">{site.description}</p>
+              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{site.description}</p>
             )}
             
-            <div className="text-sm text-gray-500 mb-4">
+            <div className="text-sm text-gray-500 mb-3">
               {site.nets_count || 0} {t('netCleaning.farmSites.nets')}
             </div>
 
@@ -175,7 +175,7 @@ const FarmSites = () => {
               {/* Add Cage button - available to all users */}
               <button
                 onClick={() => openNetModal(site)}
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white px-3 py-2 rounded text-sm font-medium"
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white px-3 py-1.5 rounded text-sm font-medium"
               >
                 + {t('netCleaning.farmSites.addCage')}
               </button>
@@ -185,13 +185,13 @@ const FarmSites = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => openModal(site)}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm"
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm"
                   >
                     {t('common.edit')}
                   </button>
                   <button
                     onClick={() => handleDelete(site.id)}
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm"
                   >
                     {t('common.delete')}
                   </button>

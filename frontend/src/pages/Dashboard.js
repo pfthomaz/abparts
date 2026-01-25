@@ -68,9 +68,9 @@ const DashboardBox = ({
 
   const content = (
     <div className={`group block ${styling.bgColor} ${styling.borderColor} border rounded-xl 
-      p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 
+      p-3 sm:p-4 shadow-sm hover:shadow-md transition-all duration-300 
       hover:scale-105 hover:border-blue-300 cursor-pointer relative
-      min-h-[120px] sm:min-h-[140px] 
+      min-h-[100px] sm:min-h-[110px] 
       touch-manipulation select-none
       active:scale-95 active:shadow-lg
       focus:outline-none focus:ring-4 focus:ring-blue-200 focus:ring-opacity-50`}>
@@ -84,15 +84,15 @@ const DashboardBox = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <div className={`p-3 sm:p-2 rounded-lg ${styling.accentColor.replace('text-', 'bg-').replace('-600', '-100')} 
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <div className={`p-2 sm:p-2 rounded-lg ${styling.accentColor.replace('text-', 'bg-').replace('-600', '-100')} 
           group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-          <div className="w-6 h-6 sm:w-5 sm:h-5">
+          <div className="w-5 h-5 sm:w-5 sm:h-5">
             {icon}
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-3xl sm:text-2xl font-bold ${styling.textColor} 
+          <div className={`text-2xl sm:text-2xl font-bold ${styling.textColor} 
             group-hover:text-blue-600 transition-colors duration-300`}>
             {value}
           </div>
@@ -460,7 +460,7 @@ const Dashboard = () => {
         {/* Enhanced Three-Column Dashboard Layout - Mobile-First Responsive */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Column 1: Entities */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -477,7 +477,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Organizations - Superadmin only */}
                 <PermissionGuard permission={PERMISSIONS.VIEW_ALL_ORGANIZATIONS} hideIfNoPermission={true}>
                   <DashboardBox
@@ -544,24 +544,28 @@ const Dashboard = () => {
                 </PermissionGuard>
 
                 {/* Farms - All users can view */}
-                <DashboardBox
-                  title={t('dashboard.farms')}
-                  value={metrics?.total_farm_sites || '0'}
-                  linkTo="/farm-sites"
-                  icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>}
-                  accentColor="text-teal-600"
-                  subtitle={t('dashboard.farmsSubtitle')}
-                />
+                <div>
+                  <DashboardBox
+                    title={t('dashboard.farms')}
+                    value={metrics?.total_farm_sites || '0'}
+                    linkTo="/farm-sites"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>}
+                    accentColor="text-teal-600"
+                    subtitle={t('dashboard.farmsSubtitle')}
+                  />
+                </div>
 
                 {/* Cages - All users can view */}
-                <DashboardBox
-                  title={t('dashboard.cages')}
-                  value={metrics?.total_nets || '0'}
-                  linkTo="/nets"
-                  icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>}
-                  accentColor="text-cyan-600"
-                  subtitle={t('dashboard.cagesSubtitle')}
-                />
+                <div>
+                  <DashboardBox
+                    title={t('dashboard.cages')}
+                    value={metrics?.total_nets || '0'}
+                    linkTo="/nets"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>}
+                    accentColor="text-cyan-600"
+                    subtitle={t('dashboard.cagesSubtitle')}
+                  />
+                </div>
               </div>
             </div>
           </div>

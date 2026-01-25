@@ -152,12 +152,12 @@ const Nets = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredNets.map((net) => (
-          <div key={net.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-start mb-4">
+          <div key={net.id} className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+            <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-xl font-semibold text-gray-800">{net.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-800">{net.name}</h3>
                 <p className="text-sm text-gray-500">{net.farmSiteName}</p>
               </div>
               {!net.active && (
@@ -165,7 +165,7 @@ const Nets = () => {
               )}
             </div>
             
-            <div className="space-y-1 text-sm text-gray-600 mb-4">
+            <div className="space-y-1 text-sm text-gray-600 mb-3">
               {net.diameter && <p>{t('netCleaning.nets.diameter')}: {net.diameter}m</p>}
               {net.vertical_depth && <p>{t('netCleaning.nets.verticalDepth')}: {net.vertical_depth}m</p>}
               {net.cone_depth && <p>{t('netCleaning.nets.coneDepth')}: {net.cone_depth}m</p>}
@@ -173,7 +173,7 @@ const Nets = () => {
               {net.material && <p>{t('netCleaning.nets.material')}: {net.material}</p>}
             </div>
             
-            <div className="text-sm text-gray-500 mb-4">
+            <div className="text-sm text-gray-500 mb-3">
               {net.cleaning_records_count || 0} {t('netCleaning.nets.cleanings')}
               {net.last_cleaning_date && (
                 <span className="block">{t('netCleaning.nets.last')}: {new Date(net.last_cleaning_date).toLocaleDateString()}</span>
@@ -184,13 +184,13 @@ const Nets = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => openModal(net)}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm"
                 >
                   {t('common.edit')}
                 </button>
                 <button
                   onClick={() => handleDelete(net.id)}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm"
                 >
                   {t('common.delete')}
                 </button>
