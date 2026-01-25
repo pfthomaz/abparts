@@ -36,6 +36,9 @@ import MaintenanceProtocols from './pages/MaintenanceProtocols'; // New: Import 
 import MaintenanceExecutions from './pages/MaintenanceExecutions'; // New: Import MaintenanceExecutions page
 import ProtocolTranslations from './pages/ProtocolTranslations'; // New: Import ProtocolTranslations page
 import DailyOperations from './pages/DailyOperations'; // New: Import DailyOperations page
+import FarmSites from './pages/FarmSites'; // New: Import FarmSites page
+import Nets from './pages/Nets'; // New: Import Nets page
+import NetCleaningRecords from './pages/NetCleaningRecords'; // New: Import NetCleaningRecords page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
 import { useState, useEffect } from 'react';
@@ -364,6 +367,60 @@ function App() {
                 >
                   <DailyOperations />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="farm-sites"
+              element={
+                <PermissionErrorBoundary
+                  feature="Farm Sites Management"
+                  requiredRole="user"
+                  resource="farm_sites"
+                  action="view"
+                >
+                  <ProtectedRoute
+                    requiredRole="user"
+                    feature="Farm Sites Management"
+                  >
+                    <FarmSites />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="nets"
+              element={
+                <PermissionErrorBoundary
+                  feature="Nets Management"
+                  requiredRole="user"
+                  resource="nets"
+                  action="view"
+                >
+                  <ProtectedRoute
+                    requiredRole="user"
+                    feature="Nets Management"
+                  >
+                    <Nets />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="net-cleaning-records"
+              element={
+                <PermissionErrorBoundary
+                  feature="Net Cleaning Records"
+                  requiredRole="user"
+                  resource="net_cleaning"
+                  action="view"
+                >
+                  <ProtectedRoute
+                    requiredRole="user"
+                    feature="Net Cleaning Records"
+                  >
+                    <NetCleaningRecords />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
               }
             />
             <Route

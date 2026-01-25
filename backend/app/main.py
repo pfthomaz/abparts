@@ -53,6 +53,9 @@ from .routers.images import router as images_router # New: Import images router
 from .routers.inventory_calculator import router as inventory_calculator_router # New: Import inventory calculator router
 from .routers.maintenance_protocols import router as maintenance_protocols_router
 from .routers.protocol_translations import router as protocol_translations_router # New: Import maintenance protocols router
+from .routers.farm_sites import router as farm_sites_router # New: Import farm sites router
+from .routers.nets import router as nets_router # New: Import nets router
+from .routers.net_cleaning_records import router as net_cleaning_records_router # New: Import net cleaning records router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -251,6 +254,9 @@ app.include_router(images_router, tags=["Images"])
 app.include_router(inventory_calculator_router, tags=["Inventory Calculator"])
 app.include_router(maintenance_protocols_router, prefix="/maintenance-protocols", tags=["Maintenance Protocols"])
 app.include_router(protocol_translations_router, prefix="/translations", tags=["Protocol Translations"])
+app.include_router(farm_sites_router, prefix="/farm-sites", tags=["Farm Sites"])
+app.include_router(nets_router, prefix="/nets", tags=["Nets"])
+app.include_router(net_cleaning_records_router, prefix="/net-cleaning-records", tags=["Net Cleaning Records"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)

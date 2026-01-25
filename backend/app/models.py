@@ -1891,3 +1891,112 @@ class AIMessage(Base):
 
     def __repr__(self):
         return f"<AIMessage(id={self.message_id}, session_id={self.session_id}, sender='{self.sender.value}')>"
+
+
+
+# Net Cleaning Records Models
+class FarmSite(Base):
+    """
+    SQLAlchemy model for the 'farm_sites' table.
+    Represents aquaculture farm locations within an organization.
+    """
+    __tablename__ = "farm_sites"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    location = Column(String(500), nullable=True)
+    description = Column(Text, nullable=True)
+    active = Column(Boolean, nullable=False, server_default='true')
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    organization = relationship("Organization", backref="farm_sites")
+    nets = relationship("Net", back_populates="farm_site", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<FarmSite(id={self.id}, name='{self.name}', organization_id={self.organization_id})>"
+
+
+class Net(Base):
+    """
+    SQLAlchemy model for the 'nets' table.
+    Represents individual nets or cages within a farm site.
+    """
+    __tablename__ = "nets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    farm_site_id = Column(UUID(as_uuid=True), ForeignKey("farm_sites.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    diameter = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    vertical_depth = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    cone_depth = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    mesh_size = Column(String(50), nullable=True)
+    material = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    active = Column(Boolean, nullable=False, server_default='true')
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    farm_site = relationship("FarmSite", back_populates="nets")
+    cleaning_records = relationship("NetCleaningRecord", back_populates="net", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Net(id={self.id}, name='{self.name}', farm_site_id={self.farm_site_id})>"
+
+
+class NetCleaningRecord(Base):
+    """
+    SQLAlchemy model for the 'net_cleaning_records' table.
+    Records individual net cleaning events with operational details.
+    Supports partial records (in_progress) where end_time is not yet set.
+    """
+    __tablename__ = "net_cleaning_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    net_id = Column(UUID(as_uuid=True), ForeignKey("nets.id"), nullable=False)
+    machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
+    operator_name = Column(String(200), nullable=False)
+    cleaning_mode = Column(Integer, nullable=False)
+    depth_1 = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    depth_2 = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    depth_3 = Column(DECIMAL(precision=10, scale=2), nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)  # Nullable for in-progress records
+    duration_minutes = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False, default='completed')  # 'in_progress' or 'completed'
+    notes = Column(Text, nullable=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Relationships
+    net = relationship("Net", back_populates="cleaning_records")
+    machine = relationship("Machine")
+    created_by_user = relationship("User")
+
+    def validate_cleaning_mode(self):
+        """Validate that cleaning mode is 1, 2, or 3."""
+        if self.cleaning_mode not in [1, 2, 3]:
+            raise ValueError("Cleaning mode must be 1, 2, or 3")
+        return True
+
+    def validate_times(self):
+        """Validate that end_time is after start_time (if end_time is set)."""
+        if self.end_time and self.start_time and self.end_time <= self.start_time:
+            raise ValueError("End time must be after start time")
+        return True
+
+    def calculate_duration(self):
+        """Calculate duration in minutes from start and end times."""
+        if self.start_time and self.end_time:
+            delta = self.end_time - self.start_time
+            self.duration_minutes = int(delta.total_seconds() / 60)
+        else:
+            self.duration_minutes = None
+        return self.duration_minutes
+
+    def __repr__(self):
+        return f"<NetCleaningRecord(id={self.id}, net_id={self.net_id}, mode={self.cleaning_mode}, status={self.status}, date={self.start_time})>"

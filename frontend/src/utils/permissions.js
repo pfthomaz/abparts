@@ -397,6 +397,42 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Farm Sites - all users can view
+  items.push({
+    name: 'farmSites',
+    path: '/farm-sites',
+    label: 'Farm Sites',
+    icon: 'farm-sites',
+    permission: null,
+    description: 'Manage aquaculture farm sites',
+    category: 'operations',
+    accessScope: 'organization'
+  });
+
+  // Nets - all users can view
+  items.push({
+    name: 'nets',
+    path: '/nets',
+    label: 'Nets',
+    icon: 'nets',
+    permission: null,
+    description: 'Manage nets and cages',
+    category: 'operations',
+    accessScope: 'organization'
+  });
+
+  // Net Cleaning Records - all users can view
+  items.push({
+    name: 'netCleaningRecords',
+    path: '/net-cleaning-records',
+    label: 'Net Cleaning Records',
+    icon: 'cleaning',
+    permission: null,
+    description: 'Track net cleaning operations',
+    category: 'operations',
+    accessScope: 'organization'
+  });
+
   // Users - admin and above
   if (hasPermission(user, PERMISSIONS.MANAGE_ORG_USERS) || hasPermission(user, PERMISSIONS.MANAGE_ALL_USERS)) {
     items.push({

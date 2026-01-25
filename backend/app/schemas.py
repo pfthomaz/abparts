@@ -326,11 +326,54 @@ class UserManagementAuditLogResponse(BaseModel):
 
 # --- Dashboard Schemas (New!) ---
 class DashboardMetricsResponse(BaseModel):
+    # User metrics
+    total_users: int
+    active_users: int
+    pending_invitations: int
+    locked_accounts: int
+    
+    # Organization metrics
+    total_organizations: int
+    customer_organizations: int
+    supplier_organizations: int
+    
+    # Inventory metrics
     total_parts: int
     total_inventory_items: int
     low_stock_items: int
+    out_of_stock_items: int
+    
+    # Warehouse metrics
+    total_warehouses: int
+    
+    # Machine metrics
+    total_machines: int
+    active_machines: int
+    
+    # Order metrics
     pending_customer_orders: int
     pending_supplier_orders: int
+    completed_orders_this_month: int
+    
+    # Recent activity
+    recent_part_usage: int
+    recent_stock_adjustments: int
+    recent_transactions: int
+    
+    # Security metrics
+    failed_login_attempts_today: int
+    security_events_today: int
+    active_sessions: int
+    
+    # Net cleaning metrics
+    total_farm_sites: int
+    total_nets: int
+    
+    # Timestamp
+    generated_at: datetime
+    
+    class Config:
+        from_attributes = True
 
 class LowStockByOrgResponse(BaseModel):
     organization_name: str

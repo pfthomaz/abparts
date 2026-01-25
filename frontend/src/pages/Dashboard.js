@@ -310,6 +310,9 @@ const Dashboard = () => {
         dashboardService.getMetrics(),
         dashboardService.getLowStockByOrg(),
       ]);
+      console.log('DEBUG: Received metrics data:', metricsData);
+      console.log('DEBUG: total_farm_sites =', metricsData?.total_farm_sites);
+      console.log('DEBUG: total_nets =', metricsData?.total_nets);
       setMetrics(metricsData);
       setLowStockData(lowStockChartData);
     } catch (err) {
@@ -539,6 +542,26 @@ const Dashboard = () => {
                     badgeText={metrics?.low_stock_items > 0 ? metrics.low_stock_items.toString() : null}
                   />
                 </PermissionGuard>
+
+                {/* Farms - All users can view */}
+                <DashboardBox
+                  title={t('dashboard.farms')}
+                  value={metrics?.total_farm_sites || '0'}
+                  linkTo="/farm-sites"
+                  icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>}
+                  accentColor="text-teal-600"
+                  subtitle={t('dashboard.farmsSubtitle')}
+                />
+
+                {/* Cages - All users can view */}
+                <DashboardBox
+                  title={t('dashboard.cages')}
+                  value={metrics?.total_nets || '0'}
+                  linkTo="/nets"
+                  icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>}
+                  accentColor="text-cyan-600"
+                  subtitle={t('dashboard.cagesSubtitle')}
+                />
               </div>
             </div>
           </div>
@@ -572,6 +595,19 @@ const Dashboard = () => {
                   priority="high"
                   shortcut="Ctrl+W"
                 />
+
+                {/* Record Net Cleaning - Second from top */}
+                <div className="mt-4">
+                  <ActionButton
+                    title={t('dashboard.recordNetCleaning')}
+                    description={t('dashboard.recordNetCleaningDesc')}
+                    linkTo="/net-cleaning-records"
+                    icon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/></svg>}
+                    color="teal"
+                    priority="high"
+                    shortcut="Ctrl+N"
+                  />
+                </div>
 
                 {/* Order Parts - High priority for all users */}
                 <PermissionGuard permission={PERMISSIONS.ORDER_PARTS} hideIfNoPermission={true}>

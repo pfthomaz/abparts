@@ -24,10 +24,17 @@ def get_metrics(
     """
     # Dashboard metrics should be scoped to user's accessible organizations
     if permission_checker.is_super_admin(current_user):
-        return dashboard_fixed.get_dashboard_metrics(db=db)
+        metrics = dashboard_fixed.get_dashboard_metrics(db=db)
     else:
         # For non-super admins, pass organization context to limit metrics
-        return dashboard_fixed.get_dashboard_metrics(db=db, organization_id=current_user.organization_id)
+        metrics = dashboard_fixed.get_dashboard_metrics(db=db, organization_id=current_user.organization_id)
+    
+    # Debug logging
+    print(f"DEBUG: Returning metrics for user {current_user.username}")
+    print(f"DEBUG: total_farm_sites = {metrics.get('total_farm_sites', 'NOT FOUND')}")
+    print(f"DEBUG: total_nets = {metrics.get('total_nets', 'NOT FOUND')}")
+    
+    return metrics
 
 @router.get("/low-stock-by-org", tags=["Dashboard"])
 def get_low_stock_chart_data(

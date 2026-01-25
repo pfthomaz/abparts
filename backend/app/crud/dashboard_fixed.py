@@ -41,6 +41,8 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
     failed_login_attempts_today = 0
     security_events_today = 0
     active_sessions = 0
+    total_farm_sites = 0
+    total_nets = 0
     
     # Basic counts that should always work
     try:
@@ -125,6 +127,20 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
     except Exception as e:
         print(f"Error counting machines: {e}")
     
+    # Try to get warehouse metrics
+    total_warehouses = 0
+    try:
+        warehouses_query = db.query(models.Warehouse)
+        if organization_id:
+            try:
+                warehouses_query = warehouses_query.filter(models.Warehouse.organization_id == organization_id)
+            except:
+                pass
+        
+        total_warehouses = warehouses_query.count()
+    except Exception as e:
+        print(f"Error counting warehouses: {e}")
+    
     # Try to get order metrics
     try:
         customer_orders_query = db.query(models.CustomerOrder)
@@ -206,6 +222,41 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
     except Exception as e:
         print(f"Error counting completed orders: {e}")
     
+    # Try to get farm sites and nets metrics
+    try:
+        farm_sites_query = db.query(models.FarmSite)
+        if organization_id:
+            try:
+                farm_sites_query = farm_sites_query.filter(models.FarmSite.organization_id == organization_id)
+            except:
+                pass
+        
+        try:
+            total_farm_sites = farm_sites_query.filter(models.FarmSite.active == True).count()
+        except:
+            total_farm_sites = farm_sites_query.count()
+    except Exception as e:
+        print(f"Error counting farm sites: {e}")
+    
+    try:
+        nets_query = db.query(models.Net)
+        if organization_id:
+            try:
+                # Join through farm sites to filter by organization
+                nets_query = nets_query.join(
+                    models.FarmSite,
+                    models.Net.farm_site_id == models.FarmSite.id
+                ).filter(models.FarmSite.organization_id == organization_id)
+            except:
+                pass
+        
+        try:
+            total_nets = nets_query.filter(models.Net.active == True).count()
+        except:
+            total_nets = nets_query.count()
+    except Exception as e:
+        print(f"Error counting nets: {e}")
+    
     return {
         # User metrics
         "total_users": total_users,
@@ -223,6 +274,9 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
         "total_inventory_items": total_inventory_items,
         "low_stock_items": low_stock_items,
         "out_of_stock_items": out_of_stock_items,
+        
+        # Warehouse metrics
+        "total_warehouses": total_warehouses,
         
         # Machine metrics
         "total_machines": total_machines,
@@ -242,6 +296,10 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
         "failed_login_attempts_today": failed_login_attempts_today,
         "security_events_today": security_events_today,
         "active_sessions": active_sessions,
+        
+        # Net cleaning metrics
+        "total_farm_sites": total_farm_sites,
+        "total_nets": total_nets,
         
         # Timestamp
         "generated_at": datetime.now(),

@@ -678,13 +678,17 @@ async def get_users_by_organization(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(has_roles(["super_admin", "admin"]))
+    current_user: TokenData = Depends(get_current_user)
 ):
     """
     Get users filtered by organization.
+    Regular users can only view users in their own organization.
+    Admins can view users in their organization.
+    Super admins can view users in any organization.
     """
     # Permission checks
-    if current_user.role == "admin":
+    if current_user.role not in ["super_admin"]:
+        # Regular users and admins can only view their own organization
         if organization_id != current_user.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
