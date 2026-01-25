@@ -184,7 +184,7 @@ const NetCleaningRecords = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredRecords.map((record) => {
-              const isIncomplete = record.status === 'in_progress' || !record.end_time;
+              const isIncomplete = record.status === 'in_progress';
               return (
                 <tr key={record.id} className={`hover:bg-gray-50 ${isIncomplete ? 'bg-yellow-50' : ''}`}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
