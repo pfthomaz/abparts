@@ -50,7 +50,8 @@
     "noDescription": "No description available",
     "notes": "Notes",
     "scope": "Scope",
-    "skip": "Skip"
+    "skip": "Skip",
+    "viewAll": "View All"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -2113,5 +2114,29 @@
       "endTimeAfterStart": "End time must be after start time.",
       "required": "*"
     }
+  },
+  "fab": {
+    "washNets": "Wash Nets",
+    "dailyService": "Daily Service",
+    "orderParts": "Order Parts",
+    "close": "Close",
+    "quickActions": "Quick Actions"
+  },
+  "fieldOps": {
+    "washNets": "Wash Nets",
+    "washNetsDesc": "Record net cleaning",
+    "dailyService": "Daily Service",
+    "dailyServiceDesc": "Perform maintenance",
+    "orderParts": "Order Parts",
+    "orderPartsDesc": "Request supplies",
+    "netsToday": "Nets Today",
+    "servicesToday": "Services Today",
+    "todaysActivity": "Today's Activity",
+    "noActivityYet": "No activity yet today",
+    "startYourDay": "Start your day by recording a cleaning or service",
+    "completedToday": "Completed today: {{count}}",
+    "viewFarms": "View Farms",
+    "viewMachines": "View Machines",
+    "viewFullDashboard": "View Full Dashboard"
   }
 }

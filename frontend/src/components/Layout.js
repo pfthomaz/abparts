@@ -10,6 +10,7 @@ import MobileNavigation from './MobileNavigation';
 import OfflineStatusIndicator from './OfflineStatusIndicator';
 import TourButton from './TourButton';
 import ChatWidget from './ChatWidget';
+import FloatingActionButton from './FloatingActionButton';
 import { useTranslation } from '../hooks/useTranslation';
 
 const Layout = () => {
@@ -401,6 +402,9 @@ const Layout = () => {
           </svg>
         </button>
       )}
+
+      {/* Floating Action Button - Quick access to primary actions */}
+      <FloatingActionButton />
     </div>
   );
 };

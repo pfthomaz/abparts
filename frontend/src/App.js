@@ -36,6 +36,7 @@ import MaintenanceProtocols from './pages/MaintenanceProtocols'; // New: Import 
 import MaintenanceExecutions from './pages/MaintenanceExecutions'; // New: Import MaintenanceExecutions page
 import ProtocolTranslations from './pages/ProtocolTranslations'; // New: Import ProtocolTranslations page
 import DailyOperations from './pages/DailyOperations'; // New: Import DailyOperations page
+import FieldOperationsDashboard from './pages/FieldOperationsDashboard'; // New: Import FieldOperationsDashboard page
 import FarmSites from './pages/FarmSites'; // New: Import FarmSites page
 import Nets from './pages/Nets'; // New: Import Nets page
 import NetCleaningRecords from './pages/NetCleaningRecords'; // New: Import NetCleaningRecords page
@@ -140,9 +141,25 @@ function App() {
           >
             <Route index element={
               <PermissionErrorBoundary feature="Dashboard">
-                <Dashboard />
+                {user?.role === 'user' ? <FieldOperationsDashboard /> : <Dashboard />}
               </PermissionErrorBoundary>
             } />
+            <Route
+              path="field-operations"
+              element={
+                <PermissionErrorBoundary feature="Field Operations">
+                  <FieldOperationsDashboard />
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="dashboard"
+              element={
+                <PermissionErrorBoundary feature="Dashboard">
+                  <Dashboard />
+                </PermissionErrorBoundary>
+              }
+            />
             <Route
               path="organizations"
               element={

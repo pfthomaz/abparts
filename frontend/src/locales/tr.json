@@ -50,7 +50,8 @@
     "noDescription": "Açıklama mevcut değil",
     "notes": "Notlar",
     "scope": "Kapsam",
-    "skip": "Atla"
+    "skip": "Atla",
+    "viewAll": "Tümünü Gör"
   },
   "navigation": {
     "dashboard": "Kontrol Paneli",
@@ -2002,5 +2003,29 @@
       "selectOperator": "Operatör seç",
       "selectFarmSiteFirst": "Önce bir çiftlik alanı seçin"
     }
+  },
+  "fab": {
+    "washNets": "Ağları Yıka",
+    "dailyService": "Günlük Servis",
+    "orderParts": "Parça Sipariş Et",
+    "close": "Kapat",
+    "quickActions": "Hızlı İşlemler"
+  },
+  "fieldOps": {
+    "washNets": "Ağları Yıka",
+    "washNetsDesc": "Ağ temizliğini kaydet",
+    "dailyService": "Günlük Servis",
+    "dailyServiceDesc": "Bakım yap",
+    "orderParts": "Parça Sipariş Et",
+    "orderPartsDesc": "Malzeme talep et",
+    "netsToday": "Bugün Ağlar",
+    "servicesToday": "Bugün Servisler",
+    "todaysActivity": "Bugünün Aktivitesi",
+    "noActivityYet": "Bugün henüz aktivite yok",
+    "startYourDay": "Bir temizlik veya servis kaydederek güne başlayın",
+    "completedToday": "Bugün tamamlanan: {{count}}",
+    "viewFarms": "Çiftlikleri Görüntüle",
+    "viewMachines": "Makineleri Görüntüle",
+    "viewFullDashboard": "Tam Panoyu Görüntüle"
   }
 }

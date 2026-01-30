@@ -50,7 +50,8 @@
     "noDescription": "Δεν υπάρχει περιγραφή",
     "notes": "Σημειώσεις",
     "scope": "Εμβέλεια",
-    "skip": "Παράλειψη"
+    "skip": "Παράλειψη",
+    "viewAll": "Προβολή Όλων"
   },
   "navigation": {
     "dashboard": "Πίνακας Ελέγχου",
@@ -2076,5 +2077,29 @@
       "selectOperator": "Επιλέξτε χειριστή",
       "selectFarmSiteFirst": "Επιλέξτε πρώτα μια τοποθεσία φάρμας"
     }
+  },
+  "fab": {
+    "washNets": "Πλύσιμο Διχτυών",
+    "dailyService": "Ημερήσια Υπηρεσία",
+    "orderParts": "Παραγγελία Ανταλλακτικών",
+    "close": "Κλείσιμο",
+    "quickActions": "Γρήγορες Ενέργειες"
+  },
+  "fieldOps": {
+    "washNets": "Πλύσιμο Διχτυών",
+    "washNetsDesc": "Καταγραφή καθαρισμού διχτυών",
+    "dailyService": "Ημερήσια Υπηρεσία",
+    "dailyServiceDesc": "Εκτέλεση συντήρησης",
+    "orderParts": "Παραγγελία Ανταλλακτικών",
+    "orderPartsDesc": "Αίτημα προμηθειών",
+    "netsToday": "Δίχτυα Σήμερα",
+    "servicesToday": "Υπηρεσίες Σήμερα",
+    "todaysActivity": "Δραστηριότητα Σήμερα",
+    "noActivityYet": "Καμία δραστηριότητα σήμερα",
+    "startYourDay": "Ξεκινήστε τη μέρα σας καταγράφοντας έναν καθαρισμό ή υπηρεσία",
+    "completedToday": "Ολοκληρώθηκε σήμερα: {{count}}",
+    "viewFarms": "Προβολή Φάρμων",
+    "viewMachines": "Προβολή Μηχανών",
+    "viewFullDashboard": "Προβολή Πλήρους Πίνακα"
   }
 }

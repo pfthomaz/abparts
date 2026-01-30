@@ -50,7 +50,8 @@
     "noDescription": "لا يوجد وصف متاح",
     "notes": "ملاحظات",
     "scope": "النطاق",
-    "skip": "تخطي"
+    "skip": "تخطي",
+    "viewAll": "عرض الكل"
   },
   "navigation": {
     "dashboard": "لوحة التحكم",
@@ -2030,5 +2031,29 @@
       "selectOperator": "اختر المشغل",
       "selectFarmSiteFirst": "اختر موقع المزرعة أولاً"
     }
+  },
+  "fab": {
+    "washNets": "غسل الشباك",
+    "dailyService": "الخدمة اليومية",
+    "orderParts": "طلب قطع الغيار",
+    "close": "إغلاق",
+    "quickActions": "إجراءات سريعة"
+  },
+  "fieldOps": {
+    "washNets": "غسل الشباك",
+    "washNetsDesc": "تسجيل تنظيف الشباك",
+    "dailyService": "الخدمة اليومية",
+    "dailyServiceDesc": "إجراء الصيانة",
+    "orderParts": "طلب قطع الغيار",
+    "orderPartsDesc": "طلب الإمدادات",
+    "netsToday": "الشباك اليوم",
+    "servicesToday": "الخدمات اليوم",
+    "todaysActivity": "نشاط اليوم",
+    "noActivityYet": "لا يوجد نشاط اليوم",
+    "startYourDay": "ابدأ يومك بتسجيل تنظيف أو خدمة",
+    "completedToday": "مكتمل اليوم: {{count}}",
+    "viewFarms": "عرض المزارع",
+    "viewMachines": "عرض الآلات",
+    "viewFullDashboard": "عرض لوحة المعلومات الكاملة"
   }
 }

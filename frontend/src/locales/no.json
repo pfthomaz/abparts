@@ -50,7 +50,8 @@
     "noDescription": "Ingen beskrivelse tilgjengelig",
     "notes": "Notater",
     "scope": "Omfang",
-    "skip": "Hopp over"
+    "skip": "Hopp over",
+    "viewAll": "Vis Alle"
   },
   "navigation": {
     "dashboard": "Dashbord",
@@ -2002,5 +2003,29 @@
       "selectOperator": "Velg operatør",
       "selectFarmSiteFirst": "Velg et gårdssted først"
     }
+  },
+  "fab": {
+    "washNets": "Vask Nett",
+    "dailyService": "Daglig Service",
+    "orderParts": "Bestill Deler",
+    "close": "Lukk",
+    "quickActions": "Hurtighandlinger"
+  },
+  "fieldOps": {
+    "washNets": "Vask Nett",
+    "washNetsDesc": "Registrer nettvask",
+    "dailyService": "Daglig Service",
+    "dailyServiceDesc": "Utfør vedlikehold",
+    "orderParts": "Bestill Deler",
+    "orderPartsDesc": "Be om forsyninger",
+    "netsToday": "Nett I Dag",
+    "servicesToday": "Tjenester I Dag",
+    "todaysActivity": "Dagens Aktivitet",
+    "noActivityYet": "Ingen aktivitet i dag",
+    "startYourDay": "Start dagen din ved å registrere en vask eller service",
+    "completedToday": "Fullført i dag: {{count}}",
+    "viewFarms": "Vis Gårder",
+    "viewMachines": "Vis Maskiner",
+    "viewFullDashboard": "Vis Fullstendig Dashboard"
   }
 }

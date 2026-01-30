@@ -50,7 +50,8 @@
     "noDescription": "Sin descripción disponible",
     "notes": "Notas",
     "scope": "Alcance",
-    "skip": "Omitir"
+    "skip": "Omitir",
+    "viewAll": "Ver Todo"
   },
   "navigation": {
     "dashboard": "Panel de Control",
@@ -2031,5 +2032,29 @@
       "endTimeAfterStart": "La hora de fin debe ser posterior a la hora de inicio.",
       "required": "*"
     }
+  },
+  "fab": {
+    "washNets": "Lavar Redes",
+    "dailyService": "Servicio Diario",
+    "orderParts": "Pedir Piezas",
+    "close": "Cerrar",
+    "quickActions": "Acciones Rápidas"
+  },
+  "fieldOps": {
+    "washNets": "Lavar Redes",
+    "washNetsDesc": "Registrar limpieza de redes",
+    "dailyService": "Servicio Diario",
+    "dailyServiceDesc": "Realizar mantenimiento",
+    "orderParts": "Pedir Piezas",
+    "orderPartsDesc": "Solicitar suministros",
+    "netsToday": "Redes Hoy",
+    "servicesToday": "Servicios Hoy",
+    "todaysActivity": "Actividad de Hoy",
+    "noActivityYet": "Sin actividad hoy",
+    "startYourDay": "Comienza tu día registrando una limpieza o servicio",
+    "completedToday": "Completado hoy: {{count}}",
+    "viewFarms": "Ver Granjas",
+    "viewMachines": "Ver Máquinas",
+    "viewFullDashboard": "Ver Panel Completo"
   }
 }
