@@ -2101,5 +2101,18 @@
     "viewFarms": "Προβολή Φάρμων",
     "viewMachines": "Προβολή Μηχανών",
     "viewFullDashboard": "Προβολή Πλήρους Πίνακα"
+  },
+  "mobileNav": {
+    "home": "Αρχική",
+    "stock": "Απόθεμα",
+    "actions": "Ενέργειες",
+    "orders": "Παραγγελίες",
+    "machines": "Μηχανές",
+    "quickActions": "Γρήγορες Ενέργειες",
+    "allFeatures": "Όλες οι Λειτουργίες",
+    "orderParts": "Παραγγελία Ανταλλακτικών",
+    "recordHours": "Καταγραφή Ωρών",
+    "checkStock": "Έλεγχος Αποθέματος",
+    "useParts": "Χρήση Ανταλλακτικών"
   }
 }

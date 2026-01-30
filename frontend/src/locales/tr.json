@@ -2027,5 +2027,18 @@
     "viewFarms": "Çiftlikleri Görüntüle",
     "viewMachines": "Makineleri Görüntüle",
     "viewFullDashboard": "Tam Panoyu Görüntüle"
+  },
+  "mobileNav": {
+    "home": "Ana Sayfa",
+    "stock": "Stok",
+    "actions": "İşlemler",
+    "orders": "Siparişler",
+    "machines": "Makineler",
+    "quickActions": "Hızlı İşlemler",
+    "allFeatures": "Tüm Özellikler",
+    "orderParts": "Parça Sipariş Et",
+    "recordHours": "Saat Kaydet",
+    "checkStock": "Stok Kontrol",
+    "useParts": "Parça Kullan"
   }
 }

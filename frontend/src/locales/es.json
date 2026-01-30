@@ -2056,5 +2056,18 @@
     "viewFarms": "Ver Granjas",
     "viewMachines": "Ver Máquinas",
     "viewFullDashboard": "Ver Panel Completo"
+  },
+  "mobileNav": {
+    "home": "Inicio",
+    "stock": "Stock",
+    "actions": "Acciones",
+    "orders": "Pedidos",
+    "machines": "Máquinas",
+    "quickActions": "Acciones Rápidas",
+    "allFeatures": "Todas las Funciones",
+    "orderParts": "Pedir Piezas",
+    "recordHours": "Registrar Horas",
+    "checkStock": "Verificar Stock",
+    "useParts": "Usar Piezas"
   }
 }

@@ -2027,5 +2027,18 @@
     "viewFarms": "Vis Gårder",
     "viewMachines": "Vis Maskiner",
     "viewFullDashboard": "Vis Fullstendig Dashboard"
+  },
+  "mobileNav": {
+    "home": "Hjem",
+    "stock": "Lager",
+    "actions": "Handlinger",
+    "orders": "Bestillinger",
+    "machines": "Maskiner",
+    "quickActions": "Hurtighandlinger",
+    "allFeatures": "Alle Funksjoner",
+    "orderParts": "Bestill Deler",
+    "recordHours": "Registrer Timer",
+    "checkStock": "Sjekk Lager",
+    "useParts": "Bruk Deler"
   }
 }

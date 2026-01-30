@@ -2138,5 +2138,18 @@
     "viewFarms": "View Farms",
     "viewMachines": "View Machines",
     "viewFullDashboard": "View Full Dashboard"
+  },
+  "mobileNav": {
+    "home": "Home",
+    "stock": "Stock",
+    "actions": "Actions",
+    "orders": "Orders",
+    "machines": "Machines",
+    "quickActions": "Quick Actions",
+    "allFeatures": "All Features",
+    "orderParts": "Order Parts",
+    "recordHours": "Record Hours",
+    "checkStock": "Check Stock",
+    "useParts": "Use Parts"
   }
 }

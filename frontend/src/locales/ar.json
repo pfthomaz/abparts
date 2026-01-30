@@ -2055,5 +2055,18 @@
     "viewFarms": "عرض المزارع",
     "viewMachines": "عرض الآلات",
     "viewFullDashboard": "عرض لوحة المعلومات الكاملة"
+  },
+  "mobileNav": {
+    "home": "الرئيسية",
+    "stock": "المخزون",
+    "actions": "الإجراءات",
+    "orders": "الطلبات",
+    "machines": "الآلات",
+    "quickActions": "إجراءات سريعة",
+    "allFeatures": "جميع الميزات",
+    "orderParts": "طلب قطع",
+    "recordHours": "تسجيل الساعات",
+    "checkStock": "التحقق من المخزون",
+    "useParts": "استخدام القطع"
   }
 }
