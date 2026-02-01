@@ -41,42 +41,36 @@ class ABPartsIntegration:
             Dictionary containing machine details or None if not found
         """
         try:
+            from sqlalchemy import text
             with get_db_session() as db:
-                # Import models here to avoid circular imports
-                from app.models import Machine, Organization
+                # Use raw SQL instead of ORM to avoid import issues
+                result = db.execute(text("""
+                    SELECT m.id, m.name, m.serial_number, m.model_type, m.installation_date,
+                           m.total_operating_hours, m.status, m.customer_organization_id,
+                           o.name as org_name, o.organization_type
+                    FROM machines m
+                    LEFT JOIN organizations o ON m.customer_organization_id = o.id
+                    WHERE m.id = :machine_id
+                """), {'machine_id': machine_id}).fetchone()
                 
-                machine = db.query(Machine).filter(Machine.id == machine_id).first()
-                if not machine:
+                if not result:
                     self.logger.warning(f"Machine not found: {machine_id}")
                     return None
                 
-                # Get organization details
-                organization = db.query(Organization).filter(
-                    Organization.id == machine.customer_organization_id
-                ).first()
-                
                 machine_data = {
-                    "id": str(machine.id),
-                    "name": machine.name,
-                    "model_type": machine.model_type,
-                    "serial_number": machine.serial_number,
+                    "id": str(result.id),
+                    "name": result.name,
+                    "model_type": result.model_type,
+                    "serial_number": result.serial_number,
+                    "latest_hours": float(result.total_operating_hours) if result.total_operating_hours else 0,
+                    "status": result.status,
+                    "installation_date": result.installation_date.isoformat() if result.installation_date else None,
                     "customer_organization": {
-                        "id": str(organization.id) if organization else None,
-                        "name": organization.name if organization else None,
-                        "organization_type": organization.organization_type.value if organization else None,
-                        "country": organization.country.value if organization and organization.country else None
-                    },
-                    "created_at": machine.created_at.isoformat() if machine.created_at else None,
-                    "updated_at": machine.updated_at.isoformat() if machine.updated_at else None
+                        "id": str(result.customer_organization_id) if result.customer_organization_id else None,
+                        "name": result.org_name if result.org_name else None,
+                        "organization_type": result.organization_type if result.organization_type else None
+                    }
                 }
-                
-                # Get latest machine hours
-                latest_hours = machine.get_latest_hours(db)
-                machine_data["latest_hours"] = float(latest_hours) if latest_hours else 0
-                
-                # Get total hours records count
-                total_records = machine.get_total_hours_recorded(db)
-                machine_data["total_hours_records"] = total_records
                 
                 self.logger.info(f"Retrieved machine details for {machine_id}")
                 return machine_data
@@ -227,34 +221,36 @@ class ABPartsIntegration:
             Dictionary containing user preferences or None if not found
         """
         try:
+            from sqlalchemy import text
             with get_db_session() as db:
-                from app.models import User, Organization
+                # Use raw SQL instead of ORM
+                result = db.execute(text("""
+                    SELECT u.id, u.username, u.name, u.email, u.preferred_language, u.role,
+                           u.is_active, u.created_at, u.organization_id,
+                           o.name as org_name, o.organization_type
+                    FROM users u
+                    LEFT JOIN organizations o ON u.organization_id = o.id
+                    WHERE u.id = :user_id
+                """), {'user_id': user_id}).fetchone()
                 
-                user = db.query(User).filter(User.id == user_id).first()
-                if not user:
+                if not result:
                     self.logger.warning(f"User not found: {user_id}")
                     return None
                 
-                # Get organization details
-                organization = db.query(Organization).filter(
-                    Organization.id == user.organization_id
-                ).first()
-                
                 preferences = {
-                    "user_id": str(user.id),
-                    "username": user.username,
-                    "name": user.name,
-                    "email": user.email,
-                    "preferred_language": user.preferred_language or "en",
-                    "role": user.role.value,
+                    "user_id": str(result.id),
+                    "username": result.username,
+                    "name": result.name,
+                    "email": result.email,
+                    "preferred_language": result.preferred_language or "en",
+                    "role": result.role,
                     "organization": {
-                        "id": str(organization.id) if organization else None,
-                        "name": organization.name if organization else None,
-                        "organization_type": organization.organization_type.value if organization else None,
-                        "country": organization.country.value if organization and organization.country else None
+                        "id": str(result.organization_id) if result.organization_id else None,
+                        "name": result.org_name if result.org_name else None,
+                        "organization_type": result.organization_type if result.organization_type else None
                     },
-                    "is_active": user.is_active,
-                    "created_at": user.created_at.isoformat() if user.created_at else None
+                    "is_active": result.is_active,
+                    "created_at": result.created_at.isoformat() if result.created_at else None
                 }
                 
                 self.logger.info(f"Retrieved user preferences for {user_id}")

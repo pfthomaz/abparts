@@ -19,6 +19,7 @@ from ..schemas import (
 from ..session_manager import session_manager
 from ..models import MessageSender, MessageType
 from ..llm_client import LLMClient
+from ..services.security_service import get_security_service, SecurityService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -219,10 +220,13 @@ async def send_message(
 async def get_session_history(
     session_id: str,
     limit: int = 100,
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """
     Get conversation history for an AI troubleshooting session.
+    
+    Messages are automatically decrypted before being returned.
     
     - **session_id**: ID of the session
     - **limit**: Maximum number of messages to retrieve (default: 100)
@@ -245,20 +249,27 @@ async def get_session_history(
         # Get message history
         messages = await session_manager.get_session_history(session_id, limit)
         
-        # Convert to response format
-        message_responses = [
-            MessageResponse(
+        # Convert to response format and decrypt messages
+        message_responses = []
+        for msg in messages:
+            # Decrypt message content if encrypted
+            content = msg.content
+            try:
+                # Attempt to decrypt - if it fails, content is not encrypted
+                content = security_service.decrypt_message(msg.content)
+            except Exception as e:
+                logger.debug(f"Message {msg.message_id} not encrypted or decryption failed: {e}")
+            
+            message_responses.append(MessageResponse(
                 message_id=msg.message_id,
                 session_id=msg.session_id,
                 sender=msg.sender,
-                content=msg.content,
+                content=content,
                 message_type=msg.message_type,
                 language=msg.language,
                 timestamp=msg.timestamp,
                 metadata=msg.metadata
-            )
-            for msg in messages
-        ]
+            ))
         
         return SessionHistoryResponse(
             session_id=session_id,

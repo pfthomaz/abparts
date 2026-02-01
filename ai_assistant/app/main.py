@@ -18,11 +18,12 @@ from .config import settings
 from .llm_client import LLMClient
 from .session_manager import session_manager
 from .database import init_database, close_database
-from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines, escalation, analytics
+from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines, escalation, analytics, privacy, audit_compliance
+from .logging_config import setup_logging, get_logger
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = get_logger(__name__)
 
 # Global LLM client instance
 llm_client = None
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
         
         # Initialize session manager
         await session_manager.initialize()
+        app.state.session_manager = session_manager
         
         # Initialize LLM client
         llm_client = LLMClient()
@@ -88,6 +90,8 @@ app.include_router(knowledge_base.router, prefix="/ai/knowledge", tags=["knowled
 app.include_router(troubleshooting.router, prefix="/api/ai", tags=["troubleshooting"])
 app.include_router(escalation.router, prefix="/api/ai", tags=["escalation"])
 app.include_router(analytics.router, prefix="/api/ai", tags=["analytics"])
+app.include_router(privacy.router, prefix="/api/ai/privacy", tags=["privacy"])
+app.include_router(audit_compliance.router, prefix="/api/ai/audit-compliance", tags=["audit-compliance"])
 app.include_router(machines.router, tags=["machines"])
 
 # Mount static files

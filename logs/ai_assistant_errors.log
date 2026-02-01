@@ -1,0 +1,212 @@
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.services.troubleshooting_service - [31mERROR[0m - Failed to retrieve troubleshooting step: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.session_manager - [31mERROR[0m - Failed to update session status: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:31:11 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:32:28 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:32:28 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:32:28 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machines for user invalid-user-id: cannot import name 'User' from 'app.models' (/Users/diogothomaz/dev/abparts/ai_assistant/app/models.py)
+2026-01-31 10:32:28 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:35:20 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:35:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machines for user invalid-user-id: cannot import name 'User' from 'app.models' (/Users/diogothomaz/dev/abparts/ai_assistant/app/models.py)
+2026-01-31 10:35:21 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: 2 validation errors for DiagnosticAssessmentResponse
+problem_category
+  Input should be a valid string [type=string_type, input_value=<AsyncMock name='start_tr...tegory' id='4579789184'>, input_type=AsyncMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+confidence_level
+  Input should be a valid string [type=string_type, input_value=<AsyncMock name='start_tr....value' id='4579791200'>, input_type=AsyncMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.services.troubleshooting_service - [31mERROR[0m - Failed to retrieve troubleshooting step: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.session_manager - [31mERROR[0m - Failed to update session status: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:21 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:35:41 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:35:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:35:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:35:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:35:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:35:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:35:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:35:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:35:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:35:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:35:51 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:35:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:35:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:35:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:35:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:35:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:35:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:35:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:35:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:36:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:36:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:36:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:36:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:36:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:36:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:36:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:36:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:36:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:36:09 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:37:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:37:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4707730160'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4750900736'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:37:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4707737552'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4707737888'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:20 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machines for user invalid-user-id: cannot import name 'User' from 'app.models' (/Users/diogothomaz/dev/abparts/ai_assistant/app/models.py)
+2026-01-31 10:37:20 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: 2 validation errors for DiagnosticAssessmentResponse
+problem_category
+  Input should be a valid string [type=string_type, input_value=<AsyncMock name='start_tr...tegory' id='4505421536'>, input_type=AsyncMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+confidence_level
+  Input should be a valid string [type=string_type, input_value=<AsyncMock name='start_tr....value' id='4505424224'>, input_type=AsyncMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.services.troubleshooting_service - [31mERROR[0m - Failed to retrieve troubleshooting step: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.session_manager - [31mERROR[0m - Failed to update session status: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:20 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:37:23 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:37:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:37:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:37:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:37:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:37:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:37:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:37:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:37:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:37:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:37:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:37:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:37:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:37:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:37:38 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:37:38 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:37:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:37:41 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:37:41 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:37:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:37:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:37:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:37:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:37:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:37:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:37:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:37:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:37:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:37:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:37:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:37:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4505429936'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4505427584'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:37:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4505427584'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:37:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4505429936'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:38:13 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:38:21 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()

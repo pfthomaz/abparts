@@ -42,6 +42,9 @@ import Nets from './pages/Nets'; // New: Import Nets page
 import NetCleaningRecords from './pages/NetCleaningRecords'; // New: Import NetCleaningRecords page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
+import OfflineIndicator from './components/OfflineIndicator'; // New: Import OfflineIndicator for PWA
+import PWAInstallPrompt from './components/PWAInstallPrompt'; // New: Import PWAInstallPrompt for PWA
+import PWAUpdateNotification from './components/PWAUpdateNotification'; // New: Import PWAUpdateNotification for PWA
 import { useState, useEffect } from 'react';
 import { api } from './services/api';
 
@@ -108,6 +111,11 @@ function App() {
     <TourProvider>
       <LocalizationProvider>
         <Router>
+          {/* PWA Components - Offline indicator, install prompt, and update notification */}
+          <OfflineIndicator />
+          <PWAInstallPrompt />
+          <PWAUpdateNotification />
+          
           {/* Global session timeout warning - only shows when user is authenticated */}
           {token && <SessionTimeoutWarning />}
           

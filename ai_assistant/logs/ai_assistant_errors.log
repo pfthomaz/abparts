@@ -1,0 +1,1687 @@
+2026-01-31 10:49:29 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:49:37 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machines for user invalid-user-id: cannot import name 'User' from 'app.models' (/Users/diogothomaz/dev/abparts/ai_assistant/app/models.py)
+2026-01-31 10:49:37 - app.routers.chat - [31mERROR[0m - Get user machines endpoint error: object of type '_asyncio.Future' has no len()
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: 2 validation errors for DiagnosticAssessmentResponse
+problem_category
+  Input should be a valid string [type=string_type, input_value=<AsyncMock name='start_tr...tegory' id='4539348848'>, input_type=AsyncMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+confidence_level
+  Input should be a valid string [type=string_type, input_value=<AsyncMock name='start_tr....value' id='4541678992'>, input_type=AsyncMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.services.troubleshooting_service - [31mERROR[0m - Failed to retrieve troubleshooting step: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.session_manager - [31mERROR[0m - Failed to update session status: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:37 - app.routers.troubleshooting - [31mERROR[0m - Start troubleshooting endpoint error: (psycopg2.OperationalError) could not translate host name "db" to address: nodename nor servname provided, or not known
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:49:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:49:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:49:52 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:49:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:49:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:49:55 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:49:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:49:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:49:58 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:49:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:49:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:50:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:50:01 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Rate limit exceeded
+2026-01-31 10:50:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: Rate limit exceeded
+2026-01-31 10:50:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: Rate limit exceeded
+2026-01-31 10:50:04 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:50:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:50:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:50:07 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:50:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:50:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:50:10 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: API error
+2026-01-31 10:50:11 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: API error
+2026-01-31 10:50:13 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: API error
+2026-01-31 10:50:14 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:14 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:50:15 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:50:16 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:16 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:50:17 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:17 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:50:18 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: Primary model error
+2026-01-31 10:50:32 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:35 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:38 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:41 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:44 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:48 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:51 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:54 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:50:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4799355536'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:50:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4799353856'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:50:57 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:50:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:50:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4695276720'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4695275040'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:00 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4783028080'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4783026736'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:03 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4783018000'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4783014976'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:06 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4708459456'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:09 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4708457776'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:09 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:09 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4717261360'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:12 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4717260016'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:12 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:12 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:13 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4717255984'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4717252624'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:15 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:16 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4762084288'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4762078576'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:18 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:19 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4541685712'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:21 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4541681680'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:21 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:21 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:22 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4541682688'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4541690416'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:24 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:25 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4655433440'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4655442512'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:27 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:28 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593541072'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593544768'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:30 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:31 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593534352'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593544096'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:33 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:34 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4540380032'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4540380704'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:36 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:37 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4539338432'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4539337424'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:39 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:40 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549179584'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549166144'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:42 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:43 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549178240'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549177904'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:45 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:46 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4577986608'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4577987952'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4745975456'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4745982176'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:52 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4745980160'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4745975120'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:55 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4695268656'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4695266976'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:51:58 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:51:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:51:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4717260688'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4717259008'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:01 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4546617632'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4546611920'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:04 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4546623680'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4546616960'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:07 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4627330592'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4627322192'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:10 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:11 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4627321520'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:13 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4627329584'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:13 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:13 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:14 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4759182304'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:16 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4759180960'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:16 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:16 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:17 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4759187344'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:19 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4759186672'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:19 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:19 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:20 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4646885696'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:22 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4646886032'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:22 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:22 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:23 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4646894432'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:25 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4646894768'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:25 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:25 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4548533888'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:28 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4548534224'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:28 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:28 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549083552'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:31 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549083888'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:31 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:31 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549092288'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:34 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4549092624'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:34 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:34 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4596467424'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:37 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4596467760'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:37 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:37 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:38 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4596476160'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:40 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4596476496'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:40 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:40 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:41 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602072096'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:43 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602072432'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:43 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:43 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602080832'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:46 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602081168'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:46 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:46 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602533872'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602533200'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:49 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602530512'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4602538912'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:52 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4601468576'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4601468912'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:55 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4601477312'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4601477648'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:52:58 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:52:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:52:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4551793632'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4551793968'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:01 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4551802368'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4636534704'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:04 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4636530000'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4636529328'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:07 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593648704'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593649040'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:11 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:11 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:12 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593657440'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:14 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4593657776'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:14 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:14 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651829632'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:17 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651829968'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:17 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:17 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651838368'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:20 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651838704'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:20 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:20 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:21 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590292672'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:23 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590293008'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:23 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:23 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590301408'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590301744'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:26 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590703616'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590703952'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:29 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590712352'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4590712688'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:32 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4652636480'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4652636816'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:35 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4652645216'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:38 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4652645552'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:38 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:38 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4653473408'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:41 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4653473744'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:41 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:41 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4557750688'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4557751024'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:44 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:44 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4557759424'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4557759760'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:47 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:47 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4600825568'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4600825904'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:50 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:50 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:51 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4600834304'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4600834640'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:53 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:53 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4566715424'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4566715760'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:56 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:56 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:53:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4566724160'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4566724496'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:53:59 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:53:59 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567585120'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567585456'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:02 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:02 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567593856'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567594192'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:05 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:05 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567455392'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567455728'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:08 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:09 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567464128'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:11 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4567464464'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:11 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:11 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:12 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4565130208'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:14 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4565130544'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:14 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:14 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4565138944'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:17 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4649156688'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:17 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:17 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4649165088'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:20 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4649165424'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:20 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:20 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:21 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4576707648'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:23 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4576707984'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:23 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:23 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4576716384'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4576716720'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:26 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:26 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4599597440'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4599597776'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:29 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:29 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4599606176'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4599606512'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:32 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:32 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4629024448'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4629024784'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:35 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:35 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4629033184'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:38 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4629033520'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:39 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:40 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4648801280'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4648801616'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:42 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:43 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4648810016'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4648810352'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:45 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:46 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4628552000'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4628552336'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:48 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4628560736'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:51 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4628561072'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:51 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:51 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4632813184'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4632813520'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:54 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4642029984'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4642030320'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:54:57 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:54:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:54:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4642038720'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4642039056'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:00 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630446160'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630448176'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:03 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630454224'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630453552'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:06 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4588915744'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:09 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4588916080'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:09 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:09 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4588924480'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:12 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4588924816'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:12 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:12 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:13 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4589031776'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4589032112'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:15 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:15 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:16 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4589040512'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4589040848'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:18 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:18 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:19 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630271648'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:21 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630271984'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:21 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:21 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:22 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630280384'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4630280720'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:24 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:24 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:25 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4637039584'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4637039920'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:27 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:27 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:28 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4637048320'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4573266000'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:30 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:30 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:31 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4573274400'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4573274736'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:33 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:33 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:34 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651418688'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651419024'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:36 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:36 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:37 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651427424'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4651427760'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:39 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:39 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:40 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4650862976'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4650863312'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:42 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:42 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:43 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4650871712'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4650872048'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:45 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:45 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:46 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643770048'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643770384'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:48 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:48 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:49 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643778784'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:51 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643779120'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:51 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:51 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:52 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643361792'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643362128'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:54 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:54 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:55 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643370528'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643370864'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:55:57 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:55:57 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:55:58 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643576128'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643576464'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:00 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:56:00 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:56:01 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643584864'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4643585200'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:03 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:56:03 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:56:04 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4594196096'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:06 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4594196432'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:07 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:56:07 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:56:08 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4574151072'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4574151408'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:10 - app.services.knowledge_base - [31mERROR[0m - Failed to search documents: 
+2026-01-31 10:56:10 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 1: APIError.__init__() got an unexpected keyword argument 'response'
+2026-01-31 10:56:11 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 2: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4574159808'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 10:56:13 - app.llm_client - [31mERROR[0m - Unexpected error on attempt 3: 1 validation error for ChatCompletion
+choices.0
+  Input should be a valid dictionary or instance of Choice [type=model_type, input_value=<MagicMock id='4574160144'>, input_type=MagicMock]
+    For further information visit https://errors.pydantic.dev/2.12/v/model_type
+2026-01-31 12:32:16 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 12:36:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 12:54:24 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 12:55:19 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:51:14 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:51:31 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:51:53 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:52:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:52:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving user preferences for ec000c4c-dd24-4f95-b86d-b0835204843c: cannot import name 'User' from 'app.models' (/app/app/models.py)
+2026-01-31 14:52:29 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store diagnostic assessment: (psycopg2.errors.UndefinedColumn) column "session_id" does not exist
+LINE 4:                     WHERE session_id = '82cae446-2bb3-4bbe-b...
+                                  ^
+
+[SQL: 
+                    UPDATE ai_sessions 
+                    SET session_metadata = %(metadata)s, updated_at = NOW()
+                    WHERE session_id = %(session_id)s
+                ]
+[parameters: {'metadata': '{"diagnostic_assessment": {"problem_category": "other", "likely_causes": [], "confidence_level": "low", "recommended_steps": [], "safety_warnings": [], "estimated_duration": 30, "requires_expert": false, "created_at": "2026-01-31T14:52:29.991833"}}', 'session_id': '82cae446-2bb3-4bbe-bcb9-ce99254ea100'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 14:52:29 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:52:54 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:53:30 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:53:30 - app.services.abparts_integration - [31mERROR[0m - Error retrieving user preferences for ec000c4c-dd24-4f95-b86d-b0835204843c: cannot import name 'User' from 'app.models' (/app/app/models.py)
+2026-01-31 14:53:52 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store diagnostic assessment: (psycopg2.errors.UndefinedColumn) column "session_id" does not exist
+LINE 4:                     WHERE session_id = '63d32f64-d601-4757-8...
+                                  ^
+
+[SQL: 
+                    UPDATE ai_sessions 
+                    SET session_metadata = %(metadata)s, updated_at = NOW()
+                    WHERE session_id = %(session_id)s
+                ]
+[parameters: {'metadata': '{"diagnostic_assessment": {"problem_category": "other", "likely_causes": [], "confidence_level": "low", "recommended_steps": [], "safety_warnings": [], "estimated_duration": 30, "requires_expert": false, "created_at": "2026-01-31T14:53:52.834511"}}', 'session_id': '63d32f64-d601-4757-820a-8e74ec1d965d'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 14:53:52 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:54:49 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 14:54:49 - app.services.abparts_integration - [31mERROR[0m - Error retrieving user preferences for ec000c4c-dd24-4f95-b86d-b0835204843c: cannot import name 'User' from 'app.models' (/app/app/models.py)
+2026-01-31 14:55:13 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store diagnostic assessment: (psycopg2.errors.UndefinedColumn) column "session_id" does not exist
+LINE 4:                     WHERE session_id = '748df542-4217-4bc5-8...
+                                  ^
+
+[SQL: 
+                    UPDATE ai_sessions 
+                    SET session_metadata = %(metadata)s, updated_at = NOW()
+                    WHERE session_id = %(session_id)s
+                ]
+[parameters: {'metadata': '{"diagnostic_assessment": {"problem_category": "other", "likely_causes": [], "confidence_level": "low", "recommended_steps": [], "safety_warnings": [], "estimated_duration": 30, "requires_expert": false, "created_at": "2026-01-31T14:55:13.536089"}}', 'session_id': '748df542-4217-4bc5-8573-4712140dd75f'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 14:55:13 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store troubleshooting step: (psycopg2.errors.UndefinedColumn) column "step_id" of relation "troubleshooting_steps" does not exist
+LINE 3:                     (step_id, session_id, step_number, instr...
+                             ^
+
+[SQL: 
+                    INSERT INTO troubleshooting_steps 
+                    (step_id, session_id, step_number, instruction, expected_outcomes, 
+                     user_feedback, completed, success, created_at)
+                    VALUES (%(step_id)s, %(session_id)s, %(step_number)s, %(instruction)s, %(expected_outcomes)s,
+                            %(user_feedback)s, %(completed)s, %(success)s, %(created_at)s)
+                ]
+[parameters: {'step_id': '717b7555-dde4-4c19-9e6c-b2d272efaaf4', 'session_id': '748df542-4217-4bc5-8573-4712140dd75f', 'step_number': 1, 'instruction': 'Begin troubleshooting', 'expected_outcomes': '["Problem resolved", "No change observed", "Problem partially resolved", "New symptoms appeared"]', 'user_feedback': None, 'completed': False, 'success': False, 'created_at': datetime.datetime(2026, 1, 31, 14, 55, 13, 538391)}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 14:55:13 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 15:32:51 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 16:21:16 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 16:21:16 - app.services.abparts_integration - [31mERROR[0m - Error retrieving user preferences for ec000c4c-dd24-4f95-b86d-b0835204843c: cannot import name 'User' from 'app.models' (/app/app/models.py)
+2026-01-31 16:21:41 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store diagnostic assessment: (psycopg2.errors.UndefinedColumn) column "session_id" does not exist
+LINE 4:                     WHERE session_id = '71b82bb6-3c1c-4ff6-9...
+                                  ^
+
+[SQL: 
+                    UPDATE ai_sessions 
+                    SET session_metadata = %(metadata)s, updated_at = NOW()
+                    WHERE session_id = %(session_id)s
+                ]
+[parameters: {'metadata': '{"diagnostic_assessment": {"problem_category": "other", "likely_causes": [], "confidence_level": "low", "recommended_steps": [], "safety_warnings": [], "estimated_duration": 30, "requires_expert": false, "created_at": "2026-01-31T16:21:41.040674"}}', 'session_id': '71b82bb6-3c1c-4ff6-9a35-0c01cc795862'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:21:41 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store troubleshooting step: (psycopg2.errors.UndefinedColumn) column "step_id" of relation "troubleshooting_steps" does not exist
+LINE 3:                     (step_id, session_id, step_number, instr...
+                             ^
+
+[SQL: 
+                    INSERT INTO troubleshooting_steps 
+                    (step_id, session_id, step_number, instruction, expected_outcomes, 
+                     user_feedback, completed, success, created_at)
+                    VALUES (%(step_id)s, %(session_id)s, %(step_number)s, %(instruction)s, %(expected_outcomes)s,
+                            %(user_feedback)s, %(completed)s, %(success)s, %(created_at)s)
+                ]
+[parameters: {'step_id': '6fbcdecf-66c6-4621-b6ed-941f291c5fc0', 'session_id': '71b82bb6-3c1c-4ff6-9a35-0c01cc795862', 'step_number': 1, 'instruction': 'Perform a general visual inspection of the machine for any obvious issues or error indicators', 'expected_outcomes': '["Problem resolved", "No change observed", "Problem partially resolved", "New symptoms appeared"]', 'user_feedback': None, 'completed': False, 'success': False, 'created_at': datetime.datetime(2026, 1, 31, 16, 21, 41, 45534)}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:21:41 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'Machine' from 'app.models' (/app/app/models.py)
+2026-01-31 16:23:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: (psycopg2.errors.UndefinedColumn) column m.latest_hours does not exist
+LINE 3:                            m.latest_hours, m.status, m.custo...
+                                   ^
+
+[SQL: 
+                    SELECT m.id, m.name, m.serial_number, m.model_type, m.installation_date,
+                           m.latest_hours, m.status, m.customer_organization_id,
+                           o.name as org_name, o.organization_type
+                    FROM machines m
+                    LEFT JOIN organizations o ON m.customer_organization_id = o.id
+                    WHERE m.id = %(machine_id)s
+                ]
+[parameters: {'machine_id': '2190fc2a-85d1-4796-bfe2-8f155e998fdd'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:23:51 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store diagnostic assessment: (psycopg2.errors.UndefinedColumn) column "session_id" does not exist
+LINE 4:                     WHERE session_id = '0bcbeb4b-9765-4a96-9...
+                                  ^
+
+[SQL: 
+                    UPDATE ai_sessions 
+                    SET session_metadata = %(metadata)s, updated_at = NOW()
+                    WHERE session_id = %(session_id)s
+                ]
+[parameters: {'metadata': '{"diagnostic_assessment": {"problem_category": "startup", "likely_causes": ["Power supply issue", "Control system malfunction", "Safety interlock eng ... (551 characters truncated) ... 8-bb6d-6bb9bd380a11", "name": "Oraseas EE", "organization_type": "oraseas_ee"}, "is_active": true, "created_at": "2025-09-11T17:42:51.985996+00:00"}}', 'session_id': '0bcbeb4b-9765-4a96-963b-cca27f76fbe9'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:23:51 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store troubleshooting step: (psycopg2.errors.UndefinedColumn) column "step_id" of relation "troubleshooting_steps" does not exist
+LINE 3:                     (step_id, session_id, step_number, instr...
+                             ^
+
+[SQL: 
+                    INSERT INTO troubleshooting_steps 
+                    (step_id, session_id, step_number, instruction, expected_outcomes, 
+                     user_feedback, completed, success, created_at)
+                    VALUES (%(step_id)s, %(session_id)s, %(step_number)s, %(instruction)s, %(expected_outcomes)s,
+                            %(user_feedback)s, %(completed)s, %(success)s, %(created_at)s)
+                ]
+[parameters: {'step_id': 'ab4fe298-d1a5-4279-9bdd-325b08525214', 'session_id': '0bcbeb4b-9765-4a96-963b-cca27f76fbe9', 'step_number': 1, 'instruction': 'Check power connections', 'expected_outcomes': '["Problem resolved", "No change observed", "Problem partially resolved", "New symptoms appeared"]', 'user_feedback': None, 'completed': False, 'success': False, 'created_at': datetime.datetime(2026, 1, 31, 16, 23, 51, 654183)}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:23:51 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: (psycopg2.errors.UndefinedColumn) column m.latest_hours does not exist
+LINE 3:                            m.latest_hours, m.status, m.custo...
+                                   ^
+
+[SQL: 
+                    SELECT m.id, m.name, m.serial_number, m.model_type, m.installation_date,
+                           m.latest_hours, m.status, m.customer_organization_id,
+                           o.name as org_name, o.organization_type
+                    FROM machines m
+                    LEFT JOIN organizations o ON m.customer_organization_id = o.id
+                    WHERE m.id = %(machine_id)s
+                ]
+[parameters: {'machine_id': '2190fc2a-85d1-4796-bfe2-8f155e998fdd'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:24:55 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: (psycopg2.errors.UndefinedColumn) column m.latest_hours does not exist
+LINE 3:                            m.latest_hours, m.status, m.custo...
+                                   ^
+
+[SQL: 
+                    SELECT m.id, m.name, m.serial_number, m.model_type, m.installation_date,
+                           m.latest_hours, m.status, m.customer_organization_id,
+                           o.name as org_name, o.organization_type
+                    FROM machines m
+                    LEFT JOIN organizations o ON m.customer_organization_id = o.id
+                    WHERE m.id = %(machine_id)s
+                ]
+[parameters: {'machine_id': '2190fc2a-85d1-4796-bfe2-8f155e998fdd'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:25:08 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store diagnostic assessment: (psycopg2.errors.UndefinedColumn) column "session_id" does not exist
+LINE 4:                     WHERE session_id = '52d58598-6f8d-4695-b...
+                                  ^
+
+[SQL: 
+                    UPDATE ai_sessions 
+                    SET session_metadata = %(metadata)s, updated_at = NOW()
+                    WHERE session_id = %(session_id)s
+                ]
+[parameters: {'metadata': '{"diagnostic_assessment": {"problem_category": "startup", "likely_causes": ["Power supply issue", "Control system malfunction", "Safety interlock eng ... (551 characters truncated) ... 8-bb6d-6bb9bd380a11", "name": "Oraseas EE", "organization_type": "oraseas_ee"}, "is_active": true, "created_at": "2025-09-11T17:42:51.985996+00:00"}}', 'session_id': '52d58598-6f8d-4695-be8b-4a903820ae58'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:25:08 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store troubleshooting step: (psycopg2.errors.UndefinedColumn) column "step_id" of relation "troubleshooting_steps" does not exist
+LINE 3:                     (step_id, session_id, step_number, instr...
+                             ^
+
+[SQL: 
+                    INSERT INTO troubleshooting_steps 
+                    (step_id, session_id, step_number, instruction, expected_outcomes, 
+                     user_feedback, completed, success, created_at)
+                    VALUES (%(step_id)s, %(session_id)s, %(step_number)s, %(instruction)s, %(expected_outcomes)s,
+                            %(user_feedback)s, %(completed)s, %(success)s, %(created_at)s)
+                ]
+[parameters: {'step_id': '0ae3371c-7e70-4710-9e5a-3266fa18d1b5', 'session_id': '52d58598-6f8d-4695-be8b-4a903820ae58', 'step_number': 1, 'instruction': 'Check power connections', 'expected_outcomes': '["Problem resolved", "No change observed", "Problem partially resolved", "New symptoms appeared"]', 'user_feedback': None, 'completed': False, 'success': False, 'created_at': datetime.datetime(2026, 1, 31, 16, 25, 8, 436817)}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:25:08 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine details for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: (psycopg2.errors.UndefinedColumn) column m.latest_hours does not exist
+LINE 3:                            m.latest_hours, m.status, m.custo...
+                                   ^
+
+[SQL: 
+                    SELECT m.id, m.name, m.serial_number, m.model_type, m.installation_date,
+                           m.latest_hours, m.status, m.customer_organization_id,
+                           o.name as org_name, o.organization_type
+                    FROM machines m
+                    LEFT JOIN organizations o ON m.customer_organization_id = o.id
+                    WHERE m.id = %(machine_id)s
+                ]
+[parameters: {'machine_id': '2190fc2a-85d1-4796-bfe2-8f155e998fdd'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-01-31 16:31:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:47 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store troubleshooting step: (psycopg2.errors.ForeignKeyViolation) insert or update on table "troubleshooting_steps" violates foreign key constraint "troubleshooting_steps_session_id_fkey"
+DETAIL:  Key (session_id)=(57979081-1858-4451-aab7-0133ec3bd800) is not present in table "ai_sessions".
+
+[SQL: 
+                    INSERT INTO troubleshooting_steps 
+                    (session_id, step_number, instruction, user_feedback, completed, success, created_at)
+                    VALUES (%(session_id)s, %(step_number)s, %(instruction)s, %(user_feedback)s, %(completed)s, %(success)s, %(created_at)s)
+                ]
+[parameters: {'session_id': '57979081-1858-4451-aab7-0133ec3bd800', 'step_number': 1, 'instruction': 'Check power connections (for V4.0 model)', 'user_feedback': None, 'completed': False, 'success': False, 'created_at': datetime.datetime(2026, 1, 31, 16, 31, 47, 796177)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-01-31 16:31:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:31:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:20 - app.services.troubleshooting_service - [31mERROR[0m - Failed to store troubleshooting step: (psycopg2.errors.ForeignKeyViolation) insert or update on table "troubleshooting_steps" violates foreign key constraint "troubleshooting_steps_session_id_fkey"
+DETAIL:  Key (session_id)=(29f11ce0-0858-4a06-8108-3372f4fc2221) is not present in table "ai_sessions".
+
+[SQL: 
+                    INSERT INTO troubleshooting_steps 
+                    (session_id, step_number, instruction, user_feedback, completed, success, created_at)
+                    VALUES (%(session_id)s, %(step_number)s, %(instruction)s, %(user_feedback)s, %(completed)s, %(success)s, %(created_at)s)
+                ]
+[parameters: {'session_id': '29f11ce0-0858-4a06-8108-3372f4fc2221', 'step_number': 1, 'instruction': 'Check power connections (for V4.0 model)', 'user_feedback': None, 'completed': False, 'success': False, 'created_at': datetime.datetime(2026, 1, 31, 16, 41, 20, 832370)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2026-01-31 16:41:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:41:20 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:04 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:05 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:05 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:05 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:17 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: the JSON object must be str, bytes or bytearray, not dict
+2026-01-31 16:45:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-01-31 16:45:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:18 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:18 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:18 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:18 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:18 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:32 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: the JSON object must be str, bytes or bytearray, not dict
+2026-02-01 08:42:32 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:32 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:32 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:32 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:42:32 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:23 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: the JSON object must be str, bytes or bytearray, not dict
+2026-02-01 08:43:23 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:23 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:23 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:23 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:43:23 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:48 - app.services.troubleshooting_service - [31mERROR[0m - Failed to get workflow state: the JSON object must be str, bytes or bytearray, not dict
+2026-02-01 08:44:48 - app.services.troubleshooting_service - [31mERROR[0m - Traceback: Traceback (most recent call last):
+  File "/app/app/services/troubleshooting_service.py", line 918, in get_workflow_state
+    session_data = await self.session_manager.get_session(session_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/session_manager.py", line 150, in get_session
+    "metadata": json.loads(result.session_metadata or '{}')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/json/__init__.py", line 339, in loads
+    raise TypeError(f'the JSON object must be str, bytes or bytearray, '
+TypeError: the JSON object must be str, bytes or bytearray, not dict
+
+2026-02-01 08:44:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:44:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:45:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:45:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:45:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:45:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:45:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 2190fc2a-85d1-4796-bfe2-8f155e998fdd: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:49:45 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:49:45 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:49:45 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:49:45 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:49:45 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:17 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:50:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:51:59 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:51:59 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 08:51:59 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 08:51:59 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 08:51:59 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:16:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:16:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:16:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:16:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:16:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:22:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:22:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:22:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:22:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:22:37 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:25:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:25:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:25:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:25:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:25:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:03 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:03 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:03 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:03 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:03 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:31 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:31 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:31 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:31 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:26:31 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:27:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:27:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:27:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:27:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:27:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:30:07 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:30:07 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:30:07 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:30:07 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:30:07 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:30:25 - app.services.troubleshooting_service - [31mERROR[0m - Failed to update step feedback: (psycopg2.errors.UndefinedColumn) column "step_id" does not exist
+LINE 4:                     WHERE step_id = 'f027928b-f059-45ae-912a...
+                                  ^
+
+[SQL: 
+                    UPDATE troubleshooting_steps 
+                    SET user_feedback = %(feedback)s, completed = true, completed_at = NOW()
+                    WHERE step_id = %(step_id)s
+                ]
+[parameters: {'feedback': 'didnt_work', 'step_id': 'f027928b-f059-45ae-912a-2157bd25e0f2'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-02-01 09:30:25 - app.services.troubleshooting_service - [31mERROR[0m - Failed to retrieve troubleshooting step: (psycopg2.errors.UndefinedColumn) column "step_id" does not exist
+LINE 2:                     SELECT step_id, session_id, step_number,...
+                                   ^
+
+[SQL: 
+                    SELECT step_id, session_id, step_number, instruction, expected_outcomes,
+                           user_feedback, completed, success, created_at, completed_at
+                    FROM troubleshooting_steps 
+                    WHERE step_id = %(step_id)s
+                ]
+[parameters: {'step_id': 'f027928b-f059-45ae-912a-2157bd25e0f2'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-02-01 09:30:25 - app.routers.chat - [31mERROR[0m - Step feedback endpoint error: Could not retrieve step or session data
+2026-02-01 09:34:46 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:34:46 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:34:46 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:34:46 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:34:46 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:35:22 - app.services.troubleshooting_service - [31mERROR[0m - Failed to update step feedback: (psycopg2.errors.UndefinedColumn) column "completed_at" of relation "troubleshooting_steps" does not exist
+LINE 3: ...T user_feedback = 'didnt_work', completed = true, completed_...
+                                                             ^
+
+[SQL: 
+                    UPDATE troubleshooting_steps 
+                    SET user_feedback = %(feedback)s, completed = true, completed_at = NOW()
+                    WHERE id = %(step_id)s
+                ]
+[parameters: {'feedback': 'didnt_work', 'step_id': '4807c2b0-e873-4ef8-a5c9-e5b84ea9c214'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-02-01 09:35:22 - app.services.troubleshooting_service - [31mERROR[0m - Failed to retrieve troubleshooting step: (psycopg2.errors.UndefinedColumn) column "expected_outcomes" does not exist
+LINE 2: ...as step_id, session_id, step_number, instruction, expected_o...
+                                                             ^
+
+[SQL: 
+                    SELECT id as step_id, session_id, step_number, instruction, expected_outcomes,
+                           user_feedback, completed, success, created_at, completed_at
+                    FROM troubleshooting_steps 
+                    WHERE id = %(step_id)s
+                ]
+[parameters: {'step_id': '4807c2b0-e873-4ef8-a5c9-e5b84ea9c214'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-02-01 09:35:22 - app.routers.chat - [31mERROR[0m - Step feedback endpoint error: Could not retrieve step or session data
+2026-02-01 09:37:41 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:37:41 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:37:41 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:37:41 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:37:41 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:38:14 - app.routers.chat - [31mERROR[0m - Step feedback endpoint error: Could not retrieve step or session data
+2026-02-01 09:41:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:39 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:54 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:54 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:54 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:54 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:41:54 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:43:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:43:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:43:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:43:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:43:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:51:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:51:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:51:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:51:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:51:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:29 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:29 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:29 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:29 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:29 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:52:47 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:54:53 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:54:53 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:54:53 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:54:53 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:54:53 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:55:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:55:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:55:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:55:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:55:10 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:56:00 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:56:00 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 09:56:00 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 09:56:00 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 09:56:00 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:04:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:04:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 10:04:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:04:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:04:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:06:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:06:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 10:06:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:06:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:06:27 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:55:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:55:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 10:55:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:55:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:55:43 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:02 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:02 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:02 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:02 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:02 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 22ce8353-8013-4a3f-97c1-de199fa5b3cc: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:52 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:52 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:52 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:52 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 10:56:52 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:02:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:02:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 11:02:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:02:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:02:36 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:10:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:10:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 11:10:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:10:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:10:01 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:19:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:19:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 11:19:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:19:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:19:48 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:26:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:26:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 11:26:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 11:26:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 11:26:34 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 12:30:02 - app.services.session_completion_service - [31mERROR[0m - Failed to update session status: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum ai_session_status: "resolved"
+LINE 3:                     SET status = 'resolved', resolution_summ...
+                                         ^
+
+[SQL: 
+                    UPDATE ai_sessions
+                    SET status = %(status)s, resolution_summary = %(summary)s, updated_at = NOW()
+                    WHERE id = %(session_id)s
+                ]
+[parameters: {'status': 'resolved', 'summary': 'Problem resolved through troubleshooting', 'session_id': '563425f5-54f8-42b4-a1b8-31bb6774e17e'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-02-01 12:45:26 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 12:45:26 - app.services.abparts_integration - [31mERROR[0m - Error retrieving parts usage data for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'PartUsage' from 'app.models' (/app/app/models.py)
+2026-02-01 12:45:26 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 12:45:26 - app.services.abparts_integration - [31mERROR[0m - Error retrieving maintenance history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineMaintenance' from 'app.models' (/app/app/models.py)
+2026-02-01 12:45:26 - app.services.abparts_integration - [31mERROR[0m - Error retrieving machine hours history for 201c021a-478e-4465-b310-53b12c15a18a: cannot import name 'MachineHours' from 'app.models' (/app/app/models.py)
+2026-02-01 14:21:19 - app.services.session_completion_service - [31mERROR[0m - Failed to update session status: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum ai_session_status: "resolved"
+LINE 3:                     SET status = 'resolved', resolution_summ...
+                                         ^
+
+[SQL: 
+                    UPDATE ai_sessions
+                    SET status = %(status)s, resolution_summary = %(summary)s, updated_at = NOW()
+                    WHERE id = %(session_id)s
+                ]
+[parameters: {'status': 'resolved', 'summary': 'Problem resolved through troubleshooting', 'session_id': '6320d194-1cf2-4899-b764-035ec7893aca'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-02-01 14:30:55 - app.services.session_completion_service - [31mERROR[0m - Failed to update session status: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum ai_session_status: "resolved"
+LINE 3:                     SET status = 'resolved', resolution_summ...
+                                         ^
+
+[SQL: 
+                    UPDATE ai_sessions
+                    SET status = %(status)s, resolution_summary = %(summary)s, updated_at = NOW()
+                    WHERE id = %(session_id)s
+                ]
+[parameters: {'status': 'resolved', 'summary': 'Problem resolved through troubleshooting', 'session_id': 'f0357c79-c60f-40bc-9b46-e315b3f420ed'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)

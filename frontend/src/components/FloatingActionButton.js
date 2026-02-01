@@ -105,7 +105,7 @@ const FloatingActionButton = () => {
         {isOpen ? '✕' : '+'}
       </button>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in-up {
           from {
             opacity: 0;

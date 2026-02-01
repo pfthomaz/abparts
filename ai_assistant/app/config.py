@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     ABPARTS_API_URL: str = Field(default="http://api:8000")
     ABPARTS_API_BASE_URL: str = Field(default="http://api:8000/api")
     
+    # Security and encryption
+    AI_ENCRYPTION_KEY: str = Field(default="")
+    
     # Logging configuration
     LOG_LEVEL: str = Field(default="INFO")
     

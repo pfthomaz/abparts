@@ -1466,6 +1466,8 @@
       "closeChat": "Close AI Assistant",
       "minimize": "Minimize",
       "maximize": "Maximize",
+      "fullScreen": "Full Screen",
+      "exitFullScreen": "Exit Full Screen",
       "newChat": "New Chat",
       "chatHistory": "Chat History",
       "clearHistory": "Clear History",
@@ -1514,7 +1516,14 @@
       "allStepsCompleted": "All steps completed!",
       "problemResolved": "Problem Resolved",
       "problemNotResolved": "Still Need Help",
-      "escalateToExpert": "Escalate to Expert"
+      "escalateToExpert": "Escalate to Expert",
+      "stepNumber": "Step {{number}}",
+      "estimatedTime": "{{minutes}} min",
+      "successRate": "{{rate}}% success rate",
+      "awaitingFeedback": "Please try this step and provide feedback",
+      "workflowComplete": "✓ Problem resolved! The troubleshooting workflow is complete.",
+      "workflowEscalated": "⚠ This issue requires expert assistance. Please use the escalation button to contact support.",
+      "safetyWarning": "Safety Warning"
     },
     "escalationModal": {
       "title": "Escalate to Expert Support",
@@ -1680,7 +1689,11 @@
       "voiceError": "Voice input error. Please try again.",
       "unknownError": "An unexpected error occurred. Please refresh and try again.",
       "rateLimitExceeded": "Too many requests. Please wait a moment before trying again.",
-      "invalidInput": "Invalid input. Please check your message and try again."
+      "invalidInput": "Invalid input. Please check your message and try again.",
+      "feedbackError": "Failed to submit feedback. Please try again."
+    },
+    "notifications": {
+      "newMessage": "New AI Assistant Message"
     },
     "status": {
       "initializing": "Initializing AI Assistant...",
@@ -1703,7 +1716,11 @@
       "excellent": "Excellent",
       "good": "Good",
       "fair": "Fair",
-      "poor": "Poor"
+      "poor": "Poor",
+      "worked": "It worked!",
+      "partiallyWorked": "Partially worked",
+      "didntWork": "Didn't work",
+      "provideFeedback": "How did this step go?"
     }
   },
   "protocolForm": {
@@ -2151,5 +2168,30 @@
     "recordHours": "Record Hours",
     "checkStock": "Check Stock",
     "useParts": "Use Parts"
+  },
+  "pwa": {
+    "offline": {
+      "noConnection": "You are offline",
+      "withQueue": "Offline - {{count}} messages queued",
+      "queued": "queued",
+      "messageQueued": "Your message has been queued and will be sent when you're back online."
+    },
+    "connection": {
+      "poor": "Poor connection - messages may be delayed",
+      "moderate": "Moderate connection",
+      "good": "Good connection",
+      "timeout": "Request timed out. Please check your connection and try again."
+    },
+    "install": {
+      "title": "Install ABParts",
+      "description": "Install ABParts on your device for faster access and offline capabilities.",
+      "install": "Install",
+      "later": "Later"
+    },
+    "update": {
+      "title": "Update Available",
+      "description": "A new version of ABParts is available. Reload to update.",
+      "reload": "Reload Now"
+    }
   }
 }

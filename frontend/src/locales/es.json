@@ -1472,6 +1472,8 @@
       "closeChat": "Cerrar Asistente IA",
       "minimize": "Minimizar",
       "maximize": "Maximizar",
+      "fullScreen": "Pantalla completa",
+      "exitFullScreen": "Salir de pantalla completa",
       "newChat": "Nueva Conversación",
       "chatHistory": "Historial de Conversación",
       "clearHistory": "Limpiar Historial",
@@ -1521,7 +1523,8 @@
       "voiceError": "Error de entrada de voz. Por favor intenta de nuevo.",
       "unknownError": "Ocurrió un error inesperado. Por favor actualiza e intenta de nuevo.",
       "rateLimitExceeded": "Demasiadas solicitudes. Por favor espera un momento antes de intentar de nuevo.",
-      "invalidInput": "Entrada inválida. Por favor verifica tu mensaje e intenta de nuevo."
+      "invalidInput": "Entrada inválida. Por favor verifica tu mensaje e intenta de nuevo.",
+      "feedbackError": "Error al enviar comentarios. Por favor intente de nuevo."
     },
     "troubleshooting": {
       "startTroubleshooting": "Iniciar Solución de Problemas",
@@ -1543,7 +1546,14 @@
       "allStepsCompleted": "¡Todos los pasos completados!",
       "problemResolved": "Problema Resuelto",
       "problemNotResolved": "Aún Necesito Ayuda",
-      "escalateToExpert": "Escalar a Experto"
+      "escalateToExpert": "Escalar a Experto",
+      "stepNumber": "Paso {{number}}",
+      "estimatedTime": "{{minutes}} min",
+      "successRate": "{{rate}}% tasa de éxito",
+      "awaitingFeedback": "Por favor intente este paso y proporcione comentarios",
+      "workflowComplete": "✓ ¡Problema resuelto! El flujo de solución de problemas está completo.",
+      "workflowEscalated": "⚠ Este problema requiere asistencia experta. Use el botón de escalación para contactar al soporte.",
+      "safetyWarning": "Advertencia de Seguridad"
     },
     "machineContext": {
       "noMachineSelected": "No hay máquina seleccionada",
@@ -1643,7 +1653,14 @@
       "excellent": "Excelente",
       "good": "Bueno",
       "fair": "Regular",
-      "poor": "Malo"
+      "poor": "Malo",
+      "worked": "¡Funcionó!",
+      "partiallyWorked": "Funcionó parcialmente",
+      "didntWork": "No funcionó",
+      "provideFeedback": "¿Cómo fue este paso?"
+    },
+    "notifications": {
+      "newMessage": "Nuevo Mensaje del Asistente AI"
     }
   },
   "protocolForm": {
@@ -2069,5 +2086,30 @@
     "recordHours": "Registrar Horas",
     "checkStock": "Verificar Stock",
     "useParts": "Usar Piezas"
+  },
+  "pwa": {
+    "offline": {
+      "noConnection": "Estás desconectado",
+      "withQueue": "Desconectado - {{count}} mensajes en cola",
+      "queued": "en cola",
+      "messageQueued": "Tu mensaje ha sido puesto en cola y se enviará cuando vuelvas a estar en línea."
+    },
+    "connection": {
+      "poor": "Conexión deficiente - los mensajes pueden retrasarse",
+      "moderate": "Conexión moderada",
+      "good": "Buena conexión",
+      "timeout": "Tiempo de espera agotado. Por favor, verifica tu conexión e inténtalo de nuevo."
+    },
+    "install": {
+      "title": "Instalar ABParts",
+      "description": "Instala ABParts en tu dispositivo para un acceso más rápido y capacidades sin conexión.",
+      "install": "Instalar",
+      "later": "Más tarde"
+    },
+    "update": {
+      "title": "Actualización Disponible",
+      "description": "Una nueva versión de ABParts está disponible. Recarga para actualizar.",
+      "reload": "Recargar Ahora"
+    }
   }
 }

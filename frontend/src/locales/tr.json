@@ -1472,6 +1472,8 @@
       "closeChat": "AI Asistanını Kapat",
       "minimize": "Küçült",
       "maximize": "Büyüt",
+      "fullScreen": "Tam ekran",
+      "exitFullScreen": "Tam ekrandan çık",
       "newChat": "Yeni Sohbet",
       "chatHistory": "Sohbet Geçmişi",
       "clearHistory": "Geçmişi Temizle",
@@ -1516,7 +1518,8 @@
       "voiceError": "Sesli giriş hatası. Lütfen tekrar deneyin.",
       "unknownError": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin ve tekrar deneyin.",
       "rateLimitExceeded": "Çok fazla istek. Lütfen tekrar denemeden önce biraz bekleyin.",
-      "invalidInput": "Geçersiz giriş. Lütfen mesajınızı kontrol edin ve tekrar deneyin."
+      "invalidInput": "Geçersiz giriş. Lütfen mesajınızı kontrol edin ve tekrar deneyin.",
+      "feedbackError": "Geri bildirim gönderilemedi. Lütfen tekrar deneyin."
     },
     "troubleshooting": {
       "startTroubleshooting": "Sorun Gidermeyi Başlat",
@@ -1538,7 +1541,14 @@
       "allStepsCompleted": "Tüm adımlar tamamlandı!",
       "problemResolved": "Sorun Çözüldü",
       "problemNotResolved": "Hala Yardıma İhtiyacım Var",
-      "escalateToExpert": "Uzmana Yönlendir"
+      "escalateToExpert": "Uzmana Yönlendir",
+      "stepNumber": "Adım {{number}}",
+      "estimatedTime": "{{minutes}} dakika",
+      "successRate": "{{rate}}% başarı oranı",
+      "awaitingFeedback": "Lütfen bu adımı deneyin ve geri bildirim sağlayın",
+      "workflowComplete": "✓ Sorun çözüldü! Sorun giderme iş akışı tamamlandı.",
+      "workflowEscalated": "⚠ Bu sorun uzman yardımı gerektiriyor. Destek ile iletişime geçmek için yükseltme düğmesini kullanın.",
+      "safetyWarning": "Güvenlik Uyarısı"
     },
     "machineContext": {
       "noMachineSelected": "Makine seçilmedi",
@@ -1614,7 +1624,14 @@
       "excellent": "Mükemmel",
       "good": "İyi",
       "fair": "Orta",
-      "poor": "Kötü"
+      "poor": "Kötü",
+      "worked": "İşe yaradı!",
+      "partiallyWorked": "Kısmen işe yaradı",
+      "didntWork": "İşe yaramadı",
+      "provideFeedback": "Bu adım nasıl gitti?"
+    },
+    "notifications": {
+      "newMessage": "Yeni AI Asistan Mesajı"
     }
   },
   "protocolForm": {
@@ -2040,5 +2057,30 @@
     "recordHours": "Saat Kaydet",
     "checkStock": "Stok Kontrol",
     "useParts": "Parça Kullan"
+  },
+  "pwa": {
+    "offline": {
+      "noConnection": "Çevrimdışısınız",
+      "withQueue": "Çevrimdışı - {{count}} mesaj kuyrukta",
+      "queued": "kuyrukta",
+      "messageQueued": "Mesajınız kuyruğa alındı ve tekrar çevrimiçi olduğunuzda gönderilecek."
+    },
+    "connection": {
+      "poor": "Zayıf bağlantı - mesajlar gecikebilir",
+      "moderate": "Orta düzey bağlantı",
+      "good": "İyi bağlantı",
+      "timeout": "İstek zaman aşımına uğradı. Lütfen bağlantınızı kontrol edin ve tekrar deneyin."
+    },
+    "install": {
+      "title": "ABParts'ı Yükle",
+      "description": "Daha hızlı erişim ve çevrimdışı özellikler için ABParts'ı cihazınıza yükleyin.",
+      "install": "Yükle",
+      "later": "Daha Sonra"
+    },
+    "update": {
+      "title": "Güncelleme Mevcut",
+      "description": "ABParts'ın yeni bir sürümü mevcut. Güncellemek için yeniden yükleyin.",
+      "reload": "Şimdi Yeniden Yükle"
+    }
   }
 }

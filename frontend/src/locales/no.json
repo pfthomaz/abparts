@@ -1472,6 +1472,8 @@
       "closeChat": "Lukk AI-assistent",
       "minimize": "Minimer",
       "maximize": "Maksimer",
+      "fullScreen": "Fullskjerm",
+      "exitFullScreen": "Avslutt fullskjerm",
       "newChat": "Ny Chat",
       "chatHistory": "Chat-historikk",
       "clearHistory": "Tøm Historikk",
@@ -1516,7 +1518,8 @@
       "voiceError": "Taleinndata-feil. Vennligst prøv igjen.",
       "unknownError": "En uventet feil oppstod. Vennligst oppdater og prøv igjen.",
       "rateLimitExceeded": "For mange forespørsler. Vennligst vent litt før du prøver igjen.",
-      "invalidInput": "Ugyldig inndata. Vennligst sjekk meldingen din og prøv igjen."
+      "invalidInput": "Ugyldig inndata. Vennligst sjekk meldingen din og prøv igjen.",
+      "feedbackError": "Kunne ikke sende tilbakemelding. Vennligst prøv igjen."
     },
     "troubleshooting": {
       "startTroubleshooting": "Start Feilsøking",
@@ -1538,7 +1541,14 @@
       "allStepsCompleted": "Alle steg fullført!",
       "problemResolved": "Problem Løst",
       "problemNotResolved": "Trenger Fortsatt Hjelp",
-      "escalateToExpert": "Eskaler til Ekspert"
+      "escalateToExpert": "Eskaler til Ekspert",
+      "stepNumber": "Trinn {{number}}",
+      "estimatedTime": "{{minutes}} min",
+      "successRate": "{{rate}}% suksessrate",
+      "awaitingFeedback": "Vennligst prøv dette trinnet og gi tilbakemelding",
+      "workflowComplete": "✓ Problem løst! Feilsøkingsarbeidsflyten er fullført.",
+      "workflowEscalated": "⚠ Dette problemet krever ekspertstøtte. Bruk eskaleringknappen for å kontakte support.",
+      "safetyWarning": "Sikkerhetsadvarsel"
     },
     "machineContext": {
       "noMachineSelected": "Ingen maskin valgt",
@@ -1614,7 +1624,14 @@
       "excellent": "Utmerket",
       "good": "Bra",
       "fair": "Greit",
-      "poor": "Dårlig"
+      "poor": "Dårlig",
+      "worked": "Det fungerte!",
+      "partiallyWorked": "Fungerte delvis",
+      "didntWork": "Fungerte ikke",
+      "provideFeedback": "Hvordan gikk dette trinnet?"
+    },
+    "notifications": {
+      "newMessage": "Ny AI-assistentmelding"
     }
   },
   "protocolForm": {
@@ -2040,5 +2057,30 @@
     "recordHours": "Registrer Timer",
     "checkStock": "Sjekk Lager",
     "useParts": "Bruk Deler"
+  },
+  "pwa": {
+    "offline": {
+      "noConnection": "Du er frakoblet",
+      "withQueue": "Frakoblet - {{count}} meldinger i kø",
+      "queued": "i kø",
+      "messageQueued": "Meldingen din er satt i kø og vil bli sendt når du er tilbake på nett."
+    },
+    "connection": {
+      "poor": "Dårlig tilkobling - meldinger kan bli forsinket",
+      "moderate": "Moderat tilkobling",
+      "good": "God tilkobling",
+      "timeout": "Forespørsel tidsavbrutt. Vennligst sjekk tilkoblingen din og prøv igjen."
+    },
+    "install": {
+      "title": "Installer ABParts",
+      "description": "Installer ABParts på enheten din for raskere tilgang og frakoblede funksjoner.",
+      "install": "Installer",
+      "later": "Senere"
+    },
+    "update": {
+      "title": "Oppdatering Tilgjengelig",
+      "description": "En ny versjon av ABParts er tilgjengelig. Last inn på nytt for å oppdatere.",
+      "reload": "Last Inn På Nytt Nå"
+    }
   }
 }

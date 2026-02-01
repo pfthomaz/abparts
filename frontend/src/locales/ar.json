@@ -1468,6 +1468,8 @@
       "closeChat": "إغلاق المساعد الذكي",
       "minimize": "تصغير",
       "maximize": "تكبير",
+      "fullScreen": "ملء الشاشة",
+      "exitFullScreen": "الخروج من ملء الشاشة",
       "newChat": "محادثة جديدة",
       "chatHistory": "تاريخ المحادثة",
       "clearHistory": "مسح التاريخ",
@@ -1512,7 +1514,8 @@
       "voiceError": "خطأ في الإدخال الصوتي. يرجى المحاولة مرة أخرى.",
       "unknownError": "حدث خطأ غير متوقع. يرجى التحديث والمحاولة مرة أخرى.",
       "rateLimitExceeded": "طلبات كثيرة جداً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.",
-      "invalidInput": "إدخال غير صالح. يرجى التحقق من رسالتك والمحاولة مرة أخرى."
+      "invalidInput": "إدخال غير صالح. يرجى التحقق من رسالتك والمحاولة مرة أخرى.",
+      "feedbackError": "فشل إرسال الملاحظات. يرجى المحاولة مرة أخرى."
     },
     "escalationModal": {
       "title": "تصعيد إلى دعم الخبراء",
@@ -1566,7 +1569,14 @@
       "allStepsCompleted": "اكتملت جميع الخطوات!",
       "problemResolved": "تم حل المشكلة",
       "problemNotResolved": "ما زلت بحاجة للمساعدة",
-      "escalateToExpert": "تصعيد إلى خبير"
+      "escalateToExpert": "تصعيد إلى خبير",
+      "stepNumber": "الخطوة {{number}}",
+      "estimatedTime": "{{minutes}} دقيقة",
+      "successRate": "{{rate}}% معدل النجاح",
+      "awaitingFeedback": "يرجى تجربة هذه الخطوة وتقديم الملاحظات",
+      "workflowComplete": "✓ تم حل المشكلة! اكتملت عملية استكشاف الأخطاء وإصلاحها.",
+      "workflowEscalated": "⚠ تتطلب هذه المشكلة مساعدة خبير. يرجى استخدام زر التصعيد للاتصال بالدعم.",
+      "safetyWarning": "تحذير السلامة"
     },
     "machineContext": {
       "noMachineSelected": "لم يتم اختيار آلة",
@@ -1642,7 +1652,14 @@
       "excellent": "ممتاز",
       "good": "جيد",
       "fair": "مقبول",
-      "poor": "ضعيف"
+      "poor": "ضعيف",
+      "worked": "نجح الأمر!",
+      "partiallyWorked": "نجح جزئياً",
+      "didntWork": "لم ينجح",
+      "provideFeedback": "كيف سارت هذه الخطوة؟"
+    },
+    "notifications": {
+      "newMessage": "رسالة جديدة من مساعد الذكاء الاصطناعي"
     }
   },
   "protocolForm": {
@@ -2068,5 +2085,30 @@
     "recordHours": "تسجيل الساعات",
     "checkStock": "التحقق من المخزون",
     "useParts": "استخدام القطع"
+  },
+  "pwa": {
+    "offline": {
+      "noConnection": "أنت غير متصل بالإنترنت",
+      "withQueue": "غير متصل - {{count}} رسائل في قائمة الانتظار",
+      "queued": "في قائمة الانتظار",
+      "messageQueued": "تم وضع رسالتك في قائمة الانتظار وسيتم إرسالها عند عودة الاتصال."
+    },
+    "connection": {
+      "poor": "اتصال ضعيف - قد تتأخر الرسائل",
+      "moderate": "اتصال متوسط",
+      "good": "اتصال جيد",
+      "timeout": "انتهت مهلة الطلب. يرجى التحقق من اتصالك والمحاولة مرة أخرى."
+    },
+    "install": {
+      "title": "تثبيت ABParts",
+      "description": "قم بتثبيت ABParts على جهازك للوصول الأسرع والقدرات دون اتصال.",
+      "install": "تثبيت",
+      "later": "لاحقاً"
+    },
+    "update": {
+      "title": "تحديث متاح",
+      "description": "يتوفر إصدار جديد من ABParts. أعد التحميل للتحديث.",
+      "reload": "إعادة التحميل الآن"
+    }
   }
 }

@@ -147,7 +147,7 @@ class SessionManager:
                 "resolution_summary": result.resolution_summary,
                 "created_at": result.created_at.isoformat(),
                 "updated_at": result.updated_at.isoformat(),
-                "metadata": json.loads(result.session_metadata or '{}')
+                "metadata": result.session_metadata if isinstance(result.session_metadata, dict) else {}
             }
             
             # Update Redis cache

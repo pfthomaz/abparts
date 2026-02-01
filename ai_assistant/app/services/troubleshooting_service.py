@@ -25,6 +25,9 @@ from .troubleshooting_types import (
 )
 from sqlalchemy import text
 
+# Import session completion service (will be initialized lazily to avoid circular imports)
+_session_completion_service = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +38,13 @@ class TroubleshootingService:
         self.llm_client = llm_client
         self.session_manager = session_manager
         self.problem_analyzer = ProblemAnalyzer(llm_client)
+        
+        # Initialize session completion service lazily
+        global _session_completion_service
+        if _session_completion_service is None:
+            from .session_completion_service import SessionCompletionService
+            _session_completion_service = SessionCompletionService(llm_client)
+        self.completion_service = _session_completion_service
         
     async def start_troubleshooting_workflow(
         self,
@@ -105,7 +115,10 @@ class TroubleshootingService:
             first_step = await self._generate_first_step(
                 session_id, assessment, machine_context, language
             )
-            await self._store_troubleshooting_step(session_id, first_step)
+            # Store step and get the database-generated ID
+            db_step_id = await self._store_troubleshooting_step(session_id, first_step)
+            if db_step_id:
+                first_step.step_id = db_step_id
         
         logger.info(f"Diagnostic assessment completed with {assessment.confidence_level.value} confidence")
         return assessment
@@ -487,8 +500,23 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
         
         step_id = str(uuid.uuid4())
         
-        # Use the first recommended step from assessment, enhanced with machine context
-        base_instruction = assessment.recommended_steps[0] if assessment.recommended_steps else "Begin troubleshooting"
+        # Use the first recommended step from assessment, or create a generic one based on problem category
+        if assessment.recommended_steps:
+            base_instruction = assessment.recommended_steps[0]
+        else:
+            # Fallback: Create problem-specific first steps based on category
+            category_steps = {
+                "startup": "Check if the machine is properly connected to a power source and verify the power switch is in the ON position",
+                "cleaning_performance": "Inspect the cleaning nozzles and filters for any blockages or debris",
+                "mechanical": "Perform a visual inspection of all moving parts for any obvious damage or obstructions",
+                "electrical": "Check all electrical connections and verify the circuit breaker hasn't tripped",
+                "hydraulic": "Inspect hydraulic fluid levels and check for any visible leaks in the system",
+                "remote_control": "Verify the remote control has fresh batteries and is properly paired with the machine",
+                "maintenance": "Review the maintenance schedule and check if any routine maintenance is overdue",
+                "other": "Perform a general visual inspection of the machine for any obvious issues or error indicators"
+            }
+            base_instruction = category_steps.get(assessment.problem_category, category_steps["other"])
+            logger.info(f"Using fallback instruction for category '{assessment.problem_category}': {base_instruction}")
         
         # Enhance instruction with machine-specific information
         if machine_context and machine_context.get("machine_details"):
@@ -519,7 +547,7 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
             confidence_score=self._confidence_to_score(assessment.confidence_level),
             next_steps={},  # Will be populated based on user feedback
             requires_feedback=True,
-            estimated_duration=assessment.estimated_duration // len(assessment.recommended_steps),
+            estimated_duration=assessment.estimated_duration // max(len(assessment.recommended_steps), 1),
             safety_warnings=assessment.safety_warnings,
             created_at=datetime.utcnow(),
             completed_at=None
@@ -584,7 +612,7 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
                 query = text("""
                     UPDATE ai_sessions 
                     SET session_metadata = :metadata, updated_at = NOW()
-                    WHERE session_id = :session_id
+                    WHERE id = :session_id
                 """)
                 db.execute(query, {
                     'session_id': session_id,
@@ -598,31 +626,31 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
         self, 
         session_id: str, 
         step: TroubleshootingStepData
-    ) -> None:
-        """Store troubleshooting step in database."""
+    ) -> str:
+        """Store troubleshooting step in database and return the generated ID."""
         try:
             with get_db_session() as db:
                 query = text("""
                     INSERT INTO troubleshooting_steps 
-                    (step_id, session_id, step_number, instruction, expected_outcomes, 
-                     user_feedback, completed, success, created_at)
-                    VALUES (:step_id, :session_id, :step_number, :instruction, :expected_outcomes,
-                            :user_feedback, :completed, :success, :created_at)
+                    (session_id, step_number, instruction, user_feedback, completed, success, created_at)
+                    VALUES (:session_id, :step_number, :instruction, :user_feedback, :completed, :success, :created_at)
+                    RETURNING id
                 """)
-                db.execute(query, {
-                    'step_id': step.step_id,
+                result = db.execute(query, {
                     'session_id': session_id,
                     'step_number': step.step_number,
                     'instruction': step.instruction,
-                    'expected_outcomes': json.dumps(step.expected_outcomes),
                     'user_feedback': step.user_feedback,
                     'completed': step.status == StepStatus.completed,
                     'success': step.status == StepStatus.completed,
                     'created_at': step.created_at
                 })
+                row = result.fetchone()
+                return str(row[0]) if row else None
                 
         except Exception as e:
             logger.error(f"Failed to store troubleshooting step: {e}")
+            return None
     
     async def process_user_feedback(
         self,
@@ -654,10 +682,34 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
         if next_action == "resolved":
             # Problem is resolved, complete the workflow
             await self.session_manager.update_session_status(session_id, "completed", "Problem resolved through troubleshooting")
+            
+            # Trigger learning from successful session
+            try:
+                await self.completion_service.complete_session(
+                    session_id=session_id,
+                    outcome_type="resolved",
+                    resolution_summary="Problem resolved through troubleshooting"
+                )
+                logger.info(f"Session {session_id} completed and learning triggered")
+            except Exception as e:
+                logger.error(f"Failed to trigger learning for session {session_id}: {e}")
+            
             return None
         elif next_action == "escalate":
             # Escalate to expert support
             await self.session_manager.update_session_status(session_id, "escalated", "Requires expert assistance")
+            
+            # Trigger learning from escalated session
+            try:
+                await self.completion_service.complete_session(
+                    session_id=session_id,
+                    outcome_type="escalated",
+                    resolution_summary="Requires expert assistance"
+                )
+                logger.info(f"Session {session_id} escalated and learning triggered")
+            except Exception as e:
+                logger.error(f"Failed to trigger learning for escalated session {session_id}: {e}")
+            
             return None
         else:
             # Generate next troubleshooting step
@@ -669,8 +721,8 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
             with get_db_session() as db:
                 query = text("""
                     UPDATE troubleshooting_steps 
-                    SET user_feedback = :feedback, completed = true, completed_at = NOW()
-                    WHERE step_id = :step_id
+                    SET user_feedback = :feedback, completed = true, updated_at = NOW()
+                    WHERE id = :step_id
                 """)
                 db.execute(query, {
                     'step_id': step_id,
@@ -690,16 +742,28 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
         """Analyze user feedback to determine next action."""
         
         # Simple keyword-based analysis for now
-        feedback_lower = user_feedback.lower()
+        feedback_lower = user_feedback.lower().strip()
         
-        # Check for resolution indicators
+        # CRITICAL: Check for explicit button values FIRST before keyword matching
+        # This prevents "didnt_work" from matching "work" in resolution keywords
+        if feedback_lower in ["worked", "it worked", "it worked!"]:
+            logger.info(f"Explicit positive feedback '{user_feedback}' - completing workflow")
+            return "resolved"
+        elif feedback_lower in ["didnt_work", "didn't work", "didnt work"]:
+            logger.info(f"Explicit negative feedback '{user_feedback}' - continuing workflow")
+            return "continue"
+        elif feedback_lower in ["partially_worked", "partially worked"]:
+            logger.info(f"Partial success feedback '{user_feedback}' - continuing workflow")
+            return "continue"
+        
+        # Check for resolution indicators (use more specific phrases)
         resolution_keywords = {
-            "en": ["fixed", "resolved", "working", "solved", "better", "good"],
-            "el": ["διορθώθηκε", "επιλύθηκε", "λειτουργεί", "καλύτερα", "καλό"],
-            "ar": ["تم إصلاحه", "تم حله", "يعمل", "أفضل", "جيد"],
-            "es": ["arreglado", "resuelto", "funcionando", "mejor", "bueno"],
-            "tr": ["düzeltildi", "çözüldü", "çalışıyor", "daha iyi", "iyi"],
-            "no": ["fikset", "løst", "fungerer", "bedre", "bra"]
+            "en": ["fixed", "resolved", "working now", "problem solved", "solved", "better now", "all good", "success"],
+            "el": ["διορθώθηκε", "επιλύθηκε", "λειτουργεί τώρα", "καλύτερα τώρα", "όλα καλά"],
+            "ar": ["تم إصلاحه", "تم حله", "يعمل الآن", "أفضل الآن", "كل شيء جيد"],
+            "es": ["arreglado", "resuelto", "funcionando ahora", "mejor ahora", "todo bien"],
+            "tr": ["düzeltildi", "çözüldü", "şimdi çalışıyor", "şimdi daha iyi", "her şey yolunda"],
+            "no": ["fikset", "løst", "fungerer nå", "bedre nå", "alt bra"]
         }
         
         # Check for escalation indicators
@@ -715,11 +779,15 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
         resolution_words = resolution_keywords.get(language, resolution_keywords["en"])
         escalation_words = escalation_keywords.get(language, escalation_keywords["en"])
         
+        # Check for resolution (use more specific matching)
         if any(word in feedback_lower for word in resolution_words):
+            logger.info(f"Feedback '{user_feedback}' indicates resolution - completing workflow")
             return "resolved"
         elif any(word in feedback_lower for word in escalation_words):
+            logger.info(f"Feedback '{user_feedback}' indicates escalation needed")
             return "escalate"
         else:
+            logger.info(f"Feedback '{user_feedback}' indicates continuation needed")
             return "continue"
     
     async def _generate_next_step(
@@ -769,8 +837,10 @@ Gi din analyse i det nøyaktige JSON-formatet spesifisert i systemprompten. Foku
             completed_at=None
         )
         
-        # Store the next step
-        await self._store_troubleshooting_step(session_id, next_step)
+        # Store the next step and get the database-generated ID
+        db_step_id = await self._store_troubleshooting_step(session_id, next_step)
+        if db_step_id:
+            next_step.step_id = db_step_id
         
         return next_step
     
@@ -870,10 +940,10 @@ Generer neste feilsøkingstrinn basert på denne informasjonen."""
         try:
             with get_db_session() as db:
                 query = text("""
-                    SELECT step_id, session_id, step_number, instruction, expected_outcomes,
-                           user_feedback, completed, success, created_at, completed_at
+                    SELECT id as step_id, session_id, step_number, instruction,
+                           user_feedback, completed, success, created_at, updated_at
                     FROM troubleshooting_steps 
-                    WHERE step_id = :step_id
+                    WHERE id = :step_id
                 """)
                 result = db.execute(query, {'step_id': step_id}).fetchone()
                 
@@ -884,7 +954,7 @@ Generer neste feilsøkingstrinn basert på denne informasjonen."""
                     step_id=str(result.step_id),
                     step_number=result.step_number,
                     instruction=result.instruction,
-                    expected_outcomes=json.loads(result.expected_outcomes or '[]'),
+                    expected_outcomes=[],  # Not stored in DB
                     user_feedback=result.user_feedback,
                     status=StepStatus.completed if result.completed else StepStatus.pending,
                     confidence_score=0.7,  # Default value
@@ -893,20 +963,269 @@ Generer neste feilsøkingstrinn basert på denne informasjonen."""
                     estimated_duration=15,
                     safety_warnings=[],
                     created_at=result.created_at,
-                    completed_at=result.completed_at
+                    completed_at=result.updated_at  # Use updated_at instead of completed_at
                 )
                 
         except Exception as e:
             logger.error(f"Failed to retrieve troubleshooting step: {e}")
             return None
     
+    async def process_clarification(
+        self,
+        session_id: str,
+        clarification: str,
+        language: str = "en"
+    ) -> Optional[TroubleshootingStepData]:
+        """
+        Process user clarification during active troubleshooting.
+        
+        This handles cases where the user provides additional information
+        instead of clicking a feedback button. The system adapts to the new
+        information and continues with step-by-step troubleshooting.
+        
+        Args:
+            session_id: ID of the troubleshooting session
+            clarification: User's clarification message
+            language: Language for responses
+            
+        Returns:
+            Next troubleshooting step incorporating the clarification
+        """
+        logger.info(f"Processing clarification for session {session_id}: {clarification[:50]}...")
+        
+        # Get current workflow state
+        workflow_state = await self.get_workflow_state(session_id)
+        if not workflow_state or not workflow_state.current_step:
+            logger.warning(f"No active workflow found for session {session_id}")
+            return None
+        
+        # Get session data
+        session_data = await self.session_manager.get_session(session_id)
+        if not session_data:
+            logger.warning(f"No session data found for {session_id}")
+            return None
+        
+        # Build context for next step generation with clarification
+        context = {
+            "problem_description": session_data.get("problem_description", ""),
+            "clarification": clarification,
+            "previous_steps": [step.instruction for step in workflow_state.completed_steps],
+            "current_step": workflow_state.current_step.instruction,
+            "step_number": workflow_state.current_step.step_number + 1,
+            "session_metadata": session_data.get("metadata", {})
+        }
+        
+        # Generate next step incorporating the clarification
+        instruction = await self._generate_step_with_clarification(context, language)
+        
+        # Create next step
+        step_id = str(uuid.uuid4())
+        expected_outcomes = await self._generate_step_outcomes(instruction, language)
+        
+        next_step = TroubleshootingStepData(
+            step_id=step_id,
+            step_number=context["step_number"],
+            instruction=instruction,
+            expected_outcomes=expected_outcomes,
+            user_feedback=None,
+            status=StepStatus.pending,
+            confidence_score=0.7,
+            next_steps={},
+            requires_feedback=True,
+            estimated_duration=15,
+            safety_warnings=[],
+            created_at=datetime.utcnow(),
+            completed_at=None
+        )
+        
+        # Store the step and get database-generated ID
+        db_step_id = await self._store_troubleshooting_step(session_id, next_step)
+        if db_step_id:
+            next_step.step_id = db_step_id
+        
+        logger.info(f"Generated next step {next_step.step_number} after clarification")
+        return next_step
+    
+    async def _generate_step_with_clarification(self, context: Dict[str, Any], language: str) -> str:
+        """Generate next troubleshooting step incorporating user clarification."""
+        
+        system_prompts = {
+            "en": """You are an AutoBoss troubleshooting expert. The user has provided clarification about their problem. 
+Generate the next logical troubleshooting step that incorporates this new information.
+
+CRITICAL: Provide ONLY ONE specific, actionable instruction. DO NOT provide a numbered list. DO NOT provide multiple steps. 
+Return a SINGLE sentence or short paragraph describing ONE action the user should take.
+
+Example GOOD response: "Check the diesel fuel level in the tank and ensure it's above the minimum mark."
+Example BAD response: "1. Check fuel level 2. Check battery 3. Check air filter" (this is a list, not allowed)
+
+Be clear and direct. Focus on one task at a time.""",
+            
+            "el": """Είστε ειδικός αντιμετώπισης προβλημάτων AutoBoss. Ο χρήστης έχει παράσχει διευκρίνιση σχετικά με το πρόβλημά του.
+Δημιουργήστε το επόμενο λογικό βήμα αντιμετώπισης προβλημάτων που ενσωματώνει αυτές τις νέες πληροφορίες.
+
+ΚΡΙΣΙΜΟ: Παρέχετε μόνο ΜΙΑ συγκεκριμένη, πρακτική οδηγία. ΜΗΝ παρέχετε αριθμημένη λίστα. ΜΗΝ παρέχετε πολλαπλά βήματα.
+Επιστρέψτε ΜΙΑ ΜΟΝΟ πρόταση ή σύντομη παράγραφο που περιγράφει ΜΙΑ ενέργεια που πρέπει να κάνει ο χρήστης.
+
+Να είστε σαφείς και άμεσοι. Εστιάστε σε μία εργασία κάθε φορά.""",
+            
+            "ar": """أنت خبير في استكشاف أخطاء AutoBoss وإصلاحها. قدم المستخدم توضيحاً حول مشكلته.
+قم بإنشاء الخطوة التالية المنطقية لاستكشاف الأخطاء التي تتضمن هذه المعلومات الجديدة.
+
+حرج: قدم تعليمات واحدة محددة وقابلة للتنفيذ فقط. لا تقدم قائمة مرقمة. لا تقدم خطوات متعددة.
+أرجع جملة واحدة أو فقرة قصيرة تصف إجراءً واحداً يجب على المستخدم اتخاذه.
+
+كن واضحاً ومباشراً. ركز على مهمة واحدة في كل مرة.""",
+            
+            "es": """Eres un experto en solución de problemas de AutoBoss. El usuario ha proporcionado aclaraciones sobre su problema.
+Genera el siguiente paso lógico de solución de problemas que incorpore esta nueva información.
+
+CRÍTICO: Proporciona solo UNA instrucción específica y práctica. NO proporciones una lista numerada. NO proporciones múltiples pasos.
+Devuelve UNA SOLA oración o párrafo corto que describa UNA acción que el usuario debe tomar.
+
+Sé claro y directo. Enfócate en una tarea a la vez.""",
+            
+            "tr": """AutoBoss sorun giderme uzmanısınız. Kullanıcı problemi hakkında açıklama yaptı.
+Bu yeni bilgiyi içeren bir sonraki mantıklı sorun giderme adımını oluşturun.
+
+KRİTİK: Sadece BİR spesifik, uygulanabilir talimat sağlayın. Numaralı liste VERMEYIN. Birden fazla adım VERMEYIN.
+Kullanıcının yapması gereken BİR eylemi açıklayan TEK bir cümle veya kısa paragraf döndürün.
+
+Açık ve doğrudan olun. Bir seferde bir göreve odaklanın.""",
+            
+            "no": """Du er en AutoBoss feilsøkingsekspert. Brukeren har gitt avklaring om problemet sitt.
+Generer neste logiske feilsøkingstrinn som inkorporerer denne nye informasjonen.
+
+KRITISK: Gi bare ÉN spesifikk, handlingsrettet instruksjon. IKKE gi en nummerert liste. IKKE gi flere trinn.
+Returner ÉN ENKELT setning eller kort avsnitt som beskriver ÉN handling brukeren skal ta.
+
+Vær klar og direkte. Fokuser på én oppgave om gangen."""
+        }
+        
+        user_prompts = {
+            "en": f"""Original problem: {context['problem_description']}
+
+User clarification: {context['clarification']}
+
+Previous steps tried:
+{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(context['previous_steps'][-3:]))}
+
+Current step: {context['current_step']}
+
+Based on the clarification, generate the next troubleshooting step (step #{context['step_number']}).
+
+IMPORTANT: Return ONLY ONE action, not a list. Example: "Check the diesel fuel level in the tank." NOT "1. Check fuel 2. Check battery".""",
+            
+            "el": f"""Αρχικό πρόβλημα: {context['problem_description']}
+
+Διευκρίνιση χρήστη: {context['clarification']}
+
+Προηγούμενα βήματα που δοκιμάστηκαν:
+{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(context['previous_steps'][-3:]))}
+
+Τρέχον βήμα: {context['current_step']}
+
+Με βάση τη διευκρίνιση, δημιουργήστε το επόμενο βήμα αντιμετώπισης προβλημάτων (βήμα #{context['step_number']}).""",
+            
+            "ar": f"""المشكلة الأصلية: {context['problem_description']}
+
+توضيح المستخدم: {context['clarification']}
+
+الخطوات السابقة التي تم تجربتها:
+{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(context['previous_steps'][-3:]))}
+
+الخطوة الحالية: {context['current_step']}
+
+بناءً على التوضيح، قم بإنشاء خطوة استكشاف الأخطاء التالية (الخطوة #{context['step_number']}).""",
+            
+            "es": f"""Problema original: {context['problem_description']}
+
+Aclaración del usuario: {context['clarification']}
+
+Pasos anteriores intentados:
+{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(context['previous_steps'][-3:]))}
+
+Paso actual: {context['current_step']}
+
+Basándote en la aclaración, genera el siguiente paso de solución de problemas (paso #{context['step_number']}).""",
+            
+            "tr": f"""Orijinal sorun: {context['problem_description']}
+
+Kullanıcı açıklaması: {context['clarification']}
+
+Denenen önceki adımlar:
+{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(context['previous_steps'][-3:]))}
+
+Mevcut adım: {context['current_step']}
+
+Açıklamaya dayanarak, bir sonraki sorun giderme adımını oluşturun (adım #{context['step_number']}).""",
+            
+            "no": f"""Opprinnelig problem: {context['problem_description']}
+
+Brukerens avklaring: {context['clarification']}
+
+Tidligere trinn forsøkt:
+{chr(10).join(f"{i+1}. {step}" for i, step in enumerate(context['previous_steps'][-3:]))}
+
+Gjeldende trinn: {context['current_step']}
+
+Basert på avklaringen, generer neste feilsøkingstrinn (trinn #{context['step_number']})."""
+        }
+        
+        system_prompt = system_prompts.get(language, system_prompts["en"])
+        user_prompt = user_prompts.get(language, user_prompts["en"])
+        
+        messages = [
+            ConversationMessage(role="system", content=system_prompt),
+            ConversationMessage(role="user", content=user_prompt)
+        ]
+        
+        response = await self.llm_client.generate_response(messages, language=language)
+        
+        if response.success:
+            return response.content.strip()
+        else:
+            # Fallback to generic next step
+            fallback_steps = {
+                "en": "Based on your clarification, let's continue with the next troubleshooting step.",
+                "el": "Με βάση τη διευκρίνισή σας, ας συνεχίσουμε με το επόμενο βήμα αντιμετώπισης προβλημάτων.",
+                "ar": "بناءً على توضيحك، دعنا نواصل مع خطوة استكشاف الأخطاء التالية.",
+                "es": "Basándonos en tu aclaración, continuemos con el siguiente paso de solución de problemas.",
+                "tr": "Açıklamanıza dayanarak, bir sonraki sorun giderme adımıyla devam edelim.",
+                "no": "Basert på din avklaring, la oss fortsette med neste feilsøkingstrinn."
+            }
+            return fallback_steps.get(language, fallback_steps["en"])
+    
     async def get_workflow_state(self, session_id: str) -> Optional[WorkflowState]:
         """Get current workflow state for a session."""
         try:
-            # Get session data
+            # Get session data from Redis
             session_data = await self.session_manager.get_session(session_id)
+            
+            # If not in Redis, query database
             if not session_data:
-                return None
+                with get_db_session() as db:
+                    query = text("""
+                        SELECT id, user_id, machine_id, status, problem_description, 
+                               resolution_summary, language, session_metadata
+                        FROM ai_sessions 
+                        WHERE id = :session_id
+                    """)
+                    result = db.execute(query, {'session_id': session_id}).fetchone()
+                    
+                    if not result:
+                        return None
+                    
+                    session_data = {
+                        "session_id": str(result.id),
+                        "user_id": str(result.user_id),
+                        "machine_id": str(result.machine_id) if result.machine_id else None,
+                        "status": result.status,
+                        "problem_description": result.problem_description,
+                        "resolution_summary": result.resolution_summary,
+                        "language": result.language,
+                        "metadata": result.session_metadata if isinstance(result.session_metadata, dict) else {}
+                    }
             
             # Get diagnostic assessment from metadata
             metadata = session_data.get("metadata", {})
@@ -927,8 +1246,7 @@ Generer neste feilsøkingstrinn basert på denne informasjonen."""
             # Get troubleshooting steps
             with get_db_session() as db:
                 query = text("""
-                    SELECT step_id, step_number, instruction, expected_outcomes,
-                           user_feedback, completed, success, created_at, completed_at
+                    SELECT id, step_number, instruction, user_feedback, completed, success, created_at, updated_at
                     FROM troubleshooting_steps 
                     WHERE session_id = :session_id
                     ORDER BY step_number ASC
@@ -940,19 +1258,19 @@ Generer neste feilsøkingstrinn basert på denne informasjonen."""
                 
                 for row in results:
                     step = TroubleshootingStepData(
-                        step_id=str(row.step_id),
+                        step_id=str(row.id),
                         step_number=row.step_number,
                         instruction=row.instruction,
-                        expected_outcomes=json.loads(row.expected_outcomes or '[]'),
+                        expected_outcomes=[],  # Not stored in DB, generate on demand
                         user_feedback=row.user_feedback,
                         status=StepStatus.completed if row.completed else StepStatus.pending,
                         confidence_score=0.7,
                         next_steps={},
-                        requires_feedback=True,
+                        requires_feedback=not row.completed,
                         estimated_duration=15,
                         safety_warnings=[],
                         created_at=row.created_at,
-                        completed_at=row.completed_at
+                        completed_at=row.updated_at if row.completed else None
                     )
                     
                     if row.completed:
@@ -971,5 +1289,7 @@ Generer neste feilsøkingstrinn basert på denne informasjonen."""
             )
             
         except Exception as e:
+            import traceback
             logger.error(f"Failed to get workflow state: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
