@@ -1491,7 +1491,12 @@
       "thumbsUp": "مفيد",
       "thumbsDown": "غير مفيد",
       "feedback": "تقديم ملاحظات",
-      "reportIssue": "الإبلاغ عن مشكلة"
+      "reportIssue": "الإبلاغ عن مشكلة",
+      "machineSelected": "الآلة المحددة: {{machineName}} ({{modelType}})",
+      "machineCleared": "تم مسح اختيار الآلة. تقديم المساعدة العامة.",
+      "escalationCreated": "تم إنشاء تذكرة الدعم {{ticketNumber}}. سيتصل بك خبير قريباً.",
+      "expertContact": "جهة اتصال الخبير: {{contactName}} - الهاتف: {{contactPhone}} - البريد الإلكتروني: {{contactEmail}}",
+      "escalationError": "فشل في إنشاء تذكرة الدعم. يرجى المحاولة مرة أخرى أو الاتصال بالدعم مباشرة."
     },
     "voice": {
       "startListening": "بدء الإدخال الصوتي",

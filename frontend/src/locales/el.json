@@ -1491,7 +1491,12 @@
       "thumbsUp": "Χρήσιμο",
       "thumbsDown": "Όχι χρήσιμο",
       "feedback": "Παροχή σχολίων",
-      "reportIssue": "Αναφορά προβλήματος"
+      "reportIssue": "Αναφορά προβλήματος",
+      "machineSelected": "Επιλεγμένο μηχάνημα: {{machineName}} ({{modelType}})",
+      "machineCleared": "Η επιλογή μηχανήματος εκκαθαρίστηκε. Παροχή γενικής βοήθειας.",
+      "escalationCreated": "Το δελτίο υποστήριξης {{ticketNumber}} έχει δημιουργηθεί. Ένας ειδικός θα επικοινωνήσει μαζί σας σύντομα.",
+      "expertContact": "Επικοινωνία Ειδικού: {{contactName}} - Τηλέφωνο: {{contactPhone}} - Email: {{contactEmail}}",
+      "escalationError": "Αποτυχία δημιουργίας δελτίου υποστήριξης. Παρακαλώ δοκιμάστε ξανά ή επικοινωνήστε απευθείας με την υποστήριξη."
     },
     "voice": {
       "startListening": "Έναρξη Φωνητικής Εισόδου",

@@ -1495,7 +1495,12 @@
       "thumbsUp": "Yararlı",
       "thumbsDown": "Yararlı değil",
       "feedback": "Geri bildirim ver",
-      "reportIssue": "Sorun bildir"
+      "reportIssue": "Sorun bildir",
+      "machineSelected": "Seçilen makine: {{machineName}} ({{modelType}})",
+      "machineCleared": "Makine seçimi temizlendi. Genel yardım sağlanıyor.",
+      "escalationCreated": "Destek talebi {{ticketNumber}} oluşturuldu. Bir uzman yakında sizinle iletişime geçecek.",
+      "expertContact": "Uzman İletişim: {{contactName}} - Telefon: {{contactPhone}} - E-posta: {{contactEmail}}",
+      "escalationError": "Destek talebi oluşturulamadı. Lütfen tekrar deneyin veya doğrudan destekle iletişime geçin."
     },
     "voice": {
       "startListening": "Sesli Girişi Başlat",

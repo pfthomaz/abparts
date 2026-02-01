@@ -1495,7 +1495,12 @@
       "thumbsUp": "Nyttig",
       "thumbsDown": "Ikke nyttig",
       "feedback": "Gi tilbakemelding",
-      "reportIssue": "Rapporter problem"
+      "reportIssue": "Rapporter problem",
+      "machineSelected": "Valgt maskin: {{machineName}} ({{modelType}})",
+      "machineCleared": "Maskinvalg fjernet. Gir generell assistanse.",
+      "escalationCreated": "Støtteforespørsel {{ticketNumber}} er opprettet. En ekspert vil kontakte deg snart.",
+      "expertContact": "Ekspertkontakt: {{contactName}} - Telefon: {{contactPhone}} - E-post: {{contactEmail}}",
+      "escalationError": "Kunne ikke opprette støtteforespørsel. Vennligst prøv igjen eller kontakt support direkte."
     },
     "voice": {
       "startListening": "Start Taleinndata",
