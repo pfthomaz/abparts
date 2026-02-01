@@ -917,32 +917,37 @@ const ChatWidget = ({ isOpen, onToggle }) => {
                 style={{ minWidth: isMobile ? '36px' : '32px', minHeight: isMobile ? '36px' : '32px' }}
                 title={t('aiAssistant.selectMachine')}
               >
-                <svg className="w-6 h-6" viewBox="0 0 50 50" fill="none" stroke="currentColor">
-                  {/* AutoBoss machine icon */}
+                <svg className="w-8 h-8" viewBox="0 0 50 50" fill="none" stroke="#6B7280">
+                  {/* AutoBoss machine icon - grey filled with dark grey strokes */}
                   <defs>
                     <linearGradient id="deckGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor="currentColor" stopOpacity="0.3"/>
-                      <stop offset="1" stopColor="currentColor" stopOpacity="0.15"/>
+                      <stop offset="0" stopColor="#E5E7EB" stopOpacity="1"/>
+                      <stop offset="1" stopColor="#D1D5DB" stopOpacity="1"/>
                     </linearGradient>
                   </defs>
-                  <rect x="8" y="7" width="34" height="30" rx="6" fill="none" stroke="currentColor" strokeWidth="1.1"/>
-                  <g fill="url(#deckGrad)" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round">
+                  {/* Outer frame - filled */}
+                  <rect x="8" y="7" width="34" height="30" rx="6" fill="#E5E7EB" fillOpacity="0.95" stroke="#6B7280" strokeWidth="1.2"/>
+                  {/* Deck with gradient */}
+                  <g fill="url(#deckGrad)" stroke="#6B7280" strokeWidth="1" strokeLinejoin="round">
                     <rect x="14" y="10" width="22" height="22" rx="2.2"/>
                     <path d="M25 10 v22" fill="none"/>
                   </g>
-                  <g fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round">
+                  {/* Front module */}
+                  <g fill="#E5E7EB" fillOpacity="1" stroke="#6B7280" strokeWidth="1" strokeLinejoin="round">
                     <rect x="23" y="31.5" width="4" height="6" rx="0.8"/>
                     <rect x="21.3" y="35.5" width="7.4" height="4" rx="0.9"/>
                   </g>
-                  <g fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round">
+                  {/* Side arms */}
+                  <g fill="none" stroke="#6B7280" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12.2 28.5 L7.5 32.2" />
                     <path d="M37.8 28.5 L42.5 32.2" />
                   </g>
-                  <g fill="currentColor" fillOpacity="0.25" stroke="currentColor" strokeWidth="0.9">
+                  {/* Thrusters */}
+                  <g fill="#E5E7EB" fillOpacity="1" stroke="#6B7280" strokeWidth="1">
                     <ellipse cx="6.3" cy="35.7" rx="5.2" ry="3.9"/>
                     <ellipse cx="43.7" cy="35.7" rx="5.2" ry="3.9"/>
-                    <circle cx="6.3" cy="35.7" r="1.1" fill="currentColor" fillOpacity="0.5" stroke="none"/>
-                    <circle cx="43.7" cy="35.7" r="1.1" fill="currentColor" fillOpacity="0.5" stroke="none"/>
+                    <circle cx="6.3" cy="35.7" r="1.1" fill="#9CA3AF" fillOpacity="1" stroke="none"/>
+                    <circle cx="43.7" cy="35.7" r="1.1" fill="#9CA3AF" fillOpacity="1" stroke="none"/>
                   </g>
                 </svg>
               </button>
