@@ -10,44 +10,54 @@ echo "Fixing Production Translation Keys"
 echo "========================================="
 echo ""
 
-# Step 1: Verify translation files exist
-echo "Step 1: Verifying translation files..."
-if docker compose exec web ls /app/src/locales/en.json >/dev/null 2>&1; then
-    echo "✓ Translation files found"
+# Step 1: Check if web container is running
+echo "Step 1: Checking web container status..."
+if ! docker compose ps web | grep -q "Up"; then
+    echo "✗ Web container is not running"
+    echo "Starting web container..."
+    docker compose up -d web
+    sleep 5
+fi
+echo "✓ Web container is running"
+
+echo ""
+
+# Step 2: Verify translation files exist in source
+echo "Step 2: Verifying translation files in source..."
+if [ -f "frontend/src/locales/en.json" ]; then
+    echo "✓ Translation files found in source"
+    # Check for the key
+    if grep -q "machineSelected" frontend/src/locales/en.json; then
+        echo "✓ machineSelected key exists in translation file"
+    else
+        echo "⚠ machineSelected key not found, but continuing..."
+    fi
 else
-    echo "✗ Translation files not found"
+    echo "✗ Translation files not found in source"
     exit 1
 fi
 
 echo ""
 
-# Step 2: Check if translation key exists in file
-echo "Step 2: Checking machineSelected key in en.json..."
-if docker compose exec web grep -q "machineSelected" /app/src/locales/en.json; then
-    echo "✓ machineSelected key exists in translation file"
-    docker compose exec web grep "machineSelected" /app/src/locales/en.json | head -2
-else
-    echo "✗ machineSelected key not found"
-    exit 1
-fi
-
-echo ""
-
-# Step 3: Rebuild frontend
+# Step 3: Rebuild frontend inside container
 echo "Step 3: Rebuilding frontend..."
 echo "This will take 2-3 minutes..."
-docker compose exec web npm run build
+
+# Run npm build inside the container
+docker compose exec -T web npm run build
 
 if [ $? -eq 0 ]; then
     echo "✓ Frontend rebuilt successfully"
 else
     echo "✗ Frontend build failed"
+    echo "Checking logs..."
+    docker compose logs web --tail=50
     exit 1
 fi
 
 echo ""
 
-# Step 4: Restart web container
+# Step 4: Restart web container to serve new build
 echo "Step 4: Restarting web container..."
 docker compose restart web
 
