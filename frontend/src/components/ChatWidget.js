@@ -824,13 +824,13 @@ const ChatWidget = ({ isOpen, onToggle }) => {
       };
     }
     
-    // Desktop/tablet styles
+    // Desktop/tablet styles - 64px from bottom
     return {
       width: 'min(28rem, calc(100vw - 2rem))',
-      height: isMinimized ? '3.5rem' : 'min(32rem, calc(100vh - 13rem))',
-      maxHeight: 'calc(100vh - 13rem)',
+      height: isMinimized ? '3.5rem' : 'min(32rem, calc(100vh - 8rem))',
+      maxHeight: 'calc(100vh - 8rem)',
       left: '1rem',
-      bottom: 'max(10.5rem, calc(5.5rem + env(safe-area-inset-bottom)))'
+      bottom: '4rem'
     };
   };
 
