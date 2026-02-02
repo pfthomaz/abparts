@@ -917,7 +917,7 @@ const ChatWidget = ({ isOpen, onToggle }) => {
                 style={{ minWidth: isMobile ? '36px' : '32px', minHeight: isMobile ? '36px' : '32px' }}
                 title={t('aiAssistant.selectMachine')}
               >
-                <svg className="w-8 h-8" viewBox="0 0 50 50" fill="none" stroke="#6B7280">
+                <svg className="w-11 h-11" viewBox="0 0 50 50" fill="none" stroke="#6B7280">
                   {/* AutoBoss machine icon - grey filled with dark grey strokes */}
                   <defs>
                     <linearGradient id="deckGrad" x1="0" y1="0" x2="0" y2="1">
