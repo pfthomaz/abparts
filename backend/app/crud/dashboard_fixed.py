@@ -51,9 +51,9 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
         print(f"Error counting parts: {e}")
     
     try:
-        total_users = users_query.count()
         if organization_id:
             users_query = users_query.filter(models.User.organization_id == organization_id)
+        total_users = users_query.count()
         active_users = users_query.filter(models.User.is_active == True).count()
     except Exception as e:
         print(f"Error counting users: {e}")
@@ -226,34 +226,24 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
     try:
         farm_sites_query = db.query(models.FarmSite)
         if organization_id:
-            try:
-                farm_sites_query = farm_sites_query.filter(models.FarmSite.organization_id == organization_id)
-            except:
-                pass
+            farm_sites_query = farm_sites_query.filter(models.FarmSite.organization_id == organization_id)
         
-        try:
-            total_farm_sites = farm_sites_query.filter(models.FarmSite.active == True).count()
-        except:
-            total_farm_sites = farm_sites_query.count()
+        # Count all farm sites (don't filter by active status as it may not be set)
+        total_farm_sites = farm_sites_query.count()
     except Exception as e:
         print(f"Error counting farm sites: {e}")
     
     try:
         nets_query = db.query(models.Net)
         if organization_id:
-            try:
-                # Join through farm sites to filter by organization
-                nets_query = nets_query.join(
-                    models.FarmSite,
-                    models.Net.farm_site_id == models.FarmSite.id
-                ).filter(models.FarmSite.organization_id == organization_id)
-            except:
-                pass
+            # Join through farm sites to filter by organization
+            nets_query = nets_query.join(
+                models.FarmSite,
+                models.Net.farm_site_id == models.FarmSite.id
+            ).filter(models.FarmSite.organization_id == organization_id)
         
-        try:
-            total_nets = nets_query.filter(models.Net.active == True).count()
-        except:
-            total_nets = nets_query.count()
+        # Count all nets (don't filter by active status as it may not be set)
+        total_nets = nets_query.count()
     except Exception as e:
         print(f"Error counting nets: {e}")
     

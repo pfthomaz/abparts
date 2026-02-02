@@ -42,6 +42,13 @@ class DashboardMetricsResponse(BaseModel):
     security_events_today: int
     active_sessions: int
     
+    # Warehouse metrics
+    total_warehouses: int
+    
+    # Net cleaning metrics
+    total_farm_sites: int
+    total_nets: int
+    
     # Timestamp
     generated_at: datetime
     
