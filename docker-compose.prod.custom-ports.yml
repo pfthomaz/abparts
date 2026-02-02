@@ -1,0 +1,232 @@
+# docker-compose.prod.custom-ports.yml
+# Production configuration with custom ports to avoid conflicts
+# 
+# INSTRUCTIONS:
+# 1. Run check_server_ports.sh on the new server first
+# 2. Update the port mappings below based on available ports
+# 3. Copy this file to the new server as docker-compose.prod.yml
+# 4. Update Nginx configuration to match these ports
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:16
+    container_name: abparts_db_prod
+    # NO EXTERNAL PORT - Internal only for security
+    # ports:
+    #   - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-abparts_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-abparts_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data_prod:/var/lib/postgresql/data
+      - ./init_db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - abparts_network
+
+  # Redis Service
+  redis:
+    image: redis:latest
+    container_name: abparts_redis_prod
+    # NO EXTERNAL PORT - Internal only for security
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - abparts_network
+
+  # FastAPI Backend Service
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_api_prod
+    ports:
+      # CHANGE THIS: Use available port from check_server_ports.sh
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      # If 8000 is taken, use 8002, 8004, etc.
+      - "8000:8000"  # ← UPDATE THIS if port 8000 is in use
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
+      REDIS_URL: redis://redis:6379/0
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      FORCE_HTTPS: ${FORCE_HTTPS}
+    volumes:
+      - /var/www/abparts_images:/app/static/images
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --proxy-headers --forwarded-allow-ips='*'
+    restart: unless-stopped
+    networks:
+      - abparts_network
+
+  # Celery Worker Service
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: abparts_celery_worker_prod
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      BASE_URL: ${BASE_URL}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    restart: unless-stopped
+    networks:
+      - abparts_network
+
+  # React Web Frontend (Production Build)
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+      target: production
+      args:
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-/api}
+        REACT_APP_AI_ASSISTANT_URL: ${REACT_APP_AI_ASSISTANT_URL:-http://localhost:8001}
+    container_name: abparts_web_prod
+    ports:
+      # CHANGE THIS: Use available port from check_server_ports.sh
+      # The container runs nginx on port 80, we map it to host port
+      # If 3000 is taken, use 3001, 3002, etc.
+      - "3001:80"  # ← UPDATE THIS if port 3001 is in use
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - abparts_network
+
+  # AI Assistant Service
+  ai_assistant:
+    build:
+      context: ./ai_assistant
+      dockerfile: Dockerfile
+    container_name: abparts_ai_assistant_prod
+    ports:
+      # CHANGE THIS: Use available port from check_server_ports.sh
+      # If 8001 is taken, use 8003, 8005, etc.
+      - "8001:8001"  # ← UPDATE THIS if port 8001 is in use
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abparts_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abparts_prod}
+      REDIS_URL: redis://redis:6379/2
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+      OPENAI_FALLBACK_MODEL: ${OPENAI_FALLBACK_MODEL:-gpt-3.5-turbo}
+      ABPARTS_API_URL: http://api:8000
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      FROM_EMAIL: ${FROM_EMAIL}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - abparts_network
+
+  # Optional: PgAdmin (can be disabled in production)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: abparts_pgadmin_prod
+    ports:
+      - "8080:80"  # ← UPDATE THIS if port 8080 is in use
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+    volumes:
+      - pgadmin_data_prod:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - abparts_network
+    profiles:
+      - admin
+
+volumes:
+  db_data_prod:
+  redis_data_prod:
+  pgadmin_data_prod:
+
+networks:
+  abparts_network:
+    driver: bridge
+
+# =============================================================================
+# PORT CONFIGURATION SUMMARY
+# =============================================================================
+# 
+# After running check_server_ports.sh, update these port mappings:
+# 
+# Service          Container Port    Host Port (UPDATE THESE)
+# -------------    --------------    ------------------------
+# web              80                3001  ← Change if needed
+# api              8000              8000  ← Change if needed
+# ai_assistant     8001              8001  ← Change if needed
+# pgadmin          80                8080  ← Change if needed
+# 
+# Database and Redis have NO external ports (internal only for security)
+# 
+# After updating ports here, also update:
+# 1. nginx-production.conf - proxy_pass directives
+# 2. .env.production - REACT_APP_AI_ASSISTANT_URL if AI port changes
+# 
+# =============================================================================
