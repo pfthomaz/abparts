@@ -77,16 +77,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Network-first strategy for API calls (AI Assistant)
-  if (url.pathname.startsWith('/api/ai/')) {
+  // Network-first strategy for ALL API calls - NEVER cache user data
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Clone the response before caching
-          const responseClone = response.clone();
-          
-          // Cache successful GET requests
-          if (request.method === 'GET' && response.status === 200) {
+          // For AI Assistant, cache successful GET requests
+          if (url.pathname.startsWith('/api/ai/') && request.method === 'GET' && response.status === 200) {
+            const responseClone = response.clone();
             caches.open(AI_ASSISTANT_CACHE).then((cache) => {
               cache.put(request, responseClone);
             });
@@ -95,29 +93,34 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch((error) => {
-          console.log('[Service Worker] Network request failed, trying cache:', error);
+          console.log('[Service Worker] Network request failed:', error);
           
-          // Try to serve from cache
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('[Service Worker] Serving from cache:', request.url);
-              return cachedResponse;
-            }
-            
-            // Return offline response for AI Assistant
-            return new Response(
-              JSON.stringify({
-                error: 'offline',
-                message: 'You are currently offline. Please check your internet connection.',
-                offline: true
-              }),
-              {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: { 'Content-Type': 'application/json' }
+          // Only try cache for AI Assistant endpoints
+          if (url.pathname.startsWith('/api/ai/')) {
+            return caches.match(request).then((cachedResponse) => {
+              if (cachedResponse) {
+                console.log('[Service Worker] Serving from cache:', request.url);
+                return cachedResponse;
               }
-            );
-          });
+              
+              // Return offline response for AI Assistant
+              return new Response(
+                JSON.stringify({
+                  error: 'offline',
+                  message: 'You are currently offline. Please check your internet connection.',
+                  offline: true
+                }),
+                {
+                  status: 503,
+                  statusText: 'Service Unavailable',
+                  headers: { 'Content-Type': 'application/json' }
+                }
+              );
+            });
+          }
+          
+          // For other API calls, just throw the error
+          throw error;
         })
     );
     return;

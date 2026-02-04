@@ -15,6 +15,14 @@ export const AuthProvider = ({ children }) => {
   // Function to log in a user
   const login = async (username, password) => {
     try {
+      // CRITICAL FIX: Clear old token and user data BEFORE login
+      // This prevents race conditions where old token is used
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
+      
+      // Now perform the login
       const data = await authService.login(username, password);
       localStorage.setItem('authToken', data.access_token);
       // Clear the reminder check flag for fresh login
@@ -32,9 +40,20 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
+    
+    // Clear all authentication and user-specific data from localStorage
     localStorage.removeItem('authToken');
-    // Clear session storage to ensure reminders work on next login
-    sessionStorage.removeItem('hasCheckedReminders');
+    localStorage.removeItem('token'); // ChatWidget uses this
+    localStorage.removeItem('selectedOrganizationId'); // OrganizationContext
+    localStorage.removeItem('localizationPreferences'); // LocalizationContext
+    
+    // Clear session storage completely
+    sessionStorage.clear();
+    
+    // Force a hard reload to clear any cached React state
+    // This is especially important in production builds to prevent
+    // the previous user's data from appearing after logout
+    window.location.href = '/';
   }, []);
 
   // Function to refresh user data (useful after profile/logo updates)
