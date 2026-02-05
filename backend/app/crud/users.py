@@ -19,6 +19,8 @@ def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]
     return db.query(models.User).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate) -> models.User:
+    from sqlalchemy.exc import IntegrityError
+    
     hashed_password = get_password_hash(user.password)
     db_user = models.User(
         username=user.username,
@@ -31,9 +33,19 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
         preferred_language=user.preferred_language
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    try:
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError as e:
+        db.rollback()
+        # Re-raise with more specific error message
+        if "users_email_key" in str(e.orig):
+            raise ValueError(f"A user with email '{user.email}' already exists")
+        elif "users_username_key" in str(e.orig):
+            raise ValueError(f"A user with username '{user.username}' already exists")
+        else:
+            raise ValueError(f"Failed to create user: {str(e)}")
 
 def update_user(db: Session, user_id: uuid.UUID, user_update: schemas.UserUpdate) -> models.User | None:
     db_user = get_user(db, user_id)

@@ -387,10 +387,15 @@ async def create_user(
 ):
     organization = crud.organizations.get_organization(db, user.organization_id)
     _check_create_user_permissions(user, organization, current_user)
-    db_user = crud.users.create_user(db=db, user=user)
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Failed to create user")
-    return db_user
+    
+    try:
+        db_user = crud.users.create_user(db=db, user=user)
+        if not db_user:
+            raise HTTPException(status_code=400, detail="Failed to create user")
+        return db_user
+    except ValueError as e:
+        # Handle duplicate email/username errors with user-friendly message
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.put("/{user_id}", response_model=schemas.UserResponse)
 async def update_user(
