@@ -433,6 +433,18 @@ export const getNavigationItems = (user) => {
     accessScope: 'organization'
   });
 
+  // Sync Status - all users can view (for offline mode)
+  items.push({
+    name: 'syncStatus',
+    path: '/sync-status',
+    label: 'Sync Status',
+    icon: 'sync',
+    permission: null,
+    description: 'View offline sync status and pending operations',
+    category: 'operations',
+    accessScope: 'organization'
+  });
+
   // Users - admin and above
   if (hasPermission(user, PERMISSIONS.MANAGE_ORG_USERS) || hasPermission(user, PERMISSIONS.MANAGE_ALL_USERS)) {
     items.push({

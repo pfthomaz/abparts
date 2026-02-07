@@ -41,7 +41,8 @@ function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
-      console.log('[SW Registration] Service Worker registered:', registration);
+      console.log('[SW Registration] Service Worker registered successfully');
+      console.log('[SW Registration] Offline mode enabled for field operations');
       
       // Check for updates periodically
       setInterval(() => {
@@ -67,6 +68,7 @@ function registerValidSW(swUrl, config) {
             } else {
               // Content is cached for offline use.
               console.log('[SW Registration] Content is cached for offline use.');
+              console.log('[SW Registration] App ready for offline field operations');
 
               // Execute callback
               if (config && config.onSuccess) {
@@ -79,6 +81,7 @@ function registerValidSW(swUrl, config) {
     })
     .catch((error) => {
       console.error('[SW Registration] Error during service worker registration:', error);
+      console.error('[SW Registration] Offline mode will not be available');
     });
 }
 

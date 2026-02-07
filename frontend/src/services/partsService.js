@@ -2,19 +2,75 @@
 
 import { api } from './api';
 import { processError, logError } from '../utils/errorHandling';
+import { isOnline } from '../hooks/useNetworkStatus';
+import { 
+  cacheData, 
+  getCachedData, 
+  getCachedItem,
+  isCacheStale, 
+  STORES 
+} from '../db/indexedDB';
 
 /**
  * Fetches all parts without pagination limit.
+ * @param {boolean} forceRefresh Force refresh from API
  * @returns {Promise<Array>} Array of parts
  * @throws {Error} Throws error with user-friendly message
  */
-const getParts = async () => {
+const getParts = async (forceRefresh = false) => {
+  const online = isOnline();
+  
+  // If offline, use cache immediately
+  if (!online) {
+    const cached = await getCachedData(STORES.PARTS);
+    if (cached.length > 0) {
+      console.log('[PartsService] Using cached parts (offline):', cached.length);
+      return cached;
+    }
+    throw new Error('No cached data available offline');
+  }
+  
+  // Check cache staleness with timeout to prevent blocking
+  let cacheStale = true;
+  try {
+    const staleCheckPromise = isCacheStale(STORES.PARTS);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(true), 1000));
+    cacheStale = await Promise.race([staleCheckPromise, timeoutPromise]);
+  } catch (error) {
+    console.warn('[PartsService] Cache staleness check failed:', error);
+    cacheStale = true; // Assume stale on error
+  }
+  
+  // Use cache if fresh and not forcing refresh
+  if (!cacheStale && !forceRefresh) {
+    const cached = await getCachedData(STORES.PARTS);
+    if (cached.length > 0) {
+      console.log('[PartsService] Using cached parts (fresh):', cached.length);
+      return cached;
+    }
+  }
+  
+  // Fetch from API with timeout
   try {
     // Fetch with high limit to get all parts (backend max is 1000)
     const response = await api.get('/parts/?limit=1000');
+    
+    // Cache the response
+    await cacheData(STORES.PARTS, response);
+    console.log('[PartsService] Cached parts:', response.length);
+    
     return response;
   } catch (error) {
     logError(error, 'partsService.getParts');
+    
+    // Fallback to cache on error
+    console.warn('[PartsService] API failed, attempting cache fallback:', error.message);
+    const cached = await getCachedData(STORES.PARTS);
+    if (cached.length > 0) {
+      console.log('[PartsService] Using cached parts (fallback):', cached.length);
+      return cached;
+    }
+    
     throw error;
   }
 };

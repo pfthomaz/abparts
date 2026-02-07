@@ -102,7 +102,9 @@
     "nets": "Ağlar",
     "netsDescription": "Ağları ve kafesleri yönet",
     "netCleaningRecords": "Ağ Temizleme Kayıtları",
-    "netCleaningRecordsDescription": "Ağ temizleme işlemlerini takip et"
+    "netCleaningRecordsDescription": "Ağ temizleme işlemlerini takip et",
+    "syncStatus": "Senkronizasyon Durumu",
+    "syncStatusDescription": "Çevrimdışı veri senkronizasyon durumunu görüntüle"
   },
   "auth": {
     "login": "Giriş",
@@ -118,7 +120,9 @@
     "signInToAccount": "Hesabınıza Giriş Yapın",
     "createAccount": "Hesap Oluştur",
     "alreadyHaveAccount": "Zaten hesabınız var mı?",
-    "dontHaveAccount": "Hesabınız yok mu?"
+    "dontHaveAccount": "Hesabınız yok mu?",
+    "loginError": "Geçersiz kullanıcı adı veya şifre",
+    "sessionExpired": "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın."
   },
   "users": {
     "title": "Kullanıcı ve İzin Yönetimi",
@@ -740,7 +744,14 @@
     "complete": "tamamlandı",
     "confirmDeleteExecution": "Bu bakım yürütmesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
     "executionDeletedSuccessfully": "Bakım yürütmesi başarıyla silindi",
-    "failedToDeleteExecution": "Bakım yürütmesi silinemedi"
+    "failedToDeleteExecution": "Bakım yürütmesi silinemedi",
+    "offlineMode": "Çevrimdışı Mod",
+    "offlineModeHelp": "Çevrimdışısınız. Bakım yerel olarak kaydedilecek ve bağlantı geri geldiğinde senkronize edilecektir.",
+    "savedOffline": "Bakım çevrimdışı kaydedildi. Bağlantı geri geldiğinde senkronize edilecek.",
+    "pendingSync": "{{count}} bakım yürütmesi senkronizasyon bekliyor",
+    "pendingSyncMessage": "Bu bakım yürütmeleri çevrimdışı kaydedildi ve bağlantı geri geldiğinde senkronize edilecek.",
+    "waitingSync": "Senkronizasyon bekleniyor",
+    "syncingExecution": "Bakım yürütmesi senkronize ediliyor..."
   },
   "dashboard": {
     "welcomeBack": "Tekrar hoş geldin, {{name}}!",
@@ -1580,7 +1591,31 @@
       "escalationReason": "Yönlendirme nedeni",
       "additionalDetails": "Destek ekibi için ek detaylar",
       "attachDiagnosticData": "Tanı verilerini ekle",
-      "sendToSupport": "Desteğe Gönder"
+      "sendToSupport": "Desteğe Gönder",
+      "title": "Uzman Desteğine Yönlendir",
+      "description": "Sorunu çözemiyorsanız, uzman teknisyenlerimiz doğrudan yardım sağlayabilir.",
+      "escalateButton": "Uzman Yardımı Al",
+      "escalate_button": "Destek Talebi Oluştur",
+      "escalating": "Talep oluşturuluyor...",
+      "confidence_score": "AI Güveni",
+      "additional_notes": "Ek Notlar",
+      "notes_placeholder": "Ek ayrıntıları veya belirli endişeleri açıklayın...",
+      "reason": {
+        "label": "Escalation Reason",
+        "user_request": "I need expert help",
+        "low_confidence": "AI has low confidence",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety concern",
+        "complex_issue": "Complex technical issue",
+        "expert_required": "Expert knowledge required"
+      },
+      "priority": {
+        "label": "Priority Level",
+        "low": "Low - Can wait",
+        "medium": "Medium - Normal priority",
+        "high": "High - Urgent",
+        "urgent": "Urgent - Critical issue"
+      }
     },
     "session": {
       "newSession": "Yeni Oturum",
@@ -1637,6 +1672,74 @@
     },
     "notifications": {
       "newMessage": "Yeni AI Asistan Mesajı"
+    },
+    "escalate": "Uzmana Yönlendir",
+    "escalateTooltip": "Teknik uzmandan yardım alın",
+    "escalationModal": {
+      "title": "Uzman Desteğine Yönlendir",
+      "description": "AI asistanımız bir destek talebi oluşturacak ve sizi teknik bir uzmanla bağlayacak.",
+      "reasonLabel": "Yönlendirme Nedeni",
+      "priorityLabel": "Öncelik Seviyesi",
+      "notesLabel": "Ek Notlar",
+      "notesPlaceholder": "Lütfen sorununuzu ayrıntılı olarak açıklayın...",
+      "submitButton": "Destek Talebi Oluştur",
+      "cancelButton": "İptal",
+      "reasons": {
+        "user_request": "I need expert help",
+        "low_confidence": "AI is uncertain",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety issue detected",
+        "expert_required": "Complex technical issue"
+      },
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent"
+      }
+    },
+    "escalationSuccess": {
+      "title": "Support Ticket Created",
+      "message": "Your escalation has been processed successfully.",
+      "ticketNumber": "Ticket Number",
+      "expertContact": "Expert Contact Information",
+      "nextSteps": "Next Steps",
+      "contactExpert": "Contact the expert using the information provided above.",
+      "referenceTicket": "Reference your ticket number when contacting support."
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "remove": "Remove",
+      "confirm": "Confirm",
+      "close": "Close",
+      "submit": "Submit",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Information"
+    },
+    "expertKnowledge": {
+      "add_title": "Add Expert Knowledge",
+      "problem_description": "Problem Description",
+      "solution": "Solution",
+      "machine_version": "Machine Version",
+      "tags": "Tags",
+      "common_tags": "Common Tags",
+      "custom_tag_placeholder": "Enter custom tag",
+      "add_tag": "Add",
+      "selected_tags": "Selected Tags",
+      "all_versions": "All Versions",
+      "problem_placeholder": "Describe the problem that was encountered...",
+      "solution_placeholder": "Provide the step-by-step solution...",
+      "submit": "Submit Knowledge",
+      "submitting": "Submitting...",
+      "success": "Expert knowledge added successfully",
+      "error": "Failed to add expert knowledge"
     }
   },
   "protocolForm": {
@@ -1801,7 +1904,29 @@
     "noProtocolsFound": "Protokol bulunamadı",
     "noProtocolsYet": "Henüz mevcut protokol yok",
     "tryDifferentSearch": "Arama veya filtre kriterlerinizi ayarlamayı deneyin",
-    "createProtocolsFirst": "Çevirileri etkinleştirmek için önce bakım protokolleri oluşturun"
+    "createProtocolsFirst": "Çevirileri etkinleştirmek için önce bakım protokolleri oluşturun",
+    "autoTranslate": {
+      "title": "Auto-Translate",
+      "quickTranslate": "Quick Translate",
+      "quickStart": "Quick start with AI translation",
+      "serviceUnavailable": "Auto-translation service is currently unavailable",
+      "statusCheckFailed": "Failed to check translation service status",
+      "selectLanguages": "Please select at least one language to translate to",
+      "failed": "Auto-translation failed",
+      "translating": "Translating...",
+      "startTranslation": "Start Translation",
+      "results": "Translation Results",
+      "successful": "Successful",
+      "protocolTranslations": "Protocol translations",
+      "checklistTranslations": "Checklist translations",
+      "translationType": "What would you like to translate?",
+      "completeProtocol": "Complete Protocol",
+      "completeProtocolDesc": "Translate both protocol name/description and all checklist items",
+      "protocolOnly": "Protocol Only",
+      "protocolOnlyDesc": "Translate only the protocol name and description",
+      "checklistOnly": "Checklist Items Only",
+      "checklistOnlyDesc": "Translate only the checklist items"
+    }
   },
   "tour": {
     "helpButton": "Yardıma mı ihtiyacınız var? Rehberli turlar için tıklayın",
@@ -2023,7 +2148,17 @@
       "endTimeAfterStart": "Bitiş saati başlangıç saatinden sonra olmalıdır.",
       "required": "*",
       "selectOperator": "Operatör seç",
-      "selectFarmSiteFirst": "Önce bir çiftlik alanı seçin"
+      "selectFarmSiteFirst": "Önce bir çiftlik alanı seçin",
+      "photos": "Fotoğraflar",
+      "photosHelp": "Temizleme sürecinin fotoğraflarını çekin",
+      "photosOfflineHelp": "Fotoğraflar çevrimdışı saklanacak ve bağlantı geri geldiğinde senkronize edilecek",
+      "offlineMode": "Çevrimdışı Mod",
+      "offlineModeHelp": "Bu kayıt çevrimdışı kaydedilecek ve tekrar çevrimiçi olduğunuzda otomatik olarak senkronize edilecek",
+      "savedOffline": "Kayıt çevrimdışı kaydedildi. Bağlantı geri geldiğinde senkronize edilecek.",
+      "pendingSync": "Senkronizasyon Bekliyor",
+      "waitingSync": "Senkronizasyon bekleniyor",
+      "noUsersOffline": "No users cached for offline use. Go online first to load users.",
+      "enterOperatorName": "Enter operator name"
     }
   },
   "fab": {
@@ -2086,6 +2221,75 @@
       "title": "Güncelleme Mevcut",
       "description": "ABParts'ın yeni bir sürümü mevcut. Güncellemek için yeniden yükleyin.",
       "reload": "Şimdi Yeniden Yükle"
+    }
+  },
+  "offline": {
+    "title": "Çevrimdışı Mod",
+    "message": "Şu anda çevrimdışısınız",
+    "pendingOperations": "{count} işlem senkronizasyon bekliyor",
+    "syncing": "Senkronize ediliyor...",
+    "syncComplete": "Senkronizasyon tamamlandı",
+    "backOnline": "Tekrar çevrimiçi",
+    "duration": "{duration} çevrimdışı",
+    "indicator": {
+      "title": "Offline Mode",
+      "message": "Working offline - data will sync when connection is restored",
+      "pending": "pending",
+      "syncing": "Syncing...",
+      "syncingMessage": "Uploading offline data",
+      "remaining": "remaining",
+      "backOnline": "Back Online",
+      "wasOffline": "Was offline for",
+      "offline": "Offline"
+    }
+  },
+  "syncStatus": {
+    "title": "Senkronizasyon Durumu",
+    "syncNow": "Şimdi Senkronize Et",
+    "syncing": "Senkronize ediliyor...",
+    "connectionStatus": "Bağlantı Durumu",
+    "online": "Çevrimiçi",
+    "offline": "Çevrimdışı",
+    "pendingOperations": "Bekleyen İşlemler",
+    "lastSync": "Son Senkronizasyon",
+    "never": "Hiçbir zaman",
+    "storageUsage": "Depolama Kullanımı",
+    "used": "Kullanılan",
+    "quota": "Kota",
+    "syncError": "Senkronizasyon Hatası",
+    "queueStatistics": "Kuyruk İstatistikleri",
+    "total": "Toplam",
+    "pending": "Beklemede",
+    "failed": "Başarısız",
+    "failedOperations": "Başarısız İşlemler",
+    "attempts": "Denemeler",
+    "retry": "Yeniden Dene",
+    "remove": "Kaldır",
+    "confirmRemove": "Bu işlemi kaldırmak istediğinizden emin misiniz?",
+    "type": "Tür",
+    "status": "Durum",
+    "priority": "Öncelik",
+    "created": "Oluşturuldu",
+    "offlineRecords": "Çevrimdışı Kayıtlar",
+    "offlineRecordsHelp": "Bu kayıtlar çevrimdışı oluşturuldu ve senkronize edilmeyi bekliyor",
+    "netCleaningRecord": "Ağ Temizleme Kaydı",
+    "operator": "Operatör",
+    "mode": "Mod",
+    "waitingSync": "Senkronizasyon bekleniyor",
+    "allSynced": "Hepsi Senkronize Edildi!",
+    "allSyncedHelp": "Tüm çevrimdışı veriler senkronize edildi",
+    "types": {
+      "netCleaningRecord": "Ağ Temizleme Kaydı",
+      "netCleaningPhoto": "Fotoğraf",
+      "maintenanceExecution": "Bakım Yürütme",
+      "machineHours": "Makine Saatleri",
+      "stockAdjustment": "Stok Ayarlaması"
+    },
+    "statuses": {
+      "pending": "Beklemede",
+      "syncing": "Senkronize ediliyor",
+      "completed": "Tamamlandı",
+      "failed": "Başarısız"
     }
   }
 }

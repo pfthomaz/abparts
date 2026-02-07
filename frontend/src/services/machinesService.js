@@ -1,12 +1,76 @@
 // c:/abparts/frontend/src/services/machinesService.js
 
 import { api } from './api';
+import { isOnline } from '../hooks/useNetworkStatus';
+import { 
+  cacheData, 
+  getCachedData, 
+  isCacheStale, 
+  STORES 
+} from '../db/indexedDB';
 
 /**
- * Fetches all machines.
+ * Fetches all machines with caching support.
  */
-const getMachines = () => {
-  return api.get('/machines/');
+const getMachines = async (forceRefresh = false) => {
+  const online = isOnline();
+  
+  // If offline, use cache immediately
+  if (!online) {
+    const cached = await getCachedData(STORES.MACHINES);
+    if (cached.length > 0) {
+      console.log('[MachinesService] Using cached machines (offline):', cached.length);
+      return cached;
+    }
+    throw new Error('No cached data available offline');
+  }
+  
+  // Check cache staleness with timeout to prevent blocking
+  let cacheStale = true;
+  try {
+    const staleCheckPromise = isCacheStale(STORES.MACHINES);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(true), 1000));
+    cacheStale = await Promise.race([staleCheckPromise, timeoutPromise]);
+  } catch (error) {
+    console.warn('[MachinesService] Cache staleness check failed:', error);
+    cacheStale = true; // Assume stale on error
+  }
+  
+  // Use cache if fresh and not forcing refresh
+  if (!cacheStale && !forceRefresh) {
+    const cached = await getCachedData(STORES.MACHINES);
+    if (cached.length > 0) {
+      console.log('[MachinesService] Using cached machines (fresh):', cached.length);
+      return cached;
+    }
+  }
+  
+  // Fetch from API with timeout
+  try {
+    const data = await api.get('/machines/');
+    
+    // Map latest_hours to current_hours for frontend compatibility
+    const mappedData = data.map(machine => ({
+      ...machine,
+      current_hours: machine.latest_hours // Map backend field to frontend field
+    }));
+    
+    // Cache the mapped response
+    await cacheData(STORES.MACHINES, mappedData);
+    console.log('[MachinesService] Cached machines:', mappedData.length);
+    
+    return mappedData;
+  } catch (error) {
+    // Fallback to cache on error
+    console.warn('[MachinesService] API failed, attempting cache fallback:', error.message);
+    const cached = await getCachedData(STORES.MACHINES);
+    if (cached.length > 0) {
+      console.log('[MachinesService] Using cached machines (fallback):', cached.length);
+      return cached;
+    }
+    
+    throw error;
+  }
 };
 
 /**

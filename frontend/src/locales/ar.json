@@ -102,7 +102,9 @@
     "nets": "الشباك",
     "netsDescription": "إدارة الشباك والأقفاص",
     "netCleaningRecords": "سجلات تنظيف الشباك",
-    "netCleaningRecordsDescription": "تتبع عمليات تنظيف الشباك"
+    "netCleaningRecordsDescription": "تتبع عمليات تنظيف الشباك",
+    "syncStatus": "حالة المزامنة",
+    "syncStatusDescription": "عرض حالة مزامنة البيانات غير المتصلة"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -734,7 +736,14 @@
     "complete": "مكتمل",
     "confirmDeleteExecution": "هل أنت متأكد من أنك تريد حذف تنفيذ الصيانة هذا؟ لا يمكن التراجع عن هذا الإجراء.",
     "executionDeletedSuccessfully": "تم حذف تنفيذ الصيانة بنجاح",
-    "failedToDeleteExecution": "فشل في حذف تنفيذ الصيانة"
+    "failedToDeleteExecution": "فشل في حذف تنفيذ الصيانة",
+    "offlineMode": "وضع عدم الاتصال",
+    "offlineModeHelp": "أنت غير متصل. سيتم حفظ الصيانة محليًا ومزامنتها عند استعادة الاتصال.",
+    "savedOffline": "تم حفظ الصيانة دون اتصال. ستتم المزامنة عند استعادة الاتصال.",
+    "pendingSync": "{{count}} تنفيذ صيانة في انتظار المزامنة",
+    "pendingSyncMessage": "تم تسجيل عمليات تنفيذ الصيانة هذه دون اتصال وستتم مزامنتها عند استعادة الاتصال.",
+    "waitingSync": "في انتظار المزامنة",
+    "syncingExecution": "مزامنة تنفيذ الصيانة..."
   },
   "dashboard": {
     "welcomeBack": "مرحباً بعودتك، {{name}}!",
@@ -1608,7 +1617,31 @@
       "escalationReason": "سبب التصعيد",
       "additionalDetails": "تفاصيل إضافية لفريق الدعم",
       "attachDiagnosticData": "إرفاق بيانات التشخيص",
-      "sendToSupport": "إرسال إلى الدعم"
+      "sendToSupport": "إرسال إلى الدعم",
+      "title": "تصعيد إلى دعم الخبراء",
+      "description": "سيقوم مساعد الذكاء الاصطناعي بإنشاء تذكرة دعم وربطك بخبير تقني.",
+      "escalateButton": "إنشاء تذكرة دعم",
+      "escalate_button": "إنشاء تذكرة دعم",
+      "escalating": "جارٍ إنشاء التذكرة...",
+      "confidence_score": "ثقة الذكاء الاصطناعي",
+      "additional_notes": "ملاحظات إضافية",
+      "notes_placeholder": "صف أي تفاصيل إضافية أو مخاوف محددة...",
+      "reason": {
+        "label": "Escalation Reason",
+        "user_request": "I need expert help",
+        "low_confidence": "AI has low confidence",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety concern",
+        "complex_issue": "Complex technical issue",
+        "expert_required": "Expert knowledge required"
+      },
+      "priority": {
+        "label": "Priority Level",
+        "low": "Low - Can wait",
+        "medium": "Medium - Normal priority",
+        "high": "High - Urgent",
+        "urgent": "Urgent - Critical issue"
+      }
     },
     "session": {
       "newSession": "جلسة جديدة",
@@ -1665,6 +1698,40 @@
     },
     "notifications": {
       "newMessage": "رسالة جديدة من مساعد الذكاء الاصطناعي"
+    },
+    "common": {
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "delete": "حذف",
+      "edit": "تحرير",
+      "add": "إضافة",
+      "remove": "إزالة",
+      "confirm": "تأكيد",
+      "close": "إغلاق",
+      "submit": "إرسال",
+      "loading": "جارٍ التحميل...",
+      "error": "خطأ",
+      "success": "نجح",
+      "warning": "تحذير",
+      "info": "معلومات"
+    },
+    "expertKnowledge": {
+      "add_title": "Add Expert Knowledge",
+      "problem_description": "Problem Description",
+      "solution": "Solution",
+      "machine_version": "Machine Version",
+      "tags": "Tags",
+      "common_tags": "Common Tags",
+      "custom_tag_placeholder": "Enter custom tag",
+      "add_tag": "Add",
+      "selected_tags": "Selected Tags",
+      "all_versions": "All Versions",
+      "problem_placeholder": "Describe the problem that was encountered...",
+      "solution_placeholder": "Provide the step-by-step solution...",
+      "submit": "Submit Knowledge",
+      "submitting": "Submitting...",
+      "success": "Expert knowledge added successfully",
+      "error": "Failed to add expert knowledge"
     }
   },
   "protocolForm": {
@@ -1829,7 +1896,29 @@
     "noProtocolsFound": "لم يتم العثور على بروتوكولات",
     "noProtocolsYet": "لا توجد بروتوكولات متاحة بعد",
     "tryDifferentSearch": "جرب تعديل معايير البحث أو التصفية",
-    "createProtocolsFirst": "أنشئ بروتوكولات الصيانة أولاً لتمكين الترجمات"
+    "createProtocolsFirst": "أنشئ بروتوكولات الصيانة أولاً لتمكين الترجمات",
+    "autoTranslate": {
+      "title": "Auto-Translate",
+      "quickTranslate": "Quick Translate",
+      "quickStart": "Quick start with AI translation",
+      "serviceUnavailable": "Auto-translation service is currently unavailable",
+      "statusCheckFailed": "Failed to check translation service status",
+      "selectLanguages": "Please select at least one language to translate to",
+      "failed": "Auto-translation failed",
+      "translating": "Translating...",
+      "startTranslation": "Start Translation",
+      "results": "Translation Results",
+      "successful": "Successful",
+      "protocolTranslations": "Protocol translations",
+      "checklistTranslations": "Checklist translations",
+      "translationType": "What would you like to translate?",
+      "completeProtocol": "Complete Protocol",
+      "completeProtocolDesc": "Translate both protocol name/description and all checklist items",
+      "protocolOnly": "Protocol Only",
+      "protocolOnlyDesc": "Translate only the protocol name and description",
+      "checklistOnly": "Checklist Items Only",
+      "checklistOnlyDesc": "Translate only the checklist items"
+    }
   },
   "tour": {
     "helpButton": "تحتاج مساعدة؟ انقر للحصول على جولات إرشادية",
@@ -2051,7 +2140,17 @@
       "endTimeAfterStart": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
       "required": "*",
       "selectOperator": "اختر المشغل",
-      "selectFarmSiteFirst": "اختر موقع المزرعة أولاً"
+      "selectFarmSiteFirst": "اختر موقع المزرعة أولاً",
+      "photos": "الصور",
+      "photosHelp": "التقط صورًا لعملية التنظيف",
+      "photosOfflineHelp": "سيتم تخزين الصور في وضع عدم الاتصال ومزامنتها عند استعادة الاتصال",
+      "offlineMode": "وضع عدم الاتصال",
+      "offlineModeHelp": "سيتم حفظ هذا السجل في وضع عدم الاتصال ومزامنته تلقائيًا عند العودة إلى الاتصال",
+      "savedOffline": "تم حفظ السجل في وضع عدم الاتصال. سيتم مزامنته عند استعادة الاتصال.",
+      "pendingSync": "في انتظار المزامنة",
+      "waitingSync": "في انتظار المزامنة",
+      "noUsersOffline": "No users cached for offline use. Go online first to load users.",
+      "enterOperatorName": "Enter operator name"
     }
   },
   "fab": {
@@ -2114,6 +2213,75 @@
       "title": "تحديث متاح",
       "description": "يتوفر إصدار جديد من ABParts. أعد التحميل للتحديث.",
       "reload": "إعادة التحميل الآن"
+    }
+  },
+  "offline": {
+    "title": "وضع عدم الاتصال",
+    "message": "أنت حاليًا غير متصل",
+    "pendingOperations": "{count} عمليات في انتظار المزامنة",
+    "syncing": "جارٍ المزامنة...",
+    "syncComplete": "اكتملت المزامنة",
+    "backOnline": "العودة إلى الاتصال",
+    "duration": "غير متصل لمدة {duration}",
+    "indicator": {
+      "title": "Offline Mode",
+      "message": "Working offline - data will sync when connection is restored",
+      "pending": "pending",
+      "syncing": "Syncing...",
+      "syncingMessage": "Uploading offline data",
+      "remaining": "remaining",
+      "backOnline": "Back Online",
+      "wasOffline": "Was offline for",
+      "offline": "Offline"
+    }
+  },
+  "syncStatus": {
+    "title": "حالة المزامنة",
+    "syncNow": "مزامنة الآن",
+    "syncing": "جارٍ المزامنة...",
+    "connectionStatus": "حالة الاتصال",
+    "online": "متصل",
+    "offline": "غير متصل",
+    "pendingOperations": "العمليات المعلقة",
+    "lastSync": "آخر مزامنة",
+    "never": "أبدًا",
+    "storageUsage": "استخدام التخزين",
+    "used": "مستخدم",
+    "quota": "الحصة",
+    "syncError": "خطأ في المزامنة",
+    "queueStatistics": "إحصائيات قائمة الانتظار",
+    "total": "المجموع",
+    "pending": "معلق",
+    "failed": "فشل",
+    "failedOperations": "العمليات الفاشلة",
+    "attempts": "المحاولات",
+    "retry": "إعادة المحاولة",
+    "remove": "إزالة",
+    "confirmRemove": "هل أنت متأكد من أنك تريد إزالة هذه العملية؟",
+    "type": "النوع",
+    "status": "الحالة",
+    "priority": "الأولوية",
+    "created": "تم الإنشاء",
+    "offlineRecords": "السجلات غير المتصلة",
+    "offlineRecordsHelp": "تم إنشاء هذه السجلات في وضع عدم الاتصال وهي في انتظار المزامنة",
+    "netCleaningRecord": "سجل تنظيف الشبكة",
+    "operator": "المشغل",
+    "mode": "الوضع",
+    "waitingSync": "في انتظار المزامنة",
+    "allSynced": "تمت المزامنة بالكامل!",
+    "allSyncedHelp": "تمت مزامنة جميع البيانات غير المتصلة",
+    "types": {
+      "netCleaningRecord": "سجل تنظيف الشبكة",
+      "netCleaningPhoto": "صورة",
+      "maintenanceExecution": "تنفيذ الصيانة",
+      "machineHours": "ساعات الآلة",
+      "stockAdjustment": "تعديل المخزون"
+    },
+    "statuses": {
+      "pending": "معلق",
+      "syncing": "جارٍ المزامنة",
+      "completed": "مكتمل",
+      "failed": "فشل"
     }
   }
 }

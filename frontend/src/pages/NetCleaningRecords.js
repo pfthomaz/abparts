@@ -7,11 +7,14 @@ import farmSitesService from '../services/farmSitesService';
 import { machinesService } from '../services/machinesService';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { useOffline } from '../contexts/OfflineContext';
+import { getUnsyncedNetCleaningRecords } from '../db/indexedDB';
 import Modal from '../components/Modal';
 import NetCleaningRecordForm from '../components/NetCleaningRecordForm';
 
 const NetCleaningRecords = () => {
   const [records, setRecords] = useState([]);
+  const [offlineRecords, setOfflineRecords] = useState([]);
   const [nets, setNets] = useState([]);
   const [farmSites, setFarmSites] = useState([]);
   const [machines, setMachines] = useState([]);
@@ -24,6 +27,7 @@ const NetCleaningRecords = () => {
 
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { isOnline, pendingCount } = useOffline();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const fetchData = useCallback(async () => {
@@ -40,6 +44,11 @@ const NetCleaningRecords = () => {
       setNets(netsData);
       setFarmSites(farmSitesData);
       setMachines(machinesData);
+      
+      // Load offline records
+      const unsyncedRecords = await getUnsyncedNetCleaningRecords();
+      setOfflineRecords(unsyncedRecords);
+      console.log(`[NetCleaningRecords] Loaded ${unsyncedRecords.length} offline records`);
     } catch (err) {
       setError(err.message || 'Failed to fetch data.');
     } finally {
@@ -51,12 +60,42 @@ const NetCleaningRecords = () => {
     fetchData();
   }, [fetchData]);
 
+  // Refresh offline records when pendingCount changes
+  useEffect(() => {
+    const refreshOfflineRecords = async () => {
+      const unsyncedRecords = await getUnsyncedNetCleaningRecords();
+      setOfflineRecords(unsyncedRecords);
+    };
+    refreshOfflineRecords();
+  }, [pendingCount]);
+
+  // Listen for sync completion and refresh all data
+  useEffect(() => {
+    const handleSyncComplete = async (event) => {
+      console.log('[NetCleaningRecords] Sync completed, refreshing data...', event.detail);
+      // Refresh all data from server and offline storage
+      await fetchData();
+    };
+
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+
+    return () => {
+      window.removeEventListener('offline-sync-complete', handleSyncComplete);
+    };
+  }, [fetchData]);
+
   const netsMap = useMemo(() => new Map(nets.map(n => [n.id, n])), [nets]);
   const farmSitesMap = useMemo(() => new Map(farmSites.map(fs => [fs.id, fs])), [farmSites]);
   const machinesMap = useMemo(() => new Map(machines.map(m => [m.id, m])), [machines]);
 
   const filteredRecords = useMemo(() => {
-    return records
+    // Combine online and offline records
+    const allRecords = [
+      ...records.map(r => ({ ...r, isPending: false })),
+      ...offlineRecords.map(r => ({ ...r, isPending: true }))
+    ];
+    
+    return allRecords
       .map(record => {
         const net = netsMap.get(record.net_id);
         const farmSite = net ? farmSitesMap.get(net.farm_site_id) : null;
@@ -73,11 +112,19 @@ const NetCleaningRecords = () => {
         if (filterNetId !== 'all' && record.net_id !== filterNetId) return false;
         if (filterFarmSiteId !== 'all' && record.farmSiteId !== filterFarmSiteId) return false;
         return true;
-      });
-  }, [records, netsMap, farmSitesMap, machinesMap, filterNetId, filterFarmSiteId]);
+      })
+      .sort((a, b) => new Date(b.start_time) - new Date(a.start_time)); // Sort by date, newest first
+  }, [records, offlineRecords, netsMap, farmSitesMap, machinesMap, filterNetId, filterFarmSiteId]);
 
-  const handleCreateOrUpdate = async (recordData) => {
+  const handleCreateOrUpdate = async (recordData, isOffline = false) => {
     try {
+      if (isOffline) {
+        // Offline save - just refresh the list
+        await fetchData();
+        closeModal();
+        return;
+      }
+      
       if (editingRecord) {
         await netCleaningRecordsService.updateCleaningRecord(editingRecord.id, recordData);
       } else {
@@ -125,7 +172,14 @@ const NetCleaningRecords = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">{t('netCleaning.records.title')}</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">{t('netCleaning.records.title')}</h1>
+          {offlineRecords.length > 0 && (
+            <p className="text-sm text-yellow-600 mt-1">
+              {t('netCleaning.records.pendingSync', { count: offlineRecords.length })}
+            </p>
+          )}
+        </div>
         <button
           onClick={() => openModal()}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
@@ -185,14 +239,20 @@ const NetCleaningRecords = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredRecords.map((record) => {
               const isIncomplete = record.status === 'in_progress';
+              const isPending = record.isPending;
               return (
-                <tr key={record.id} className={`hover:bg-gray-50 ${isIncomplete ? 'bg-yellow-50' : ''}`}>
+                <tr key={record.id} className={`hover:bg-gray-50 ${isIncomplete ? 'bg-yellow-50' : ''} ${isPending ? 'bg-blue-50' : ''}`}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center space-x-2">
                       <span>{new Date(record.start_time).toLocaleDateString()}</span>
                       {isIncomplete && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                           {t('netCleaning.records.inProgress')}
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          {t('netCleaning.records.pendingSync')}
                         </span>
                       )}
                     </div>
@@ -213,19 +273,28 @@ const NetCleaningRecords = () => {
                     {record.duration_minutes ? `${record.duration_minutes} ${t('netCleaning.records.min')}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => openModal(record)}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      {t('common.edit')}
-                    </button>
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(record.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        {t('common.delete')}
-                      </button>
+                    {!isPending && (
+                      <>
+                        <button
+                          onClick={() => openModal(record)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          {t('common.edit')}
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(record.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            {t('common.delete')}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {isPending && (
+                      <span className="text-gray-500 text-xs">
+                        {t('netCleaning.records.waitingSync')}
+                      </span>
                     )}
                   </td>
                 </tr>

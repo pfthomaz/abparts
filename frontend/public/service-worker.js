@@ -1,18 +1,35 @@
-// Service Worker for ABParts PWA
-// Provides offline capability detection, caching, and push notification support
+// ABParts Offline Service Worker
+// Enables offline functionality for field operations
 
-const CACHE_NAME = 'abparts-ai-assistant-v1';
-const AI_ASSISTANT_CACHE = 'abparts-ai-messages-v1';
+const CACHE_VERSION = 'abparts-offline-v1';
+const STATIC_CACHE = `${CACHE_VERSION}-static`;
+const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 
-// Assets to cache for offline functionality
+// Assets to cache immediately on install
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/static/css/main.css',
   '/static/js/main.js',
   '/manifest.json',
-  '/favicon.ico',
-  '/logo.png'
+  '/favicon.ico'
+];
+
+// API endpoints that should NEVER be cached (always fetch fresh)
+const NO_CACHE_PATTERNS = [
+  /\/api\/auth\//,
+  /\/api\/users\/me/,
+  /\/api\/.*\/sync/
+];
+
+// API endpoints that can be cached for offline use
+const CACHEABLE_API_PATTERNS = [
+  /\/api\/farm-sites/,
+  /\/api\/nets/,
+  /\/api\/machines/,
+  /\/api\/maintenance-protocols/,
+  /\/api\/parts/
 ];
 
 // Install event - cache static assets
@@ -20,22 +37,17 @@ self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
   
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
         console.log('[Service Worker] Caching static assets');
-        // Don't fail installation if some assets aren't available
-        return Promise.allSettled(
-          STATIC_ASSETS.map(url => 
-            cache.add(url).catch(err => {
-              console.warn(`[Service Worker] Failed to cache ${url}:`, err);
-            })
-          )
-        );
+        return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
         console.log('[Service Worker] Installation complete');
-        // Force the waiting service worker to become the active service worker
-        return self.skipWaiting();
+        return self.skipWaiting(); // Activate immediately
+      })
+      .catch((error) => {
+        console.error('[Service Worker] Installation failed:', error);
       })
   );
 });
@@ -50,8 +62,11 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              // Delete old caches
-              return cacheName !== CACHE_NAME && cacheName !== AI_ASSISTANT_CACHE;
+              // Delete old version caches
+              return cacheName.startsWith('abparts-offline-') && 
+                     cacheName !== STATIC_CACHE &&
+                     cacheName !== DYNAMIC_CACHE &&
+                     cacheName !== IMAGE_CACHE;
             })
             .map((cacheName) => {
               console.log('[Service Worker] Deleting old cache:', cacheName);
@@ -61,214 +76,145 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         console.log('[Service Worker] Activation complete');
-        // Take control of all pages immediately
-        return self.clients.claim();
+        return self.clients.claim(); // Take control immediately
       })
   );
 });
 
-// Fetch event - serve from cache when offline, with network-first strategy for API calls
+// Fetch event - handle network requests with caching strategies
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
-  // Skip cross-origin requests
-  if (url.origin !== location.origin) {
-    return;
-  }
-  
-  // Network-first strategy for ALL API calls - NEVER cache user data
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // For AI Assistant, cache successful GET requests
-          if (url.pathname.startsWith('/api/ai/') && request.method === 'GET' && response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(AI_ASSISTANT_CACHE).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          
-          return response;
-        })
-        .catch((error) => {
-          console.log('[Service Worker] Network request failed:', error);
-          
-          // Only try cache for AI Assistant endpoints
-          if (url.pathname.startsWith('/api/ai/')) {
-            return caches.match(request).then((cachedResponse) => {
-              if (cachedResponse) {
-                console.log('[Service Worker] Serving from cache:', request.url);
-                return cachedResponse;
-              }
-              
-              // Return offline response for AI Assistant
-              return new Response(
-                JSON.stringify({
-                  error: 'offline',
-                  message: 'You are currently offline. Please check your internet connection.',
-                  offline: true
-                }),
-                {
-                  status: 503,
-                  statusText: 'Service Unavailable',
-                  headers: { 'Content-Type': 'application/json' }
-                }
-              );
-            });
-          }
-          
-          // For other API calls, just throw the error
-          throw error;
-        })
-    );
-    return;
-  }
-  
-  // Cache-first strategy for static assets
-  event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          // Return cached version and update cache in background
-          fetch(request).then((response) => {
-            if (response.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, response);
-              });
-            }
-          }).catch(() => {
-            // Ignore network errors for background updates
-          });
-          
-          return cachedResponse;
-        }
-        
-        // Not in cache, fetch from network
-        return fetch(request)
-          .then((response) => {
-            // Cache successful responses
-            if (response.status === 200) {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseClone);
-              });
-            }
-            
-            return response;
-          })
-          .catch((error) => {
-            console.log('[Service Worker] Fetch failed:', error);
-            
-            // Return offline page for navigation requests
-            if (request.mode === 'navigate') {
-              return caches.match('/index.html');
-            }
-            
-            throw error;
-          });
-      })
-  );
-});
 
-// Push notification event
-self.addEventListener('push', (event) => {
-  console.log('[Service Worker] Push notification received');
-  
-  let notificationData = {
-    title: 'ABParts AI Assistant',
-    body: 'You have a new message',
-    icon: '/logo.png',
-    badge: '/favicon.ico',
-    tag: 'ai-assistant-notification',
-    requireInteraction: false,
-    data: {
-      url: '/'
+  // Skip non-GET requests (POST, PUT, DELETE handled by sync queue)
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Skip chrome extensions and other protocols
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Check if this is an API request
+  const isApiRequest = url.pathname.startsWith('/api/');
+
+  if (isApiRequest) {
+    // Check if API should never be cached
+    const shouldNotCache = NO_CACHE_PATTERNS.some(pattern => pattern.test(url.pathname));
+    
+    if (shouldNotCache) {
+      // Network only - no caching
+      event.respondWith(fetch(request));
+      return;
     }
-  };
-  
-  // Parse push data if available
-  if (event.data) {
-    try {
-      const data = event.data.json();
-      notificationData = {
-        ...notificationData,
-        ...data
-      };
-    } catch (e) {
-      console.error('[Service Worker] Error parsing push data:', e);
-    }
-  }
-  
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      requireInteraction: notificationData.requireInteraction,
-      data: notificationData.data,
-      vibrate: [200, 100, 200],
-      actions: [
-        {
-          action: 'open',
-          title: 'Open'
-        },
-        {
-          action: 'close',
-          title: 'Close'
-        }
-      ]
-    })
-  );
-});
 
-// Notification click event
-self.addEventListener('notificationclick', (event) => {
-  console.log('[Service Worker] Notification clicked');
-  
-  event.notification.close();
-  
-  if (event.action === 'close') {
+    // Check if API can be cached
+    const isCacheable = CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname));
+    
+    if (isCacheable) {
+      // Network first, fallback to cache (for offline)
+      event.respondWith(networkFirstStrategy(request, DYNAMIC_CACHE));
+      return;
+    }
+
+    // Default for other API requests - network only
+    event.respondWith(fetch(request));
     return;
   }
-  
-  // Open or focus the app
-  const urlToOpen = event.notification.data?.url || '/';
-  
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Check if there's already a window open
-        for (const client of clientList) {
-          if (client.url === urlToOpen && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        
-        // Open new window if none exists
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
-      })
-  );
+
+  // Handle image requests
+  if (request.destination === 'image') {
+    event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE));
+    return;
+  }
+
+  // Handle static assets (JS, CSS, fonts)
+  if (url.pathname.startsWith('/static/')) {
+    event.respondWith(cacheFirstStrategy(request, STATIC_CACHE));
+    return;
+  }
+
+  // Default strategy for other requests
+  event.respondWith(networkFirstStrategy(request, DYNAMIC_CACHE));
 });
 
-// Message event - handle messages from the app
+// Network First Strategy - try network, fallback to cache
+async function networkFirstStrategy(request, cacheName) {
+  try {
+    // Try to fetch from network
+    const networkResponse = await fetch(request);
+    
+    // If successful, update cache and return response
+    if (networkResponse && networkResponse.status === 200) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    // Network failed, try cache
+    console.log('[Service Worker] Network failed, trying cache:', request.url);
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      console.log('[Service Worker] Serving from cache:', request.url);
+      return cachedResponse;
+    }
+    
+    // No cache available, return offline page or error
+    console.error('[Service Worker] No cache available for:', request.url);
+    
+    // For HTML requests, could return offline page
+    if (request.destination === 'document') {
+      return new Response(
+        '<html><body><h1>Offline</h1><p>You are currently offline. Please check your connection.</p></body></html>',
+        { headers: { 'Content-Type': 'text/html' } }
+      );
+    }
+    
+    // For other requests, return error
+    return new Response('Network error', {
+      status: 408,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+}
+
+// Cache First Strategy - try cache, fallback to network
+async function cacheFirstStrategy(request, cacheName) {
+  // Try cache first
+  const cachedResponse = await caches.match(request);
+  
+  if (cachedResponse) {
+    console.log('[Service Worker] Serving from cache:', request.url);
+    return cachedResponse;
+  }
+  
+  // Cache miss, fetch from network
+  try {
+    const networkResponse = await fetch(request);
+    
+    // Cache the response for future use
+    if (networkResponse && networkResponse.status === 200) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.error('[Service Worker] Network and cache failed:', request.url);
+    return new Response('Resource not available', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+}
+
+// Listen for messages from the app
 self.addEventListener('message', (event) => {
-  console.log('[Service Worker] Message received:', event.data);
-  
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'CACHE_URLS') {
-    event.waitUntil(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.addAll(event.data.urls);
-      })
-    );
   }
   
   if (event.data && event.data.type === 'CLEAR_CACHE') {
@@ -282,23 +228,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Background sync event (for queued messages when coming back online)
-self.addEventListener('sync', (event) => {
-  console.log('[Service Worker] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-ai-messages') {
-    event.waitUntil(
-      // Notify the app to sync queued messages
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'SYNC_MESSAGES',
-            timestamp: Date.now()
-          });
-        });
-      })
-    );
-  }
-});
-
-console.log('[Service Worker] Loaded');
+console.log('[Service Worker] Loaded and ready');

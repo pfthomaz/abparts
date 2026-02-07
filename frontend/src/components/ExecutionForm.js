@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { useOffline } from '../contexts/OfflineContext';
 import { 
   getLocalizedChecklistItems, 
   createExecution, 
   completeChecklistItem,
   completeExecution
 } from '../services/maintenanceProtocolsService';
+import {
+  saveOfflineMaintenanceExecution,
+  updateOfflineExecutionCompletion
+} from '../db/indexedDB';
+import { queueMaintenanceExecution } from '../services/syncQueueManager';
 
 const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete, onCancel }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { isOnline } = useOffline();
   const [checklistItems, setChecklistItems] = useState([]);
   const [executionId, setExecutionId] = useState(existingExecution?.id || null);
+  const [isOfflineExecution, setIsOfflineExecution] = useState(false);
   const [completedItems, setCompletedItems] = useState({});
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);  // Start as false, will be set to true when starting execution
@@ -82,7 +90,48 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       console.log('Loaded localized checklist items:', items);
       setChecklistItems(items);
 
-      // Create execution record
+      if (!isOnline) {
+        // OFFLINE MODE - Save to IndexedDB
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        const offlineExecution = {
+          tempId,
+          protocol_id: protocol.id,
+          machine_id: machine.id,
+          machine_hours_at_service: hours > 0 ? hours : null,
+          status: 'in_progress',
+          checklist_completions: [],
+          created_at: new Date().toISOString(),
+          synced: false,
+          organization_id: user.organization_id,
+          // Store protocol and machine info for display
+          protocol: {
+            id: protocol.id,
+            name: protocol.name,
+            protocol_type: protocol.protocol_type
+          },
+          machine: {
+            id: machine.id,
+            name: machine.name,
+            serial_number: machine.serial_number
+          }
+        };
+        
+        // Save to IndexedDB
+        await saveOfflineMaintenanceExecution(offlineExecution);
+        
+        // NOTE: Do NOT queue in syncQueue - maintenance executions are synced
+        // directly from the maintenanceExecutions store to avoid duplicates
+        
+        setExecutionId(tempId);
+        setIsOfflineExecution(true);
+        setShowHoursInput(false);
+        
+        alert(t('maintenance.savedOffline') || 'Maintenance saved offline. Will sync when connection restored.');
+        return;
+      }
+
+      // ONLINE MODE - Create execution record
       const executionData = {
         protocol_id: protocol.id,
         machine_id: machine.id,
@@ -100,6 +149,7 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       console.log('Execution created:', execution);
       
       setExecutionId(execution.id);
+      setIsOfflineExecution(false);
       setShowHoursInput(false);
     } catch (err) {
       console.error('Error initializing execution:', err);
@@ -126,6 +176,34 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
   const handleItemComplete = async (item, itemData) => {
     if (!executionId) return;
 
+    if (isOfflineExecution || !isOnline) {
+      // OFFLINE MODE - Save to IndexedDB
+      try {
+        const completion = {
+          checklist_item_id: item.id,
+          status: itemData.completed ? 'completed' : 'skipped',
+          notes: itemData.notes || null,
+          actual_quantity_used: itemData.quantity ? parseFloat(itemData.quantity) : null,
+          completed_at: new Date().toISOString()
+        };
+        
+        // Update offline execution in IndexedDB
+        await updateOfflineExecutionCompletion(executionId, completion);
+        
+        setCompletedItems(prev => ({
+          ...prev,
+          [item.id]: { ...itemData, saved: true }
+        }));
+        
+        console.log('[ExecutionForm] Saved checklist item offline:', item.id);
+      } catch (err) {
+        console.error('[ExecutionForm] Failed to save item offline:', err);
+        alert(t('maintenance.failedToSaveItem', { error: err.message }));
+      }
+      return;
+    }
+
+    // ONLINE MODE
     try {
       await completeChecklistItem(executionId, item.id, {
         status: itemData.completed ? 'completed' : 'skipped',
@@ -193,6 +271,36 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       return;
     }
 
+    if (isOfflineExecution || !isOnline) {
+      // OFFLINE MODE - Mark as completed in IndexedDB
+      try {
+        setSaving(true);
+        
+        // Update execution status to completed
+        const db = await import('../db/indexedDB').then(m => m.getDB());
+        const execution = await db.get('maintenanceExecutions', executionId);
+        
+        if (execution) {
+          execution.status = 'completed';
+          execution.completed_at = new Date().toISOString();
+          await db.put('maintenanceExecutions', execution);
+        }
+        
+        // Show success toast
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          setShowSuccessToast(false);
+          onComplete();
+        }, 3000);
+      } catch (err) {
+        alert(t('maintenance.failedToCompleteExecution', { error: err.message }));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    // ONLINE MODE
     try {
       setSaving(true);
       await completeExecution(executionId);
@@ -281,6 +389,24 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
 
   return (
     <div className="space-y-6">
+      {/* Offline Warning Banner */}
+      {!isOnline && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                {t('maintenance.offlineMode')} - {t('maintenance.offlineModeHelp')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-start mb-4">

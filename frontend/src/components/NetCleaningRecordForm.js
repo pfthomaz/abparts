@@ -3,10 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuth } from '../AuthContext';
+import { useOffline } from '../contexts/OfflineContext';
+import { 
+  saveOfflineNetCleaningRecord, 
+  saveOfflineNetCleaningPhoto,
+  cacheData,
+  getCachedItemsByIndex,
+  STORES
+} from '../db/indexedDB';
+import { queueNetCleaningRecord, queueNetCleaningPhoto } from '../services/syncQueueManager';
 
 const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, onCancel }) => {
   const { t } = useTranslation();
   const { user, token } = useAuth();
+  const { isOnline } = useOffline();
   const [formData, setFormData] = useState({
     net_id: record?.net_id || '',
     machine_id: record?.machine_id || '',
@@ -24,6 +34,8 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState([]);
+  const [photoPreview, setPhotoPreview] = useState([]);
 
   // Set initial farm site if editing
   useEffect(() => {
@@ -56,6 +68,26 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
         return;
       }
       
+      // If offline, load from cache
+      if (!isOnline) {
+        console.log('[NetCleaningRecordForm] Loading users from cache (offline)...');
+        try {
+          const cachedUsers = await getCachedItemsByIndex(
+            STORES.USERS, 
+            'organization_id', 
+            targetOrganizationId
+          );
+          const activeUsers = cachedUsers.filter(u => u.is_active);
+          setOrganizationUsers(activeUsers);
+          console.log(`[NetCleaningRecordForm] Loaded ${activeUsers.length} users from cache`);
+        } catch (err) {
+          console.error('[NetCleaningRecordForm] Error loading cached users:', err);
+          setOrganizationUsers([]);
+        }
+        return;
+      }
+      
+      // Online - fetch from API
       setLoadingUsers(true);
       try {
         const response = await fetch(
@@ -76,6 +108,10 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
         // Filter to only active users
         const activeUsers = users.filter(u => u.is_active);
         setOrganizationUsers(activeUsers);
+        
+        // Cache users for offline use
+        console.log(`[NetCleaningRecordForm] Caching ${activeUsers.length} users for offline use...`);
+        await cacheData(STORES.USERS, activeUsers);
       } catch (err) {
         console.error('Error fetching organization users:', err);
         setOrganizationUsers([]);
@@ -85,7 +121,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
     };
 
     fetchOrganizationUsers();
-  }, [selectedFarmSiteId, farmSites, token]);
+  }, [selectedFarmSiteId, farmSites, token, isOnline]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -109,6 +145,25 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
       depth_2: mode < 2 ? '' : prev.depth_2,
       depth_3: mode < 3 ? '' : prev.depth_3,
     }));
+  };
+
+  const handlePhotoChange = (e) => {
+    const files = Array.from(e.target.files);
+    setPhotos(prevPhotos => [...prevPhotos, ...files]);
+    
+    // Create preview URLs
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (index) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreview(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -146,8 +201,69 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
     };
 
     try {
-      await onSubmit(submitData);
+      // If offline, save to IndexedDB
+      if (!isOnline) {
+        console.log('[NetCleaningRecordForm] Saving offline...');
+        
+        // Generate temporary ID
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Add metadata for offline record
+        const offlineRecord = {
+          ...submitData,
+          id: tempId,
+          created_at: new Date().toISOString(),
+          synced: false,
+          organization_id: user.organization_id,
+        };
+        
+        // Save record to IndexedDB
+        await saveOfflineNetCleaningRecord(offlineRecord);
+        
+        // Queue for sync
+        await queueNetCleaningRecord(offlineRecord);
+        
+        // Save photos if any
+        if (photos.length > 0) {
+          console.log(`[NetCleaningRecordForm] Saving ${photos.length} photos offline...`);
+          for (let i = 0; i < photos.length; i++) {
+            const photo = photos[i];
+            const photoTempId = `temp_photo_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Convert file to base64
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(photo);
+            });
+            
+            const photoData = {
+              id: photoTempId,
+              record_id: tempId,
+              photo_data: base64,
+              filename: photo.name,
+              created_at: new Date().toISOString(),
+              synced: false,
+            };
+            
+            await saveOfflineNetCleaningPhoto(photoData);
+            await queueNetCleaningPhoto(photoData);
+          }
+        }
+        
+        // Show success message
+        alert(t('netCleaning.records.savedOffline'));
+        
+        // Call onSubmit to refresh the list
+        if (onSubmit) {
+          await onSubmit(submitData, true); // Pass true to indicate offline save
+        }
+      } else {
+        // Online - submit normally
+        await onSubmit(submitData);
+      }
     } catch (err) {
+      console.error('[NetCleaningRecordForm] Error saving:', err);
       setError(err.message || t('netCleaning.records.failedToSave'));
       setSubmitting(false);
     }
@@ -243,6 +359,11 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
             </option>
           ))}
         </select>
+        {!isOnline && organizationUsers.length === 0 && selectedFarmSiteId && (
+          <p className="text-xs text-yellow-600 mt-1">
+            {t('netCleaning.records.noUsersOffline')}
+          </p>
+        )}
       </div>
 
       <div>
@@ -360,6 +481,64 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
           placeholder={t('netCleaning.records.notesPlaceholder')}
         />
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('netCleaning.records.photos')} <span className="text-gray-500 text-xs">({t('netCleaning.records.optional')})</span>
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          capture="environment"
+          onChange={handlePhotoChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {isOnline 
+            ? t('netCleaning.records.photosHelp') 
+            : t('netCleaning.records.photosOfflineHelp')}
+        </p>
+        
+        {photoPreview.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {photoPreview.map((preview, index) => (
+              <div key={index} className="relative">
+                <img 
+                  src={preview} 
+                  alt={`Preview ${index + 1}`} 
+                  className="w-full h-24 object-cover rounded border"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(index)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!isOnline && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-800">
+                {t('netCleaning.records.offlineMode')}
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                {t('netCleaning.records.offlineModeHelp')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3 pt-4">
         <button

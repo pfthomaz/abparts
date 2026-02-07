@@ -102,7 +102,9 @@
     "nets": "Δίχτυα",
     "netsDescription": "Διαχείριση διχτυών και κλωβών",
     "netCleaningRecords": "Αρχεία Καθαρισμού Διχτυών",
-    "netCleaningRecordsDescription": "Παρακολούθηση λειτουργιών καθαρισμού διχτυών"
+    "netCleaningRecordsDescription": "Παρακολούθηση λειτουργιών καθαρισμού διχτυών",
+    "syncStatus": "Κατάσταση Συγχρονισμού",
+    "syncStatusDescription": "Προβολή κατάστασης συγχρονισμού δεδομένων εκτός σύνδεσης"
   },
   "auth": {
     "login": "Σύνδεση",
@@ -734,7 +736,14 @@
     "complete": "ολοκληρώθηκε",
     "confirmDeleteExecution": "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτήν την εκτέλεση συντήρησης; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.",
     "executionDeletedSuccessfully": "Η εκτέλεση συντήρησης διαγράφηκε με επιτυχία",
-    "failedToDeleteExecution": "Αποτυχία διαγραφής εκτέλεσης συντήρησης"
+    "failedToDeleteExecution": "Αποτυχία διαγραφής εκτέλεσης συντήρησης",
+    "offlineMode": "Λειτουργία Εκτός Σύνδεσης",
+    "offlineModeHelp": "Είστε εκτός σύνδεσης. Η συντήρηση θα αποθηκευτεί τοπικά και θα συγχρονιστεί όταν αποκατασταθεί η σύνδεση.",
+    "savedOffline": "Η συντήρηση αποθηκεύτηκε εκτός σύνδεσης. Θα συγχρονιστεί όταν αποκατασταθεί η σύνδεση.",
+    "pendingSync": "{{count}} εκτέλεση(-εις) συντήρησης σε αναμονή συγχρονισμού",
+    "pendingSyncMessage": "Αυτές οι εκτελέσεις συντήρησης καταγράφηκαν εκτός σύνδεσης και θα συγχρονιστούν όταν αποκατασταθεί η σύνδεση.",
+    "waitingSync": "Αναμονή συγχρονισμού",
+    "syncingExecution": "Συγχρονισμός εκτέλεσης συντήρησης..."
   },
   "dashboard": {
     "welcomeBack": "Καλώς ήρθες πίσω, {{name}}!",
@@ -1632,7 +1641,8 @@
         "medium": "Μέση - Κανονική προτεραιότητα",
         "high": "Υψηλή - Επείγον",
         "urgent": "Επείγον - Κρίσιμο πρόβλημα"
-      }
+      },
+      "escalateButton": "Δημιουργία Δελτίου Υποστήριξης"
     },
     "session": {
       "newSession": "Νέα Συνεδρία",
@@ -1689,6 +1699,40 @@
     },
     "notifications": {
       "newMessage": "Νέο Μήνυμα Βοηθού AI"
+    },
+    "common": {
+      "cancel": "Ακύρωση",
+      "save": "Αποθήκευση",
+      "delete": "Διαγραφή",
+      "edit": "Επεξεργασία",
+      "add": "Προσθήκη",
+      "remove": "Αφαίρεση",
+      "confirm": "Επιβεβαίωση",
+      "close": "Κλείσιμο",
+      "submit": "Υποβολή",
+      "loading": "Φόρτωση...",
+      "error": "Σφάλμα",
+      "success": "Επιτυχία",
+      "warning": "Προειδοποίηση",
+      "info": "Πληροφορίες"
+    },
+    "expertKnowledge": {
+      "add_title": "Add Expert Knowledge",
+      "problem_description": "Problem Description",
+      "solution": "Solution",
+      "machine_version": "Machine Version",
+      "tags": "Tags",
+      "common_tags": "Common Tags",
+      "custom_tag_placeholder": "Enter custom tag",
+      "add_tag": "Add",
+      "selected_tags": "Selected Tags",
+      "all_versions": "All Versions",
+      "problem_placeholder": "Describe the problem that was encountered...",
+      "solution_placeholder": "Provide the step-by-step solution...",
+      "submit": "Submit Knowledge",
+      "submitting": "Submitting...",
+      "success": "Expert knowledge added successfully",
+      "error": "Failed to add expert knowledge"
     }
   },
   "protocolForm": {
@@ -2097,7 +2141,17 @@
       "endTimeAfterStart": "Η ώρα λήξης πρέπει να είναι μετά την ώρα έναρξης.",
       "required": "*",
       "selectOperator": "Επιλέξτε χειριστή",
-      "selectFarmSiteFirst": "Επιλέξτε πρώτα μια τοποθεσία φάρμας"
+      "selectFarmSiteFirst": "Επιλέξτε πρώτα μια τοποθεσία φάρμας",
+      "photos": "Φωτογραφίες",
+      "photosHelp": "Τραβήξτε φωτογραφίες της διαδικασίας καθαρισμού",
+      "photosOfflineHelp": "Οι φωτογραφίες θα αποθηκευτούν εκτός σύνδεσης και θα συγχρονιστούν όταν αποκατασταθεί η σύνδεση",
+      "offlineMode": "Λειτουργία Εκτός Σύνδεσης",
+      "offlineModeHelp": "Αυτή η εγγραφή θα αποθηκευτεί εκτός σύνδεσης και θα συγχρονιστεί αυτόματα όταν επιστρέψετε σε σύνδεση",
+      "savedOffline": "Η εγγραφή αποθηκεύτηκε εκτός σύνδεσης. Θα συγχρονιστεί όταν αποκατασταθεί η σύνδεση.",
+      "pendingSync": "Αναμονή Συγχρονισμού",
+      "waitingSync": "Αναμονή συγχρονισμού",
+      "noUsersOffline": "No users cached for offline use. Go online first to load users.",
+      "enterOperatorName": "Enter operator name"
     }
   },
   "fab": {
@@ -2160,6 +2214,75 @@
       "title": "Διαθέσιμη Ενημέρωση",
       "description": "Μια νέα έκδοση του ABParts είναι διαθέσιμη. Επαναφορτώστε για ενημέρωση.",
       "reload": "Επαναφόρτωση Τώρα"
+    }
+  },
+  "offline": {
+    "title": "Λειτουργία Εκτός Σύνδεσης",
+    "message": "Αυτή τη στιγμή είστε εκτός σύνδεσης",
+    "pendingOperations": "{count} λειτουργίες σε αναμονή συγχρονισμού",
+    "syncing": "Συγχρονισμός...",
+    "syncComplete": "Ο συγχρονισμός ολοκληρώθηκε",
+    "backOnline": "Επιστροφή σε σύνδεση",
+    "duration": "Εκτός σύνδεσης για {duration}",
+    "indicator": {
+      "title": "Offline Mode",
+      "message": "Working offline - data will sync when connection is restored",
+      "pending": "pending",
+      "syncing": "Syncing...",
+      "syncingMessage": "Uploading offline data",
+      "remaining": "remaining",
+      "backOnline": "Back Online",
+      "wasOffline": "Was offline for",
+      "offline": "Offline"
+    }
+  },
+  "syncStatus": {
+    "title": "Κατάσταση Συγχρονισμού",
+    "syncNow": "Συγχρονισμός Τώρα",
+    "syncing": "Συγχρονισμός...",
+    "connectionStatus": "Κατάσταση Σύνδεσης",
+    "online": "Σε Σύνδεση",
+    "offline": "Εκτός Σύνδεσης",
+    "pendingOperations": "Λειτουργίες σε Αναμονή",
+    "lastSync": "Τελευταίος Συγχρονισμός",
+    "never": "Ποτέ",
+    "storageUsage": "Χρήση Αποθήκευσης",
+    "used": "Χρησιμοποιείται",
+    "quota": "Όριο",
+    "syncError": "Σφάλμα Συγχρονισμού",
+    "queueStatistics": "Στατιστικά Ουράς",
+    "total": "Σύνολο",
+    "pending": "Σε Αναμονή",
+    "failed": "Απέτυχε",
+    "failedOperations": "Αποτυχημένες Λειτουργίες",
+    "attempts": "Προσπάθειες",
+    "retry": "Επανάληψη",
+    "remove": "Αφαίρεση",
+    "confirmRemove": "Είστε βέβαιοι ότι θέλετε να αφαιρέσετε αυτή τη λειτουργία;",
+    "type": "Τύπος",
+    "status": "Κατάσταση",
+    "priority": "Προτεραιότητα",
+    "created": "Δημιουργήθηκε",
+    "offlineRecords": "Εγγραφές Εκτός Σύνδεσης",
+    "offlineRecordsHelp": "Αυτές οι εγγραφές δημιουργήθηκαν εκτός σύνδεσης και περιμένουν συγχρονισμό",
+    "netCleaningRecord": "Εγγραφή Καθαρισμού Δικτύου",
+    "operator": "Χειριστής",
+    "mode": "Λειτουργία",
+    "waitingSync": "Αναμονή συγχρονισμού",
+    "allSynced": "Όλα Συγχρονισμένα!",
+    "allSyncedHelp": "Όλα τα δεδομένα εκτός σύνδεσης έχουν συγχρονιστεί",
+    "types": {
+      "netCleaningRecord": "Εγγραφή Καθαρισμού Δικτύου",
+      "netCleaningPhoto": "Φωτογραφία",
+      "maintenanceExecution": "Εκτέλεση Συντήρησης",
+      "machineHours": "Ώρες Μηχανής",
+      "stockAdjustment": "Προσαρμογή Αποθέματος"
+    },
+    "statuses": {
+      "pending": "Σε Αναμονή",
+      "syncing": "Συγχρονισμός",
+      "completed": "Ολοκληρώθηκε",
+      "failed": "Απέτυχε"
     }
   }
 }

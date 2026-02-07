@@ -102,7 +102,9 @@
     "nets": "Nets",
     "netsDescription": "Manage nets and cages",
     "netCleaningRecords": "Net Cleaning Records",
-    "netCleaningRecordsDescription": "Track net cleaning operations"
+    "netCleaningRecordsDescription": "Track net cleaning operations",
+    "syncStatus": "Sync Status",
+    "syncStatusDescription": "View offline data synchronization status"
   },
   "auth": {
     "login": "Login",
@@ -734,7 +736,14 @@
     "complete": "complete",
     "confirmDeleteExecution": "Are you sure you want to delete this maintenance execution? This action cannot be undone.",
     "executionDeletedSuccessfully": "Maintenance execution deleted successfully",
-    "failedToDeleteExecution": "Failed to delete maintenance execution"
+    "failedToDeleteExecution": "Failed to delete maintenance execution",
+    "offlineMode": "Offline Mode",
+    "offlineModeHelp": "You are offline. Maintenance will be saved locally and synced when connection is restored.",
+    "savedOffline": "Maintenance saved offline. Will sync when connection restored.",
+    "pendingSync": "{{count}} maintenance execution(s) pending sync",
+    "pendingSyncMessage": "These maintenance executions were recorded offline and will sync when connection is restored.",
+    "waitingSync": "Waiting to sync",
+    "syncingExecution": "Syncing maintenance execution..."
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {{name}}!",
@@ -2108,6 +2117,8 @@
       "operatorPlaceholder": "e.g., John Doe",
       "selectOperator": "Select operator",
       "selectFarmSiteFirst": "Select a farm site first",
+      "noUsersOffline": "No users cached for offline use. Go online first to load users.",
+      "enterOperatorName": "Enter operator name",
       "cleaningMode": "Cleaning Mode",
       "mode1": "Mode 1 (1 depth)",
       "mode2": "Mode 2 (2 depths)",
@@ -2129,7 +2140,15 @@
       "cancel": "Cancel",
       "failedToSave": "Failed to save cleaning record.",
       "endTimeAfterStart": "End time must be after start time.",
-      "required": "*"
+      "required": "*",
+      "photos": "Photos",
+      "photosHelp": "Take photos of the cleaning process",
+      "photosOfflineHelp": "Photos will be stored offline and synced when connection is restored",
+      "offlineMode": "Offline Mode",
+      "offlineModeHelp": "This record will be saved offline and synced automatically when you're back online",
+      "savedOffline": "Record saved offline. It will sync when connection is restored.",
+      "pendingSync": "Pending Sync",
+      "waitingSync": "Waiting to sync"
     }
   },
   "fab": {
@@ -2192,6 +2211,75 @@
       "title": "Update Available",
       "description": "A new version of ABParts is available. Reload to update.",
       "reload": "Reload Now"
+    }
+  },
+  "offline": {
+    "title": "Offline Mode",
+    "message": "You are currently offline",
+    "pendingOperations": "{count} operations pending sync",
+    "syncing": "Syncing...",
+    "syncComplete": "Sync complete",
+    "backOnline": "Back online",
+    "duration": "Offline for {duration}",
+    "indicator": {
+      "title": "Offline Mode",
+      "message": "Working offline - data will sync when connection is restored",
+      "pending": "pending",
+      "syncing": "Syncing...",
+      "syncingMessage": "Uploading offline data",
+      "remaining": "remaining",
+      "backOnline": "Back Online",
+      "wasOffline": "Was offline for",
+      "offline": "Offline"
+    }
+  },
+  "syncStatus": {
+    "title": "Sync Status",
+    "syncNow": "Sync Now",
+    "syncing": "Syncing...",
+    "connectionStatus": "Connection Status",
+    "online": "Online",
+    "offline": "Offline",
+    "pendingOperations": "Pending Operations",
+    "lastSync": "Last Sync",
+    "never": "Never",
+    "storageUsage": "Storage Usage",
+    "used": "Used",
+    "quota": "Quota",
+    "syncError": "Sync Error",
+    "queueStatistics": "Queue Statistics",
+    "total": "Total",
+    "pending": "Pending",
+    "failed": "Failed",
+    "failedOperations": "Failed Operations",
+    "attempts": "Attempts",
+    "retry": "Retry",
+    "remove": "Remove",
+    "confirmRemove": "Are you sure you want to remove this operation?",
+    "type": "Type",
+    "status": "Status",
+    "priority": "Priority",
+    "created": "Created",
+    "offlineRecords": "Offline Records",
+    "offlineRecordsHelp": "These records were created offline and are waiting to sync",
+    "netCleaningRecord": "Net Cleaning Record",
+    "operator": "Operator",
+    "mode": "Mode",
+    "waitingSync": "Waiting to sync",
+    "allSynced": "All Synced!",
+    "allSyncedHelp": "All offline data has been synchronized",
+    "types": {
+      "netCleaningRecord": "Net Cleaning Record",
+      "netCleaningPhoto": "Photo",
+      "maintenanceExecution": "Maintenance Execution",
+      "machineHours": "Machine Hours",
+      "stockAdjustment": "Stock Adjustment"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "syncing": "Syncing",
+      "completed": "Completed",
+      "failed": "Failed"
     }
   }
 }

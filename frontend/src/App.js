@@ -11,6 +11,7 @@ import './index.css'; // Import Tailwind CSS base styles
 import { useAuth } from './AuthContext'; // Import useAuth hook
 import { LocalizationProvider } from './contexts/LocalizationContext'; // Import LocalizationProvider
 import { TourProvider } from './contexts/TourContext'; // Import TourProvider
+import { OfflineProvider } from './contexts/OfflineContext'; // Import OfflineProvider for offline mode
 import LoginForm from './components/LoginForm'; // Import LoginForm component
 import GuidedTour from './components/GuidedTour'; // Import GuidedTour component
 import Layout from './components/Layout'; // Import Layout component
@@ -40,6 +41,7 @@ import FieldOperationsDashboard from './pages/FieldOperationsDashboard'; // New:
 import FarmSites from './pages/FarmSites'; // New: Import FarmSites page
 import Nets from './pages/Nets'; // New: Import Nets page
 import NetCleaningRecords from './pages/NetCleaningRecords'; // New: Import NetCleaningRecords page
+import SyncStatus from './pages/SyncStatus'; // New: Import SyncStatus page for offline mode
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
 import OfflineIndicator from './components/OfflineIndicator'; // New: Import OfflineIndicator for PWA
@@ -110,11 +112,12 @@ function App() {
   return (
     <TourProvider>
       <LocalizationProvider>
-        <Router>
-          {/* PWA Components - Offline indicator, install prompt, and update notification */}
-          <OfflineIndicator />
-          <PWAInstallPrompt />
-          <PWAUpdateNotification />
+        <OfflineProvider>
+          <Router>
+            {/* PWA Components - Offline indicator, install prompt, and update notification */}
+            <OfflineIndicator />
+            <PWAInstallPrompt />
+            <PWAUpdateNotification />
           
           {/* Global session timeout warning - only shows when user is authenticated */}
           {token && <SessionTimeoutWarning />}
@@ -449,6 +452,22 @@ function App() {
               }
             />
             <Route
+              path="sync-status"
+              element={
+                <PermissionErrorBoundary
+                  feature="Sync Status"
+                  requiredRole="user"
+                >
+                  <ProtectedRoute
+                    requiredRole="user"
+                    feature="Sync Status"
+                  >
+                    <SyncStatus />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
               path="transactions"
               element={
                 <PermissionErrorBoundary
@@ -503,6 +522,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+        </OfflineProvider>
       </LocalizationProvider>
     </TourProvider>
   );

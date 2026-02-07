@@ -8,14 +8,17 @@ import PermissionGuard from './PermissionGuard';
 import OrganizationScopeIndicator from './OrganizationScopeIndicator';
 import MobileNavigation from './MobileNavigation';
 import OfflineStatusIndicator from './OfflineStatusIndicator';
+import OfflineIndicator from './OfflineIndicator';
 import TourButton from './TourButton';
 import ChatWidget from './ChatWidget';
 import FloatingActionButton from './FloatingActionButton';
 import { useTranslation } from '../hooks/useTranslation';
+import { useOffline } from '../contexts/OfflineContext';
 
 const Layout = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const { pendingCount } = useOffline(); // Get pending count from OfflineContext
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showChatWidget, setShowChatWidget] = useState(false);
@@ -368,8 +371,8 @@ const Layout = () => {
         </div>
       )}
 
-      {/* Offline Status Indicator */}
-      <OfflineStatusIndicator />
+      {/* Offline Status Indicator - New offline mode implementation */}
+      <OfflineIndicator showWhenOnline={false} pendingCount={pendingCount} />
 
       <main className="max-w-7xl mx-auto px-4 py-4 pb-20 lg:pb-4">
         <Outlet />

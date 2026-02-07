@@ -1,7 +1,7 @@
 {
   "short_name": "ABParts",
-  "name": "ABParts Inventory Management",
-  "description": "Intelligent parts management for AutoBoss net cleaners",
+  "name": "ABParts - AutoBoss Parts Management",
+  "description": "Inventory and maintenance management for AutoBoss net cleaner parts",
   "icons": [
     {
       "src": "favicon.ico",
@@ -9,24 +9,85 @@
       "type": "image/x-icon"
     },
     {
-      "src": "favicon/sizes/logo192.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "favicon/sizes/logo512.png",
+      "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
-  "orientation": "portrait",
   "theme_color": "#2563eb",
   "background_color": "#ffffff",
+  "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["business", "productivity"],
-  "prefer_related_applications": false
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "screenshot-mobile.png",
+      "type": "image/png",
+      "sizes": "540x720",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "screenshot-desktop.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Net Cleaning",
+      "short_name": "Net Cleaning",
+      "description": "Record net cleaning operations",
+      "url": "/net-cleaning-records",
+      "icons": [
+        {
+          "src": "favicon.ico",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Maintenance",
+      "short_name": "Maintenance",
+      "description": "View maintenance protocols",
+      "url": "/maintenance-protocols",
+      "icons": [
+        {
+          "src": "favicon.ico",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View operations dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "favicon.ico",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "iarc_rating_id": "",
+  "features": [
+    "offline",
+    "camera",
+    "geolocation"
+  ]
 }

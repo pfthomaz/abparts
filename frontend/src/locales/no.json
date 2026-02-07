@@ -102,7 +102,9 @@
     "nets": "Nøter",
     "netsDescription": "Administrer nøter og merder",
     "netCleaningRecords": "Notrengjøringsregistre",
-    "netCleaningRecordsDescription": "Spor notrengjøringsoperasjoner"
+    "netCleaningRecordsDescription": "Spor notrengjøringsoperasjoner",
+    "syncStatus": "Synkroniseringsstatus",
+    "syncStatusDescription": "Vis synkroniseringsstatus for frakoblede data"
   },
   "auth": {
     "login": "Logg inn",
@@ -118,7 +120,9 @@
     "signInToAccount": "Logg inn på kontoen din",
     "createAccount": "Opprett konto",
     "alreadyHaveAccount": "Har du allerede en konto?",
-    "dontHaveAccount": "Har du ikke en konto?"
+    "dontHaveAccount": "Har du ikke en konto?",
+    "loginError": "Ugyldig brukernavn eller passord",
+    "sessionExpired": "Økten din har utløpt. Vennligst logg inn igjen."
   },
   "users": {
     "title": "Bruker- og Tilgangsstyring",
@@ -740,7 +744,14 @@
     "complete": "fullført",
     "confirmDeleteExecution": "Er du sikker på at du vil slette denne vedlikeholdsutførelsen? Denne handlingen kan ikke angres.",
     "executionDeletedSuccessfully": "Vedlikeholdsutførelse slettet",
-    "failedToDeleteExecution": "Kunne ikke slette vedlikeholdsutførelse"
+    "failedToDeleteExecution": "Kunne ikke slette vedlikeholdsutførelse",
+    "offlineMode": "Frakoblet Modus",
+    "offlineModeHelp": "Du er frakoblet. Vedlikehold vil bli lagret lokalt og synkronisert når tilkoblingen er gjenopprettet.",
+    "savedOffline": "Vedlikehold lagret frakoblet. Vil synkronisere når tilkoblingen er gjenopprettet.",
+    "pendingSync": "{{count}} vedlikeholdsutførelse(r) venter på synkronisering",
+    "pendingSyncMessage": "Disse vedlikeholdsutførelsene ble registrert frakoblet og vil synkronisere når tilkoblingen er gjenopprettet.",
+    "waitingSync": "Venter på synkronisering",
+    "syncingExecution": "Synkroniserer vedlikeholdsutførelse..."
   },
   "dashboard": {
     "welcomeBack": "Velkommen tilbake, {{name}}!",
@@ -1580,7 +1591,31 @@
       "escalationReason": "Årsak til eskalering",
       "additionalDetails": "Ytterligere detaljer for supportteamet",
       "attachDiagnosticData": "Legg ved diagnostiske data",
-      "sendToSupport": "Send til Support"
+      "sendToSupport": "Send til Support",
+      "title": "Eskaler til Ekspertstøtte",
+      "description": "Hvis du ikke kan løse problemet, kan våre eksperttekniker gi direkte assistanse.",
+      "escalateButton": "Få Eksperthjelp",
+      "escalate_button": "Opprett Støttehenvendelse",
+      "escalating": "Oppretter henvendelse...",
+      "confidence_score": "AI-tillit",
+      "additional_notes": "Tilleggsnotater",
+      "notes_placeholder": "Beskriv eventuelle tilleggsdetaljer eller spesifikke bekymringer...",
+      "reason": {
+        "label": "Escalation Reason",
+        "user_request": "I need expert help",
+        "low_confidence": "AI has low confidence",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety concern",
+        "complex_issue": "Complex technical issue",
+        "expert_required": "Expert knowledge required"
+      },
+      "priority": {
+        "label": "Priority Level",
+        "low": "Low - Can wait",
+        "medium": "Medium - Normal priority",
+        "high": "High - Urgent",
+        "urgent": "Urgent - Critical issue"
+      }
     },
     "session": {
       "newSession": "Ny Økt",
@@ -1637,6 +1672,74 @@
     },
     "notifications": {
       "newMessage": "Ny AI-assistentmelding"
+    },
+    "escalate": "Eskaler til Ekspert",
+    "escalateTooltip": "Få hjelp fra en teknisk ekspert",
+    "escalationModal": {
+      "title": "Eskaler til Ekspertstøtte",
+      "description": "Vår AI-assistent vil opprette en støttehenvendelse og koble deg med en teknisk ekspert.",
+      "reasonLabel": "Eskaleringsgrunnen",
+      "priorityLabel": "Prioritetsnivå",
+      "notesLabel": "Tilleggsnotater",
+      "notesPlaceholder": "Vennligst beskriv problemet ditt i detalj...",
+      "submitButton": "Opprett Støttehenvendelse",
+      "cancelButton": "Avbryt",
+      "reasons": {
+        "user_request": "I need expert help",
+        "low_confidence": "AI is uncertain",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety issue detected",
+        "expert_required": "Complex technical issue"
+      },
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent"
+      }
+    },
+    "escalationSuccess": {
+      "title": "Support Ticket Created",
+      "message": "Your escalation has been processed successfully.",
+      "ticketNumber": "Ticket Number",
+      "expertContact": "Expert Contact Information",
+      "nextSteps": "Next Steps",
+      "contactExpert": "Contact the expert using the information provided above.",
+      "referenceTicket": "Reference your ticket number when contacting support."
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "remove": "Remove",
+      "confirm": "Confirm",
+      "close": "Close",
+      "submit": "Submit",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Information"
+    },
+    "expertKnowledge": {
+      "add_title": "Add Expert Knowledge",
+      "problem_description": "Problem Description",
+      "solution": "Solution",
+      "machine_version": "Machine Version",
+      "tags": "Tags",
+      "common_tags": "Common Tags",
+      "custom_tag_placeholder": "Enter custom tag",
+      "add_tag": "Add",
+      "selected_tags": "Selected Tags",
+      "all_versions": "All Versions",
+      "problem_placeholder": "Describe the problem that was encountered...",
+      "solution_placeholder": "Provide the step-by-step solution...",
+      "submit": "Submit Knowledge",
+      "submitting": "Submitting...",
+      "success": "Expert knowledge added successfully",
+      "error": "Failed to add expert knowledge"
     }
   },
   "protocolForm": {
@@ -1801,7 +1904,29 @@
     "noProtocolsFound": "Ingen protokoller funnet",
     "noProtocolsYet": "Ingen protokoller tilgjengelig ennå",
     "tryDifferentSearch": "Prøv å justere søke- eller filterkriteriene dine",
-    "createProtocolsFirst": "Opprett vedlikeholdsprotokoller først for å aktivere oversettelser"
+    "createProtocolsFirst": "Opprett vedlikeholdsprotokoller først for å aktivere oversettelser",
+    "autoTranslate": {
+      "title": "Auto-Translate",
+      "quickTranslate": "Quick Translate",
+      "quickStart": "Quick start with AI translation",
+      "serviceUnavailable": "Auto-translation service is currently unavailable",
+      "statusCheckFailed": "Failed to check translation service status",
+      "selectLanguages": "Please select at least one language to translate to",
+      "failed": "Auto-translation failed",
+      "translating": "Translating...",
+      "startTranslation": "Start Translation",
+      "results": "Translation Results",
+      "successful": "Successful",
+      "protocolTranslations": "Protocol translations",
+      "checklistTranslations": "Checklist translations",
+      "translationType": "What would you like to translate?",
+      "completeProtocol": "Complete Protocol",
+      "completeProtocolDesc": "Translate both protocol name/description and all checklist items",
+      "protocolOnly": "Protocol Only",
+      "protocolOnlyDesc": "Translate only the protocol name and description",
+      "checklistOnly": "Checklist Items Only",
+      "checklistOnlyDesc": "Translate only the checklist items"
+    }
   },
   "tour": {
     "helpButton": "Trenger du hjelp? Klikk for guidede turer",
@@ -2023,7 +2148,17 @@
       "endTimeAfterStart": "Sluttid må være etter starttid.",
       "required": "*",
       "selectOperator": "Velg operatør",
-      "selectFarmSiteFirst": "Velg et gårdssted først"
+      "selectFarmSiteFirst": "Velg et gårdssted først",
+      "photos": "Bilder",
+      "photosHelp": "Ta bilder av renseprosessen",
+      "photosOfflineHelp": "Bilder vil bli lagret frakoblet og synkronisert når tilkoblingen gjenopprettes",
+      "offlineMode": "Frakoblet Modus",
+      "offlineModeHelp": "Denne posten vil bli lagret frakoblet og synkronisert automatisk når du er tilbake på nett",
+      "savedOffline": "Post lagret frakoblet. Den vil synkroniseres når tilkoblingen gjenopprettes.",
+      "pendingSync": "Venter på Synkronisering",
+      "waitingSync": "Venter på synkronisering",
+      "noUsersOffline": "No users cached for offline use. Go online first to load users.",
+      "enterOperatorName": "Enter operator name"
     }
   },
   "fab": {
@@ -2086,6 +2221,75 @@
       "title": "Oppdatering Tilgjengelig",
       "description": "En ny versjon av ABParts er tilgjengelig. Last inn på nytt for å oppdatere.",
       "reload": "Last Inn På Nytt Nå"
+    }
+  },
+  "offline": {
+    "title": "Frakoblet Modus",
+    "message": "Du er for øyeblikket frakoblet",
+    "pendingOperations": "{count} operasjoner venter på synkronisering",
+    "syncing": "Synkroniserer...",
+    "syncComplete": "Synkronisering fullført",
+    "backOnline": "Tilbake på nett",
+    "duration": "Frakoblet i {duration}",
+    "indicator": {
+      "title": "Offline Mode",
+      "message": "Working offline - data will sync when connection is restored",
+      "pending": "pending",
+      "syncing": "Syncing...",
+      "syncingMessage": "Uploading offline data",
+      "remaining": "remaining",
+      "backOnline": "Back Online",
+      "wasOffline": "Was offline for",
+      "offline": "Offline"
+    }
+  },
+  "syncStatus": {
+    "title": "Synkroniseringsstatus",
+    "syncNow": "Synkroniser Nå",
+    "syncing": "Synkroniserer...",
+    "connectionStatus": "Tilkoblingsstatus",
+    "online": "Tilkoblet",
+    "offline": "Frakoblet",
+    "pendingOperations": "Ventende Operasjoner",
+    "lastSync": "Siste Synkronisering",
+    "never": "Aldri",
+    "storageUsage": "Lagringsbruk",
+    "used": "Brukt",
+    "quota": "Kvote",
+    "syncError": "Synkroniseringsfeil",
+    "queueStatistics": "Køstatistikk",
+    "total": "Totalt",
+    "pending": "Ventende",
+    "failed": "Mislyktes",
+    "failedOperations": "Mislykkede Operasjoner",
+    "attempts": "Forsøk",
+    "retry": "Prøv Igjen",
+    "remove": "Fjern",
+    "confirmRemove": "Er du sikker på at du vil fjerne denne operasjonen?",
+    "type": "Type",
+    "status": "Status",
+    "priority": "Prioritet",
+    "created": "Opprettet",
+    "offlineRecords": "Frakoblede Poster",
+    "offlineRecordsHelp": "Disse postene ble opprettet frakoblet og venter på synkronisering",
+    "netCleaningRecord": "Notrensingspost",
+    "operator": "Operatør",
+    "mode": "Modus",
+    "waitingSync": "Venter på synkronisering",
+    "allSynced": "Alt Synkronisert!",
+    "allSyncedHelp": "Alle frakoblede data er synkronisert",
+    "types": {
+      "netCleaningRecord": "Notrensingspost",
+      "netCleaningPhoto": "Bilde",
+      "maintenanceExecution": "Vedlikeholdsutførelse",
+      "machineHours": "Maskintimer",
+      "stockAdjustment": "Lagerjustering"
+    },
+    "statuses": {
+      "pending": "Ventende",
+      "syncing": "Synkroniserer",
+      "completed": "Fullført",
+      "failed": "Mislyktes"
     }
   }
 }

@@ -102,7 +102,9 @@
     "nets": "Redes",
     "netsDescription": "Gestionar redes y jaulas",
     "netCleaningRecords": "Registros de Limpieza de Redes",
-    "netCleaningRecordsDescription": "Seguimiento de operaciones de limpieza de redes"
+    "netCleaningRecordsDescription": "Seguimiento de operaciones de limpieza de redes",
+    "syncStatus": "Estado de Sincronización",
+    "syncStatusDescription": "Ver estado de sincronización de datos sin conexión"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -118,7 +120,9 @@
     "signInToAccount": "Inicia Sesión en tu Cuenta",
     "createAccount": "Crear Cuenta",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
-    "dontHaveAccount": "¿No tienes una cuenta?"
+    "dontHaveAccount": "¿No tienes una cuenta?",
+    "loginError": "Nombre de usuario o contraseña inválidos",
+    "sessionExpired": "Su sesión ha expirado. Por favor, inicie sesión nuevamente."
   },
   "users": {
     "title": "Gestión de Usuarios y Permisos",
@@ -740,7 +744,14 @@
     "complete": "completo",
     "confirmDeleteExecution": "¿Está seguro de que desea eliminar esta ejecución de mantenimiento? Esta acción no se puede deshacer.",
     "executionDeletedSuccessfully": "Ejecución de mantenimiento eliminada con éxito",
-    "failedToDeleteExecution": "Error al eliminar la ejecución de mantenimiento"
+    "failedToDeleteExecution": "Error al eliminar la ejecución de mantenimiento",
+    "offlineMode": "Modo Sin Conexión",
+    "offlineModeHelp": "Estás sin conexión. El mantenimiento se guardará localmente y se sincronizará cuando se restablezca la conexión.",
+    "savedOffline": "Mantenimiento guardado sin conexión. Se sincronizará cuando se restablezca la conexión.",
+    "pendingSync": "{{count}} ejecución(es) de mantenimiento pendiente(s) de sincronización",
+    "pendingSyncMessage": "Estas ejecuciones de mantenimiento se registraron sin conexión y se sincronizarán cuando se restablezca la conexión.",
+    "waitingSync": "Esperando sincronización",
+    "syncingExecution": "Sincronizando ejecución de mantenimiento..."
   },
   "dashboard": {
     "welcomeBack": "¡Bienvenido de nuevo, {{name}}!",
@@ -1661,6 +1672,74 @@
     },
     "notifications": {
       "newMessage": "Nuevo Mensaje del Asistente AI"
+    },
+    "escalate": "Escalar a Experto",
+    "escalateTooltip": "Obtener ayuda de un experto técnico",
+    "escalationModal": {
+      "title": "Escalar a Soporte de Expertos",
+      "description": "Nuestro asistente de IA creará un ticket de soporte y lo conectará con un experto técnico.",
+      "reasonLabel": "Razón de Escalamiento",
+      "priorityLabel": "Nivel de Prioridad",
+      "notesLabel": "Notas Adicionales",
+      "notesPlaceholder": "Por favor describa su problema en detalle...",
+      "submitButton": "Crear Ticket de Soporte",
+      "cancelButton": "Cancelar",
+      "reasons": {
+        "user_request": "I need expert help",
+        "low_confidence": "AI is uncertain",
+        "steps_exceeded": "Too many troubleshooting steps",
+        "safety_concern": "Safety issue detected",
+        "expert_required": "Complex technical issue"
+      },
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent"
+      }
+    },
+    "escalationSuccess": {
+      "title": "Support Ticket Created",
+      "message": "Your escalation has been processed successfully.",
+      "ticketNumber": "Ticket Number",
+      "expertContact": "Expert Contact Information",
+      "nextSteps": "Next Steps",
+      "contactExpert": "Contact the expert using the information provided above.",
+      "referenceTicket": "Reference your ticket number when contacting support."
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "remove": "Remove",
+      "confirm": "Confirm",
+      "close": "Close",
+      "submit": "Submit",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Information"
+    },
+    "expertKnowledge": {
+      "add_title": "Add Expert Knowledge",
+      "problem_description": "Problem Description",
+      "solution": "Solution",
+      "machine_version": "Machine Version",
+      "tags": "Tags",
+      "common_tags": "Common Tags",
+      "custom_tag_placeholder": "Enter custom tag",
+      "add_tag": "Add",
+      "selected_tags": "Selected Tags",
+      "all_versions": "All Versions",
+      "problem_placeholder": "Describe the problem that was encountered...",
+      "solution_placeholder": "Provide the step-by-step solution...",
+      "submit": "Submit Knowledge",
+      "submitting": "Submitting...",
+      "success": "Expert knowledge added successfully",
+      "error": "Failed to add expert knowledge"
     }
   },
   "protocolForm": {
@@ -1825,7 +1904,29 @@
     "noProtocolsFound": "No se encontraron protocolos",
     "noProtocolsYet": "Aún no hay protocolos disponibles",
     "tryDifferentSearch": "Intenta ajustar tus criterios de búsqueda o filtro",
-    "createProtocolsFirst": "Crea primero protocolos de mantenimiento para habilitar traducciones"
+    "createProtocolsFirst": "Crea primero protocolos de mantenimiento para habilitar traducciones",
+    "autoTranslate": {
+      "title": "Auto-Translate",
+      "quickTranslate": "Quick Translate",
+      "quickStart": "Quick start with AI translation",
+      "serviceUnavailable": "Auto-translation service is currently unavailable",
+      "statusCheckFailed": "Failed to check translation service status",
+      "selectLanguages": "Please select at least one language to translate to",
+      "failed": "Auto-translation failed",
+      "translating": "Translating...",
+      "startTranslation": "Start Translation",
+      "results": "Translation Results",
+      "successful": "Successful",
+      "protocolTranslations": "Protocol translations",
+      "checklistTranslations": "Checklist translations",
+      "translationType": "What would you like to translate?",
+      "completeProtocol": "Complete Protocol",
+      "completeProtocolDesc": "Translate both protocol name/description and all checklist items",
+      "protocolOnly": "Protocol Only",
+      "protocolOnlyDesc": "Translate only the protocol name and description",
+      "checklistOnly": "Checklist Items Only",
+      "checklistOnlyDesc": "Translate only the checklist items"
+    }
   },
   "tour": {
     "helpButton": "¿Necesitas ayuda? Haz clic para tours guiados",
@@ -2047,7 +2148,17 @@
       "cancel": "Cancelar",
       "failedToSave": "Error al guardar el registro.",
       "endTimeAfterStart": "La hora de fin debe ser posterior a la hora de inicio.",
-      "required": "*"
+      "required": "*",
+      "photos": "Fotos",
+      "photosHelp": "Tome fotos del proceso de limpieza",
+      "photosOfflineHelp": "Las fotos se almacenarán sin conexión y se sincronizarán cuando se restablezca la conexión",
+      "offlineMode": "Modo Sin Conexión",
+      "offlineModeHelp": "Este registro se guardará sin conexión y se sincronizará automáticamente cuando vuelva a estar en línea",
+      "savedOffline": "Registro guardado sin conexión. Se sincronizará cuando se restablezca la conexión.",
+      "pendingSync": "Sincronización Pendiente",
+      "waitingSync": "Esperando sincronización",
+      "noUsersOffline": "No users cached for offline use. Go online first to load users.",
+      "enterOperatorName": "Enter operator name"
     }
   },
   "fab": {
@@ -2110,6 +2221,75 @@
       "title": "Actualización Disponible",
       "description": "Una nueva versión de ABParts está disponible. Recarga para actualizar.",
       "reload": "Recargar Ahora"
+    }
+  },
+  "offline": {
+    "title": "Modo Sin Conexión",
+    "message": "Actualmente estás sin conexión",
+    "pendingOperations": "{count} operaciones pendientes de sincronización",
+    "syncing": "Sincronizando...",
+    "syncComplete": "Sincronización completa",
+    "backOnline": "De vuelta en línea",
+    "duration": "Sin conexión durante {duration}",
+    "indicator": {
+      "title": "Offline Mode",
+      "message": "Working offline - data will sync when connection is restored",
+      "pending": "pending",
+      "syncing": "Syncing...",
+      "syncingMessage": "Uploading offline data",
+      "remaining": "remaining",
+      "backOnline": "Back Online",
+      "wasOffline": "Was offline for",
+      "offline": "Offline"
+    }
+  },
+  "syncStatus": {
+    "title": "Estado de Sincronización",
+    "syncNow": "Sincronizar Ahora",
+    "syncing": "Sincronizando...",
+    "connectionStatus": "Estado de Conexión",
+    "online": "En Línea",
+    "offline": "Sin Conexión",
+    "pendingOperations": "Operaciones Pendientes",
+    "lastSync": "Última Sincronización",
+    "never": "Nunca",
+    "storageUsage": "Uso de Almacenamiento",
+    "used": "Usado",
+    "quota": "Cuota",
+    "syncError": "Error de Sincronización",
+    "queueStatistics": "Estadísticas de Cola",
+    "total": "Total",
+    "pending": "Pendiente",
+    "failed": "Fallido",
+    "failedOperations": "Operaciones Fallidas",
+    "attempts": "Intentos",
+    "retry": "Reintentar",
+    "remove": "Eliminar",
+    "confirmRemove": "¿Está seguro de que desea eliminar esta operación?",
+    "type": "Tipo",
+    "status": "Estado",
+    "priority": "Prioridad",
+    "created": "Creado",
+    "offlineRecords": "Registros Sin Conexión",
+    "offlineRecordsHelp": "Estos registros se crearon sin conexión y están esperando sincronizarse",
+    "netCleaningRecord": "Registro de Limpieza de Red",
+    "operator": "Operador",
+    "mode": "Modo",
+    "waitingSync": "Esperando sincronización",
+    "allSynced": "¡Todo Sincronizado!",
+    "allSyncedHelp": "Todos los datos sin conexión se han sincronizado",
+    "types": {
+      "netCleaningRecord": "Registro de Limpieza de Red",
+      "netCleaningPhoto": "Foto",
+      "maintenanceExecution": "Ejecución de Mantenimiento",
+      "machineHours": "Horas de Máquina",
+      "stockAdjustment": "Ajuste de Inventario"
+    },
+    "statuses": {
+      "pending": "Pendiente",
+      "syncing": "Sincronizando",
+      "completed": "Completado",
+      "failed": "Fallido"
     }
   }
 }

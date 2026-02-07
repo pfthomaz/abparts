@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { useOffline } from '../contexts/OfflineContext';
 import { machinesService } from '../services/machinesService';
 import { getLocalizedProtocols, createExecution, getExecutions } from '../services/maintenanceProtocolsService';
+import { getUnsyncedMaintenanceExecutions } from '../db/indexedDB';
 import ExecutionForm from '../components/ExecutionForm';
 import ExecutionHistory from '../components/ExecutionHistory';
 
@@ -11,11 +13,13 @@ import ExecutionHistory from '../components/ExecutionHistory';
 const MaintenanceExecutions = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { isOnline, pendingCount } = useOffline();
   const location = useLocation();
   const navigate = useNavigate();
   const [machines, setMachines] = useState([]);
   const [protocols, setProtocols] = useState([]);
   const [executions, setExecutions] = useState([]);
+  const [offlineExecutions, setOfflineExecutions] = useState([]);
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [selectedProtocol, setSelectedProtocol] = useState(null);
   const [showExecutionForm, setShowExecutionForm] = useState(false);
@@ -24,9 +28,101 @@ const MaintenanceExecutions = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('new'); // 'new' or 'history'
 
+  // Define loadData function first
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Load data with individual error handling to prevent one failure from blocking everything
+      let machinesData = [];
+      let protocolsData = [];
+      let executionsData = [];
+      
+      try {
+        machinesData = await machinesService.getMachines();
+        console.log('[MaintenanceExecutions] Loaded machines:', machinesData.length);
+      } catch (err) {
+        console.error('[MaintenanceExecutions] Failed to load machines:', err);
+        setError('Failed to load machines. Please refresh the page.');
+      }
+      
+      try {
+        protocolsData = await getLocalizedProtocols({}, user.preferred_language);
+        console.log('[MaintenanceExecutions] Loaded protocols:', protocolsData.length);
+      } catch (err) {
+        console.error('[MaintenanceExecutions] Failed to load protocols:', err);
+        // Don't set error here - protocols might be cached
+        if (!error) {
+          setError('Failed to load protocols. Using cached data if available.');
+        }
+      }
+      
+      try {
+        executionsData = await getExecutions();
+        console.log('[MaintenanceExecutions] Loaded executions:', executionsData.length);
+      } catch (err) {
+        console.error('[MaintenanceExecutions] Failed to load executions:', err);
+        // Don't block the page if executions fail to load
+      }
+      
+      setMachines(machinesData);
+      setProtocols(protocolsData.filter(p => p.is_active));
+      setExecutions(executionsData);
+      
+      // Load offline executions
+      try {
+        const unsyncedExecutions = await getUnsyncedMaintenanceExecutions();
+        setOfflineExecutions(unsyncedExecutions);
+        console.log('[MaintenanceExecutions] Loaded offline executions:', unsyncedExecutions.length);
+      } catch (err) {
+        console.error('[MaintenanceExecutions] Failed to load offline executions:', err);
+      }
+      
+      // Auto-select machine if there's only one
+      if (machinesData.length === 1 && !selectedMachine) {
+        setSelectedMachine(machinesData[0]);
+      }
+      
+    } catch (err) {
+      console.error('[MaintenanceExecutions] Error loading data:', err);
+      setError(err.message || 'Failed to load data. Please refresh the page.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user.preferred_language, selectedMachine]);
+
+  // Initial load
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
+
+  // Listen for sync completion to refresh executions
+  useEffect(() => {
+    const handleSyncComplete = (event) => {
+      console.log('[MaintenanceExecutions] Sync completed, reloading executions...', event.detail);
+      // Force reload after a short delay to ensure backend has processed
+      setTimeout(() => {
+        loadData();
+      }, 500);
+    };
+    
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+    
+    return () => {
+      window.removeEventListener('offline-sync-complete', handleSyncComplete);
+    };
+  }, [loadData]);
+
+  // Load offline executions when pendingCount changes
+  useEffect(() => {
+    const loadOfflineExecutions = async () => {
+      const unsynced = await getUnsyncedMaintenanceExecutions();
+      setOfflineExecutions(unsynced);
+      console.log('[MaintenanceExecutions] Loaded offline executions:', unsynced.length);
+    };
+    loadOfflineExecutions();
+  }, [pendingCount]);
 
   // Handle preselected machine/protocol from navigation state
   useEffect(() => {
@@ -44,33 +140,6 @@ const MaintenanceExecutions = () => {
       setShowExecutionForm(true);
     }
   }, [location.state]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [machinesData, protocolsData, executionsData] = await Promise.all([
-        machinesService.getMachines(),
-        getLocalizedProtocols({}, user.preferred_language),
-        getExecutions()
-      ]);
-      console.log('Loaded executions:', executionsData);
-      setMachines(machinesData);
-      setProtocols(protocolsData.filter(p => p.is_active));
-      setExecutions(executionsData);
-      
-      // Auto-select machine if there's only one
-      if (machinesData.length === 1 && !selectedMachine) {
-        setSelectedMachine(machinesData[0]);
-      }
-      
-      setError(null);
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleStartExecution = () => {
     if (!selectedMachine) {
@@ -146,8 +215,29 @@ const MaintenanceExecutions = () => {
         </div>
       )}
 
+      {/* Pending Offline Executions Banner */}
+      {offlineExecutions.length > 0 && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md shadow-sm">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-blue-800">
+                {t('maintenance.pendingSync', { count: offlineExecutions.length })}
+              </h3>
+              <p className="mt-1 text-sm text-blue-700">
+                {t('maintenance.pendingSyncMessage') || 'These maintenance executions were recorded offline and will sync when connection is restored.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Incomplete Daily Protocols Banner */}
-      {executions.filter(e => 
+      {[...executions, ...offlineExecutions].filter(e => 
         e.status === 'in_progress' && 
         e.protocol?.protocol_type === 'daily'
       ).length > 0 && (
@@ -165,12 +255,17 @@ const MaintenanceExecutions = () => {
               <div className="mt-2 text-sm text-orange-700">
                 <p>{t('maintenance.incompleteDailyProtocolsMessage')}</p>
                 <div className="mt-3 space-y-2">
-                  {executions
+                  {[...executions, ...offlineExecutions]
                     .filter(e => e.status === 'in_progress' && e.protocol?.protocol_type === 'daily')
                     .map(execution => (
-                      <div key={execution.id} className="flex items-center justify-between bg-white p-2 rounded">
+                      <div key={execution.id || execution.tempId} className="flex items-center justify-between bg-white p-2 rounded">
                         <span className="font-medium">
                           {execution.protocol?.name} - {execution.machine?.name || execution.machine?.serial_number}
+                          {execution.tempId && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {t('maintenance.pendingSync')}
+                            </span>
+                          )}
                         </span>
                         <button
                           onClick={() => handleResumeExecution(execution)}

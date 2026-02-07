@@ -8,16 +8,29 @@
   <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon/sizes/favicon-16x16.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#2563eb" />
-  <meta name="description" content="ABParts - Intelligent parts management for AutoBoss net cleaners" />
+  <meta name="description" content="ABParts - Intelligent parts management for AutoBoss net cleaners with offline support" />
   <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon/sizes/logo192.png" />
   
   <!-- PWA Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ABParts" />
   <meta name="application-name" content="ABParts" />
   <meta name="format-detection" content="telephone=no" />
+  
+  <!-- Additional PWA Meta Tags for Offline Mode -->
+  <meta name="msapplication-TileColor" content="#2563eb" />
+  <meta name="msapplication-tap-highlight" content="no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  
+  <!-- iOS Splash Screens -->
+  <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/favicon/sizes/logo192.png" />
+  
+  <!-- Preconnect to API for faster loading -->
+  <link rel="preconnect" href="/api" />
+  <link rel="dns-prefetch" href="/api" />
   <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/

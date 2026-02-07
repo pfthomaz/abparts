@@ -1,33 +1,168 @@
 // frontend/src/services/farmSitesService.js
 
 import { api } from './api';
+import {
+  cacheData,
+  getCachedData,
+  getCachedItem,
+  isCacheStale,
+  STORES,
+} from '../db/indexedDB';
+import { isOnline } from '../hooks/useNetworkStatus';
+
+const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Fetches all farm sites for the current user's organization.
+ * Uses cache when offline or when cache is fresh.
  * @param {boolean} activeOnly Only return active farm sites.
  * @param {number} skip Number of records to skip.
  * @param {number} limit Maximum number of records to return.
+ * @param {boolean} forceRefresh Force refresh from API even if cache is fresh.
  */
-const getFarmSites = (activeOnly = true, skip = 0, limit = 100) => {
-  return api.get(`/farm-sites/?active_only=${activeOnly}&skip=${skip}&limit=${limit}`);
+const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefresh = false) => {
+  try {
+    // Check if online
+    const online = isOnline();
+    
+    // Check cache staleness
+    const cacheIsStale = await isCacheStale(STORES.FARM_SITES, CACHE_MAX_AGE);
+    
+    // Use cache if offline OR if cache is fresh and not forcing refresh
+    if (!online || (!cacheIsStale && !forceRefresh)) {
+      console.log('[FarmSitesService] Using cached data');
+      const cachedSites = await getCachedData(STORES.FARM_SITES);
+      
+      // Filter by active status if needed
+      const filtered = activeOnly 
+        ? cachedSites.filter(site => site.active !== false)
+        : cachedSites;
+      
+      // Apply pagination
+      const paginated = filtered.slice(skip, skip + limit);
+      
+      return paginated;
+    }
+    
+    // Fetch from API
+    console.log('[FarmSitesService] Fetching from API');
+    const response = await api.get(`/farm-sites/?active_only=${activeOnly}&skip=${skip}&limit=${limit}`);
+    
+    // Cache the results
+    if (response && Array.isArray(response)) {
+      await cacheData(STORES.FARM_SITES, response);
+      console.log(`[FarmSitesService] Cached ${response.length} farm sites`);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.error('[FarmSitesService] Error fetching farm sites:', error);
+    
+    // If API fails, try to return cached data as fallback
+    if (!isOnline()) {
+      console.log('[FarmSitesService] API failed, using cached data as fallback');
+      const cachedSites = await getCachedData(STORES.FARM_SITES);
+      const filtered = activeOnly 
+        ? cachedSites.filter(site => site.active !== false)
+        : cachedSites;
+      return filtered.slice(skip, skip + limit);
+    }
+    
+    throw error;
+  }
 };
 
 /**
  * Searches farm sites by name or location.
+ * Searches in cache when offline.
  * @param {string} searchTerm The search query.
  * @param {number} skip Number of records to skip.
  * @param {number} limit Maximum number of records to return.
  */
-const searchFarmSites = (searchTerm, skip = 0, limit = 100) => {
-  return api.get(`/farm-sites/search?q=${encodeURIComponent(searchTerm)}&skip=${skip}&limit=${limit}`);
+const searchFarmSites = async (searchTerm, skip = 0, limit = 100) => {
+  try {
+    const online = isOnline();
+    
+    if (!online) {
+      // Search in cache when offline
+      console.log('[FarmSitesService] Searching in cache (offline)');
+      const cachedSites = await getCachedData(STORES.FARM_SITES);
+      
+      const searchLower = searchTerm.toLowerCase();
+      const filtered = cachedSites.filter(site => 
+        site.name?.toLowerCase().includes(searchLower) ||
+        site.location?.toLowerCase().includes(searchLower)
+      );
+      
+      return filtered.slice(skip, skip + limit);
+    }
+    
+    // Search via API when online
+    const response = await api.get(`/farm-sites/search?q=${encodeURIComponent(searchTerm)}&skip=${skip}&limit=${limit}`);
+    
+    return response;
+    
+  } catch (error) {
+    console.error('[FarmSitesService] Error searching farm sites:', error);
+    
+    // Fallback to cache search if API fails
+    console.log('[FarmSitesService] API search failed, searching in cache');
+    const cachedSites = await getCachedData(STORES.FARM_SITES);
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = cachedSites.filter(site => 
+      site.name?.toLowerCase().includes(searchLower) ||
+      site.location?.toLowerCase().includes(searchLower)
+    );
+    
+    return filtered.slice(skip, skip + limit);
+  }
 };
 
 /**
  * Fetches a single farm site by ID with its nets.
+ * Uses cache when offline.
  * @param {string} farmSiteId The ID of the farm site to fetch.
  */
-const getFarmSite = (farmSiteId) => {
-  return api.get(`/farm-sites/${farmSiteId}`);
+const getFarmSite = async (farmSiteId) => {
+  try {
+    const online = isOnline();
+    
+    if (!online) {
+      // Get from cache when offline
+      console.log('[FarmSitesService] Getting from cache (offline)');
+      const cachedSite = await getCachedItem(STORES.FARM_SITES, farmSiteId);
+      
+      if (!cachedSite) {
+        throw new Error('Farm site not found in cache');
+      }
+      
+      return cachedSite;
+    }
+    
+    // Fetch from API when online
+    const response = await api.get(`/farm-sites/${farmSiteId}`);
+    
+    // Update cache with this single item
+    if (response) {
+      await cacheData(STORES.FARM_SITES, response);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.error('[FarmSitesService] Error fetching farm site:', error);
+    
+    // Fallback to cache if API fails
+    if (!isOnline()) {
+      const cachedSite = await getCachedItem(STORES.FARM_SITES, farmSiteId);
+      if (cachedSite) {
+        return cachedSite;
+      }
+    }
+    
+    throw error;
+  }
 };
 
 /**
