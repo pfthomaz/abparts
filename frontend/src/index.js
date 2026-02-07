@@ -19,13 +19,19 @@ root.render(
     </React.StrictMode>
 );
 
-// Register service worker for PWA features
-serviceWorkerRegistration.register({
-    onSuccess: () => {
-        // console.log('[App] Service worker registered successfully');
-    },
-    onUpdate: (registration) => {
-        // console.log('[App] New version available');
-        // The PWAUpdateNotification component will handle showing the update prompt
-    }
-});
+// Register service worker for PWA features (production only)
+if (process.env.NODE_ENV === 'production') {
+    serviceWorkerRegistration.register({
+        onSuccess: () => {
+            // console.log('[App] Service worker registered successfully');
+        },
+        onUpdate: (registration) => {
+            // console.log('[App] New version available');
+            // The PWAUpdateNotification component will handle showing the update prompt
+        }
+    });
+} else {
+    console.log('[App] Service worker disabled in development mode');
+    // Unregister any existing service workers in development
+    serviceWorkerRegistration.unregister();
+}

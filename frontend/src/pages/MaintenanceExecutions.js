@@ -40,7 +40,13 @@ const MaintenanceExecutions = () => {
       let executionsData = [];
       
       try {
-        machinesData = await machinesService.getMachines();
+        // Pass user context for secure caching
+        const userContext = {
+          userId: user.id,
+          organizationId: user.organization_id,
+          isSuperAdmin: user.role === 'super_admin'
+        };
+        machinesData = await machinesService.getMachines(false, userContext);
         // console.log('[MaintenanceExecutions] Loaded machines:', machinesData.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load machines:', err);
