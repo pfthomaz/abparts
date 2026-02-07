@@ -3,9 +3,9 @@
 
 import { machinesService } from './machinesService';
 import { getLocalizedProtocols } from './maintenanceProtocolsService';
-import { getUsers } from './api';
-import { getFarmSites } from './farmSitesService';
-import { getNets } from './netsService';
+import { userService } from './userService';
+import farmSitesService from './farmSitesService';
+import netsService from './netsService';
 import { cacheData, STORES } from '../db/indexedDB';
 
 /**
@@ -58,7 +58,8 @@ export async function preloadOfflineData(user) {
   
   // Preload users (for dropdowns)
   try {
-    const users = await getUsers();
+    const usersResponse = await userService.getUsers();
+    const users = usersResponse.data || usersResponse;
     // Cache users with user context
     await cacheData(STORES.USERS, users, userContext);
     results.users = { success: true, count: users.length, error: null };
@@ -70,7 +71,8 @@ export async function preloadOfflineData(user) {
   
   // Preload farm sites (for net cleaning)
   try {
-    const farmSites = await getFarmSites();
+    const farmSitesResponse = await farmSitesService.getFarmSites();
+    const farmSites = farmSitesResponse.data || farmSitesResponse;
     // Cache farm sites with user context
     await cacheData(STORES.FARM_SITES, farmSites, userContext);
     results.farmSites = { success: true, count: farmSites.length, error: null };
@@ -82,7 +84,8 @@ export async function preloadOfflineData(user) {
   
   // Preload nets (for net cleaning)
   try {
-    const nets = await getNets();
+    const netsResponse = await netsService.getNets();
+    const nets = netsResponse.data || netsResponse;
     // Cache nets with user context
     await cacheData(STORES.NETS, nets, userContext);
     results.nets = { success: true, count: nets.length, error: null };

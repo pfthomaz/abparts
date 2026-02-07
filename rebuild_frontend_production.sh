@@ -1,97 +1,77 @@
 #!/bin/bash
 
-# Rebuild Frontend for Production
-# This script rebuilds the frontend container with the latest translation files
+# Simple script to rebuild frontend in production
+# This fixes the offline mode issue
 
 set -e
 
-echo "========================================="
-echo "Rebuilding Frontend for Production"
-echo "========================================="
+echo "=========================================="
+echo "Rebuild Frontend - Production"
+echo "=========================================="
+echo ""
+echo "This will:"
+echo "  1. Rebuild the frontend container"
+echo "  2. Copy service worker to build folder"
+echo "  3. Restart the web container"
+echo ""
+read -p "Press Enter to continue or Ctrl+C to cancel..."
 echo ""
 
-# Step 1: Verify translation files exist in source
-echo "Step 1: Verifying translation files..."
-if [ -f "frontend/src/locales/en.json" ]; then
-    echo "✓ Translation files found"
-    if grep -q "machineSelected" frontend/src/locales/en.json; then
-        echo "✓ machineSelected key exists"
-    fi
-else
-    echo "✗ Translation files not found"
+# Rebuild frontend
+echo "Rebuilding frontend (this takes 2-3 minutes)..."
+docker compose -f docker-compose.prod.yml build web --no-cache
+
+echo ""
+echo "✓ Frontend rebuilt"
+echo ""
+
+# Restart web container
+echo "Restarting web container..."
+docker compose -f docker-compose.prod.yml up -d web
+
+echo ""
+echo "✓ Web container restarted"
+echo ""
+
+# Wait for container to start
+echo "Waiting for container to start..."
+sleep 5
+
+# Verify service worker
+echo "Verifying service worker..."
+SW_CHECK=$(docker compose -f docker-compose.prod.yml exec web ls -lh /usr/share/nginx/html/service-worker.js 2>&1 || echo "NOT FOUND")
+
+if [[ "$SW_CHECK" == *"NOT FOUND"* ]]; then
+    echo ""
+    echo "✗ ERROR: Service worker not found!"
+    echo ""
+    echo "This shouldn't happen. Please check:"
+    echo "  1. frontend/copy-sw.js exists"
+    echo "  2. frontend/public/service-worker.js exists"
+    echo "  3. frontend/package.json has 'copy-sw.js' in build script"
+    echo ""
     exit 1
-fi
-
-echo ""
-
-# Step 2: Stop web container
-echo "Step 2: Stopping web container..."
-docker compose stop web
-echo "✓ Web container stopped"
-
-echo ""
-
-# Step 3: Rebuild web container with latest code
-echo "Step 3: Rebuilding web container..."
-echo "This will take 3-5 minutes..."
-docker compose build --no-cache web
-
-if [ $? -eq 0 ]; then
-    echo "✓ Web container rebuilt successfully"
 else
-    echo "✗ Web container build failed"
-    exit 1
+    echo ""
+    echo "✓ Service worker found:"
+    echo "$SW_CHECK"
+    echo ""
 fi
 
+# Success message
+echo "=========================================="
+echo "SUCCESS!"
+echo "=========================================="
 echo ""
-
-# Step 4: Start web container
-echo "Step 4: Starting web container..."
-docker compose up -d web
-
-if [ $? -eq 0 ]; then
-    echo "✓ Web container started"
-else
-    echo "✗ Web container start failed"
-    exit 1
-fi
-
+echo "Frontend rebuilt successfully with offline mode support!"
 echo ""
-
-# Step 5: Wait for container to be ready
-echo "Step 5: Waiting for web container to be ready..."
-sleep 10
-
-WEB_STATUS=$(docker compose ps web | grep -c "Up" || echo "0")
-if [ "$WEB_STATUS" -gt 0 ]; then
-    echo "✓ Web container is running"
-else
-    echo "✗ Web container is not running"
-    docker compose logs web --tail=20
-    exit 1
-fi
-
+echo "Next steps:"
+echo "  1. Clear browser cache (Cmd+Shift+R or Ctrl+Shift+R)"
+echo "  2. Login to the app"
+echo "  3. Check console for '[OfflinePreloader]' messages"
+echo "  4. Test offline mode (DevTools > Network > Offline)"
 echo ""
-
-# Step 6: Check nginx is serving files
-echo "Step 6: Checking nginx is serving files..."
-if docker compose exec web ls /usr/share/nginx/html/index.html >/dev/null 2>&1; then
-    echo "✓ Frontend build is being served"
-else
-    echo "⚠ Could not verify frontend files"
-fi
-
+echo "For detailed testing instructions, see:"
+echo "  QUICK_FIX_SUMMARY.md"
 echo ""
-echo "========================================="
-echo "Frontend Rebuild Complete!"
-echo "========================================="
-echo ""
-echo "Please test:"
-echo "1. Open your browser and hard refresh: Ctrl+Shift+R (or Cmd+Shift+R)"
-echo "2. Open AI Assistant chat"
-echo "3. Select a machine"
-echo "4. Verify you see: 'Selected machine: [name] ([model])'"
-echo "5. NOT: 'aiAssistant.messages.machineSelected'"
-echo ""
-echo "Note: You MUST do a hard refresh to clear browser cache!"
-echo ""
+echo "=========================================="
