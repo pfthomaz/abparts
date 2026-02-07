@@ -78,7 +78,7 @@ const StockAdjustmentForm = ({ inventoryItem, onSuccess, onCancel, API_BASE_URL,
             }
 
             const result = await response.json();
-            console.log('Stock adjustment successful:', result);
+            // console.log('Stock adjustment successful:', result);
             if (onSuccess) {
                 onSuccess(result);
             }

@@ -9,13 +9,13 @@ const LocalizationDebug = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    console.log('=== LOCALIZATION DEBUG ===');
-    console.log('User object:', user);
-    console.log('User preferred_language:', user?.preferred_language);
-    console.log('Current language from context:', currentLanguage);
-    console.log('Test translation (common.save):', t('common.save'));
-    console.log('Test translation (dailyOperations.title):', t('dailyOperations.title'));
-    console.log('========================');
+    // console.log('=== LOCALIZATION DEBUG ===');
+    // console.log('User object:', user);
+    // console.log('User preferred_language:', user?.preferred_language);
+    // console.log('Current language from context:', currentLanguage);
+    // console.log('Test translation (common.save):', t('common.save'));
+    // console.log('Test translation (dailyOperations.title):', t('dailyOperations.title'));
+    // console.log('========================');
   }, [user, currentLanguage, t]);
 
   return (

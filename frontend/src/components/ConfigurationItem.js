@@ -8,8 +8,8 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
   const { t, getNamespace, currentLanguage } = useTranslation();
   
   // Debug: Log current language and test translation access
-  console.log(`🌍 Current language: ${currentLanguage}`);
-  console.log(`🧪 Test translation: ${t('configuration.title')}`);
+  // console.log(`🌍 Current language: ${currentLanguage}`);
+  // console.log(`🧪 Test translation: ${t('configuration.title')}`);
   
   // Get configuration namespace for direct object access
   const configNamespace = getNamespace('configuration');
@@ -179,14 +179,14 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
     // Use namespace to get direct object access
     const configKeys = configNamespace?.configKeys;
     if (configKeys && configKeys[key]) {
-      console.log(`✅ Found translation for key: ${key} -> ${configKeys[key]}`);
+      // console.log(`✅ Found translation for key: ${key} -> ${configKeys[key]}`);
       return configKeys[key];
     }
     
     // Fallback to dot notation
     const translationKey = `configuration.configKeys.${key}`;
     const translatedKey = t(translationKey);
-    console.log(`🔍 Translation lookup fallback: ${translationKey} -> ${translatedKey}`);
+    // console.log(`🔍 Translation lookup fallback: ${translationKey} -> ${translatedKey}`);
     return translatedKey !== translationKey ? translatedKey : key;
   };
 
@@ -195,14 +195,14 @@ const ConfigurationItem = ({ configuration, onUpdate, isSuperAdmin }) => {
     // Use namespace to get direct object access
     const configDescriptions = configNamespace?.configDescriptions;
     if (configDescriptions && configDescriptions[key]) {
-      console.log(`✅ Found description for key: ${key} -> ${configDescriptions[key]}`);
+      // console.log(`✅ Found description for key: ${key} -> ${configDescriptions[key]}`);
       return configDescriptions[key];
     }
     
     // Fallback to dot notation
     const translationKey = `configuration.configDescriptions.${key}`;
     const translatedDesc = t(translationKey);
-    console.log(`🔍 Description lookup fallback: ${translationKey} -> ${translatedDesc}`);
+    // console.log(`🔍 Description lookup fallback: ${translationKey} -> ${translatedDesc}`);
     return translatedDesc !== translationKey ? translatedDesc : fallbackDescription;
   };
 

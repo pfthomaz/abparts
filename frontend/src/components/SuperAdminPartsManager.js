@@ -64,25 +64,25 @@ const SuperAdminPartsManager = () => {
   const fetchParts = async () => {
     if (!isUserSuperAdmin) return;
 
-    console.log('SuperAdminPartsManager: fetchParts called');
+    // console.log('SuperAdminPartsManager: fetchParts called');
     setLoading(true);
     setError(null);
 
     try {
       // Fetch ALL parts for SuperAdmin interface (use max API limit)
-      console.log('SuperAdminPartsManager: Calling partsService.getPartsWithInventory...');
+      // console.log('SuperAdminPartsManager: Calling partsService.getPartsWithInventory...');
       const response = await partsService.getPartsWithInventory({ limit: 1000 });
-      console.log('SuperAdminPartsManager: Fetched parts response:', response); // Debug log
+      // console.log('SuperAdminPartsManager: Fetched parts response:', response); // Debug log
 
       // Handle the new response format
       const partsData = response.items || response;
       const totalCount = response.total_count || partsData.length;
 
-      console.log(`SuperAdminPartsManager: Setting ${partsData.length} parts in state`);
+      // console.log(`SuperAdminPartsManager: Setting ${partsData.length} parts in state`);
       setParts(partsData);
       calculateAnalytics(partsData, totalCount);
       
-      console.log('SuperAdminPartsManager: fetchParts completed successfully');
+      // console.log('SuperAdminPartsManager: fetchParts completed successfully');
     } catch (err) {
       console.error('SuperAdminPartsManager: Error fetching parts:', err); // Debug log
       setError(err.message || 'Failed to fetch parts');
@@ -256,11 +256,11 @@ const SuperAdminPartsManager = () => {
           break;
         case 'toggle_proprietary':
           // This would need a bulk update endpoint
-          console.log('Bulk toggle proprietary for:', selectedParts);
+          // console.log('Bulk toggle proprietary for:', selectedParts);
           break;
         case 'export':
           // Export selected parts
-          console.log('Export parts:', selectedParts);
+          // console.log('Export parts:', selectedParts);
           break;
         default:
           break;
@@ -277,24 +277,24 @@ const SuperAdminPartsManager = () => {
   // Handle part CRUD operations
   const handleCreateOrUpdate = async (partData) => {
     try {
-      console.log('SuperAdminPartsManager: Submitting part data:', partData); // Debug log
-      console.log('SuperAdminPartsManager: Image URLs in part data:', partData.image_urls); // Debug log
+      // console.log('SuperAdminPartsManager: Submitting part data:', partData); // Debug log
+      // console.log('SuperAdminPartsManager: Image URLs in part data:', partData.image_urls); // Debug log
 
       let result;
       if (editingPart) {
-        console.log('SuperAdminPartsManager: Updating existing part:', editingPart.id);
+        // console.log('SuperAdminPartsManager: Updating existing part:', editingPart.id);
         result = await partsService.updatePart(editingPart.id, partData);
-        console.log('SuperAdminPartsManager: Part updated successfully:', result);
+        // console.log('SuperAdminPartsManager: Part updated successfully:', result);
       } else {
-        console.log('SuperAdminPartsManager: Creating new part');
+        // console.log('SuperAdminPartsManager: Creating new part');
         result = await partsService.createPart(partData);
-        console.log('SuperAdminPartsManager: Part created successfully:', result);
+        // console.log('SuperAdminPartsManager: Part created successfully:', result);
       }
 
       // Small delay to ensure backend processing is complete
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('SuperAdminPartsManager: Refreshing parts list...');
+      // console.log('SuperAdminPartsManager: Refreshing parts list...');
 
       // Reset filters first to ensure new part is visible
       setFilters({
@@ -315,7 +315,7 @@ const SuperAdminPartsManager = () => {
       // Force refresh the parts data with a fresh API call
       await fetchParts();
 
-      console.log('SuperAdminPartsManager: Parts list refreshed, closing modal');
+      // console.log('SuperAdminPartsManager: Parts list refreshed, closing modal');
 
       setShowModal(false);
       setEditingPart(null);

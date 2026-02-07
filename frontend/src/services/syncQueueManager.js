@@ -48,7 +48,7 @@ export async function queueNetCleaningRecord(tempId, data) {
     };
     
     const id = await addToSyncQueue(operation);
-    console.log('[SyncQueue] Queued net cleaning record:', id);
+    // console.log('[SyncQueue] Queued net cleaning record:', id);
     
     // Dispatch event to notify UI
     window.dispatchEvent(new CustomEvent('offline-data-saved'));
@@ -84,7 +84,7 @@ export async function queueNetCleaningPhoto(recordTempId, photoBlob, filename) {
     };
     
     const id = await addToSyncQueue(operation);
-    console.log('[SyncQueue] Queued net cleaning photo:', id);
+    // console.log('[SyncQueue] Queued net cleaning photo:', id);
     
     return id;
   } catch (error) {
@@ -112,7 +112,7 @@ export async function queueMaintenanceExecution(tempId, data) {
     };
     
     const id = await addToSyncQueue(operation);
-    console.log('[SyncQueue] Queued maintenance execution:', id);
+    // console.log('[SyncQueue] Queued maintenance execution:', id);
     
     window.dispatchEvent(new CustomEvent('offline-data-saved'));
     
@@ -142,7 +142,7 @@ export async function queueMachineHours(tempId, data) {
     };
     
     const id = await addToSyncQueue(operation);
-    console.log('[SyncQueue] Queued machine hours:', id);
+    // console.log('[SyncQueue] Queued machine hours:', id);
     
     window.dispatchEvent(new CustomEvent('offline-data-saved'));
     
@@ -171,7 +171,7 @@ export async function getPendingOperations() {
       return a.timestamp - b.timestamp; // Older first
     });
     
-    console.log(`[SyncQueue] Retrieved ${operations.length} pending operations`);
+    // console.log(`[SyncQueue] Retrieved ${operations.length} pending operations`);
     return operations;
   } catch (error) {
     console.error('[SyncQueue] Failed to get pending operations:', error);
@@ -188,7 +188,7 @@ export async function getPendingOperations() {
 export async function markOperationSyncing(id) {
   try {
     await updateSyncOperationStatus(id, OPERATION_STATUS.SYNCING);
-    console.log('[SyncQueue] Marked operation as syncing:', id);
+    // console.log('[SyncQueue] Marked operation as syncing:', id);
   } catch (error) {
     console.error('[SyncQueue] Failed to mark operation as syncing:', error);
   }
@@ -203,7 +203,7 @@ export async function markOperationSyncing(id) {
 export async function markOperationCompleted(id) {
   try {
     await deleteSyncOperation(id);
-    console.log('[SyncQueue] Marked operation as completed and removed:', id);
+    // console.log('[SyncQueue] Marked operation as completed and removed:', id);
     
     // Dispatch event to update UI
     window.dispatchEvent(new CustomEvent('offline-data-synced'));
@@ -222,7 +222,7 @@ export async function markOperationCompleted(id) {
 export async function markOperationFailed(id, error) {
   try {
     await updateSyncOperationStatus(id, OPERATION_STATUS.FAILED, error);
-    console.log('[SyncQueue] Marked operation as failed:', id, error);
+    // console.log('[SyncQueue] Marked operation as failed:', id, error);
   } catch (error) {
     console.error('[SyncQueue] Failed to mark operation as failed:', error);
   }
@@ -237,7 +237,7 @@ export async function markOperationFailed(id, error) {
 export async function retryOperation(id) {
   try {
     await updateSyncOperationStatus(id, OPERATION_STATUS.PENDING);
-    console.log('[SyncQueue] Reset operation to pending for retry:', id);
+    // console.log('[SyncQueue] Reset operation to pending for retry:', id);
   } catch (error) {
     console.error('[SyncQueue] Failed to retry operation:', error);
   }
@@ -257,7 +257,7 @@ export async function getPendingCountByType() {
       return acc;
     }, {});
     
-    console.log('[SyncQueue] Pending counts by type:', counts);
+    // console.log('[SyncQueue] Pending counts by type:', counts);
     return counts;
   } catch (error) {
     console.error('[SyncQueue] Failed to get pending counts:', error);
@@ -283,7 +283,7 @@ export async function clearCompletedOperations() {
       }
     }
     
-    console.log(`[SyncQueue] Cleared ${cleared} completed operations`);
+    // console.log(`[SyncQueue] Cleared ${cleared} completed operations`);
     return cleared;
   } catch (error) {
     console.error('[SyncQueue] Failed to clear completed operations:', error);
@@ -306,7 +306,7 @@ export async function getFailedOperations(maxRetries = 3) {
       op.retryCount >= maxRetries
     );
     
-    console.log(`[SyncQueue] Found ${failed.length} operations that exceeded max retries`);
+    // console.log(`[SyncQueue] Found ${failed.length} operations that exceeded max retries`);
     return failed;
   } catch (error) {
     console.error('[SyncQueue] Failed to get failed operations:', error);
@@ -324,7 +324,7 @@ export async function getFailedOperations(maxRetries = 3) {
 export async function removeOperation(id) {
   try {
     await deleteSyncOperation(id);
-    console.log('[SyncQueue] Removed operation from queue:', id);
+    // console.log('[SyncQueue] Removed operation from queue:', id);
     
     window.dispatchEvent(new CustomEvent('offline-data-synced'));
   } catch (error) {
@@ -354,7 +354,7 @@ export async function getQueueStatus() {
       status.byType[op.type] = (status.byType[op.type] || 0) + 1;
     });
     
-    console.log('[SyncQueue] Queue status:', status);
+    // console.log('[SyncQueue] Queue status:', status);
     return status;
   } catch (error) {
     console.error('[SyncQueue] Failed to get queue status:', error);

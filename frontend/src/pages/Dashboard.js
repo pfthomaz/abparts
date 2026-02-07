@@ -310,9 +310,9 @@ const Dashboard = () => {
         dashboardService.getMetrics(),
         dashboardService.getLowStockByOrg(),
       ]);
-      console.log('DEBUG: Received metrics data:', metricsData);
-      console.log('DEBUG: total_farm_sites =', metricsData?.total_farm_sites);
-      console.log('DEBUG: total_nets =', metricsData?.total_nets);
+      // console.log('DEBUG: Received metrics data:', metricsData);
+      // console.log('DEBUG: total_farm_sites =', metricsData?.total_farm_sites);
+      // console.log('DEBUG: total_nets =', metricsData?.total_nets);
       setMetrics(metricsData);
       setLowStockData(lowStockChartData);
     } catch (err) {

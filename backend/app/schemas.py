@@ -392,11 +392,11 @@ class MachineBase(BaseModel):
     model_type: str = Field(..., max_length=100) # e.g., 'V3.1B', 'V4.0'
     name: str = Field(..., max_length=255)
     serial_number: str = Field(..., max_length=255)
-    purchase_date: Optional[datetime] = None
-    warranty_expiry_date: Optional[datetime] = None
+    purchase_date: Optional[date] = None
+    warranty_expiry_date: Optional[date] = None
     status: MachineStatusEnum = MachineStatusEnum.active
-    last_maintenance_date: Optional[datetime] = None
-    next_maintenance_date: Optional[datetime] = None
+    last_maintenance_date: Optional[date] = None
+    next_maintenance_date: Optional[date] = None
     location: Optional[str] = Field(None, max_length=255)
     notes: Optional[str] = None
 
@@ -408,11 +408,11 @@ class MachineUpdate(BaseModel):
     model_type: Optional[str] = Field(None, max_length=100)
     name: Optional[str] = Field(None, max_length=255)
     serial_number: Optional[str] = Field(None, max_length=255)
-    purchase_date: Optional[datetime] = None
-    warranty_expiry_date: Optional[datetime] = None
+    purchase_date: Optional[date] = None
+    warranty_expiry_date: Optional[date] = None
     status: Optional[MachineStatusEnum] = None
-    last_maintenance_date: Optional[datetime] = None
-    next_maintenance_date: Optional[datetime] = None
+    last_maintenance_date: Optional[date] = None
+    next_maintenance_date: Optional[date] = None
     location: Optional[str] = Field(None, max_length=255)
     notes: Optional[str] = None
 

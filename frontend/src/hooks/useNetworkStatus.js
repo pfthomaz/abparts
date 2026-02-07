@@ -31,7 +31,7 @@ export function useNetworkStatus() {
     // Handler for when connection is restored
     const handleOnline = () => {
       const now = new Date();
-      console.log('[Network] Connection restored at', now.toISOString());
+      // console.log('[Network] Connection restored at', now.toISOString());
       
       setIsOnline(true);
       setLastOnlineTime(now);
@@ -40,7 +40,7 @@ export function useNetworkStatus() {
       if (lastOfflineTime) {
         const duration = now.getTime() - lastOfflineTime.getTime();
         setOfflineDuration(duration);
-        console.log(`[Network] Was offline for ${Math.round(duration / 1000)} seconds`);
+        // console.log(`[Network] Was offline for ${Math.round(duration / 1000)} seconds`);
       }
       
       // Mark that we were offline (for triggering sync)
@@ -52,7 +52,7 @@ export function useNetworkStatus() {
     // Handler for when connection is lost
     const handleOffline = () => {
       const now = new Date();
-      console.log('[Network] Connection lost at', now.toISOString());
+      // console.log('[Network] Connection lost at', now.toISOString());
       
       setIsOnline(false);
       setLastOfflineTime(now);
@@ -64,7 +64,7 @@ export function useNetworkStatus() {
     window.addEventListener('offline', handleOffline);
 
     // Log initial status
-    console.log('[Network] Initial status:', isOnline ? 'Online' : 'Offline');
+    // console.log('[Network] Initial status:', isOnline ? 'Online' : 'Offline');
 
     // Cleanup event listeners on unmount
     return () => {
@@ -91,12 +91,12 @@ export function useNetworkStatus() {
 export function useNetworkStatusCallback(onOnline, onOffline) {
   useEffect(() => {
     const handleOnline = () => {
-      console.log('[Network] Online callback triggered');
+      // console.log('[Network] Online callback triggered');
       if (onOnline) onOnline();
     };
 
     const handleOffline = () => {
-      console.log('[Network] Offline callback triggered');
+      // console.log('[Network] Offline callback triggered');
       if (onOffline) onOffline();
     };
 
@@ -152,7 +152,7 @@ export function useNetworkStability(interval = 30000) {
         setIsStable(stable);
         setLastCheck(new Date());
         
-        console.log('[Network] Stability check:', stable ? 'Stable' : 'Unstable');
+        // console.log('[Network] Stability check:', stable ? 'Stable' : 'Unstable');
       } catch (error) {
         console.warn('[Network] Stability check failed:', error.message);
         setIsStable(false);
@@ -203,7 +203,7 @@ export function useNetworkInfo() {
                       navigator.webkitConnection;
 
     if (!connection) {
-      console.log('[Network] Network Information API not available');
+      // console.log('[Network] Network Information API not available');
       return;
     }
 
@@ -214,8 +214,8 @@ export function useNetworkInfo() {
         saveData: connection.saveData || false,
       });
       
-      console.log('[Network] Connection type:', connection.effectiveType);
-      console.log('[Network] Downlink speed:', connection.downlink, 'Mbps');
+      // console.log('[Network] Connection type:', connection.effectiveType);
+      // console.log('[Network] Downlink speed:', connection.downlink, 'Mbps');
     };
 
     // Initial update

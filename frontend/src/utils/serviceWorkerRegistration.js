@@ -25,9 +25,7 @@ export function register(config) {
 
         // Add some additional logging to localhost
         navigator.serviceWorker.ready.then(() => {
-          console.log(
-            '[SW Registration] This web app is being served cache-first by a service worker.'
-          );
+          // console.log('[SW Registration] This web app is being served cache-first by a service worker.');
         });
       } else {
         // Is not localhost. Just register service worker
@@ -41,8 +39,8 @@ function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
-      console.log('[SW Registration] Service Worker registered successfully');
-      console.log('[SW Registration] Offline mode enabled for field operations');
+      // console.log('[SW Registration] Service Worker registered successfully');
+      // console.log('[SW Registration] Offline mode enabled for field operations');
       
       // Check for updates periodically
       setInterval(() => {
@@ -59,7 +57,7 @@ function registerValidSW(swUrl, config) {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               // New content is available; please refresh.
-              console.log('[SW Registration] New content is available; please refresh.');
+              // console.log('[SW Registration] New content is available; please refresh.');
 
               // Execute callback
               if (config && config.onUpdate) {
@@ -67,8 +65,8 @@ function registerValidSW(swUrl, config) {
               }
             } else {
               // Content is cached for offline use.
-              console.log('[SW Registration] Content is cached for offline use.');
-              console.log('[SW Registration] App ready for offline field operations');
+              // console.log('[SW Registration] Content is cached for offline use.');
+              // console.log('[SW Registration] App ready for offline field operations');
 
               // Execute callback
               if (config && config.onSuccess) {
@@ -81,7 +79,7 @@ function registerValidSW(swUrl, config) {
     })
     .catch((error) => {
       console.error('[SW Registration] Error during service worker registration:', error);
-      console.error('[SW Registration] Offline mode will not be available');
+      // console.error('[SW Registration] Offline mode will not be available');
     });
 }
 
@@ -109,7 +107,7 @@ function checkValidServiceWorker(swUrl, config) {
       }
     })
     .catch(() => {
-      console.log('[SW Registration] No internet connection found. App is running in offline mode.');
+      // console.log('[SW Registration] No internet connection found. App is running in offline mode.');
     });
 }
 
@@ -120,7 +118,7 @@ export function unregister() {
         registration.unregister();
       })
       .catch((error) => {
-        console.error(error.message);
+        // console.error(error.message);
       });
   }
 }
@@ -135,7 +133,7 @@ export function sendMessageToSW(message) {
 // Helper function to request notification permission
 export async function requestNotificationPermission() {
   if (!('Notification' in window)) {
-    console.log('[Notifications] This browser does not support notifications');
+    // console.log('[Notifications] This browser does not support notifications');
     return 'unsupported';
   }
 
@@ -156,7 +154,7 @@ export async function subscribeToPushNotifications(registration) {
   try {
     // Check if push messaging is supported
     if (!('PushManager' in window)) {
-      console.log('[Push] Push messaging is not supported');
+      // console.log('[Push] Push messaging is not supported');
       return null;
     }
 
@@ -170,7 +168,7 @@ export async function subscribeToPushNotifications(registration) {
       const vapidPublicKey = process.env.REACT_APP_VAPID_PUBLIC_KEY || '';
       
       if (!vapidPublicKey) {
-        console.log('[Push] VAPID public key not configured');
+        // console.log('[Push] VAPID public key not configured');
         return null;
       }
 
@@ -180,10 +178,10 @@ export async function subscribeToPushNotifications(registration) {
       });
     }
 
-    console.log('[Push] Subscribed to push notifications:', subscription);
+    // console.log('[Push] Subscribed to push notifications:', subscription);
     return subscription;
   } catch (error) {
-    console.error('[Push] Failed to subscribe to push notifications:', error);
+    // console.error('[Push] Failed to subscribe to push notifications:', error);
     return null;
   }
 }

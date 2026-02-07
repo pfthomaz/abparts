@@ -31,7 +31,7 @@ const SimpleMachineHoursButton = ({ machineId, machineName, onHoursSaved }) => {
         notes: notes.trim() || null
       });
 
-      console.log('Machine hours saved successfully:', result);
+      // console.log('Machine hours saved successfully:', result);
       setSuccess(true);
       setHoursValue('');
       setNotes('');

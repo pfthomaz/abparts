@@ -277,13 +277,13 @@ class Machine(Base):
     model_type = Column(String(10), nullable=False)
     name = Column(String(255), nullable=False)
     serial_number = Column(String(255), unique=True, nullable=False) # Unique across all machines
-    # purchase_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
-    # warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
-    # status = Column(ENUM(MachineStatus, name='machinestatus'), nullable=False, server_default='active')  # Temporarily commented out
-    # last_maintenance_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
-    # next_maintenance_date = Column(DateTime(timezone=True), nullable=True)  # Temporarily commented out
-    # location = Column(String(255), nullable=True)  # Temporarily commented out
-    # notes = Column(Text, nullable=True)  # Temporarily commented out
+    purchase_date = Column(Date, nullable=True)
+    warranty_expiry_date = Column(Date, nullable=True)
+    status = Column(ENUM(MachineStatus, name='machinestatus'), nullable=False, server_default='active')
+    last_maintenance_date = Column(Date, nullable=True)
+    next_maintenance_date = Column(Date, nullable=True)
+    location = Column(String(255), nullable=True)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

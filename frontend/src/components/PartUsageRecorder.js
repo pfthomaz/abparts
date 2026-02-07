@@ -64,23 +64,23 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
   const fetchSupportingData = async () => {
     try {
-      console.log('Fetching supporting data...');
+      // console.log('Fetching supporting data...');
       const [machinesData, partsData, warehousesData] = await Promise.all([
         machinesService.getMachines(),
         partsService.getParts(),
         warehouseService.getWarehouses()
       ]);
 
-      console.log('Raw parts data:', partsData);
+      // console.log('Raw parts data:', partsData);
 
       // Ensure data is in array format
       const machinesArray = Array.isArray(machinesData) ? machinesData : (machinesData?.data || machinesData?.items || []);
       const partsArray = Array.isArray(partsData) ? partsData : (partsData?.data || partsData?.items || []);
       const warehousesArray = Array.isArray(warehousesData) ? warehousesData : (warehousesData?.data || warehousesData?.items || []);
       
-      console.log('Machines array:', machinesArray.length);
-      console.log('Parts array:', partsArray.length, partsArray);
-      console.log('Warehouses array:', warehousesArray.length);
+      // console.log('Machines array:', machinesArray.length);
+      // console.log('Parts array:', partsArray.length, partsArray);
+      // console.log('Warehouses array:', warehousesArray.length);
       
       setMachines(machinesArray);
       setParts(partsArray);
@@ -101,14 +101,14 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
 
   const fetchWarehouseInventory = async () => {
     try {
-      console.log('Fetching inventory for warehouse:', formData.from_warehouse_id);
+      // console.log('Fetching inventory for warehouse:', formData.from_warehouse_id);
       const inventory = await inventoryService.getWarehouseInventory(
         formData.from_warehouse_id
       );
 
-      console.log('Raw inventory response:', inventory);
-      console.log('Response type:', typeof inventory);
-      console.log('Is array?', Array.isArray(inventory));
+      // console.log('Raw inventory response:', inventory);
+      // console.log('Response type:', typeof inventory);
+      // console.log('Is array?', Array.isArray(inventory));
 
       // Handle different response formats
       let inventoryArray = [];
@@ -120,17 +120,17 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         inventoryArray = inventory.items;
       }
 
-      console.log('Inventory array:', inventoryArray);
+      // console.log('Inventory array:', inventoryArray);
 
       // Filter to only show parts with stock > 0
       const availableInventory = inventoryArray.filter(item => {
         const stock = item.current_stock || item.quantity || 0;
-        console.log(`Part ${item.part_id}: stock = ${stock}`);
+        // console.log(`Part ${item.part_id}: stock = ${stock}`);
         return stock > 0;
       });
       
-      console.log('Available inventory (stock > 0):', availableInventory);
-      console.log('First inventory item structure:', availableInventory[0]);
+      // console.log('Available inventory (stock > 0):', availableInventory);
+      // console.log('First inventory item structure:', availableInventory[0]);
       setWarehouseInventory(availableInventory);
 
       // Auto-select if only one part available
@@ -245,11 +245,11 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
         performed_by_user_id: user.id
       };
 
-      console.log('Submitting transaction data:', transactionData);
+      // console.log('Submitting transaction data:', transactionData);
 
       const result = await transactionService.createTransaction(transactionData);
 
-      console.log('Transaction created successfully:', result);
+      // console.log('Transaction created successfully:', result);
 
       setSuccess(t('partUsage.recordedSuccessfully'));
 
@@ -384,7 +384,7 @@ const PartUsageRecorder = ({ isOpen, onClose, onUsageRecorded, initialMachineId 
               } : (Array.isArray(parts) ? parts.find(p => p.id === inventoryItem.part_id) : null);
               
               if (!partInfo) {
-                console.log('Part info not available for:', inventoryItem.part_id);
+                // console.log('Part info not available for:', inventoryItem.part_id);
                 return null;
               }
               

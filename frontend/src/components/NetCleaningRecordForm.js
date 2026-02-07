@@ -70,7 +70,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
       
       // If offline, load from cache
       if (!isOnline) {
-        console.log('[NetCleaningRecordForm] Loading users from cache (offline)...');
+        // console.log('[NetCleaningRecordForm] Loading users from cache (offline)...');
         try {
           const cachedUsers = await getCachedItemsByIndex(
             STORES.USERS, 
@@ -79,7 +79,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
           );
           const activeUsers = cachedUsers.filter(u => u.is_active);
           setOrganizationUsers(activeUsers);
-          console.log(`[NetCleaningRecordForm] Loaded ${activeUsers.length} users from cache`);
+          // console.log(`[NetCleaningRecordForm] Loaded ${activeUsers.length} users from cache`);
         } catch (err) {
           console.error('[NetCleaningRecordForm] Error loading cached users:', err);
           setOrganizationUsers([]);
@@ -110,7 +110,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
         setOrganizationUsers(activeUsers);
         
         // Cache users for offline use
-        console.log(`[NetCleaningRecordForm] Caching ${activeUsers.length} users for offline use...`);
+        // console.log(`[NetCleaningRecordForm] Caching ${activeUsers.length} users for offline use...`);
         await cacheData(STORES.USERS, activeUsers);
       } catch (err) {
         console.error('Error fetching organization users:', err);
@@ -203,7 +203,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
     try {
       // If offline, save to IndexedDB
       if (!isOnline) {
-        console.log('[NetCleaningRecordForm] Saving offline...');
+        // console.log('[NetCleaningRecordForm] Saving offline...');
         
         // Generate temporary ID
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -225,7 +225,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
         
         // Save photos if any
         if (photos.length > 0) {
-          console.log(`[NetCleaningRecordForm] Saving ${photos.length} photos offline...`);
+          // console.log(`[NetCleaningRecordForm] Saving ${photos.length} photos offline...`);
           for (let i = 0; i < photos.length; i++) {
             const photo = photos[i];
             const photoTempId = `temp_photo_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;

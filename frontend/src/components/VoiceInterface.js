@@ -137,7 +137,7 @@ const VoiceInterface = React.forwardRef(({
       // Resume speech synthesis if it gets paused unexpectedly
       const resumeSpeechSynthesis = () => {
         if (speechSynthesis.paused && speechSynthesis.speaking) {
-          console.log('VoiceInterface: Resuming paused speech synthesis');
+          // console.log('VoiceInterface: Resuming paused speech synthesis');
           speechSynthesis.resume();
         }
       };
@@ -310,20 +310,20 @@ const VoiceInterface = React.forwardRef(({
 
   // Speak text with language-specific voice using global manager
   const speakText = useCallback((text) => {
-    console.log('VoiceInterface: Starting speech via global manager:', text.substring(0, 50) + '...');
+    // console.log('VoiceInterface: Starting speech via global manager:', text.substring(0, 50) + '...');
     
     // Set up callbacks for state management
     speechManager.setCallbacks({
       onStart: () => {
-        console.log('VoiceInterface: Speech started via global manager');
+        // console.log('VoiceInterface: Speech started via global manager');
         setIsSpeaking(true);
       },
       onEnd: () => {
-        console.log('VoiceInterface: Speech ended via global manager');
+        // console.log('VoiceInterface: Speech ended via global manager');
         setIsSpeaking(false);
       },
       onError: (error) => {
-        console.log('VoiceInterface: Speech error via global manager:', error);
+        // console.log('VoiceInterface: Speech error via global manager:', error);
         if (error !== 'interrupted') {
           console.error('VoiceInterface: Non-interrupted speech error:', error);
         }
@@ -339,9 +339,9 @@ const VoiceInterface = React.forwardRef(({
       volume: 0.9
     }).then((started) => {
       if (started) {
-        console.log('VoiceInterface: Speech successfully started via global manager');
+        // console.log('VoiceInterface: Speech successfully started via global manager');
       } else {
-        console.log('VoiceInterface: Speech was interrupted via global manager');
+        // console.log('VoiceInterface: Speech was interrupted via global manager');
       }
     }).catch((error) => {
       console.error('VoiceInterface: Failed to start speech via global manager:', error);
@@ -351,7 +351,7 @@ const VoiceInterface = React.forwardRef(({
 
   // Stop speaking using global manager
   const stopSpeaking = useCallback(() => {
-    console.log('VoiceInterface: Stopping speech via global manager');
+    // console.log('VoiceInterface: Stopping speech via global manager');
     speechManager.cancel();
     setIsSpeaking(false);
   }, []);

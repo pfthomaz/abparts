@@ -9,12 +9,12 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   
-  console.log('ProfilePhotoUpload rendered with currentPhotoUrl:', currentPhotoUrl);
+  // console.log('ProfilePhotoUpload rendered with currentPhotoUrl:', currentPhotoUrl);
 
   const handleFileSelect = async (event) => {
-    console.log('handleFileSelect called', event);
+    // console.log('handleFileSelect called', event);
     const file = event.target.files[0];
-    console.log('Selected file:', file);
+    // console.log('Selected file:', file);
     if (!file) return;
 
     // Validate file type
@@ -37,7 +37,7 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
       formData.append('file', file);
 
       const token = localStorage.getItem('authToken');
-      console.log('Uploading photo...');
+      // console.log('Uploading photo...');
       const response = await fetch(`${API_BASE_URL}/uploads/users/profile-photo`, {
         method: 'POST',
         headers: {
@@ -52,7 +52,7 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
       }
 
       const data = await response.json();
-      console.log('Upload successful, new URL:', data.url);
+      // console.log('Upload successful, new URL:', data.url);
       
       // Refresh user context first to update header photo
       await refreshUser();
@@ -104,7 +104,7 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
 
   const photoUrl = currentPhotoUrl;
 
-  console.log('Rendering preview - currentPhotoUrl:', currentPhotoUrl, 'photoUrl:', photoUrl);
+  // console.log('Rendering preview - currentPhotoUrl:', currentPhotoUrl, 'photoUrl:', photoUrl);
 
   return (
     <div className="space-y-4">
@@ -116,7 +116,7 @@ const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdated }) => {
               src={photoUrl}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
-              onLoad={() => console.log('Image loaded successfully:', photoUrl)}
+              // onLoad={() => console.log('Image loaded successfully:', photoUrl)}
               onError={(e) => console.error('Image failed to load:', photoUrl, e)}
             />
           ) : (

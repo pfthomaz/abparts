@@ -36,7 +36,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
   if (!online) {
     const cached = await getCachedData(STORES.PROTOCOLS);
     if (cached.length > 0) {
-      console.log('[MaintenanceService] Using cached protocols (offline):', cached.length);
+      // console.log('[MaintenanceService] Using cached protocols (offline):', cached.length);
       return filterCachedData(cached);
     }
     throw new Error('No cached data available offline');
@@ -57,7 +57,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
   if (!cacheStale && !forceRefresh) {
     const cached = await getCachedData(STORES.PROTOCOLS);
     if (cached.length > 0) {
-      console.log('[MaintenanceService] Using cached protocols (fresh):', cached.length);
+      // console.log('[MaintenanceService] Using cached protocols (fresh):', cached.length);
       return filterCachedData(cached);
     }
   }
@@ -74,7 +74,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
     
     // Cache the response
     await cacheData(STORES.PROTOCOLS, data);
-    console.log('[MaintenanceService] Cached protocols:', data.length);
+    // console.log('[MaintenanceService] Cached protocols:', data.length);
     
     return data;
   } catch (error) {
@@ -82,7 +82,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
     console.warn('[MaintenanceService] API failed, attempting cache fallback:', error.message);
     const cached = await getCachedData(STORES.PROTOCOLS);
     if (cached.length > 0) {
-      console.log('[MaintenanceService] Using cached protocols (fallback):', cached.length);
+      // console.log('[MaintenanceService] Using cached protocols (fallback):', cached.length);
       return filterCachedData(cached);
     }
     throw error;
@@ -96,7 +96,7 @@ export const getProtocol = async (protocolId) => {
   if (!online) {
     const cached = await getCachedItem(STORES.PROTOCOLS, protocolId);
     if (cached) {
-      console.log('[MaintenanceService] Using cached protocol:', protocolId);
+      // console.log('[MaintenanceService] Using cached protocol:', protocolId);
       return cached;
     }
   }
@@ -113,7 +113,7 @@ export const getProtocol = async (protocolId) => {
     // Fallback to cache on error
     const cached = await getCachedItem(STORES.PROTOCOLS, protocolId);
     if (cached) {
-      console.log('[MaintenanceService] Using cached protocol (fallback):', protocolId);
+      // console.log('[MaintenanceService] Using cached protocol (fallback):', protocolId);
       return cached;
     }
     throw error;
@@ -145,7 +145,7 @@ export const getChecklistItems = async (protocolId) => {
   if (!online) {
     const cachedProtocol = await getCachedItem(STORES.PROTOCOLS, protocolId);
     if (cachedProtocol && cachedProtocol.checklist_items) {
-      console.log('[MaintenanceService] Using cached checklist items (offline):', cachedProtocol.checklist_items.length);
+      // console.log('[MaintenanceService] Using cached checklist items (offline):', cachedProtocol.checklist_items.length);
       return cachedProtocol.checklist_items;
     }
   }
@@ -159,7 +159,7 @@ export const getChecklistItems = async (protocolId) => {
     if (cachedProtocol) {
       cachedProtocol.checklist_items = items;
       await cacheData(STORES.PROTOCOLS, cachedProtocol);
-      console.log('[MaintenanceService] Cached checklist items:', items.length);
+      // console.log('[MaintenanceService] Cached checklist items:', items.length);
     }
     
     return items;
@@ -168,7 +168,7 @@ export const getChecklistItems = async (protocolId) => {
     console.warn('[MaintenanceService] API failed, attempting cache fallback for checklist items');
     const cachedProtocol = await getCachedItem(STORES.PROTOCOLS, protocolId);
     if (cachedProtocol && cachedProtocol.checklist_items) {
-      console.log('[MaintenanceService] Using cached checklist items (fallback):', cachedProtocol.checklist_items.length);
+      // console.log('[MaintenanceService] Using cached checklist items (fallback):', cachedProtocol.checklist_items.length);
       return cachedProtocol.checklist_items;
     }
     throw error;

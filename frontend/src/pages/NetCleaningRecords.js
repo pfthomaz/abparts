@@ -48,7 +48,7 @@ const NetCleaningRecords = () => {
       // Load offline records
       const unsyncedRecords = await getUnsyncedNetCleaningRecords();
       setOfflineRecords(unsyncedRecords);
-      console.log(`[NetCleaningRecords] Loaded ${unsyncedRecords.length} offline records`);
+      // console.log(`[NetCleaningRecords] Loaded ${unsyncedRecords.length} offline records`);
     } catch (err) {
       setError(err.message || 'Failed to fetch data.');
     } finally {
@@ -72,7 +72,7 @@ const NetCleaningRecords = () => {
   // Listen for sync completion and refresh all data
   useEffect(() => {
     const handleSyncComplete = async (event) => {
-      console.log('[NetCleaningRecords] Sync completed, refreshing data...', event.detail);
+      // console.log('[NetCleaningRecords] Sync completed, refreshing data...', event.detail);
       // Refresh all data from server and offline storage
       await fetchData();
     };

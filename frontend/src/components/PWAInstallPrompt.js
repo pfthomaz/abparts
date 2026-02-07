@@ -15,7 +15,7 @@ const PWAInstallPrompt = () => {
   const handleInstall = async () => {
     const installed = await installApp();
     if (installed) {
-      console.log('[PWA Install Prompt] App installed successfully');
+      // console.log('[PWA Install Prompt] App installed successfully');
     }
   };
 

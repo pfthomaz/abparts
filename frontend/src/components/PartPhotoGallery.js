@@ -35,7 +35,7 @@ const PartPhotoGallery = forwardRef(({
     
     // Only notify if URLs actually changed
     if (JSON.stringify(currentUrls) !== JSON.stringify(previousUrls)) {
-      console.log('PartPhotoGallery: Images changed, notifying parent', currentUrls);
+      // console.log('PartPhotoGallery: Images changed, notifying parent', currentUrls);
       previousImageUrls.current = currentUrls;
       
       if (onImagesChange && typeof onImagesChange === 'function') {
@@ -46,14 +46,14 @@ const PartPhotoGallery = forwardRef(({
 
   // Initialize images from props - only when props change
   useEffect(() => {
-    console.log('PartPhotoGallery: images prop changed', images);
+    // console.log('PartPhotoGallery: images prop changed', images);
     if (Array.isArray(images)) {
       const processedImages = images.map((url, index) => ({
         id: `existing-${index}-${Date.now()}`,
         url: url,
         isExisting: true
       }));
-      console.log('PartPhotoGallery: processed images', processedImages);
+      // console.log('PartPhotoGallery: processed images', processedImages);
       setCurrentImages(processedImages);
     }
   }, [images]);
@@ -93,11 +93,11 @@ const PartPhotoGallery = forwardRef(({
       });
 
       const uploadedImages = await Promise.all(uploadPromises);
-      console.log('PartPhotoGallery: Successfully uploaded images:', uploadedImages);
+      // console.log('PartPhotoGallery: Successfully uploaded images:', uploadedImages);
 
       // Add uploaded images to current list
       const newImages = [...currentImages, ...uploadedImages];
-      console.log('PartPhotoGallery: New images list:', newImages);
+      // console.log('PartPhotoGallery: New images list:', newImages);
       setCurrentImages(newImages);
 
     } catch (uploadError) {
@@ -125,7 +125,7 @@ const PartPhotoGallery = forwardRef(({
 
   // Image modal component
   const ImageModal = ({ imageUrl, onClose }) => {
-    console.log('ImageModal rendering with URL:', imageUrl);
+    // console.log('ImageModal rendering with URL:', imageUrl);
     return (
       <div
         className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
@@ -162,7 +162,7 @@ const PartPhotoGallery = forwardRef(({
                   key={image.id} 
                   className="relative group cursor-pointer"
                   onClick={() => {
-                    console.log('Image clicked, index:', index);
+                    // console.log('Image clicked, index:', index);
                     setSelectedImageIndex(index);
                   }}
                 >
@@ -196,7 +196,7 @@ const PartPhotoGallery = forwardRef(({
           <ImageModal
             imageUrl={currentImages[selectedImageIndex].url}
             onClose={() => {
-              console.log('Closing modal');
+              // console.log('Closing modal');
               setSelectedImageIndex(null);
             }}
           />

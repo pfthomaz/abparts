@@ -321,10 +321,10 @@ export const logInventoryValidation = (originalData, validatedData, context = ''
   const timestamp = new Date().toISOString();
 
   console.group(`📊 Inventory Validation ${context ? `- ${context}` : ''} - ${timestamp}`);
-  console.log('Original data type:', typeof originalData);
-  console.log('Original data:', originalData);
-  console.log('Validated array length:', validatedData.length);
-  console.log('Validated data:', validatedData);
+  // console.log('Original data type:', typeof originalData);
+  // console.log('Original data:', originalData);
+  // console.log('Validated array length:', validatedData.length);
+  // console.log('Validated data:', validatedData);
 
   if (originalData && typeof originalData === 'object' && !Array.isArray(originalData)) {
     // Check for inventory_summary structure

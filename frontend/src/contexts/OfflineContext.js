@@ -53,14 +53,14 @@ export const OfflineProvider = ({ children }) => {
       const total = unsyncedRecords.length + unsyncedExecutions.length + pendingOps.length;
       setPendingCount(total);
       
-      console.log('[OfflineContext] Pending operations:', total);
-      console.log('  - Unsynced net cleaning records:', unsyncedRecords.length);
-      console.log('  - Unsynced maintenance executions:', unsyncedExecutions.length);
-      console.log('  - Pending sync queue operations:', pendingOps.length);
+      // console.log('[OfflineContext] Pending operations:', total);
+      // console.log('  - Unsynced net cleaning records:', unsyncedRecords.length);
+      // console.log('  - Unsynced maintenance executions:', unsyncedExecutions.length);
+      // console.log('  - Pending sync queue operations:', pendingOps.length);
       
       return total;
     } catch (error) {
-      console.error('[OfflineContext] Failed to update pending count:', error);
+      // console.error('[OfflineContext] Failed to update pending count:', error);
       return 0;
     }
   }, []);
@@ -74,14 +74,10 @@ export const OfflineProvider = ({ children }) => {
       setStorageInfo(estimate);
       
       if (estimate) {
-        console.log('[OfflineContext] Storage usage:', {
-          used: `${(estimate.usage / 1024 / 1024).toFixed(2)} MB`,
-          quota: `${(estimate.quota / 1024 / 1024).toFixed(2)} MB`,
-          percent: `${estimate.percentUsed.toFixed(1)}%`,
-        });
+        // console.log('[OfflineContext] Storage usage:', { used: `${(estimate.usage / 1024 / 1024).toFixed(2)} MB`, quota: `${(estimate.quota / 1024 / 1024).toFixed(2)} MB`, percent: `${estimate.percentUsed.toFixed(1)}%` });
       }
     } catch (error) {
-      console.error('[OfflineContext] Failed to update storage info:', error);
+      // console.error('[OfflineContext] Failed to update storage info:', error);
     }
   }, []);
 
@@ -91,12 +87,12 @@ export const OfflineProvider = ({ children }) => {
    */
   const triggerSync = useCallback(async () => {
     if (!isOnline) {
-      console.log('[OfflineContext] Cannot sync while offline');
+      // console.log('[OfflineContext] Cannot sync while offline');
       return false;
     }
 
     if (isSyncing) {
-      console.log('[OfflineContext] Sync already in progress');
+      // console.log('[OfflineContext] Sync already in progress');
       return false;
     }
 
@@ -104,7 +100,7 @@ export const OfflineProvider = ({ children }) => {
       setIsSyncing(true);
       setSyncError(null);
       
-      console.log('[OfflineContext] Starting sync...');
+      // console.log('[OfflineContext] Starting sync...');
       
       // Dispatch custom event that sync services can listen to
       window.dispatchEvent(new CustomEvent('offline-sync-start'));
@@ -112,7 +108,7 @@ export const OfflineProvider = ({ children }) => {
       // Use the sync processor to actually sync data
       const results = await processSync();
       
-      console.log('[OfflineContext] Sync results:', results);
+      // console.log('[OfflineContext] Sync results:', results);
       
       // Update pending count after sync
       await updatePendingCount();
@@ -124,7 +120,7 @@ export const OfflineProvider = ({ children }) => {
         setSyncError(`${results.failed} operations failed to sync`);
         console.warn('[OfflineContext] Some operations failed:', results.errors);
       } else {
-        console.log('[OfflineContext] Sync completed successfully');
+        // console.log('[OfflineContext] Sync completed successfully');
       }
       
       // Dispatch sync complete event
@@ -134,7 +130,7 @@ export const OfflineProvider = ({ children }) => {
       
       return results.failed === 0;
     } catch (error) {
-      console.error('[OfflineContext] Sync failed:', error);
+      // console.error('[OfflineContext] Sync failed:', error);
       setSyncError(error.message);
       
       // Dispatch sync error event
@@ -183,7 +179,7 @@ export const OfflineProvider = ({ children }) => {
   // Auto-sync when connection is restored
   useEffect(() => {
     if (isOnline && wasOffline && pendingCount > 0) {
-      console.log('[OfflineContext] Connection restored with pending operations, triggering sync...');
+      // console.log('[OfflineContext] Connection restored with pending operations, triggering sync...');
       
       // Show "back online" message
       setShowBackOnline(true);
@@ -199,12 +195,12 @@ export const OfflineProvider = ({ children }) => {
   // Listen for custom events from other components
   useEffect(() => {
     const handleDataSaved = () => {
-      console.log('[OfflineContext] Data saved offline, updating count...');
+      // console.log('[OfflineContext] Data saved offline, updating count...');
       updatePendingCount();
     };
 
     const handleDataSynced = () => {
-      console.log('[OfflineContext] Data synced, updating count...');
+      // console.log('[OfflineContext] Data synced, updating count...');
       updatePendingCount();
     };
 

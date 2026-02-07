@@ -55,13 +55,13 @@ export const useMountPerformance = (componentName = 'Component') => {
     const currentMountTime = mountTime.current;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`${componentName} mounted in ${mountDuration.toFixed(2)}ms`);
+      // console.log(`${componentName} mounted in ${mountDuration.toFixed(2)}ms`);
     }
 
     return () => {
       const unmountTime = performance.now();
       if (process.env.NODE_ENV === 'development') {
-        console.log(`${componentName} unmounted after ${(unmountTime - currentMountTime).toFixed(2)}ms`);
+        // console.log(`${componentName} unmounted after ${(unmountTime - currentMountTime).toFixed(2)}ms`);
       }
     };
   }, [componentName]);

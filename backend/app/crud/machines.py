@@ -229,15 +229,8 @@ def create_machine(db: Session, machine: schemas.MachineCreate):
         # Handle enum conversion for status if provided
         machine_data = machine.dict()
         
-        # Temporarily filter out commented fields until DB migration is complete
-        commented_fields = [
-            'purchase_date', 'warranty_expiry_date', 'status', 
-            'last_maintenance_date', 'next_maintenance_date', 
-            'location', 'notes'
-        ]
-        machine_data_filtered = {k: v for k, v in machine_data.items() if k not in commented_fields}
-
-        db_machine = models.Machine(**machine_data_filtered)
+        # Create machine with all fields (migration has been completed)
+        db_machine = models.Machine(**machine_data)
         db.add(db_machine)
         db.commit()
         db.refresh(db_machine)
@@ -329,16 +322,8 @@ def update_machine(db: Session, machine_id: uuid.UUID, machine_update: schemas.M
                 logger.warning(f"Attempted to assign machine to non-customer organization: {organization.organization_type}")
                 raise HTTPException(status_code=400, detail="Machines can only be assigned to customer organizations")
 
-        # Temporarily filter out commented fields until DB migration is complete
-        commented_fields = [
-            'purchase_date', 'warranty_expiry_date', 'status', 
-            'last_maintenance_date', 'next_maintenance_date', 
-            'location', 'notes'
-        ]
-        update_data_filtered = {k: v for k, v in update_data.items() if k not in commented_fields}
-
-        # Apply updates, handling null values gracefully
-        for key, value in update_data_filtered.items():
+        # Apply updates, handling null values gracefully (migration has been completed)
+        for key, value in update_data.items():
             if hasattr(db_machine, key):
                 # Handle special cases for certain fields
                 if key == 'serial_number' and (not value or not str(value).strip()):

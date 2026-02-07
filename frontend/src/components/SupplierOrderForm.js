@@ -76,18 +76,18 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
 
   // Use useMemo to prevent recalculation on every render
   const oraseasOrg = useMemo(() => {
-    console.log('Organizations data:', organizations);
+    // console.log('Organizations data:', organizations);
     const found = organizations.find(org => {
-      console.log('Checking org:', org.name, org.organization_type);
+      // console.log('Checking org:', org.name, org.organization_type);
       return org.name === 'Oraseas EE' && org.organization_type === 'oraseas_ee';
     });
-    console.log('Found Oraseas org:', found);
+    // console.log('Found Oraseas org:', found);
     return found;
   }, [organizations]);
 
   const supplierOrganizations = useMemo(() => {
     const suppliers = organizations.filter(org => org.organization_type === 'supplier');
-    console.log('Supplier organizations:', suppliers);
+    // console.log('Supplier organizations:', suppliers);
     return suppliers;
   }, [organizations]);
 

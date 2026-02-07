@@ -29,7 +29,7 @@ class SpeechSynthesisManager {
     // Prevent browser from pausing speech
     setInterval(() => {
       if (this.synthesis.paused && this.synthesis.speaking) {
-        console.log('SpeechSynthesisManager: Resuming paused speech');
+        // console.log('SpeechSynthesisManager: Resuming paused speech');
         this.synthesis.resume();
       }
     }, 1000);
@@ -37,7 +37,7 @@ class SpeechSynthesisManager {
   
   loadVoices() {
     this.voices = this.synthesis.getVoices();
-    console.log('SpeechSynthesisManager: Loaded', this.voices.length, 'voices');
+    // console.log('SpeechSynthesisManager: Loaded', this.voices.length, 'voices');
   }
   
   getBestVoice(language = 'en') {
@@ -95,19 +95,19 @@ class SpeechSynthesisManager {
           utterance.volume = options.volume || 0.9;
           
           utterance.onstart = () => {
-            console.log('SpeechSynthesisManager: Speech started');
+            // console.log('SpeechSynthesisManager: Speech started');
             if (this.callbacks.onStart) this.callbacks.onStart();
             resolve(true);
           };
           
           utterance.onend = () => {
-            console.log('SpeechSynthesisManager: Speech ended');
+            // console.log('SpeechSynthesisManager: Speech ended');
             this.currentUtterance = null;
             if (this.callbacks.onEnd) this.callbacks.onEnd();
           };
           
           utterance.onerror = (event) => {
-            console.log('SpeechSynthesisManager: Speech error:', event.error);
+            // console.log('SpeechSynthesisManager: Speech error:', event.error);
             this.currentUtterance = null;
             if (this.callbacks.onError) this.callbacks.onError(event.error);
             

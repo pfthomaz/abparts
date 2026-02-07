@@ -36,13 +36,13 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
         // Fetch all parts first (backend max limit is 1000)
         const partsResponse = await api.get('/parts/?limit=1000');
         const parts = Array.isArray(partsResponse) ? partsResponse : (partsResponse.items || []);
-        console.log('Loaded parts for search:', parts.length, 'parts');
+        // console.log('Loaded parts for search:', parts.length, 'parts');
         setAllParts(parts);
         
         // Fetch inventory with part details using the warehouse-specific endpoint
         const inventoryResponse = await api.get(`/inventory/warehouse/${warehouse.id}?limit=1000`);
         const inventory = Array.isArray(inventoryResponse) ? inventoryResponse : [];
-        console.log('Loaded inventory for warehouse:', inventory.length, 'items');
+        // console.log('Loaded inventory for warehouse:', inventory.length, 'items');
         
         // Create a map of part_id to part details
         const partsMap = {};
@@ -106,15 +106,15 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
     try {
       const inventoryResponse = await api.get(`/inventory/warehouse/${warehouse.id}?limit=1000`);
       const inventory = Array.isArray(inventoryResponse) ? inventoryResponse : [];
-      console.log('📦 Fetched inventory for warehouse:', warehouse.id, 'Total items:', inventory.length);
+      // console.log('📦 Fetched inventory for warehouse:', warehouse.id, 'Total items:', inventory.length);
       
       // Find the specific part in this warehouse's inventory
       const partInventory = inventory.find(item => item.part_id === partId);
       if (partInventory) {
         currentStock = parseFloat(partInventory.current_stock || 0);
-        console.log('✅ Found existing inventory for part:', part.part_number, 'Current stock:', currentStock);
+        // console.log('✅ Found existing inventory for part:', part.part_number, 'Current stock:', currentStock);
       } else {
-        console.log('ℹ️ No existing inventory for part:', part.part_number, 'Starting with 0');
+        // console.log('ℹ️ No existing inventory for part:', part.part_number, 'Starting with 0');
       }
     } catch (err) {
       console.error('❌ Error fetching inventory for part:', err);
@@ -130,7 +130,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
       unit_of_measure: part.unit_of_measure || 'units'
     };
     
-    console.log('➕ Adding part to adjustments:', newAdjustment);
+    // console.log('➕ Adding part to adjustments:', newAdjustment);
     setAdjustments([...adjustments, newAdjustment]);
     
     setSelectedPartId(''); // Clear selection
@@ -192,21 +192,16 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
         notes
       };
       
-      console.log('📤 Submitting stock reset:', payload);
-      console.log('📊 Changes being applied:', changes.map(adj => ({
-        part: adj.part_number,
-        current: adj.current_quantity,
-        new: adj.new_quantity,
-        diff: adj.new_quantity - adj.current_quantity
-      })));
+      // console.log('📤 Submitting stock reset:', payload);
+      // console.log('📊 Changes being applied:', changes.map(adj => ({ part: adj.part_number, current: adj.current_quantity, new: adj.new_quantity, diff: adj.new_quantity - adj.current_quantity })));
       
       const result = await warehouseService.resetStock(warehouse.id, payload);
-      console.log('✅ Stock reset response:', result);
+      // console.log('✅ Stock reset response:', result);
       
       alert(`Stock reset successful! ${changes.length} parts adjusted.`);
       if (onSuccess) onSuccess();
     } catch (err) {
-      console.error('❌ Error resetting stock:', err);
+      // console.error('❌ Error resetting stock:', err);
       setError(err.message || 'Failed to reset stock');
     } finally {
       setLoading(false);

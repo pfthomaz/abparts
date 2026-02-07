@@ -134,7 +134,7 @@ const LocalizationTest = () => {
               <MultilingualPartName
                 value={testMultilingualString}
                 isEditing={true}
-                onChange={(value) => console.log('Changed to:', value)}
+                // onChange={(value) => console.log('Changed to:', value)}
                 className="text-sm"
               />
             </div>

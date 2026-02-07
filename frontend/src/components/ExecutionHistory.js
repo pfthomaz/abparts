@@ -11,16 +11,10 @@ const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  console.log('ExecutionHistory received executions:', executions);
+  // console.log('ExecutionHistory received executions:', executions);
 
   const canDeleteExecution = (execution) => {
-    console.log('canDeleteExecution check:', {
-      user,
-      userRole: user?.role,
-      executionMachineOrgId: execution.machine?.customer_organization_id,
-      userOrgId: user?.organization_id,
-      canDelete: user && (user.role === 'super_admin' || (user.role === 'admin' && execution.machine?.customer_organization_id === user.organization_id))
-    });
+    // console.log('canDeleteExecution check:', { user, userRole: user?.role, executionMachineOrgId: execution.machine?.customer_organization_id, userOrgId: user?.organization_id, canDelete: user && (user.role === 'super_admin' || (user.role === 'admin' && execution.machine?.customer_organization_id === user.organization_id)) });
     
     if (!user) return false;
     // Super admin can delete any execution
@@ -56,7 +50,7 @@ const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
     return exec.status === filterStatus;
   });
 
-  console.log('Filtered executions:', filteredExecutions);
+  // console.log('Filtered executions:', filteredExecutions);
 
   const getStatusBadge = (status) => {
     const badges = {

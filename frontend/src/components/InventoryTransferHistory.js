@@ -47,7 +47,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
     try {
       // Validate warehouse ID before making API calls
       if (!warehouseId) {
-        console.log('No warehouse ID provided, skipping transfer fetch');
+        // console.log('No warehouse ID provided, skipping transfer fetch');
         setTransfers([]);
         setLoading(false);
         return;
@@ -56,7 +56,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(warehouseId)) {
-        console.error('Invalid warehouse ID format:', warehouseId);
+        // console.error('Invalid warehouse ID format:', warehouseId);
         setError('Invalid warehouse ID format');
         setLoading(false);
         return;
@@ -69,16 +69,10 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
 
       try {
         // Debug: Log all the values we're about to send
-        console.log('Debug - warehouseId:', warehouseId, 'type:', typeof warehouseId);
-        console.log('Debug - start_date:', filters.start_date, 'type:', typeof filters.start_date);
-        console.log('Debug - end_date:', filters.end_date, 'type:', typeof filters.end_date);
-
-        console.log('Fetching transfers with params:', {
-          warehouse_id: warehouseId,
-          start_date: filters.start_date,
-          end_date: filters.end_date,
-          limit: 1000
-        });
+        // console.log('Debug - warehouseId:', warehouseId, 'type:', typeof warehouseId);
+        // console.log('Debug - start_date:', filters.start_date, 'type:', typeof filters.start_date);
+        // console.log('Debug - end_date:', filters.end_date, 'type:', typeof filters.end_date);
+        // console.log('Fetching transfers with params:', { warehouse_id: warehouseId, start_date: filters.start_date, end_date: filters.end_date, limit: 1000 });
 
         // Validate date formats
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -87,12 +81,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
         }
 
         // Fetch transfers with proper filtering
-        console.log('Fetching transfers with params:', {
-          warehouse_id: warehouseId,
-          start_date: filters.start_date,
-          end_date: filters.end_date,
-          limit: 1000
-        });
+        // console.log('Fetching transfers with params:', { warehouse_id: warehouseId, start_date: filters.start_date, end_date: filters.end_date, limit: 1000 });
 
         const transfersResponse = await inventoryService.getInventoryTransfers({
           warehouse_id: warehouseId,
@@ -101,30 +90,30 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
           limit: 1000
         });
 
-        console.log('Transfers response:', transfersResponse);
+        // console.log('Transfers response:', transfersResponse);
         transfersData = Array.isArray(transfersResponse) ? transfersResponse : [];
       } catch (transferError) {
-        console.error('Failed to fetch transfers:', transferError);
-        console.error('Full error object:', JSON.stringify(transferError, null, 2));
+        // console.error('Failed to fetch transfers:', transferError);
+        // console.error('Full error object:', JSON.stringify(transferError, null, 2));
 
         // Log the full response for debugging
         if (transferError.response) {
-          console.error('Error response status:', transferError.response.status);
-          console.error('Error response headers:', transferError.response.headers);
-          console.error('Error response data:', transferError.response.data);
+          // console.error('Error response status:', transferError.response.status);
+          // console.error('Error response headers:', transferError.response.headers);
+          // console.error('Error response data:', transferError.response.data);
         }
 
         // Handle specific error types
         if (transferError.response?.status === 422) {
-          console.error('422 Validation error details:', transferError.response.data);
+          // console.error('422 Validation error details:', transferError.response.data);
           // Log the specific validation errors
           if (transferError.response.data?.detail) {
-            console.error('Validation detail:', transferError.response.data.detail);
+            // console.error('Validation detail:', transferError.response.data.detail);
           }
         } else if (transferError.response?.status === 401) {
-          console.error('Authentication error - user may need to log in again');
+          // console.error('Authentication error - user may need to log in again');
         } else {
-          console.error('Transfer error details:', transferError.response?.data || transferError.message);
+          // console.error('Transfer error details:', transferError.response?.data || transferError.message);
         }
 
         transfersData = [];
@@ -135,7 +124,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
         warehousesData = await warehouseService.getWarehouses();
         warehousesData = Array.isArray(warehousesData) ? warehousesData : [];
       } catch (warehouseError) {
-        console.error('Failed to fetch warehouses:', warehouseError);
+        // console.error('Failed to fetch warehouses:', warehouseError);
         warehousesData = [];
       }
 
@@ -145,7 +134,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
         partsData = partsResponse?.items || partsResponse || [];
         partsData = Array.isArray(partsData) ? partsData : [];
       } catch (partsError) {
-        console.error('Failed to fetch parts:', partsError);
+        // console.error('Failed to fetch parts:', partsError);
         partsData = [];
       }
 
@@ -160,7 +149,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
       }
     } catch (err) {
       setError('Failed to fetch transfer history');
-      console.error('Failed to fetch transfer history:', err);
+      // console.error('Failed to fetch transfer history:', err);
       // Set empty arrays as fallback
       setTransfers([]);
       setWarehouses([]);
@@ -205,7 +194,7 @@ const InventoryTransferHistory = ({ warehouseId, warehouse }) => {
 
       return matchesSearch && matchesDirection && matchesPart && matchesDate;
     } catch (error) {
-      console.error('Error filtering transfer:', error, transfer);
+      // console.error('Error filtering transfer:', error, transfer);
       return false;
     }
   }, []);

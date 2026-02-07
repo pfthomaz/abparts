@@ -36,11 +36,11 @@ export const PWAProvider = ({ children }) => {
   useEffect(() => {
     registerSW({
       onSuccess: (registration) => {
-        console.log('[PWA] Service worker registered successfully');
+        // console.log('[PWA] Service worker registered successfully');
         setSwRegistration(registration);
       },
       onUpdate: (registration) => {
-        console.log('[PWA] New version available');
+        // console.log('[PWA] New version available');
         setUpdateAvailable(true);
         setSwRegistration(registration);
       }
@@ -50,7 +50,7 @@ export const PWAProvider = ({ children }) => {
   // Listen for connectivity changes
   useEffect(() => {
     const handleOnline = () => {
-      console.log('[PWA] Connection restored');
+      // console.log('[PWA] Connection restored');
       setIsOnline(true);
       
       // Trigger background sync if available
@@ -62,7 +62,7 @@ export const PWAProvider = ({ children }) => {
       
       // Process queued messages
       if (messageQueue.length > 0) {
-        console.log(`[PWA] Processing ${messageQueue.length} queued messages`);
+        // console.log(`[PWA] Processing ${messageQueue.length} queued messages`);
         // Notify listeners that messages should be sent
         window.dispatchEvent(new CustomEvent('pwa-process-queue', {
           detail: { messages: messageQueue }
@@ -71,7 +71,7 @@ export const PWAProvider = ({ children }) => {
     };
 
     const handleOffline = () => {
-      console.log('[PWA] Connection lost');
+      // console.log('[PWA] Connection lost');
       setIsOnline(false);
     };
 
@@ -84,7 +84,7 @@ export const PWAProvider = ({ children }) => {
     if (!('serviceWorker' in navigator)) return;
 
     const handleMessage = (event) => {
-      console.log('[PWA] Message from service worker:', event.data);
+      // console.log('[PWA] Message from service worker:', event.data);
       
       if (event.data && event.data.type === 'SYNC_MESSAGES') {
         // Trigger message sync
@@ -107,7 +107,7 @@ export const PWAProvider = ({ children }) => {
       setDeferredPrompt(e);
       // Show install prompt to user
       setShowInstallPrompt(true);
-      console.log('[PWA] Install prompt available');
+      // console.log('[PWA] Install prompt available');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -120,7 +120,7 @@ export const PWAProvider = ({ children }) => {
   // Listen for app installed event
   useEffect(() => {
     const handleAppInstalled = () => {
-      console.log('[PWA] App installed');
+      // console.log('[PWA] App installed');
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
@@ -142,7 +142,7 @@ export const PWAProvider = ({ children }) => {
       // Subscribe to push notifications
       const subscription = await subscribeToPushNotifications(swRegistration);
       if (subscription) {
-        console.log('[PWA] Subscribed to push notifications');
+        // console.log('[PWA] Subscribed to push notifications');
         // TODO: Send subscription to backend
       }
     }
@@ -153,7 +153,7 @@ export const PWAProvider = ({ children }) => {
   // Show local notification
   const showNotification = useCallback((title, options = {}) => {
     if (notificationPermission !== 'granted') {
-      console.log('[PWA] Notification permission not granted');
+      // console.log('[PWA] Notification permission not granted');
       return;
     }
 
@@ -188,7 +188,7 @@ export const PWAProvider = ({ children }) => {
   // Install the app
   const installApp = useCallback(async () => {
     if (!deferredPrompt) {
-      console.log('[PWA] No install prompt available');
+      // console.log('[PWA] No install prompt available');
       return false;
     }
 
@@ -197,7 +197,7 @@ export const PWAProvider = ({ children }) => {
     
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`[PWA] User response to install prompt: ${outcome}`);
+    // console.log(`[PWA] User response to install prompt: ${outcome}`);
     
     // Clear the deferred prompt
     setDeferredPrompt(null);
@@ -214,7 +214,7 @@ export const PWAProvider = ({ children }) => {
   // Queue message for later sending (when offline)
   const queueMessage = useCallback((message) => {
     setMessageQueue((prev) => [...prev, { ...message, timestamp: Date.now() }]);
-    console.log('[PWA] Message queued for later sending');
+    // console.log('[PWA] Message queued for later sending');
   }, []);
 
   // Clear message queue

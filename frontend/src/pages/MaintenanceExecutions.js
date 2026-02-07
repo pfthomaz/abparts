@@ -41,7 +41,7 @@ const MaintenanceExecutions = () => {
       
       try {
         machinesData = await machinesService.getMachines();
-        console.log('[MaintenanceExecutions] Loaded machines:', machinesData.length);
+        // console.log('[MaintenanceExecutions] Loaded machines:', machinesData.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load machines:', err);
         setError('Failed to load machines. Please refresh the page.');
@@ -49,7 +49,7 @@ const MaintenanceExecutions = () => {
       
       try {
         protocolsData = await getLocalizedProtocols({}, user.preferred_language);
-        console.log('[MaintenanceExecutions] Loaded protocols:', protocolsData.length);
+        // console.log('[MaintenanceExecutions] Loaded protocols:', protocolsData.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load protocols:', err);
         // Don't set error here - protocols might be cached
@@ -60,7 +60,7 @@ const MaintenanceExecutions = () => {
       
       try {
         executionsData = await getExecutions();
-        console.log('[MaintenanceExecutions] Loaded executions:', executionsData.length);
+        // console.log('[MaintenanceExecutions] Loaded executions:', executionsData.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load executions:', err);
         // Don't block the page if executions fail to load
@@ -74,7 +74,7 @@ const MaintenanceExecutions = () => {
       try {
         const unsyncedExecutions = await getUnsyncedMaintenanceExecutions();
         setOfflineExecutions(unsyncedExecutions);
-        console.log('[MaintenanceExecutions] Loaded offline executions:', unsyncedExecutions.length);
+        // console.log('[MaintenanceExecutions] Loaded offline executions:', unsyncedExecutions.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load offline executions:', err);
       }
@@ -100,7 +100,7 @@ const MaintenanceExecutions = () => {
   // Listen for sync completion to refresh executions
   useEffect(() => {
     const handleSyncComplete = (event) => {
-      console.log('[MaintenanceExecutions] Sync completed, reloading executions...', event.detail);
+      // console.log('[MaintenanceExecutions] Sync completed, reloading executions...', event.detail);
       // Force reload after a short delay to ensure backend has processed
       setTimeout(() => {
         loadData();
@@ -119,7 +119,7 @@ const MaintenanceExecutions = () => {
     const loadOfflineExecutions = async () => {
       const unsynced = await getUnsyncedMaintenanceExecutions();
       setOfflineExecutions(unsynced);
-      console.log('[MaintenanceExecutions] Loaded offline executions:', unsynced.length);
+      // console.log('[MaintenanceExecutions] Loaded offline executions:', unsynced.length);
     };
     loadOfflineExecutions();
   }, [pendingCount]);
@@ -154,7 +154,7 @@ const MaintenanceExecutions = () => {
   };
 
   const handleResumeExecution = (execution) => {
-    console.log('Resuming execution:', execution);
+    // console.log('Resuming execution:', execution);
     setSelectedMachine(execution.machine);
     setSelectedProtocol(execution.protocol);
     setResumingExecution(execution);

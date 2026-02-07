@@ -45,11 +45,11 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       setLoading(true);
       setError(null);
       
-      console.log('Loading existing execution:', existingExecution);
+      // console.log('Loading existing execution:', existingExecution);
       
       // Load localized checklist items
       const items = await getLocalizedChecklistItems(protocol.id, user.preferred_language);
-      console.log('Loaded localized checklist items:', items);
+      // console.log('Loaded localized checklist items:', items);
       setChecklistItems(items);
 
       // Map existing completions to completedItems state
@@ -64,7 +64,7 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
           };
         });
         setCompletedItems(completionsMap);
-        console.log('Loaded existing completions:', completionsMap);
+        // console.log('Loaded existing completions:', completionsMap);
       }
       
       setExecutionId(existingExecution.id);
@@ -83,11 +83,11 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       setLoading(true);
       setError(null);
       
-      console.log('Starting execution with hours:', hours);
+      // console.log('Starting execution with hours:', hours);
       
       // Load localized checklist items
       const items = await getLocalizedChecklistItems(protocol.id, user.preferred_language);
-      console.log('Loaded localized checklist items:', items);
+      // console.log('Loaded localized checklist items:', items);
       setChecklistItems(items);
 
       if (!isOnline) {
@@ -143,10 +143,10 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
         executionData.machine_hours_at_service = hours;
       }
       
-      console.log('Creating execution with data:', executionData);
+      // console.log('Creating execution with data:', executionData);
       
       const execution = await createExecution(executionData);
-      console.log('Execution created:', execution);
+      // console.log('Execution created:', execution);
       
       setExecutionId(execution.id);
       setIsOfflineExecution(false);
@@ -195,7 +195,7 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
           [item.id]: { ...itemData, saved: true }
         }));
         
-        console.log('[ExecutionForm] Saved checklist item offline:', item.id);
+        // console.log('[ExecutionForm] Saved checklist item offline:', item.id);
       } catch (err) {
         console.error('[ExecutionForm] Failed to save item offline:', err);
         alert(t('maintenance.failedToSaveItem', { error: err.message }));

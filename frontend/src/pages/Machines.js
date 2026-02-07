@@ -37,8 +37,15 @@ const Machines = () => {
     setLoading(true);
     setError(null);
     try {
+      // SECURITY: Create user context for secure caching
+      const userContext = user ? {
+        userId: user.id,
+        organizationId: user.organization_id,
+        isSuperAdmin: user.role === 'super_admin'
+      } : null;
+      
       const [machinesData, orgsData] = await Promise.all([
-        machinesService.getMachines(),
+        machinesService.getMachines(false, userContext),
         api.get('/organizations/'),
       ]);
       setMachines(machinesData);
@@ -48,7 +55,7 @@ const Machines = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchData();
@@ -248,7 +255,7 @@ const Machines = () => {
                 <p className="text-gray-600"><span className="font-medium">{t('machines.owner')}:</span> {machine.organizationName}</p>
                 
                 {/* Debug: Log machine data */}
-                {console.log('Machine data:', machine.name, 'latest_hours:', machine.latest_hours, 'type:', typeof machine.latest_hours)}
+                // {console.log('Machine data:', machine.name, 'latest_hours:', machine.latest_hours, 'type:', typeof machine.latest_hours)}
                 
                 {/* Latest Machine Hours */}
                 {machine.latest_hours !== null && machine.latest_hours !== undefined ? (

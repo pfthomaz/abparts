@@ -74,12 +74,12 @@ const PartUsageHistory = ({ machineId, onUsageDeleted }) => {
         performed_by_user_id: editingUsage.performed_by_user_id
       };
       
-      console.log('Updating transaction:', editingUsage.id, updatePayload);
+      // console.log('Updating transaction:', editingUsage.id, updatePayload);
       
       // Update the transaction
       await transactionService.updateTransaction(editingUsage.id, updatePayload);
       
-      console.log('Transaction updated successfully');
+      // console.log('Transaction updated successfully');
       
       // Show success message
       alert('Part usage updated successfully. Page will reload to refresh all data.');

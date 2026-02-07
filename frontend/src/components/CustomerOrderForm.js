@@ -225,11 +225,11 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
         }))
       };
 
-      console.log('=== SUBMITTING ORDER DATA ===');
-      console.log('Form data items:', formData.items);
-      console.log('Items count:', dataToSend.items.length);
-      console.log('Items:', JSON.stringify(dataToSend.items, null, 2));
-      console.log('Full dataToSend:', JSON.stringify(dataToSend, null, 2));
+      // console.log('=== SUBMITTING ORDER DATA ===');
+      // console.log('Form data items:', formData.items);
+      // console.log('Items count:', dataToSend.items.length);
+      // console.log('Items:', JSON.stringify(dataToSend.items, null, 2));
+      // console.log('Full dataToSend:', JSON.stringify(dataToSend, null, 2));
 
       await onSubmit(dataToSend);
       onClose(); // Close modal on successful submission

@@ -24,7 +24,7 @@ const getParts = async (forceRefresh = false) => {
   if (!online) {
     const cached = await getCachedData(STORES.PARTS);
     if (cached.length > 0) {
-      console.log('[PartsService] Using cached parts (offline):', cached.length);
+      // console.log('[PartsService] Using cached parts (offline):', cached.length);
       return cached;
     }
     throw new Error('No cached data available offline');
@@ -45,7 +45,7 @@ const getParts = async (forceRefresh = false) => {
   if (!cacheStale && !forceRefresh) {
     const cached = await getCachedData(STORES.PARTS);
     if (cached.length > 0) {
-      console.log('[PartsService] Using cached parts (fresh):', cached.length);
+      // console.log('[PartsService] Using cached parts (fresh):', cached.length);
       return cached;
     }
   }
@@ -57,7 +57,7 @@ const getParts = async (forceRefresh = false) => {
     
     // Cache the response
     await cacheData(STORES.PARTS, response);
-    console.log('[PartsService] Cached parts:', response.length);
+    // console.log('[PartsService] Cached parts:', response.length);
     
     return response;
   } catch (error) {
@@ -67,7 +67,7 @@ const getParts = async (forceRefresh = false) => {
     console.warn('[PartsService] API failed, attempting cache fallback:', error.message);
     const cached = await getCachedData(STORES.PARTS);
     if (cached.length > 0) {
-      console.log('[PartsService] Using cached parts (fallback):', cached.length);
+      // console.log('[PartsService] Using cached parts (fallback):', cached.length);
       return cached;
     }
     

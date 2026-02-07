@@ -261,7 +261,7 @@ const Transactions = () => {
           onClose={() => setShowOrderWizard(false)}
           onOrderComplete={(order) => {
             setRefreshTrigger(prev => prev + 1);
-            console.log('Order created:', order);
+            // console.log('Order created:', order);
           }}
         />
 
@@ -271,7 +271,7 @@ const Transactions = () => {
           onClose={() => setShowPartUsageRecorder(false)}
           onUsageRecorded={(transaction) => {
             setRefreshTrigger(prev => prev + 1);
-            console.log('Usage recorded:', transaction);
+            // console.log('Usage recorded:', transaction);
           }}
         />
       </div>

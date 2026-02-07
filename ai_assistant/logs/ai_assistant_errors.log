@@ -1685,3 +1685,5 @@ LINE 3:                     SET status = 'resolved', resolution_summ...
                 ]
 [parameters: {'status': 'resolved', 'summary': 'Problem resolved through troubleshooting', 'session_id': 'f0357c79-c60f-40bc-9b46-e315b3f420ed'}]
 (Background on this error at: https://sqlalche.me/e/20/9h9h)
+{"timestamp": "2026-02-07T20:06:48.349807", "level": "ERROR", "logger": "app.database", "message": "Failed to connect to database: (psycopg2.OperationalError) connection to server at \"db\" (172.18.0.3), port 5432 failed: FATAL:  database \"abparts_prod\" does not exist\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)", "module": "database", "function": "init_database", "line": 69}
+{"timestamp": "2026-02-07T20:06:48.350163", "level": "ERROR", "logger": "app.main", "message": "Failed to start AI Assistant service: (psycopg2.OperationalError) connection to server at \"db\" (172.18.0.3), port 5432 failed: FATAL:  database \"abparts_prod\" does not exist\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)", "module": "main", "function": "lifespan", "line": 54}

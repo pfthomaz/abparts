@@ -40,7 +40,7 @@ export async function initDB() {
   try {
     const db = await openDB(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, newVersion, transaction) {
-        console.log(`[IndexedDB] Upgrading database from version ${oldVersion} to ${newVersion}`);
+        // console.log(`[IndexedDB] Upgrading database from version ${oldVersion} to ${newVersion}`);
         
         // Create object stores if they don't exist
         
@@ -134,11 +134,11 @@ export async function initDB() {
           db.createObjectStore(STORES.CACHE_METADATA, { keyPath: 'key' });
         }
         
-        console.log('[IndexedDB] Database upgrade complete');
+        // console.log('[IndexedDB] Database upgrade complete');
       },
     });
     
-    console.log('[IndexedDB] Database initialized successfully');
+    // console.log('[IndexedDB] Database initialized successfully');
     return db;
   } catch (error) {
     console.error('[IndexedDB] Failed to initialize database:', error);
@@ -154,14 +154,33 @@ export async function getDB() {
 }
 
 // ============================================================================
-// CACHE OPERATIONS
+// CACHE OPERATIONS WITH USER CONTEXT
 // ============================================================================
 
 /**
- * Save data to a cache store
+ * Generate a user-scoped cache key
+ * CRITICAL SECURITY: All cached data MUST be scoped to user to prevent cross-user data leakage
  */
-export async function cacheData(storeName, data) {
+function getUserCacheKey(storeName, userId, organizationId) {
+  if (!userId || !organizationId) {
+    console.error('[IndexedDB] SECURITY ERROR: Missing user context for cache key');
+    throw new Error('User context required for caching');
+  }
+  return `${storeName}_user_${userId}_org_${organizationId}`;
+}
+
+/**
+ * Save data to a cache store with user context
+ * CRITICAL SECURITY: Data is scoped to specific user and organization
+ */
+export async function cacheData(storeName, data, userContext = null) {
   try {
+    // SECURITY CHECK: Require user context for all caching
+    if (!userContext || !userContext.userId || !userContext.organizationId) {
+      console.warn('[IndexedDB] SECURITY WARNING: Caching without user context - data will not be cached');
+      return; // Don't cache without user context
+    }
+    
     const db = await getDB();
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
@@ -176,10 +195,10 @@ export async function cacheData(storeName, data) {
     
     await tx.done;
     
-    // Update cache metadata
-    await updateCacheMetadata(storeName);
+    // Update cache metadata with user context
+    await updateCacheMetadata(storeName, userContext);
     
-    console.log(`[IndexedDB] Cached ${Array.isArray(data) ? data.length : 1} items to ${storeName}`);
+    // console.log(`[IndexedDB] Cached ${Array.isArray(data) ? data.length : 1} items to ${storeName} for user ${userContext.userId}`);
   } catch (error) {
     console.error(`[IndexedDB] Failed to cache data to ${storeName}:`, error);
     throw error;
@@ -187,14 +206,28 @@ export async function cacheData(storeName, data) {
 }
 
 /**
- * Get all data from a cache store
+ * Get all data from a cache store with user context
+ * CRITICAL SECURITY: Only returns data for the current user's organization
  */
-export async function getCachedData(storeName) {
+export async function getCachedData(storeName, userContext = null) {
   try {
+    // SECURITY CHECK: Require user context for reading cache
+    if (!userContext || !userContext.userId || !userContext.organizationId) {
+      console.warn('[IndexedDB] SECURITY WARNING: Reading cache without user context - returning empty array');
+      return [];
+    }
+    
     const db = await getDB();
     const data = await db.getAll(storeName);
-    console.log(`[IndexedDB] Retrieved ${data.length} items from ${storeName}`);
-    return data;
+    
+    // CRITICAL SECURITY: Filter data by organization_id
+    // Super admins see all data, regular users only see their org's data
+    const filteredData = userContext.isSuperAdmin 
+      ? data 
+      : data.filter(item => item.organization_id === userContext.organizationId);
+    
+    // console.log(`[IndexedDB] Retrieved ${filteredData.length} items from ${storeName} for user ${userContext.userId} (org: ${userContext.organizationId})`);
+    return filteredData;
   } catch (error) {
     console.error(`[IndexedDB] Failed to get cached data from ${storeName}:`, error);
     return [];
@@ -230,27 +263,39 @@ export async function getCachedItemsByIndex(storeName, indexName, value) {
 }
 
 /**
- * Clear all data from a cache store
+ * Clear all data from a cache store for a specific user
  */
-export async function clearCache(storeName) {
+export async function clearCache(storeName, userContext = null) {
   try {
     const db = await getDB();
-    await db.clear(storeName);
-    console.log(`[IndexedDB] Cleared cache for ${storeName}`);
+    
+    if (!userContext) {
+      // Clear all cache if no user context (e.g., on logout)
+      await db.clear(storeName);
+      // console.log(`[IndexedDB] Cleared all cache for ${storeName}`);
+    } else {
+      // Clear only this user's cached metadata
+      const cacheKey = getUserCacheKey(storeName, userContext.userId, userContext.organizationId);
+      await db.delete(STORES.CACHE_METADATA, cacheKey);
+      // console.log(`[IndexedDB] Cleared cache metadata for ${storeName} user ${userContext.userId}`);
+    }
   } catch (error) {
     console.error(`[IndexedDB] Failed to clear cache for ${storeName}:`, error);
   }
 }
 
 /**
- * Update cache metadata (last updated timestamp)
+ * Update cache metadata (last updated timestamp) with user context
  */
-async function updateCacheMetadata(storeName) {
+async function updateCacheMetadata(storeName, userContext) {
   try {
     const db = await getDB();
+    const cacheKey = getUserCacheKey(storeName, userContext.userId, userContext.organizationId);
     await db.put(STORES.CACHE_METADATA, {
-      key: `${storeName}_lastUpdated`,
+      key: cacheKey,
       timestamp: Date.now(),
+      userId: userContext.userId,
+      organizationId: userContext.organizationId,
     });
   } catch (error) {
     console.error('[IndexedDB] Failed to update cache metadata:', error);
@@ -258,12 +303,17 @@ async function updateCacheMetadata(storeName) {
 }
 
 /**
- * Get cache metadata
+ * Get cache metadata with user context
  */
-export async function getCacheMetadata(storeName) {
+export async function getCacheMetadata(storeName, userContext = null) {
   try {
+    if (!userContext || !userContext.userId || !userContext.organizationId) {
+      return null;
+    }
+    
     const db = await getDB();
-    const metadata = await db.get(STORES.CACHE_METADATA, `${storeName}_lastUpdated`);
+    const cacheKey = getUserCacheKey(storeName, userContext.userId, userContext.organizationId);
+    const metadata = await db.get(STORES.CACHE_METADATA, cacheKey);
     return metadata;
   } catch (error) {
     console.error('[IndexedDB] Failed to get cache metadata:', error);
@@ -272,10 +322,12 @@ export async function getCacheMetadata(storeName) {
 }
 
 /**
- * Check if cache is stale (older than maxAge in milliseconds)
+ * Check if cache is stale (older than maxAge in milliseconds) for specific user
  */
-export async function isCacheStale(storeName, maxAge = 24 * 60 * 60 * 1000) {
-  const metadata = await getCacheMetadata(storeName);
+export async function isCacheStale(storeName, userContext = null, maxAge = 24 * 60 * 60 * 1000) {
+  if (!userContext) return true;
+  
+  const metadata = await getCacheMetadata(storeName, userContext);
   if (!metadata) return true;
   
   const age = Date.now() - metadata.timestamp;
@@ -302,7 +354,7 @@ export async function saveOfflineNetCleaningRecord(record) {
     };
     
     await db.put(STORES.NET_CLEANING_RECORDS, offlineRecord);
-    console.log('[IndexedDB] Saved offline net cleaning record:', tempId);
+    // console.log('[IndexedDB] Saved offline net cleaning record:', tempId);
     
     return tempId;
   } catch (error) {
@@ -327,7 +379,7 @@ export async function saveOfflineNetCleaningPhoto(recordTempId, photoBlob, filen
     };
     
     const id = await db.add(STORES.NET_CLEANING_PHOTOS, photoRecord);
-    console.log('[IndexedDB] Saved offline photo:', id);
+    // console.log('[IndexedDB] Saved offline photo:', id);
     
     return id;
   } catch (error) {
@@ -382,7 +434,7 @@ export async function markRecordAsSynced(tempId, serverId) {
       record.serverId = serverId;
       record.syncedAt = Date.now();
       await db.put(STORES.NET_CLEANING_RECORDS, record);
-      console.log('[IndexedDB] Marked record as synced:', tempId);
+      // console.log('[IndexedDB] Marked record as synced:', tempId);
     }
   } catch (error) {
     console.error('[IndexedDB] Failed to mark record as synced:', error);
@@ -401,7 +453,7 @@ export async function markPhotoAsSynced(photoId) {
       photo.synced = true;
       photo.syncedAt = Date.now();
       await db.put(STORES.NET_CLEANING_PHOTOS, photo);
-      console.log('[IndexedDB] Marked photo as synced:', photoId);
+      // console.log('[IndexedDB] Marked photo as synced:', photoId);
     }
   } catch (error) {
     console.error('[IndexedDB] Failed to mark photo as synced:', error);
@@ -427,7 +479,7 @@ export async function cleanupSyncedRecords(daysOld = 7) {
     }
     
     await tx.done;
-    console.log('[IndexedDB] Cleaned up old synced records');
+    // console.log('[IndexedDB] Cleaned up old synced records');
   } catch (error) {
     console.error('[IndexedDB] Failed to cleanup synced records:', error);
   }
@@ -453,7 +505,7 @@ export async function saveOfflineMaintenanceExecution(execution) {
     };
     
     await db.put(STORES.MAINTENANCE_EXECUTIONS, offlineExecution);
-    console.log('[IndexedDB] Saved offline maintenance execution:', tempId);
+    // console.log('[IndexedDB] Saved offline maintenance execution:', tempId);
     
     return tempId;
   } catch (error) {
@@ -487,7 +539,7 @@ export async function updateOfflineExecutionCompletion(tempId, completion) {
       }
       
       await db.put(STORES.MAINTENANCE_EXECUTIONS, execution);
-      console.log('[IndexedDB] Updated offline execution completion:', tempId);
+      // console.log('[IndexedDB] Updated offline execution completion:', tempId);
     }
   } catch (error) {
     console.error('[IndexedDB] Failed to update offline execution:', error);
@@ -526,7 +578,7 @@ export async function markExecutionAsSynced(tempId, serverId) {
       execution.serverId = serverId;
       execution.syncedAt = Date.now();
       await db.put(STORES.MAINTENANCE_EXECUTIONS, execution);
-      console.log('[IndexedDB] Marked execution as synced:', tempId);
+      // console.log('[IndexedDB] Marked execution as synced:', tempId);
     }
   } catch (error) {
     console.error('[IndexedDB] Failed to mark execution as synced:', error);
@@ -552,7 +604,7 @@ export async function addToSyncQueue(operation) {
     };
     
     const id = await db.add(STORES.SYNC_QUEUE, queueItem);
-    console.log('[IndexedDB] Added operation to sync queue:', id);
+    // console.log('[IndexedDB] Added operation to sync queue:', id);
     
     return id;
   } catch (error) {
@@ -593,7 +645,7 @@ export async function updateSyncOperationStatus(id, status, error = null) {
       }
       
       await db.put(STORES.SYNC_QUEUE, operation);
-      console.log(`[IndexedDB] Updated sync operation ${id} status to ${status}`);
+      // console.log(`[IndexedDB] Updated sync operation ${id} status to ${status}`);
     }
   } catch (error) {
     console.error('[IndexedDB] Failed to update sync operation status:', error);
@@ -607,7 +659,7 @@ export async function deleteSyncOperation(id) {
   try {
     const db = await getDB();
     await db.delete(STORES.SYNC_QUEUE, id);
-    console.log('[IndexedDB] Deleted sync operation:', id);
+    // console.log('[IndexedDB] Deleted sync operation:', id);
   } catch (error) {
     console.error('[IndexedDB] Failed to delete sync operation:', error);
   }
@@ -644,7 +696,7 @@ export async function clearAllOfflineData() {
       await db.clear(storeName);
     }
     
-    console.log('[IndexedDB] Cleared all offline data');
+    // console.log('[IndexedDB] Cleared all offline data');
   } catch (error) {
     console.error('[IndexedDB] Failed to clear all offline data:', error);
   }

@@ -22,10 +22,10 @@ root.render(
 // Register service worker for PWA features
 serviceWorkerRegistration.register({
     onSuccess: () => {
-        console.log('[App] Service worker registered successfully');
+        // console.log('[App] Service worker registered successfully');
     },
     onUpdate: (registration) => {
-        console.log('[App] New version available');
+        // console.log('[App] New version available');
         // The PWAUpdateNotification component will handle showing the update prompt
     }
 });

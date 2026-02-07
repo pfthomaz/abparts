@@ -33,27 +33,27 @@ const MachineManagementDemo = () => {
   };
 
   const handleHoursRecorded = () => {
-    console.log('Machine hours recorded successfully');
+    // console.log('Machine hours recorded successfully');
     // In a real app, you would refresh the machine data here
   };
 
   const handleTransferComplete = () => {
-    console.log('Machine transfer completed successfully');
+    // console.log('Machine transfer completed successfully');
     // In a real app, you would refresh the machine list here
   };
 
   const handleMachineUpdate = (updatedMachine) => {
-    console.log('Machine updated:', updatedMachine);
+    // console.log('Machine updated:', updatedMachine);
     // In a real app, you would update the machine in your state here
   };
 
   const handleScheduleService = (machine) => {
-    console.log('Scheduling service for machine:', machine.id);
+    // console.log('Scheduling service for machine:', machine.id);
     // In a real app, you would open a service scheduling interface
   };
 
   const handleDismissAlert = (machineId) => {
-    console.log('Dismissing alert for machine:', machineId);
+    // console.log('Dismissing alert for machine:', machineId);
     // In a real app, you would dismiss the alert in your state
   };
 

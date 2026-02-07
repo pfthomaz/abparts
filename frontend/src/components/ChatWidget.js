@@ -67,7 +67,7 @@ const ChatWidget = ({ isOpen, onToggle }) => {
       const { messages: queuedMessages } = event.detail;
       
       if (queuedMessages && queuedMessages.length > 0 && isOnline) {
-        console.log('[ChatWidget] Processing queued messages:', queuedMessages.length);
+        // console.log('[ChatWidget] Processing queued messages:', queuedMessages.length);
         
         // Process each queued message
         for (const queuedMsg of queuedMessages) {
@@ -561,13 +561,13 @@ const ChatWidget = ({ isOpen, onToggle }) => {
         const timeoutId = setTimeout(() => {
           // Double-check that auto-speak is still enabled and component is still mounted
           if (autoSpeak && voiceInterfaceRef.current) {
-            console.log('ChatWidget: Triggering auto-speak for message:', lastMessage.content.substring(0, 50) + '...');
+            // console.log('ChatWidget: Triggering auto-speak for message:', lastMessage.content.substring(0, 50) + '...');
             speakResponse(lastMessage.content);
           }
         }, 2000); // Even longer delay to ensure all React updates are complete
         
         return () => {
-          console.log('ChatWidget: Clearing auto-speak timeout');
+          // console.log('ChatWidget: Clearing auto-speak timeout');
           clearTimeout(timeoutId);
         };
       }
@@ -645,8 +645,8 @@ const ChatWidget = ({ isOpen, onToggle }) => {
         : (process.env.REACT_APP_AI_ASSISTANT_URL || 'http://localhost:8001');
       
       const apiUrl = `${baseUrl}/api/ai/chat`;
-      console.log('AI Assistant API URL:', apiUrl);
-      console.log('Request payload:', requestPayload);
+      // console.log('AI Assistant API URL:', apiUrl);
+      // console.log('Request payload:', requestPayload);
       
       // Add timeout for low-bandwidth connections
       const controller = new AbortController();

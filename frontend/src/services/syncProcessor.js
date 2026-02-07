@@ -29,7 +29,7 @@ const RETRY_DELAY = 2000; // 2 seconds between retries
  * @returns {Promise<Object>} Sync results summary
  */
 export async function processSync() {
-  console.log('[SyncProcessor] Starting sync process...');
+  // console.log('[SyncProcessor] Starting sync process...');
   
   const results = {
     total: 0,
@@ -67,7 +67,7 @@ export async function processSync() {
     results.failed += queueResults.failed;
     results.errors.push(...queueResults.errors);
     
-    console.log('[SyncProcessor] Sync complete:', results);
+    // console.log('[SyncProcessor] Sync complete:', results);
     return results;
     
   } catch (error) {
@@ -96,7 +96,7 @@ async function syncNetCleaningRecords(token) {
     const records = await getUnsyncedNetCleaningRecords();
     results.total = records.length;
     
-    console.log(`[SyncProcessor] Syncing ${records.length} net cleaning records...`);
+    // console.log(`[SyncProcessor] Syncing ${records.length} net cleaning records...`);
     
     for (const record of records) {
       try {
@@ -111,7 +111,7 @@ async function syncNetCleaningRecords(token) {
           await syncPhotosForRecord(record.tempId, serverId, token);
           
           results.succeeded++;
-          console.log(`[SyncProcessor] Synced record ${record.tempId} -> ${serverId}`);
+          // console.log(`[SyncProcessor] Synced record ${record.tempId} -> ${serverId}`);
         } else {
           results.failed++;
           results.errors.push(`Failed to sync record ${record.tempId}`);
@@ -179,13 +179,13 @@ async function syncPhotosForRecord(recordTempId, serverId, token) {
   try {
     const photos = await getPhotosForRecord(recordTempId);
     
-    console.log(`[SyncProcessor] Syncing ${photos.length} photos for record ${serverId}...`);
+    // console.log(`[SyncProcessor] Syncing ${photos.length} photos for record ${serverId}...`);
     
     for (const photo of photos) {
       try {
         await syncSinglePhoto(serverId, photo, token);
         await markPhotoAsSynced(photo.id);
-        console.log(`[SyncProcessor] Synced photo ${photo.id}`);
+        // console.log(`[SyncProcessor] Synced photo ${photo.id}`);
       } catch (error) {
         console.error(`[SyncProcessor] Failed to sync photo ${photo.id}:`, error);
         // Continue with other photos even if one fails
@@ -216,7 +216,7 @@ async function syncMaintenanceExecutions(token) {
     const executions = await getUnsyncedMaintenanceExecutions();
     results.total = executions.length;
     
-    console.log(`[SyncProcessor] Syncing ${executions.length} maintenance executions...`);
+    // console.log(`[SyncProcessor] Syncing ${executions.length} maintenance executions...`);
     
     for (const execution of executions) {
       try {
@@ -228,7 +228,7 @@ async function syncMaintenanceExecutions(token) {
           await markExecutionAsSynced(execution.tempId, serverId);
           
           results.succeeded++;
-          console.log(`[SyncProcessor] Synced execution ${execution.tempId} -> ${serverId}`);
+          // console.log(`[SyncProcessor] Synced execution ${execution.tempId} -> ${serverId}`);
         } else {
           results.failed++;
           results.errors.push(`Failed to sync execution ${execution.tempId}`);
@@ -262,7 +262,7 @@ async function syncSingleMaintenanceExecution(execution, token) {
     // Keep status, protocol_id, machine_id, machine_hours_at_service, etc.
     const { tempId, synced, timestamp, protocol, machine, checklist_completions, organization_id, created_at, completed_at, ...apiData } = execution;
     
-    console.log('[SyncProcessor] Syncing execution with data:', apiData);
+    // console.log('[SyncProcessor] Syncing execution with data:', apiData);
     
     // Create execution with the correct status
     const response = await fetch(`${API_BASE_URL}/maintenance-protocols/executions`, {
@@ -290,15 +290,15 @@ async function syncSingleMaintenanceExecution(execution, token) {
     const data = await response.json();
     const executionId = data.id;
     
-    console.log(`[SyncProcessor] Created execution ${executionId} with status: ${apiData.status}`);
+    // console.log(`[SyncProcessor] Created execution ${executionId} with status: ${apiData.status}`);
     
     // Sync checklist completions if any
     if (checklist_completions && checklist_completions.length > 0) {
-      console.log(`[SyncProcessor] Syncing ${checklist_completions.length} checklist completions...`);
+      // console.log(`[SyncProcessor] Syncing ${checklist_completions.length} checklist completions...`);
       for (const completion of checklist_completions) {
         try {
           await syncChecklistCompletion(executionId, completion, token);
-          console.log(`[SyncProcessor] Synced checklist item ${completion.checklist_item_id}`);
+          // console.log(`[SyncProcessor] Synced checklist item ${completion.checklist_item_id}`);
         } catch (error) {
           console.error(`[SyncProcessor] Failed to sync checklist completion:`, error);
           // Continue with other completions
@@ -403,7 +403,7 @@ async function processSyncQueue(token) {
     const operations = await getPendingOperations();
     results.total = operations.length;
     
-    console.log(`[SyncProcessor] Processing ${operations.length} queue operations...`);
+    // console.log(`[SyncProcessor] Processing ${operations.length} queue operations...`);
     
     for (const operation of operations) {
       try {
@@ -434,7 +434,7 @@ async function processSyncQueue(token) {
         if (success) {
           await markOperationCompleted(operation.id);
           results.succeeded++;
-          console.log(`[SyncProcessor] Completed operation ${operation.id}`);
+          // console.log(`[SyncProcessor] Completed operation ${operation.id}`);
         } else {
           await markOperationFailed(operation.id, 'Sync failed');
           results.failed++;
@@ -487,7 +487,7 @@ async function syncMaintenanceExecution(operation, token) {
     
     // Retry logic
     if (operation.retryCount < MAX_RETRIES) {
-      console.log(`[SyncProcessor] Retrying operation ${operation.id}...`);
+      // console.log(`[SyncProcessor] Retrying operation ${operation.id}...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
       return false; // Will be retried
     }
@@ -581,7 +581,7 @@ export async function isSyncNeeded() {
     const operations = await getPendingOperations();
     
     const needed = records.length > 0 || operations.length > 0;
-    console.log(`[SyncProcessor] Sync needed: ${needed} (${records.length} records, ${operations.length} operations)`);
+    // console.log(`[SyncProcessor] Sync needed: ${needed} (${records.length} records, ${operations.length} operations)`);
     
     return needed;
   } catch (error) {

@@ -24,7 +24,7 @@ const LocalizationDebugger = () => {
       };
       
       // Test localized protocols
-      console.log('🧪 Starting localization debug test...');
+      // console.log('🧪 Starting localization debug test...');
       const protocols = await getLocalizedProtocols({}, user?.preferred_language);
       info.protocols = protocols.map(p => ({
         id: p.id,

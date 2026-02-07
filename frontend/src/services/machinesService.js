@@ -11,15 +11,31 @@ import {
 
 /**
  * Fetches all machines with caching support.
+ * @param {boolean} forceRefresh - Force refresh from API
+ * @param {object} userContext - User context for secure caching {userId, organizationId, isSuperAdmin}
  */
-const getMachines = async (forceRefresh = false) => {
+const getMachines = async (forceRefresh = false, userContext = null) => {
   const online = isOnline();
+  
+  // SECURITY: Require user context for caching
+  if (!userContext || !userContext.userId || !userContext.organizationId) {
+    console.warn('[MachinesService] SECURITY WARNING: No user context provided, fetching without cache');
+    if (!online) {
+      throw new Error('Cannot fetch machines offline without user context');
+    }
+    // Fetch directly from API without caching
+    const data = await api.get('/machines/');
+    return data.map(machine => ({
+      ...machine,
+      current_hours: machine.latest_hours
+    }));
+  }
   
   // If offline, use cache immediately
   if (!online) {
-    const cached = await getCachedData(STORES.MACHINES);
+    const cached = await getCachedData(STORES.MACHINES, userContext);
     if (cached.length > 0) {
-      console.log('[MachinesService] Using cached machines (offline):', cached.length);
+      // console.log('[MachinesService] Using cached machines (offline):', cached.length);
       return cached;
     }
     throw new Error('No cached data available offline');
@@ -28,7 +44,7 @@ const getMachines = async (forceRefresh = false) => {
   // Check cache staleness with timeout to prevent blocking
   let cacheStale = true;
   try {
-    const staleCheckPromise = isCacheStale(STORES.MACHINES);
+    const staleCheckPromise = isCacheStale(STORES.MACHINES, userContext);
     const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(true), 1000));
     cacheStale = await Promise.race([staleCheckPromise, timeoutPromise]);
   } catch (error) {
@@ -38,9 +54,9 @@ const getMachines = async (forceRefresh = false) => {
   
   // Use cache if fresh and not forcing refresh
   if (!cacheStale && !forceRefresh) {
-    const cached = await getCachedData(STORES.MACHINES);
+    const cached = await getCachedData(STORES.MACHINES, userContext);
     if (cached.length > 0) {
-      console.log('[MachinesService] Using cached machines (fresh):', cached.length);
+      // console.log('[MachinesService] Using cached machines (fresh):', cached.length);
       return cached;
     }
   }
@@ -55,17 +71,17 @@ const getMachines = async (forceRefresh = false) => {
       current_hours: machine.latest_hours // Map backend field to frontend field
     }));
     
-    // Cache the mapped response
-    await cacheData(STORES.MACHINES, mappedData);
-    console.log('[MachinesService] Cached machines:', mappedData.length);
+    // Cache the mapped response with user context
+    await cacheData(STORES.MACHINES, mappedData, userContext);
+    // console.log('[MachinesService] Cached machines:', mappedData.length);
     
     return mappedData;
   } catch (error) {
     // Fallback to cache on error
     console.warn('[MachinesService] API failed, attempting cache fallback:', error.message);
-    const cached = await getCachedData(STORES.MACHINES);
+    const cached = await getCachedData(STORES.MACHINES, userContext);
     if (cached.length > 0) {
-      console.log('[MachinesService] Using cached machines (fallback):', cached.length);
+      // console.log('[MachinesService] Using cached machines (fallback):', cached.length);
       return cached;
     }
     

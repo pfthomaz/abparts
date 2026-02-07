@@ -269,7 +269,7 @@ const WarehouseInventoryReporting = ({ organizationId }) => {
       item.stock_status,
       item.estimated_value || 0
     ]);
-    console.log('rows: ',rows);
+    // console.log('rows: ',rows);
 
     return [headers, ...rows].map(row => row.join(',')).join('\n');
   };

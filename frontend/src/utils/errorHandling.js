@@ -54,8 +54,8 @@ const STATUS_CODE_TO_ERROR_TYPE = {
 export const processError = (error) => {
   // Log the full error for debugging
   console.error('Processing error:', error);
-  console.log('Error type:', typeof error);
-  console.log('Error keys:', Object.keys(error || {}));
+  // console.log('Error type:', typeof error);
+  // console.log('Error keys:', Object.keys(error || {}));
 
   // Handle case where error is already a string
   if (typeof error === 'string') {
@@ -70,8 +70,8 @@ export const processError = (error) => {
   if (error.response) {
     // Server responded with error status
     const status = error.response.status;
-    console.log('Response status:', status);
-    console.log('Response data:', error.response.data);
+    // console.log('Response status:', status);
+    // console.log('Response data:', error.response.data);
 
     let serverMessage = error.response.data?.detail ||
       error.response.data?.message ||

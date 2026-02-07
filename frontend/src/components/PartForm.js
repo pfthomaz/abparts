@@ -62,8 +62,8 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
     try {
       // Get current image URLs from the photo gallery component
       const currentImageUrls = photoGalleryRef.current?.getCurrentImageUrls() || [];
-      console.log('PartForm: Retrieved image URLs from gallery:', currentImageUrls);
-      console.log('PartForm: Current formData.image_urls:', formData.image_urls);
+      // console.log('PartForm: Retrieved image URLs from gallery:', currentImageUrls);
+      // console.log('PartForm: Current formData.image_urls:', formData.image_urls);
 
       // Prepare data, converting empty strings to null for optional int fields
       const dataToSend = {
@@ -74,8 +74,8 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
         image_urls: currentImageUrls
       };
 
-      console.log('PartForm: Final data being sent:', dataToSend);
-      console.log('PartForm: Final image URLs being sent:', dataToSend.image_urls);
+      // console.log('PartForm: Final data being sent:', dataToSend);
+      // console.log('PartForm: Final image URLs being sent:', dataToSend.image_urls);
 
       // Remove deprecated field if it exists
       delete dataToSend.is_consumable;
@@ -247,7 +247,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
           ref={photoGalleryRef}
           images={formData.image_urls || []}
           onImagesChange={(imageUrls) => {
-            console.log('PartForm: Received image URLs from gallery:', imageUrls);
+            // console.log('PartForm: Received image URLs from gallery:', imageUrls);
             setFormData(prev => ({
               ...prev,
               image_urls: imageUrls

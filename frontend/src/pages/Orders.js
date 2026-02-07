@@ -62,7 +62,7 @@ const Orders = () => {
         api.get('/parts/'),         // Fetching data for forms
         api.get('/warehouses/'),    // Fetching warehouses for fulfillment
       ]);
-      console.log('orders... :', ordersService.getCustomerOrders());
+      // console.log('orders... :', ordersService.getCustomerOrders());
       setSupplierOrders(supplierOrdersData);
       setCustomerOrders(customerOrdersData);
       setOrganizations(orgsData);
@@ -105,11 +105,11 @@ const Orders = () => {
       .filter(order => {
         if (!searchTerm) return true;
         // Use the flat customer_organization_name field
-        console.log('All customer1 orders:', order.customer_organization_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+        // console.log('All customer1 orders:', order.customer_organization_name?.toLowerCase().includes(searchTerm.toLowerCase()));
         return order.customer_organization_name?.toLowerCase().includes(searchTerm.toLowerCase());
       });
   }, [customerOrders, searchTerm, filterStatus]);
-  console.log('All customer2 orders:', filteredCustomerOrders);
+  // console.log('All customer2 orders:', filteredCustomerOrders);
 
   const noResultsMatch =
     !loading &&
@@ -549,7 +549,7 @@ const Orders = () => {
                           <p><span className="font-medium">{t('orders.expected')}:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
                         )}
                         {order.actual_delivery_date && (
-                          <p><span className="font-medium">{t('common.delivered')}:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
+                          <p><span className="font-medium">{t('orders.delivered')}:</span> {new Date(order.actual_delivery_date).toLocaleDateString()}</p>
                         )}
                       </div>
                     </div>
