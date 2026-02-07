@@ -112,6 +112,16 @@ export const AuthProvider = ({ children }) => {
           }
           
           setUser(userData);
+          
+          // Preload offline data after successful login
+          // This runs in the background and doesn't block the UI
+          if (navigator.onLine) {
+            import('./services/offlineDataPreloader').then(({ preloadOfflineData }) => {
+              preloadOfflineData(userData).catch(error => {
+                console.error('[Auth] Offline data preload failed:', error);
+              });
+            });
+          }
         } catch (error) {
           // The api client throws an error on non-ok responses, which we catch here.
           // This is expected if the token is expired or invalid.
