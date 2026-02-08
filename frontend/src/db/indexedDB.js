@@ -4,7 +4,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'ABPartsOfflineDB';
-const DB_VERSION = 2; // Incremented to add users store
+const DB_VERSION = 3; // Incremented to ensure protocols store exists
 
 // Database schema
 const STORES = {
