@@ -22,6 +22,17 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       
+      // CRITICAL FIX: Clear stale IndexedDB cache on login
+      // This ensures users always see fresh data from the server
+      try {
+        const { clearAllCachedData } = await import('./db/indexedDB');
+        await clearAllCachedData();
+        console.log('[Auth] ✓ Cleared stale cache on login');
+      } catch (cacheError) {
+        console.warn('[Auth] Failed to clear cache on login:', cacheError);
+        // Don't block login if cache clearing fails
+      }
+      
       // Now perform the login
       const data = await authService.login(username, password);
       localStorage.setItem('authToken', data.access_token);
@@ -49,6 +60,16 @@ export const AuthProvider = ({ children }) => {
     
     // Clear session storage completely
     sessionStorage.clear();
+    
+    // CRITICAL FIX: Clear IndexedDB cache on logout
+    // This prevents data leakage between users
+    import('./db/indexedDB').then(({ clearAllCachedData }) => {
+      clearAllCachedData().then(() => {
+        console.log('[Auth] ✓ Cleared cache on logout');
+      }).catch(error => {
+        console.warn('[Auth] Failed to clear cache on logout:', error);
+      });
+    });
     
     // Force a hard reload to clear any cached React state
     // This is especially important in production builds to prevent

@@ -696,9 +696,58 @@ export async function clearAllOfflineData() {
       await db.clear(storeName);
     }
     
-    // console.log('[IndexedDB] Cleared all offline data');
+    console.log('[IndexedDB] ✓ Cleared all offline data');
   } catch (error) {
     console.error('[IndexedDB] Failed to clear all offline data:', error);
+  }
+}
+
+/**
+ * Clear all cached data (but keep offline operations)
+ * Use this on login to force fresh data from server
+ */
+export async function clearAllCachedData() {
+  try {
+    const db = await getDB();
+    
+    // Clear only cached data stores (not offline operations)
+    const cachedStores = [
+      STORES.FARM_SITES,
+      STORES.NETS,
+      STORES.MACHINES,
+      STORES.PROTOCOLS,
+      STORES.PARTS,
+      STORES.USERS,
+      STORES.CACHE_METADATA,
+    ];
+    
+    for (const storeName of cachedStores) {
+      await db.clear(storeName);
+    }
+    
+    console.log('[IndexedDB] ✓ Cleared all cached data (offline operations preserved)');
+  } catch (error) {
+    console.error('[IndexedDB] Failed to clear cached data:', error);
+  }
+}
+
+/**
+ * Get cache statistics
+ */
+export async function getCacheStats() {
+  try {
+    const db = await getDB();
+    const stats = {};
+    
+    for (const [key, storeName] of Object.entries(STORES)) {
+      const count = await db.count(storeName);
+      stats[key] = count;
+    }
+    
+    return stats;
+  } catch (error) {
+    console.error('[IndexedDB] Failed to get cache stats:', error);
+    return {};
   }
 }
 
