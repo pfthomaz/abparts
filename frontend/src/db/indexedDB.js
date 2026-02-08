@@ -182,6 +182,7 @@ export async function cacheData(storeName, data, userContext = null) {
     }
     
     const db = await getDB();
+    console.log('[IndexedDB] DEBUG: Attempting transaction for store:', storeName, 'Available stores:', Array.from(db.objectStoreNames));
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
     
