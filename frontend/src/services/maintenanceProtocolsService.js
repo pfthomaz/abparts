@@ -72,9 +72,9 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
     
     const data = await api.get(`/maintenance-protocols/?${params}`);
     
-    // Cache the response
-    await cacheData(STORES.PROTOCOLS, data);
-    // console.log('[MaintenanceService] Cached protocols:', data.length);
+    // NOTE: Caching is handled by offlineDataPreloader.js with proper user context
+    // Do not cache here as this function doesn't have access to user context
+    // await cacheData(STORES.PROTOCOLS, data);
     
     return data;
   } catch (error) {
