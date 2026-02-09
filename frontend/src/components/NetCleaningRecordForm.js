@@ -17,6 +17,14 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
   const { t } = useTranslation();
   const { user, token } = useAuth();
   const { isOnline } = useOffline();
+  
+  // DEBUG: Log props
+  console.log('[NetCleaningRecordForm] Received props:', {
+    farmSitesCount: farmSites?.length,
+    farmSites: farmSites,
+    netsCount: nets?.length,
+    machinesCount: machines?.length
+  });
   const [formData, setFormData] = useState({
     net_id: record?.net_id || '',
     machine_id: record?.machine_id || '',
