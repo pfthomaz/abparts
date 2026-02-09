@@ -79,7 +79,7 @@ const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefre
  * @param {number} skip Number of records to skip.
  * @param {number} limit Maximum number of records to return.
  */
-const searchFarmSites = async (searchTerm, skip = 0, limit = 100) => {
+const searchFarmSites = async (searchTerm, skip = 0, limit = 100, userContext = null) => {
   try {
     const online = isOnline();
     
