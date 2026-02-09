@@ -6,7 +6,6 @@ import {
   getCachedData,
   getCachedItem,
   isCacheStale,
-  STORES,
 } from '../db/indexedDB';
 import { isOnline } from '../hooks/useNetworkStatus';
 
@@ -21,18 +20,18 @@ const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
  * @param {number} limit Maximum number of records to return.
  * @param {boolean} forceRefresh Force refresh from API even if cache is fresh.
  */
-const getNets = async (farmSiteId = null, activeOnly = true, skip = 0, limit = 100, forceRefresh = false) => {
+const getNets = async (farmSiteId = null, activeOnly = true, skip = 0, limit = 100, forceRefresh = false, userContext = null) => {
   try {
     // Check if online
     const online = isOnline();
     
     // Check cache staleness
-    const cacheIsStale = await isCacheStale(STORES.NETS, CACHE_MAX_AGE);
+    const cacheIsStale = await isCacheStale('nets', CACHE_MAX_AGE);
     
     // Use cache if offline OR if cache is fresh and not forcing refresh
     if (!online || (!cacheIsStale && !forceRefresh)) {
       // console.log('[NetsService] Using cached data');
-      const cachedNets = await getCachedData(STORES.NETS);
+      const cachedNets = await getCachedData('nets', userContext);
       
       // Filter by farm site if specified
       let filtered = farmSiteId
@@ -60,7 +59,7 @@ const getNets = async (farmSiteId = null, activeOnly = true, skip = 0, limit = 1
     
     // Cache the results
     if (response && Array.isArray(response)) {
-      await cacheData(STORES.NETS, response);
+      await cacheData('nets', response);
       // console.log(`[NetsService] Cached ${response.length} nets`);
     }
     
@@ -72,7 +71,7 @@ const getNets = async (farmSiteId = null, activeOnly = true, skip = 0, limit = 1
     // If API fails, try to return cached data as fallback
     if (!isOnline()) {
       // console.log('[NetsService] API failed, using cached data as fallback');
-      const cachedNets = await getCachedData(STORES.NETS);
+      const cachedNets = await getCachedData('nets', userContext);
       let filtered = farmSiteId
         ? cachedNets.filter(net => net.farm_site_id === farmSiteId)
         : cachedNets;
@@ -100,7 +99,7 @@ const searchNets = async (searchTerm, skip = 0, limit = 100) => {
     if (!online) {
       // Search in cache when offline
       // console.log('[NetsService] Searching in cache (offline)');
-      const cachedNets = await getCachedData(STORES.NETS);
+      const cachedNets = await getCachedData('nets', userContext);
       
       const searchLower = searchTerm.toLowerCase();
       const filtered = cachedNets.filter(net => 
@@ -122,7 +121,7 @@ const searchNets = async (searchTerm, skip = 0, limit = 100) => {
     
     // Fallback to cache search if API fails
     // console.log('[NetsService] API search failed, searching in cache');
-    const cachedNets = await getCachedData(STORES.NETS);
+    const cachedNets = await getCachedData('nets', userContext);
     const searchLower = searchTerm.toLowerCase();
     const filtered = cachedNets.filter(net => 
       net.name?.toLowerCase().includes(searchLower) ||
@@ -146,7 +145,7 @@ const getNet = async (netId) => {
     if (!online) {
       // Get from cache when offline
       // console.log('[NetsService] Getting from cache (offline)');
-      const cachedNet = await getCachedItem(STORES.NETS, netId);
+      const cachedNet = await getCachedItem('nets', netId);
       
       if (!cachedNet) {
         throw new Error('Net not found in cache');
@@ -160,7 +159,7 @@ const getNet = async (netId) => {
     
     // Update cache with this single item
     if (response) {
-      await cacheData(STORES.NETS, response);
+      await cacheData('nets', response);
     }
     
     return response;
@@ -170,7 +169,7 @@ const getNet = async (netId) => {
     
     // Fallback to cache if API fails
     if (!isOnline()) {
-      const cachedNet = await getCachedItem(STORES.NETS, netId);
+      const cachedNet = await getCachedItem('nets', netId);
       if (cachedNet) {
         return cachedNet;
       }

@@ -6,7 +6,6 @@ import {
   getCachedData,
   getCachedItem,
   isCacheStale,
-  STORES,
 } from '../db/indexedDB';
 import { isOnline } from '../hooks/useNetworkStatus';
 
@@ -20,18 +19,18 @@ const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
  * @param {number} limit Maximum number of records to return.
  * @param {boolean} forceRefresh Force refresh from API even if cache is fresh.
  */
-const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefresh = false) => {
+const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefresh = false, userContext = null) => {
   try {
     // Check if online
     const online = isOnline();
     
     // Check cache staleness
-    const cacheIsStale = await isCacheStale(STORES.FARM_SITES, CACHE_MAX_AGE);
+    const cacheIsStale = await isCacheStale('farmSites', CACHE_MAX_AGE);
     
     // Use cache if offline OR if cache is fresh and not forcing refresh
     if (!online || (!cacheIsStale && !forceRefresh)) {
       // console.log('[FarmSitesService] Using cached data');
-      const cachedSites = await getCachedData(STORES.FARM_SITES);
+      const cachedSites = await getCachedData('farmSites', userContext);
       
       // Filter by active status if needed
       const filtered = activeOnly 
@@ -50,7 +49,7 @@ const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefre
     
     // Cache the results
     if (response && Array.isArray(response)) {
-      await cacheData(STORES.FARM_SITES, response);
+      await cacheData('farmSites', response);
       // console.log(`[FarmSitesService] Cached ${response.length} farm sites`);
     }
     
@@ -62,7 +61,7 @@ const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefre
     // If API fails, try to return cached data as fallback
     if (!isOnline()) {
       // console.log('[FarmSitesService] API failed, using cached data as fallback');
-      const cachedSites = await getCachedData(STORES.FARM_SITES);
+      const cachedSites = await getCachedData('farmSites', userContext);
       const filtered = activeOnly 
         ? cachedSites.filter(site => site.active !== false)
         : cachedSites;
@@ -87,7 +86,7 @@ const searchFarmSites = async (searchTerm, skip = 0, limit = 100) => {
     if (!online) {
       // Search in cache when offline
       // console.log('[FarmSitesService] Searching in cache (offline)');
-      const cachedSites = await getCachedData(STORES.FARM_SITES);
+      const cachedSites = await getCachedData('farmSites', userContext);
       
       const searchLower = searchTerm.toLowerCase();
       const filtered = cachedSites.filter(site => 
@@ -108,7 +107,7 @@ const searchFarmSites = async (searchTerm, skip = 0, limit = 100) => {
     
     // Fallback to cache search if API fails
     // console.log('[FarmSitesService] API search failed, searching in cache');
-    const cachedSites = await getCachedData(STORES.FARM_SITES);
+    const cachedSites = await getCachedData('farmSites', userContext);
     const searchLower = searchTerm.toLowerCase();
     const filtered = cachedSites.filter(site => 
       site.name?.toLowerCase().includes(searchLower) ||
@@ -131,7 +130,7 @@ const getFarmSite = async (farmSiteId) => {
     if (!online) {
       // Get from cache when offline
       // console.log('[FarmSitesService] Getting from cache (offline)');
-      const cachedSite = await getCachedItem(STORES.FARM_SITES, farmSiteId);
+      const cachedSite = await getCachedItem('farmSites', farmSiteId);
       
       if (!cachedSite) {
         throw new Error('Farm site not found in cache');
@@ -145,7 +144,7 @@ const getFarmSite = async (farmSiteId) => {
     
     // Update cache with this single item
     if (response) {
-      await cacheData(STORES.FARM_SITES, response);
+      await cacheData('farmSites', response);
     }
     
     return response;
@@ -155,7 +154,7 @@ const getFarmSite = async (farmSiteId) => {
     
     // Fallback to cache if API fails
     if (!isOnline()) {
-      const cachedSite = await getCachedItem(STORES.FARM_SITES, farmSiteId);
+      const cachedSite = await getCachedItem('farmSites', farmSiteId);
       if (cachedSite) {
         return cachedSite;
       }

@@ -43,8 +43,8 @@ const NetCleaningRecords = () => {
       
       const [recordsData, netsData, farmSitesData, machinesData] = await Promise.all([
         netCleaningRecordsService.getCleaningRecords(),
-        netsService.getNets(),
-        farmSitesService.getFarmSites(),
+        netsService.getNets(null, true, 0, 100, false, userContext), // Pass userContext
+        farmSitesService.getFarmSites(true, 0, 100, false, userContext), // Pass userContext
         machinesService.getMachines(false, userContext) // Pass userContext for offline support
       ]);
       setRecords(recordsData);
