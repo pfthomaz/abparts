@@ -1,7 +1,7 @@
 // ABParts Offline Service Worker
 // Enables offline functionality for field operations
 
-const CACHE_VERSION = 'abparts-offline-v1';
+const CACHE_VERSION = 'abparts-offline-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
