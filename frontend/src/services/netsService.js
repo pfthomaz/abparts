@@ -137,15 +137,16 @@ const searchNets = async (searchTerm, skip = 0, limit = 100, userContext = null)
  * Fetches a single net by ID with its cleaning history.
  * Uses cache when offline.
  * @param {string} netId The ID of the net to fetch.
+ * @param {object} userContext Optional user context for cache operations.
  */
-const getNet = async (netId) => {
+const getNet = async (netId, userContext = null) => {
   try {
     const online = isOnline();
     
     if (!online) {
       // Get from cache when offline
       // console.log('[NetsService] Getting from cache (offline)');
-      const cachedNet = await getCachedItem('nets', netId);
+      const cachedNet = await getCachedItem('nets', netId, userContext);
       
       if (!cachedNet) {
         throw new Error('Net not found in cache');
@@ -169,7 +170,7 @@ const getNet = async (netId) => {
     
     // Fallback to cache if API fails
     if (!isOnline()) {
-      const cachedNet = await getCachedItem('nets', netId);
+      const cachedNet = await getCachedItem('nets', netId, userContext);
       if (cachedNet) {
         return cachedNet;
       }

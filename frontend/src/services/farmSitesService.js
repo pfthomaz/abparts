@@ -122,15 +122,16 @@ const searchFarmSites = async (searchTerm, skip = 0, limit = 100, userContext = 
  * Fetches a single farm site by ID with its nets.
  * Uses cache when offline.
  * @param {string} farmSiteId The ID of the farm site to fetch.
+ * @param {object} userContext Optional user context for cache operations.
  */
-const getFarmSite = async (farmSiteId) => {
+const getFarmSite = async (farmSiteId, userContext = null) => {
   try {
     const online = isOnline();
     
     if (!online) {
       // Get from cache when offline
       // console.log('[FarmSitesService] Getting from cache (offline)');
-      const cachedSite = await getCachedItem('farmSites', farmSiteId);
+      const cachedSite = await getCachedItem('farmSites', farmSiteId, userContext);
       
       if (!cachedSite) {
         throw new Error('Farm site not found in cache');
@@ -154,7 +155,7 @@ const getFarmSite = async (farmSiteId) => {
     
     // Fallback to cache if API fails
     if (!isOnline()) {
-      const cachedSite = await getCachedItem('farmSites', farmSiteId);
+      const cachedSite = await getCachedItem('farmSites', farmSiteId, userContext);
       if (cachedSite) {
         return cachedSite;
       }
