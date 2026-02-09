@@ -13,7 +13,7 @@ import {
 
 // Protocol Management
 
-export const listProtocols = async (filters = {}, forceRefresh = false) => {
+export const listProtocols = async (filters = {}, forceRefresh = false, userContext = null) => {
   const online = isOnline();
   
   // Helper function to filter cached data
@@ -34,7 +34,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
   
   // If offline, use cache immediately
   if (!online) {
-    const cached = await getCachedData(STORES.PROTOCOLS);
+    const cached = await getCachedData('protocols', userContext);
     if (cached.length > 0) {
       // console.log('[MaintenanceService] Using cached protocols (offline):', cached.length);
       return filterCachedData(cached);
@@ -45,7 +45,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
   // Check cache staleness (with timeout to prevent blocking)
   let cacheStale = true;
   try {
-    const staleCheckPromise = isCacheStale(STORES.PROTOCOLS);
+    const staleCheckPromise = isCacheStale('protocols', userContext);
     const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(true), 1000));
     cacheStale = await Promise.race([staleCheckPromise, timeoutPromise]);
   } catch (error) {
@@ -55,7 +55,7 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
   
   // Use cache if fresh and not forcing refresh
   if (!cacheStale && !forceRefresh) {
-    const cached = await getCachedData(STORES.PROTOCOLS);
+    const cached = await getCachedData('protocols', userContext);
     if (cached.length > 0) {
       // console.log('[MaintenanceService] Using cached protocols (fresh):', cached.length);
       return filterCachedData(cached);
@@ -74,13 +74,13 @@ export const listProtocols = async (filters = {}, forceRefresh = false) => {
     
     // NOTE: Caching is handled by offlineDataPreloader.js with proper user context
     // Do not cache here as this function doesn't have access to user context
-    // await cacheData(STORES.PROTOCOLS, data);
+    // await cacheData('protocols', data);
     
     return data;
   } catch (error) {
     // Fallback to cache on error
     console.warn('[MaintenanceService] API failed, attempting cache fallback:', error.message);
-    const cached = await getCachedData(STORES.PROTOCOLS);
+    const cached = await getCachedData('protocols', userContext);
     if (cached.length > 0) {
       // console.log('[MaintenanceService] Using cached protocols (fallback):', cached.length);
       return filterCachedData(cached);
@@ -250,9 +250,9 @@ export const acknowledgeReminder = async (reminderId) => {
 
 // Localized Protocol Functions (Language-aware)
 
-export const getLocalizedProtocols = async (filters = {}, userLanguage = null, forceRefresh = false) => {
-  // Get base protocols first (with caching)
-  const protocols = await listProtocols(filters, forceRefresh);
+export const getLocalizedProtocols = async (filters = {}, userLanguage = null, forceRefresh = false, userContext = null) => {
+  // Get base protocols first (with caching) - pass userContext through
+  const protocols = await listProtocols(filters, forceRefresh, userContext);
   
   if (!userLanguage || userLanguage === 'en') {
     return protocols;

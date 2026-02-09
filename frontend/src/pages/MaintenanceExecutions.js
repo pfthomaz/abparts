@@ -39,13 +39,14 @@ const MaintenanceExecutions = () => {
       let protocolsData = [];
       let executionsData = [];
       
+      // Create user context for secure caching
+      const userContext = {
+        userId: user.id,
+        organizationId: user.organization_id,
+        isSuperAdmin: user.role === 'super_admin'
+      };
+      
       try {
-        // Pass user context for secure caching
-        const userContext = {
-          userId: user.id,
-          organizationId: user.organization_id,
-          isSuperAdmin: user.role === 'super_admin'
-        };
         machinesData = await machinesService.getMachines(false, userContext);
         // console.log('[MaintenanceExecutions] Loaded machines:', machinesData.length);
       } catch (err) {
@@ -54,7 +55,8 @@ const MaintenanceExecutions = () => {
       }
       
       try {
-        protocolsData = await getLocalizedProtocols({}, user.preferred_language);
+        // Pass userContext for secure offline caching
+        protocolsData = await getLocalizedProtocols({}, user.preferred_language, false, userContext);
         // console.log('[MaintenanceExecutions] Loaded protocols:', protocolsData.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load protocols:', err);
