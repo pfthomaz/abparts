@@ -50,9 +50,9 @@ const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefre
     // console.log('[FarmSitesService] Fetching from API');
     const response = await api.get(`/farm-sites/?active_only=${activeOnly}&skip=${skip}&limit=${limit}`);
     
-    // Cache the results
+    // Cache the results with user context
     if (response && Array.isArray(response)) {
-      await cacheData('farmSites', response);
+      await cacheData('farmSites', response, userContext);
       // console.log(`[FarmSitesService] Cached ${response.length} farm sites`);
     }
     

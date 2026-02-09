@@ -57,9 +57,9 @@ const getNets = async (farmSiteId = null, activeOnly = true, skip = 0, limit = 1
     }
     const response = await api.get(url);
     
-    // Cache the results
+    // Cache the results with user context
     if (response && Array.isArray(response)) {
-      await cacheData('nets', response);
+      await cacheData('nets', response, userContext);
       // console.log(`[NetsService] Cached ${response.length} nets`);
     }
     
