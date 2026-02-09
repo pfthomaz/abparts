@@ -29,16 +29,19 @@ const getFarmSites = async (activeOnly = true, skip = 0, limit = 100, forceRefre
     
     // Use cache if offline OR if cache is fresh and not forcing refresh
     if (!online || (!cacheIsStale && !forceRefresh)) {
-      // console.log('[FarmSitesService] Using cached data');
+      console.log('[FarmSitesService] Using cached data, userContext:', userContext);
       const cachedSites = await getCachedData('farmSites', userContext);
+      console.log('[FarmSitesService] Retrieved from cache:', cachedSites.length, 'farm sites');
       
       // Filter by active status if needed
       const filtered = activeOnly 
         ? cachedSites.filter(site => site.active !== false)
         : cachedSites;
+      console.log('[FarmSitesService] After active filter:', filtered.length, 'farm sites');
       
       // Apply pagination
       const paginated = filtered.slice(skip, skip + limit);
+      console.log('[FarmSitesService] After pagination:', paginated.length, 'farm sites');
       
       return paginated;
     }
