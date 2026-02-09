@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear ABParts Cache</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear ABParts Cache</h1>
+        <p>This tool will clear all cached data including service workers, cache storage, and IndexedDB.</p>
+        
+        <div>
+            <button id="clearAllBtn" onclick="clearAllCaches()">Clear All Caches</button>
+            <button id="clearServiceWorkerBtn" onclick="clearServiceWorker()">Clear Service Worker Only</button>
+            <button id="clearIndexedDBBtn" onclick="clearIndexedDB()">Clear IndexedDB Only</button>
+        </div>
+        
+        <div id="status"></div>
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        const logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            logs.push(entry);
+            
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = logs.map(l => `<div class="log-entry">${l}</div>`).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            console.log(message);
+        }
+
+        function showStatus(message, type) {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function clearServiceWorker() {
+            log('Starting service worker cleanup...');
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`Found ${registrations.length} service worker(s)`);
+                    
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        log('✓ Unregistered service worker');
+                    }
+                    
+                    showStatus('✓ Service worker cleared successfully!', 'success');
+                } else {
+                    log('Service workers not supported');
+                    showStatus('Service workers not supported in this browser', 'info');
+                }
+            } catch (error) {
+                log(`✗ Error clearing service worker: ${error.message}`);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearCacheStorage() {
+            log('Starting cache storage cleanup...');
+            
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    log(`Found ${cacheNames.length} cache(s): ${cacheNames.join(', ')}`);
+                    
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        log(`✓ Deleted cache: ${cacheName}`);
+                    }
+                    
+                    log('✓ All cache storage cleared');
+                } else {
+                    log('Cache storage not supported');
+                }
+            } catch (error) {
+                log(`✗ Error clearing cache storage: ${error.message}`);
+                throw error;
+            }
+        }
+
+        async function clearIndexedDB() {
+            log('Starting IndexedDB cleanup...');
+            
+            try {
+                if ('indexedDB' in window) {
+                    // Clear ABPartsDB
+                    const dbName = 'ABPartsDB';
+                    const deleteRequest = indexedDB.deleteDatabase(dbName);
+                    
+                    deleteRequest.onsuccess = () => {
+                        log(`✓ Deleted IndexedDB: ${dbName}`);
+                        showStatus('✓ IndexedDB cleared successfully!', 'success');
+                    };
+                    
+                    deleteRequest.onerror = (event) => {
+                        log(`✗ Error deleting IndexedDB: ${event.target.error}`);
+                        showStatus(`Error: ${event.target.error}`, 'error');
+                    };
+                    
+                    deleteRequest.onblocked = () => {
+                        log('⚠ IndexedDB deletion blocked - close all ABParts tabs and try again');
+                        showStatus('Please close all ABParts tabs and try again', 'error');
+                    };
+                } else {
+                    log('IndexedDB not supported');
+                    showStatus('IndexedDB not supported in this browser', 'info');
+                }
+            } catch (error) {
+                log(`✗ Error clearing IndexedDB: ${error.message}`);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearAllCaches() {
+            logs.length = 0; // Clear previous logs
+            logDiv.innerHTML = '';
+            
+            log('========================================');
+            log('Starting complete cache cleanup...');
+            log('========================================');
+            
+            try {
+                // Disable buttons during cleanup
+                document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+                
+                // Clear service worker
+                await clearServiceWorker();
+                
+                // Clear cache storage
+                await clearCacheStorage();
+                
+                // Clear IndexedDB
+                await clearIndexedDB();
+                
+                log('========================================');
+                log('✓ All caches cleared successfully!');
+                log('========================================');
+                log('');
+                log('Next steps:');
+                log('1. Close this tab');
+                log('2. Close all ABParts tabs');
+                log('3. Reopen ABParts in a new tab');
+                log('4. Login and verify protocols cache correctly');
+                
+                showStatus('✓ All caches cleared! Close all tabs and reopen ABParts.', 'success');
+                
+                // Re-enable buttons after 2 seconds
+                setTimeout(() => {
+                    document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+                }, 2000);
+                
+            } catch (error) {
+                log(`✗ Error during cleanup: ${error.message}`);
+                showStatus(`Error: ${error.message}`, 'error');
+                document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // Log initial state
+        window.addEventListener('load', () => {
+            log('Cache clearing tool loaded');
+            log(`User Agent: ${navigator.userAgent}`);
+            log(`Service Worker supported: ${'serviceWorker' in navigator}`);
+            log(`Cache Storage supported: ${'caches' in window}`);
+            log(`IndexedDB supported: ${'indexedDB' in window}`);
+        });
+    </script>
+</body>
+</html>
