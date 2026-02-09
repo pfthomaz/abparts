@@ -6,7 +6,7 @@ import { getLocalizedProtocols } from './maintenanceProtocolsService';
 import { userService } from './userService';
 import farmSitesService from './farmSitesService';
 import netsService from './netsService';
-import { cacheData, STORES } from '../db/indexedDB';
+import { cacheData } from '../db/indexedDB';
 
 /**
  * Preload all essential data for offline use
@@ -48,7 +48,7 @@ export async function preloadOfflineData(user) {
   try {
     const protocols = await getLocalizedProtocols({}, user.preferred_language);
     // Cache protocols with user context
-    await cacheData(STORES.MAINTENANCE_PROTOCOLS, protocols, userContext);
+    await cacheData('protocols', protocols, userContext);
     results.protocols = { success: true, count: protocols.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${protocols.length} protocols`);
   } catch (error) {
@@ -61,7 +61,7 @@ export async function preloadOfflineData(user) {
     const usersResponse = await userService.getUsers();
     const users = usersResponse.data || usersResponse;
     // Cache users with user context
-    await cacheData(STORES.USERS, users, userContext);
+    await cacheData('users', users, userContext);
     results.users = { success: true, count: users.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${users.length} users`);
   } catch (error) {
@@ -74,7 +74,7 @@ export async function preloadOfflineData(user) {
     const farmSitesResponse = await farmSitesService.getFarmSites();
     const farmSites = farmSitesResponse.data || farmSitesResponse;
     // Cache farm sites with user context
-    await cacheData(STORES.FARM_SITES, farmSites, userContext);
+    await cacheData('farmSites', farmSites, userContext);
     results.farmSites = { success: true, count: farmSites.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${farmSites.length} farm sites`);
   } catch (error) {
@@ -87,7 +87,7 @@ export async function preloadOfflineData(user) {
     const netsResponse = await netsService.getNets();
     const nets = netsResponse.data || netsResponse;
     // Cache nets with user context
-    await cacheData(STORES.NETS, nets, userContext);
+    await cacheData('nets', nets, userContext);
     results.nets = { success: true, count: nets.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${nets.length} nets`);
   } catch (error) {
@@ -129,8 +129,8 @@ export async function shouldRefreshOfflineData(user) {
     };
     
     // Check if any critical cache is stale
-    const machinesStale = await isCacheStale(STORES.MACHINES, userContext, CACHE_MAX_AGE);
-    const protocolsStale = await isCacheStale(STORES.MAINTENANCE_PROTOCOLS, userContext, CACHE_MAX_AGE);
+    const machinesStale = await isCacheStale('machines', userContext, CACHE_MAX_AGE);
+    const protocolsStale = await isCacheStale('protocols', userContext, CACHE_MAX_AGE);
     
     return machinesStale || protocolsStale;
   } catch (error) {
@@ -157,11 +157,11 @@ export async function getPreloadStatus(user) {
   
   try {
     const [machines, protocols, users, farmSites, nets] = await Promise.all([
-      getCachedData(STORES.MACHINES, userContext),
-      getCachedData(STORES.MAINTENANCE_PROTOCOLS, userContext),
-      getCachedData(STORES.USERS, userContext),
-      getCachedData(STORES.FARM_SITES, userContext),
-      getCachedData(STORES.NETS, userContext),
+      getCachedData('machines', userContext),
+      getCachedData('protocols', userContext),
+      getCachedData('users', userContext),
+      getCachedData('farmSites', userContext),
+      getCachedData('nets', userContext),
     ]);
     
     return {
