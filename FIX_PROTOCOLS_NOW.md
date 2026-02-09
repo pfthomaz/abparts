@@ -4,11 +4,12 @@
 
 Safari is showing this error:
 ```
-[IndexedDB] DEBUG: Attempting transaction for store: undefined
-[OfflinePreloader] ✗ Failed to cache protocols
+[MaintenanceExecutions] Failed to load protocols: Error: No cached data available offline
 ```
 
-This means the browser is using **old cached JavaScript** where the variable is undefined.
+This happens because:
+1. ~~Browser was using old cached JavaScript where variable was undefined~~ ✅ FIXED
+2. **NEW ISSUE**: Protocols were caching but not loading because IndexedDB was filtering them by `organization_id`, but protocols are GLOBAL (not organization-scoped)
 
 ## The Solution (3 Steps)
 
@@ -22,7 +23,7 @@ cd ~/abparts
 ```
 
 This will:
-- Pull latest code
+- Pull latest code (includes both fixes)
 - Rebuild frontend with no cache
 - Restart containers
 
@@ -61,9 +62,20 @@ Login and check console. You should see:
 [OfflinePreloader] Preload complete: 5/5 successful
 ```
 
-## Why This Happened
+Then navigate to Maintenance Executions page - protocols should load without errors.
 
-The service worker cached old JavaScript where `STORES.MAINTENANCE_PROTOCOLS` was undefined. Even though we fixed the code, the browser kept serving the old cached version.
+## What Was Fixed
+
+### Fix 1: Undefined STORES constant (Commit 18695f0, e8c4baf)
+- Service worker cached old JavaScript where `STORES.MAINTENANCE_PROTOCOLS` was undefined
+- Solution: Replaced all STORES constants with string literals
+
+### Fix 2: Protocols filtered by organization_id (Commit 88df42f)
+- `getCachedData()` was filtering ALL stores by `organization_id`
+- Problem: `MaintenanceProtocol` model has NO `organization_id` field (protocols are global/shared)
+- Solution: Added `GLOBAL_STORES` list for stores that aren't organization-scoped
+- Global stores (protocols, users) now return all cached data
+- Organization-scoped stores (machines, farmSites, nets) still filter correctly
 
 ## Files to Help You
 
@@ -74,4 +86,4 @@ The service worker cached old JavaScript where `STORES.MAINTENANCE_PROTOCOLS` wa
 
 ---
 
-**TL;DR**: Run `./deploy_protocols_fix.sh` on server, then clear Safari cache. Done!
+**TL;DR**: Run `./deploy_protocols_fix.sh` on server, then clear Safari cache. Both issues are now fixed!
