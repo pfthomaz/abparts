@@ -221,11 +221,23 @@ export async function getCachedData(storeName, userContext = null) {
     const db = await getDB();
     const data = await db.getAll(storeName);
     
-    // CRITICAL SECURITY: Filter data by organization_id
+    // Define stores that are GLOBAL (not organization-scoped)
+    // These stores contain data shared across all organizations
+    const GLOBAL_STORES = ['protocols', 'users'];
+    
+    // CRITICAL SECURITY: Filter data by organization_id for org-scoped stores
+    // Global stores (protocols, users) are not filtered
     // Super admins see all data, regular users only see their org's data
-    const filteredData = userContext.isSuperAdmin 
-      ? data 
-      : data.filter(item => item.organization_id === userContext.organizationId);
+    let filteredData;
+    if (GLOBAL_STORES.includes(storeName)) {
+      // Global stores - return all data (protocols are shared, users list is needed for dropdowns)
+      filteredData = data;
+    } else {
+      // Organization-scoped stores - filter by organization
+      filteredData = userContext.isSuperAdmin 
+        ? data 
+        : data.filter(item => item.organization_id === userContext.organizationId);
+    }
     
     // console.log(`[IndexedDB] Retrieved ${filteredData.length} items from ${storeName} for user ${userContext.userId} (org: ${userContext.organizationId})`);
     return filteredData;
