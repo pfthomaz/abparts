@@ -34,11 +34,18 @@ const NetCleaningRecords = () => {
     setLoading(true);
     setError(null);
     try {
+      // Create user context for secure caching
+      const userContext = {
+        userId: user.id,
+        organizationId: user.organization_id,
+        isSuperAdmin: user.role === 'super_admin'
+      };
+      
       const [recordsData, netsData, farmSitesData, machinesData] = await Promise.all([
         netCleaningRecordsService.getCleaningRecords(),
         netsService.getNets(),
         farmSitesService.getFarmSites(),
-        machinesService.getMachines()
+        machinesService.getMachines(false, userContext) // Pass userContext for offline support
       ]);
       setRecords(recordsData);
       setNets(netsData);
@@ -54,7 +61,7 @@ const NetCleaningRecords = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchData();
