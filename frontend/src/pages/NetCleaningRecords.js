@@ -41,21 +41,31 @@ const NetCleaningRecords = () => {
         isSuperAdmin: user.role === 'super_admin'
       };
       
-      const [recordsData, netsData, farmSitesData, machinesData] = await Promise.all([
+      // Fetch data with individual error handling to prevent one failure from blocking others
+      const [recordsResult, netsData, farmSitesData, machinesData] = await Promise.allSettled([
         netCleaningRecordsService.getCleaningRecords(),
         netsService.getNets(null, true, 0, 100, false, userContext), // Pass userContext
         farmSitesService.getFarmSites(true, 0, 100, false, userContext), // Pass userContext
         machinesService.getMachines(false, userContext) // Pass userContext for offline support
       ]);
-      setRecords(recordsData);
-      setNets(netsData);
-      setFarmSites(farmSitesData);
-      setMachines(machinesData);
+      
+      // Set records (or empty array if failed)
+      setRecords(recordsResult.status === 'fulfilled' ? recordsResult.value : []);
+      
+      // Set nets, farmSites, machines (these should always succeed from cache when offline)
+      setNets(netsData.status === 'fulfilled' ? netsData.value : []);
+      setFarmSites(farmSitesData.status === 'fulfilled' ? farmSitesData.value : []);
+      setMachines(machinesData.status === 'fulfilled' ? machinesData.value : []);
       
       // Load offline records
       const unsyncedRecords = await getUnsyncedNetCleaningRecords();
       setOfflineRecords(unsyncedRecords);
       // console.log(`[NetCleaningRecords] Loaded ${unsyncedRecords.length} offline records`);
+      
+      // Only show error if critical data (nets, farmSites, machines) failed to load
+      if (netsData.status === 'rejected' || farmSitesData.status === 'rejected' || machinesData.status === 'rejected') {
+        setError('Failed to load some data. Please check your connection.');
+      }
     } catch (err) {
       setError(err.message || 'Failed to fetch data.');
     } finally {
