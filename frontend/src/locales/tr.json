@@ -751,7 +751,11 @@
     "pendingSync": "{{count}} bakım yürütmesi senkronizasyon bekliyor",
     "pendingSyncMessage": "Bu bakım yürütmeleri çevrimdışı kaydedildi ve bağlantı geri geldiğinde senkronize edilecek.",
     "waitingSync": "Senkronizasyon bekleniyor",
-    "syncingExecution": "Bakım yürütmesi senkronize ediliyor..."
+    "syncingExecution": "Bakım yürütmesi senkronize ediliyor...",
+    "downloadDocxReport": "AI Öngörüleri ile DOCX Raporu İndir",
+    "downloadPdfReport": "AI Öngörüleri ile PDF Raporu İndir",
+    "generatingReport": "Rapor oluşturuluyor...",
+    "reportGenerated": "Rapor başarıyla oluşturuldu"
   },
   "dashboard": {
     "welcomeBack": "Tekrar hoş geldin, {{name}}!",

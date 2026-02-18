@@ -751,7 +751,11 @@
     "pendingSync": "{{count}} ejecución(es) de mantenimiento pendiente(s) de sincronización",
     "pendingSyncMessage": "Estas ejecuciones de mantenimiento se registraron sin conexión y se sincronizarán cuando se restablezca la conexión.",
     "waitingSync": "Esperando sincronización",
-    "syncingExecution": "Sincronizando ejecución de mantenimiento..."
+    "syncingExecution": "Sincronizando ejecución de mantenimiento...",
+    "downloadDocxReport": "Descargar informe DOCX con información de IA",
+    "downloadPdfReport": "Descargar informe PDF con información de IA",
+    "generatingReport": "Generando informe...",
+    "reportGenerated": "Informe generado exitosamente"
   },
   "dashboard": {
     "welcomeBack": "¡Bienvenido de nuevo, {{name}}!",

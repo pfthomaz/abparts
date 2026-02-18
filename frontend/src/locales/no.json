@@ -751,7 +751,11 @@
     "pendingSync": "{{count}} vedlikeholdsutførelse(r) venter på synkronisering",
     "pendingSyncMessage": "Disse vedlikeholdsutførelsene ble registrert frakoblet og vil synkronisere når tilkoblingen er gjenopprettet.",
     "waitingSync": "Venter på synkronisering",
-    "syncingExecution": "Synkroniserer vedlikeholdsutførelse..."
+    "syncingExecution": "Synkroniserer vedlikeholdsutførelse...",
+    "downloadDocxReport": "Last ned DOCX-rapport med AI-innsikt",
+    "downloadPdfReport": "Last ned PDF-rapport med AI-innsikt",
+    "generatingReport": "Genererer rapport...",
+    "reportGenerated": "Rapport generert vellykket"
   },
   "dashboard": {
     "welcomeBack": "Velkommen tilbake, {{name}}!",

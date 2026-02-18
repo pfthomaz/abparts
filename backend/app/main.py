@@ -56,6 +56,7 @@ from .routers.protocol_translations import router as protocol_translations_route
 from .routers.farm_sites import router as farm_sites_router # New: Import farm sites router
 from .routers.nets import router as nets_router # New: Import nets router
 from .routers.net_cleaning_records import router as net_cleaning_records_router # New: Import net cleaning records router
+from .routers.reports import router as reports_router # New: Import standalone reports router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -225,6 +226,9 @@ os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 
 # --- Include Routers ---
+# Mount reports router FIRST without any middleware
+app.include_router(reports_router, prefix="/reports", tags=["Reports"])
+
 app.include_router(organizations_router, prefix="/organizations", tags=["Organizations"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(parts_router, prefix="/parts", tags=["Parts"])

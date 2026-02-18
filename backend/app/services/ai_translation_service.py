@@ -3,7 +3,7 @@
 import os
 import logging
 from typing import Dict, List, Optional
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
@@ -13,7 +13,6 @@ class AITranslationService:
     """Service for AI-powered automatic translations using Google Translate"""
     
     def __init__(self):
-        self.translator = Translator()
         self.executor = ThreadPoolExecutor(max_workers=5)
         
         # Language mapping: our codes -> Google Translate codes
@@ -62,7 +61,7 @@ class AITranslationService:
                 dest_lang
             )
             
-            return result.text if result else None
+            return result if result else None
             
         except Exception as e:
             logger.error(f"Translation failed for '{text[:50]}...' to {target_language}: {str(e)}")
@@ -70,7 +69,8 @@ class AITranslationService:
     
     def _translate_sync(self, text: str, src_lang: str, dest_lang: str):
         """Synchronous translation method for thread pool execution"""
-        return self.translator.translate(text, src=src_lang, dest=dest_lang)
+        translator = GoogleTranslator(source=src_lang, target=dest_lang)
+        return translator.translate(text)
     
     async def translate_protocol(
         self, 

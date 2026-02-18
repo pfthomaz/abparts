@@ -743,7 +743,11 @@
     "pendingSync": "{{count}} maintenance execution(s) pending sync",
     "pendingSyncMessage": "These maintenance executions were recorded offline and will sync when connection is restored.",
     "waitingSync": "Waiting to sync",
-    "syncingExecution": "Syncing maintenance execution..."
+    "syncingExecution": "Syncing maintenance execution...",
+    "downloadDocxReport": "Download DOCX Report with AI Insights",
+    "downloadPdfReport": "Download PDF Report with AI Insights",
+    "generatingReport": "Generating report...",
+    "reportGenerated": "Report generated successfully"
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {{name}}!",

@@ -5,7 +5,7 @@ psycopg2-binary
 python-dotenv # For loading .env files in your app
 alembic
 pydantic[email]
-httpx
+httpx<0.28.0 # Pin to version compatible with openai
 redis
 celery
 pandas
@@ -24,4 +24,7 @@ pytest-xdist==3.3.1
 psutil==5.9.5 # For system monitoring
 prometheus-client==0.17.0 # For metrics collection
 locust==2.15.1 # For load testing
-googletrans==4.0.0rc1 # For AI-powered auto-translation
+deep-translator==1.11.4 # For AI-powered auto-translation (replaces googletrans)
+python-docx==1.1.0 # For DOCX generation
+reportlab==4.0.7 # For PDF generation
+openai==1.54.0 # For AI-generated insights

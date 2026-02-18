@@ -743,7 +743,11 @@
     "pendingSync": "{{count}} تنفيذ صيانة في انتظار المزامنة",
     "pendingSyncMessage": "تم تسجيل عمليات تنفيذ الصيانة هذه دون اتصال وستتم مزامنتها عند استعادة الاتصال.",
     "waitingSync": "في انتظار المزامنة",
-    "syncingExecution": "مزامنة تنفيذ الصيانة..."
+    "syncingExecution": "مزامنة تنفيذ الصيانة...",
+    "downloadDocxReport": "تنزيل تقرير DOCX مع رؤى الذكاء الاصطناعي",
+    "downloadPdfReport": "تنزيل تقرير PDF مع رؤى الذكاء الاصطناعي",
+    "generatingReport": "جاري إنشاء التقرير...",
+    "reportGenerated": "تم إنشاء التقرير بنجاح"
   },
   "dashboard": {
     "welcomeBack": "مرحباً بعودتك، {{name}}!",

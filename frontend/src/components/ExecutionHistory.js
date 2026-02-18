@@ -10,6 +10,8 @@ const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportType, setReportType] = useState(null); // 'docx' or 'pdf'
 
   // console.log('ExecutionHistory received executions:', executions);
 
@@ -84,6 +86,106 @@ const ExecutionHistory = ({ executions, onRefresh, onResumeExecution }) => {
               ← {t('maintenance.backToHistory')}
             </button>
             <div className="flex gap-2">
+              {/* Loading indicator */}
+              {isGeneratingReport && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-md">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="font-medium">
+                    {reportType === 'docx' ? 'Generating DOCX...' : 'Generating PDF...'}
+                  </span>
+                </div>
+              )}
+              
+              {/* Download Report Buttons */}
+              <button
+                onClick={async () => {
+                  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+                  const token = localStorage.getItem('authToken');
+                  
+                  setIsGeneratingReport(true);
+                  setReportType('docx');
+                  
+                  try {
+                    const response = await fetch(`${API_BASE_URL}/reports/maintenance-executions/${selectedExecution.id}/docx`, {
+                      method: 'GET',
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to generate report');
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Maintenance_Report_${selectedExecution.id}.docx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  } catch (error) {
+                    console.error('Error downloading report:', error);
+                    alert('Failed to download report. Please try again.');
+                  } finally {
+                    setIsGeneratingReport(false);
+                    setReportType(null);
+                  }
+                }}
+                disabled={isGeneratingReport}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                title={t('maintenance.downloadDocxReport')}
+              >
+                📄 DOCX
+              </button>
+              <button
+                onClick={async () => {
+                  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+                  const token = localStorage.getItem('authToken');
+                  
+                  setIsGeneratingReport(true);
+                  setReportType('pdf');
+                  
+                  try {
+                    const response = await fetch(`${API_BASE_URL}/reports/maintenance-executions/${selectedExecution.id}/pdf`, {
+                      method: 'GET',
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to generate report');
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Maintenance_Report_${selectedExecution.id}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  } catch (error) {
+                    console.error('Error downloading report:', error);
+                    alert('Failed to download report. Please try again.');
+                  } finally {
+                    setIsGeneratingReport(false);
+                    setReportType(null);
+                  }
+                }}
+                disabled={isGeneratingReport}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                title={t('maintenance.downloadPdfReport')}
+              >
+                📑 PDF
+              </button>
               {selectedExecution.status === 'in_progress' && onResumeExecution && (
                 <button
                   onClick={() => {
