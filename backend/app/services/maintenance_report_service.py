@@ -74,34 +74,35 @@ class MaintenanceReportService:
         
         try:
             # Build a detailed prompt that emphasizes the specific task
-            prompt = f"""As an AutoBoss net cleaning machine maintenance expert, analyze this specific maintenance task and provide targeted professional insights (2-3 sentences):
+            prompt = f"""Analyze this specific AutoBoss maintenance task and provide targeted professional insights (2-3 sentences):
 
-TASK DESCRIPTION: "{checklist_item['description']}"
+TASK: "{checklist_item['description']}"
 Category: {checklist_item['category']}
 Status: {'Completed' if checklist_item['is_completed'] else 'Not Completed'}
 Technician Notes: {checklist_item['notes'] if checklist_item['notes'] else 'None provided'}
 
-AUTOBOSS MACHINE CONTEXT:
-The AutoBoss is an automated net cleaning machine used in aquaculture. Key operational requirements:
-- Travels along nets using walking wheels that grip the net edge
-- Nets must be positioned 90cm from water surface for optimal wheel grip
-- Operates in harsh marine environments with saltwater exposure
-- Critical components: walking wheels, drive system, cleaning brushes, control electronics
-- Requires reliable operation for continuous aquaculture operations
+INSTRUCTIONS:
+1. Read the task description carefully and identify what specific component or system it addresses
+2. Provide insights ONLY about that specific component/system mentioned in the task
+3. Explain why THIS SPECIFIC task matters for AutoBoss operation
+4. Describe potential problems if this specific task is not done properly
+5. Give actionable recommendations for this specific task
 
-YOUR TASK:
-Analyze the specific task description above and provide insights that are:
-1. DIRECTLY RELATED to what the task description mentions (e.g., if it mentions "net positioning", focus on that; if it mentions "wheel inspection", focus on wheels)
-2. Explain WHY this specific task matters for AutoBoss operation
-3. Describe potential AutoBoss-specific problems if this task is not done properly
-4. Provide actionable recommendations specific to this task
+IMPORTANT: 
+- Focus ONLY on what the task description mentions
+- Do NOT discuss walking wheels unless the task specifically mentions them
+- Do NOT discuss net positioning unless the task specifically mentions it
+- Do NOT provide generic advice - be specific to this task
+- If the task is about electronics, focus on electronics
+- If the task is about hydraulics, focus on hydraulics
+- If the task is about cleaning brushes, focus on brushes
 
-Keep it concise, technical, and laser-focused on the specific task and AutoBoss machine operation. Do NOT provide generic maintenance advice."""
+AutoBoss context (use only if relevant to the task): Automated net cleaning machine for aquaculture, operates in marine environments with saltwater exposure."""
 
             response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are an expert AutoBoss net cleaning machine maintenance technician. Your role is to analyze specific maintenance tasks and provide targeted insights about their impact on the AutoBoss machine's walking wheel mechanism, net gripping system, and operational reliability. Always reference the specific task description in your analysis and avoid generic advice."},
+                    {"role": "system", "content": "You are an AutoBoss maintenance expert. Analyze each task individually and provide insights ONLY about the specific component or system mentioned in that task. Do not default to discussing walking wheels or net positioning unless the task explicitly mentions them. Be precise and task-specific."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=200,
