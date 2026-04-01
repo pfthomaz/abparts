@@ -2,7 +2,6 @@
 // Preloads all essential data into IndexedDB on login for offline access
 
 import { machinesService } from './machinesService';
-import { getLocalizedProtocols } from './maintenanceProtocolsService';
 import { userService } from './userService';
 import farmSitesService from './farmSitesService';
 import netsService from './netsService';
@@ -44,10 +43,26 @@ export async function preloadOfflineData(user) {
     console.error('[OfflinePreloader] ✗ Failed to cache machines:', error);
   }
   
-  // Preload maintenance protocols
+  // Preload maintenance protocols (fetch and cache manually with user context)
   try {
-    const protocols = await getLocalizedProtocols({}, user.preferred_language);
-    // Cache protocols with user context
+    console.log('[OfflinePreloader] ========== PROTOCOLS SECTION START ==========');
+    
+    // Fetch protocols directly from API
+    const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || ''}/api/maintenance-protocols/`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const protocols = await response.json();
+    console.log('[OfflinePreloader] DEBUG: Fetched protocols from API, count =', protocols.length);
+    
+    // Cache protocols with user context - use string literal to avoid undefined STORES.PROTOCOLS
     await cacheData('protocols', protocols, userContext);
     results.protocols = { success: true, count: protocols.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${protocols.length} protocols`);
@@ -60,7 +75,7 @@ export async function preloadOfflineData(user) {
   try {
     const usersResponse = await userService.getUsers();
     const users = usersResponse.data || usersResponse;
-    // Cache users with user context
+    // Cache users with user context - use string literal
     await cacheData('users', users, userContext);
     results.users = { success: true, count: users.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${users.length} users`);
@@ -71,9 +86,9 @@ export async function preloadOfflineData(user) {
   
   // Preload farm sites (for net cleaning)
   try {
-    const farmSitesResponse = await farmSitesService.getFarmSites();
+    const farmSitesResponse = await farmSitesService.getFarmSites(true, 0, 100, false, userContext);
     const farmSites = farmSitesResponse.data || farmSitesResponse;
-    // Cache farm sites with user context
+    // Cache farm sites with user context - use string literal
     await cacheData('farmSites', farmSites, userContext);
     results.farmSites = { success: true, count: farmSites.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${farmSites.length} farm sites`);
@@ -84,9 +99,9 @@ export async function preloadOfflineData(user) {
   
   // Preload nets (for net cleaning)
   try {
-    const netsResponse = await netsService.getNets();
+    const netsResponse = await netsService.getNets(null, true, 0, 100, false, userContext);
     const nets = netsResponse.data || netsResponse;
-    // Cache nets with user context
+    // Cache nets with user context - use string literal
     await cacheData('nets', nets, userContext);
     results.nets = { success: true, count: nets.length, error: null };
     console.log(`[OfflinePreloader] ✓ Cached ${nets.length} nets`);
@@ -128,7 +143,7 @@ export async function shouldRefreshOfflineData(user) {
       isSuperAdmin: user.role === 'super_admin'
     };
     
-    // Check if any critical cache is stale
+    // Check if any critical cache is stale - use string literals
     const machinesStale = await isCacheStale('machines', userContext, CACHE_MAX_AGE);
     const protocolsStale = await isCacheStale('protocols', userContext, CACHE_MAX_AGE);
     

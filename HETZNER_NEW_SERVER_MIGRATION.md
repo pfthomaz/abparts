@@ -21,7 +21,7 @@ sudo apt update && sudo apt upgrade -y
 ### 1.3 Install Docker
 ```bash
 # Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
+df
 sudo sh get-docker.sh
 
 # Add your user to docker group (so you don't need sudo for docker commands)
