@@ -12,14 +12,18 @@ from .. import models, schemas, crud
 from ..database import get_db
 from ..auth import get_current_user, TokenData
 from ..permissions import (
-    ResourceType, PermissionType, require_permission,
+    ResourceType, PermissionType, require_permission, require_super_admin,
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
 
 router = APIRouter()
 
 @router.get("/debug-warehouse/{order_id}")
-def debug_warehouse_lookup(order_id: str, db: Session = Depends(get_db)):
+def debug_warehouse_lookup(
+    order_id: str,
+    db: Session = Depends(get_db),
+    _current_user: TokenData = Depends(require_super_admin())
+):
     """Debug endpoint to check warehouse lookup - NO AUTH REQUIRED FOR TESTING"""
     try:
         order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()

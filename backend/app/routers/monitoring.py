@@ -15,12 +15,12 @@ router = APIRouter()
 
 
 @router.get("/health", response_model=Dict[str, Any])
-async def get_health():
+async def get_health(current_user = Depends(has_roles(["admin", "super_admin"]))):
     """
     Get system health status.
     
     Returns a health check report for all system components.
-    This endpoint is public and does not require authentication.
+    Requires admin privileges to avoid leaking infrastructure details.
     """
     monitoring = get_monitoring_system()
     if not monitoring:
@@ -29,7 +29,20 @@ async def get_health():
             "message": "Monitoring system not initialized"
         }
     
-    return monitoring.get_health()
+    health = monitoring.get_health()
+    details = health.get("details")
+    if isinstance(details, dict):
+        sanitized_details = {}
+        for component, component_details in details.items():
+            if isinstance(component_details, dict) and "error" in component_details:
+                sanitized = component_details.copy()
+                sanitized["error"] = "See server logs"
+                sanitized_details[component] = sanitized
+            else:
+                sanitized_details[component] = component_details
+        health = {**health, "details": sanitized_details}
+
+    return health
 
 
 @router.get("/metrics", response_model=Dict[str, Any])

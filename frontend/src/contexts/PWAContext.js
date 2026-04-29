@@ -32,8 +32,12 @@ export const PWAProvider = ({ children }) => {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
-  // Register service worker on mount
+  // Register service worker on mount (production only)
   useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      return;
+    }
+
     registerSW({
       onSuccess: (registration) => {
         // console.log('[PWA] Service worker registered successfully');

@@ -8,7 +8,7 @@ import uuid
 from app import models, schemas
 from app.crud import maintenance_protocols as crud_maintenance, parts as crud_parts, machines as crud_machines
 from app.database import get_db
-from app.auth import get_current_user, TokenData, oauth2_scheme, SECRET_KEY, ALGORITHM
+from app.auth import get_current_user, TokenData, oauth2_scheme
 from app.permissions import require_permission, ResourceType, PermissionType, permission_checker
 
 router = APIRouter()
@@ -461,166 +461,88 @@ def acknowledge_reminder(
 @router.get("/executions/{execution_id}/report/docx", dependencies=[])
 async def download_execution_report_docx(
     execution_id: uuid.UUID,
-    request: Request
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
 ):
     """Generate and download a DOCX report for a maintenance execution with AI insights."""
     from fastapi.responses import StreamingResponse
     from app.services.maintenance_report_service import MaintenanceReportService
-    from jose import JWTError, jwt
-    from app.auth import SECRET_KEY, ALGORITHM
-    from app.database import SessionLocal
-    
-    # Create our own database session
-    db = SessionLocal()
-    
-    try:
-        # Extract token manually from Authorization header
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
-        
-        token = auth_header.split(" ")[1]
-        
-        # Validate token directly without Redis session
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_id = uuid.UUID(payload.get("user_id"))
-            organization_id = uuid.UUID(payload.get("organization_id"))
-            role = payload.get("role")
-            
-            current_user = TokenData(
-                username=payload.get("sub"),
-                user_id=user_id,
-                organization_id=organization_id,
-                role=role
-            )
-        except (JWTError, ValueError, KeyError) as e:
-            raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
-        
-        # Verify execution exists
-        execution = db.query(models.MaintenanceExecution).filter(
-            models.MaintenanceExecution.id == execution_id
-        ).first()
-        
-        if not execution:
-            raise HTTPException(status_code=404, detail="Execution not found")
-        
-        # Verify user has access to this execution
-        machine = db.query(models.Machine).filter(
-            models.Machine.id == execution.machine_id
-        ).first()
-        
-        if not machine:
-            raise HTTPException(status_code=404, detail="Machine not found")
-        
-        # Check organization access (unless super-admin)
-        if not permission_checker.is_super_admin(current_user):
-            if machine.customer_organization_id != current_user.organization_id:
-                raise HTTPException(status_code=403, detail="Cannot access execution from another organization")
-        
-        # Generate report
-        report_service = MaintenanceReportService(db)
-        buffer = await report_service.generate_docx_report(str(execution_id))
-        
-        # Generate filename
-        protocol_name = execution.protocol.name if execution.protocol else "Custom_Maintenance"
-        protocol_name = protocol_name.replace(" ", "_")
-        machine_name = machine.name.replace(" ", "_")
-        date_str = execution.performed_date.strftime("%Y%m%d") if execution.performed_date else "undated"
-        filename = f"Maintenance_Report_{protocol_name}_{machine_name}_{date_str}.docx"
-        
-        return StreamingResponse(
-            buffer,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
-    finally:
-        db.close()
+
+    # Verify execution exists
+    execution = db.query(models.MaintenanceExecution).filter(
+        models.MaintenanceExecution.id == execution_id
+    ).first()
+
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    # Verify user has access to this execution
+    machine = db.query(models.Machine).filter(
+        models.Machine.id == execution.machine_id
+    ).first()
+
+    if not machine:
+        raise HTTPException(status_code=404, detail="Machine not found")
+
+    if not permission_checker.is_super_admin(current_user):
+        if machine.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot access execution from another organization")
+
+    report_service = MaintenanceReportService(db)
+    buffer = await report_service.generate_docx_report(str(execution_id))
+
+    protocol_name = execution.protocol.name if execution.protocol else "Custom_Maintenance"
+    protocol_name = protocol_name.replace(" ", "_")
+    machine_name = machine.name.replace(" ", "_")
+    date_str = execution.performed_date.strftime("%Y%m%d") if execution.performed_date else "undated"
+    filename = f"Maintenance_Report_{protocol_name}_{machine_name}_{date_str}.docx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 @router.get("/executions/{execution_id}/report/pdf", dependencies=[])
 async def download_execution_report_pdf(
     execution_id: uuid.UUID,
-    request: Request
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
 ):
     """Generate and download a PDF report for a maintenance execution with AI insights."""
     from fastapi.responses import StreamingResponse
     from app.services.maintenance_report_service import MaintenanceReportService
-    from jose import JWTError, jwt
-    from app.auth import SECRET_KEY, ALGORITHM, TokenData
-    from app.database import SessionLocal
-    
-    # Create our own database session
-    db = SessionLocal()
-    
-    try:
-        # Extract token manually from Authorization header
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
-        
-        token = auth_header.split(" ")[1]
-        
-        # Validate token directly without Redis session
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_id = uuid.UUID(payload.get("user_id"))
-            organization_id = uuid.UUID(payload.get("organization_id"))
-            role = payload.get("role")
-            
-            current_user = TokenData(
-                username=payload.get("sub"),
-                user_id=user_id,
-                organization_id=organization_id,
-                role=role
-            )
-        except (JWTError, ValueError, KeyError) as e:
-            raise HTTPException(status_code=401, detail=f"Could not validate credentials: {str(e)}")
-        
-        # Verify execution exists
-        execution = db.query(models.MaintenanceExecution).filter(
-            models.MaintenanceExecution.id == execution_id
-        ).first()
-        
-        if not execution:
-            raise HTTPException(status_code=404, detail="Execution not found")
-        
-        # Verify user has access to this execution
-        machine = db.query(models.Machine).filter(
-            models.Machine.id == execution.machine_id
-        ).first()
-        
-        if not machine:
-            raise HTTPException(status_code=404, detail="Machine not found")
-        
-        # Check organization access (unless super-admin)
-        if not permission_checker.is_super_admin(current_user):
-            if machine.customer_organization_id != current_user.organization_id:
-                raise HTTPException(status_code=403, detail="Cannot access execution from another organization")
-        
-        # Generate report
-        report_service = MaintenanceReportService(db)
-        buffer = await report_service.generate_pdf_report(str(execution_id))
-        
-        # Generate filename
-        protocol_name = execution.protocol.name if execution.protocol else "Custom_Maintenance"
-        protocol_name = protocol_name.replace(" ", "_")
-        machine_name = machine.name.replace(" ", "_")
-        date_str = execution.performed_date.strftime("%Y%m%d") if execution.performed_date else "undated"
-        filename = f"Maintenance_Report_{protocol_name}_{machine_name}_{date_str}.pdf"
-        
-        return StreamingResponse(
-            buffer,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
-    finally:
-        db.close()
+
+    execution = db.query(models.MaintenanceExecution).filter(
+        models.MaintenanceExecution.id == execution_id
+    ).first()
+
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+
+    machine = db.query(models.Machine).filter(
+        models.Machine.id == execution.machine_id
+    ).first()
+
+    if not machine:
+        raise HTTPException(status_code=404, detail="Machine not found")
+
+    if not permission_checker.is_super_admin(current_user):
+        if machine.customer_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot access execution from another organization")
+
+    report_service = MaintenanceReportService(db)
+    buffer = await report_service.generate_pdf_report(str(execution_id))
+
+    protocol_name = execution.protocol.name if execution.protocol else "Custom_Maintenance"
+    protocol_name = protocol_name.replace(" ", "_")
+    machine_name = machine.name.replace(" ", "_")
+    date_str = execution.performed_date.strftime("%Y%m%d") if execution.performed_date else "undated"
+    filename = f"Maintenance_Report_{protocol_name}_{machine_name}_{date_str}.pdf"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

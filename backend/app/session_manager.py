@@ -551,11 +551,7 @@ class SessionManager:
             )
         
         logger.info(f"Verification code generated for user {user_id} via {method}")
-        
-        # In a real implementation, you would send the code via email/SMS here
-        # For testing purposes, we'll log it (remove in production)
-        logger.info(f"DEBUG: Verification code for user {user_id}: {code}")
-        
+
         return code
     
     def verify_verification_code(self, user_id: uuid.UUID, provided_code: str, method: str = "email", db: Session = None) -> bool:

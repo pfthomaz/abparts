@@ -202,8 +202,8 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
       depth_1: formData.depth_1 ? parseFloat(formData.depth_1) : null,
       depth_2: formData.depth_2 ? parseFloat(formData.depth_2) : null,
       depth_3: formData.depth_3 ? parseFloat(formData.depth_3) : null,
-      start_time: new Date(formData.start_time).toISOString(),
-      end_time: formData.end_time ? new Date(formData.end_time).toISOString() : null,
+      start_time: formData.start_time,
+      end_time: formData.end_time || null,
       status: status,
       notes: formData.notes || null,
     };

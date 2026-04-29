@@ -4,6 +4,8 @@ import uuid
 import logging
 import json # New: for JSON encoding/decoding
 import base64 # New: for Base64 encoding/decoding
+import os
+import secrets
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -70,7 +72,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
-SECRET_KEY = "your-secret-key"
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    logging.getLogger(__name__).warning(
+        "SECRET_KEY is not set; generating an ephemeral key for this runtime. Set SECRET_KEY env for consistency."
+    )
+    SECRET_KEY = secrets.token_urlsafe(64)
+
 ALGORITHM = "HS256"
 
 class TokenData(BaseModel):

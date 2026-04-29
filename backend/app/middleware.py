@@ -252,18 +252,6 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
         if "/machines/" in path and path.endswith("/hours"):
             return False
         
-        # Skip ALL report endpoints (they handle authentication internally)
-        if path.startswith("/reports/"):
-            return False
-        
-        # Skip report download endpoints (they handle authentication internally)
-        if "/maintenance-protocols/executions/" in path and ("/report/docx" in path or "/report/pdf" in path):
-            return False
-        
-        # Skip report endpoints with any execution ID pattern
-        if "/report/docx" in path or "/report/pdf" in path:
-            return False
-        
         return True
     
     def _extract_resource_from_path(self, path: str, method: str) -> Optional[ResourceType]:

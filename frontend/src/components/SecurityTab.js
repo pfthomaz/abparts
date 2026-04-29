@@ -57,26 +57,9 @@ const SecurityTab = ({
 
   const checkSuspiciousActivity = async () => {
     try {
-      // Mock suspicious activity detection - in real implementation this would come from backend
-      const mockSuspiciousActivity = [
-        {
-          id: 1,
-          type: 'unusual_location',
-          description: 'Login from new location: New York, NY',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          severity: 'medium',
-          resolved: false
-        },
-        {
-          id: 2,
-          type: 'multiple_failed_attempts',
-          description: '3 failed login attempts in 5 minutes',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          severity: 'high',
-          resolved: true
-        }
-      ];
-      setSuspiciousActivity(mockSuspiciousActivity);
+      // Only show real suspicious activity from security events
+      // No mock data - real alerts will come from backend security events
+      setSuspiciousActivity([]);
     } catch (err) {
       console.error('Failed to check suspicious activity:', err);
     }

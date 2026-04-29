@@ -159,8 +159,10 @@ def get_development_origins() -> List[str]:
     origins = [
         "http://localhost:3000",
         "http://localhost:3001",  # Add port 3001 for development
+        "http://localhost:3100",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",  # Add port 3001 for development
+        "http://127.0.0.1:3100",
         "http://localhost",
         "http://127.0.0.1",
     ]
@@ -171,6 +173,7 @@ def get_development_origins() -> List[str]:
         origins.extend([
             f"http://{network_ip}:3000",
             f"http://{network_ip}:3001",  # Add port 3001 for development
+            f"http://{network_ip}:3100",
             f"http://{network_ip}:8000",
             f"http://{network_ip}",
         ])
@@ -182,6 +185,7 @@ def get_development_origins() -> List[str]:
         origins.extend([
             f"http://{host_ip}:3000",
             f"http://{host_ip}:3001",  # Add port 3001 for development
+            f"http://{host_ip}:3100",
             f"http://{host_ip}:8000",
             f"http://{host_ip}",
         ])

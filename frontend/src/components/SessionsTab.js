@@ -96,14 +96,12 @@ const SessionsTab = ({
   };
 
   const getLocationFromIP = (ipAddress) => {
-    // Mock location detection - in real implementation this would come from backend
-    const mockLocations = {
-      '192.168.1.1': 'Local Network',
-      '10.0.0.1': 'Office Network',
-      '203.0.113.1': 'New York, NY',
-      '198.51.100.1': 'San Francisco, CA'
-    };
-    return mockLocations[ipAddress] || 'Unknown Location';
+    // Show IP address directly - geolocation would require a backend service
+    if (!ipAddress) return 'Unknown';
+    if (ipAddress.startsWith('192.168.') || ipAddress.startsWith('10.') || ipAddress === '127.0.0.1') {
+      return 'Local Network';
+    }
+    return ipAddress;
   };
 
   const handleSessionSettingChange = (setting, value) => {
