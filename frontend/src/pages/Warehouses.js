@@ -274,28 +274,28 @@ const Warehouses = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('warehouses.title')}</h1>
           <p className="text-gray-600">{t('warehouses.subtitle')}</p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowTransferModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {t('warehouses.transferInventory')}
           </button>
           <button
             onClick={() => setShowAddInventoryModal(true)}
-            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
           >
             {t('warehouses.addInventoryItem')}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
             {t('warehouses.addWarehouse')}
           </button>
@@ -310,7 +310,7 @@ const Warehouses = () => {
 
       {/* View Mode Tabs */}
       <div className="bg-white border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+        <nav className="-mb-px flex overflow-x-auto px-4 sm:px-6 gap-1 sm:gap-4" aria-label="Tabs">
           {[
             { id: 'warehouses', label: t('warehouses.tabs.warehouses'), icon: '🏭' },
             { id: 'aggregated', label: t('warehouses.tabs.aggregated'), icon: '📊' },
@@ -320,13 +320,14 @@ const Warehouses = () => {
             <button
               key={tab.id}
               onClick={() => setCurrentView(tab.id)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${currentView === tab.id
+              className={`py-3 px-2 sm:px-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${currentView === tab.id
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
+              <span className="mr-1 sm:mr-2">{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
             </button>
           ))}
         </nav>
