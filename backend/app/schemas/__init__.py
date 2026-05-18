@@ -20,6 +20,7 @@ from .invitation import *
 from .dashboard import *
 from .inventory_workflow import *
 from .maintenance_protocol import *
+from .warehouse_location import *
 
 # Rebuild maintenance protocol schemas with forward references
 from .maintenance_protocol import (

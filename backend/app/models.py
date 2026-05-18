@@ -630,6 +630,7 @@ class Warehouse(Base):
     transactions_to = relationship("Transaction", foreign_keys="[Transaction.to_warehouse_id]", back_populates="to_warehouse")
     stocktakes = relationship("Stocktake", back_populates="warehouse", cascade="all, delete-orphan")
     stock_adjustments = relationship("StockAdjustment", back_populates="warehouse", cascade="all, delete-orphan")
+    locations = relationship("WarehouseLocation", back_populates="warehouse", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Warehouse(id={self.id}, name='{self.name}', organization_id={self.organization_id})>"
@@ -661,6 +662,7 @@ class Inventory(Base):
     # Relationships
     warehouse = relationship("Warehouse", back_populates="inventory_items")
     part = relationship("Part", back_populates="inventory_items")
+    locations = relationship("InventoryLocation", back_populates="inventory", cascade="all, delete-orphan")
     # Note: Stock adjustments are now tracked at warehouse level, not inventory item level
 
     def __repr__(self):
@@ -2000,3 +2002,51 @@ class NetCleaningRecord(Base):
 
     def __repr__(self):
         return f"<NetCleaningRecord(id={self.id}, net_id={self.net_id}, mode={self.cleaning_mode}, status={self.status}, date={self.start_time})>"
+
+
+class WarehouseLocation(Base):
+    """
+    SQLAlchemy model for the 'warehouse_locations' table.
+    Represents a physical shelf/bin location within a warehouse.
+    """
+    __tablename__ = "warehouse_locations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
+    location_code = Column(String(50), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # Unique constraint: location_code must be unique within a warehouse
+    __table_args__ = (
+        UniqueConstraint('warehouse_id', 'location_code', name='_warehouse_location_code_uc'),
+    )
+
+    # Relationships
+    warehouse = relationship("Warehouse", back_populates="locations")
+    inventory_locations = relationship("InventoryLocation", back_populates="location", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<WarehouseLocation(id={self.id}, warehouse_id={self.warehouse_id}, code='{self.location_code}')>"
+
+
+class InventoryLocation(Base):
+    """
+    SQLAlchemy model for the 'inventory_locations' junction table.
+    Links inventory items (parts in a warehouse) to specific shelf locations.
+    Enables many-to-many: multiple parts can share a location, and a part can be in multiple locations.
+    """
+    __tablename__ = "inventory_locations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    inventory_id = Column(UUID(as_uuid=True), ForeignKey("inventory.id"), nullable=False)
+    location_id = Column(UUID(as_uuid=True), ForeignKey("warehouse_locations.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    inventory = relationship("Inventory", back_populates="locations")
+    location = relationship("WarehouseLocation", back_populates="inventory_locations")
+
+    def __repr__(self):
+        return f"<InventoryLocation(id={self.id}, inventory_id={self.inventory_id}, location_id={self.location_id})>"

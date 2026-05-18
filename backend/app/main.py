@@ -57,6 +57,7 @@ from .routers.farm_sites import router as farm_sites_router # New: Import farm s
 from .routers.nets import router as nets_router # New: Import nets router
 from .routers.net_cleaning_records import router as net_cleaning_records_router # New: Import net cleaning records router
 from .routers.reports import router as reports_router # New: Import standalone reports router
+from .routers.warehouse_locations import router as warehouse_locations_router # New: Import warehouse locations router
 from .auth import login_for_access_token, read_users_me, TokenData
 
 
@@ -261,6 +262,7 @@ app.include_router(protocol_translations_router, prefix="/translations", tags=["
 app.include_router(farm_sites_router, prefix="/farm-sites", tags=["Farm Sites"])
 app.include_router(nets_router, prefix="/nets", tags=["Nets"])
 app.include_router(net_cleaning_records_router, prefix="/net-cleaning-records", tags=["Net Cleaning Records"])
+app.include_router(warehouse_locations_router, tags=["Warehouse Locations"])
 
 # --- Authentication Endpoints (kept in main for simplicity of login flow) ---
 app.post("/token", tags=["Authentication"])(login_for_access_token)

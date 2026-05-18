@@ -17,4 +17,5 @@ from . import stock_adjustments
 from . import stocktake
 from . import transaction
 from . import maintenance_protocols
+from . import warehouse_locations
 # Add other CRUD modules here as you create them:

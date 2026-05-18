@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
 import { warehouseService } from '../services/warehouseService';
 import { organizationsService } from '../services/organizationsService';
@@ -20,6 +21,7 @@ import InventoryForm from '../components/InventoryForm';
 
 const Warehouses = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [warehouses, setWarehouses] = useState([]);
   const [warehouseSummaries, setWarehouseSummaries] = useState({});
@@ -453,6 +455,12 @@ const Warehouses = () => {
                       className="w-full px-3 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 text-sm font-medium"
                     >
                       📦 {t('warehouses.viewInventory')}
+                    </button>
+                    <button
+                      onClick={() => navigate(`/warehouses/${warehouse.id}/locations`)}
+                      className="w-full px-3 py-2 bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 text-sm font-medium"
+                    >
+                      📍 {t('warehouses.locations') || 'Locations'}
                     </button>
                     <div className="grid grid-cols-2 gap-2">
                       <button

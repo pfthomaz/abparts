@@ -9,6 +9,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "date-fns": "^4.1.0",
+    "html5-qrcode": "^2.3.8",
     "idb": "^8.0.3",
     "localforage": "^1.10.0",
     "node-fetch": "^3.3.2",

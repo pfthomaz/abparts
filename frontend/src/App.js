@@ -1,6 +1,6 @@
 // frontend/src/App.js
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -42,6 +42,7 @@ import FarmSites from './pages/FarmSites'; // New: Import FarmSites page
 import Nets from './pages/Nets'; // New: Import Nets page
 import NetCleaningRecords from './pages/NetCleaningRecords'; // New: Import NetCleaningRecords page
 import SyncStatus from './pages/SyncStatus'; // New: Import SyncStatus page for offline mode
+import WarehouseLocations from './pages/WarehouseLocations'; // New: Import WarehouseLocations page
 import SessionTimeoutWarning from './components/SessionTimeoutWarning'; // New: Import SessionTimeoutWarning component
 import MachineHoursReminderModal from './components/MachineHoursReminderModal'; // New: Import MachineHoursReminderModal
 import OfflineIndicator from './components/OfflineIndicator'; // New: Import OfflineIndicator for PWA
@@ -49,6 +50,10 @@ import PWAInstallPrompt from './components/PWAInstallPrompt'; // New: Import PWA
 import PWAUpdateNotification from './components/PWAUpdateNotification'; // New: Import PWAUpdateNotification for PWA
 import { useState, useEffect } from 'react';
 import { api } from './services/api';
+
+// Lazy-loaded pages for QR location system (placeholders until Tasks 13/14)
+const LocationDetail = lazy(() => import('./pages/LocationDetail'));
+const QRScannerPage = lazy(() => import('./components/QRScanner'));
 
 function App() {
   const { token, loadingUser, user } = useAuth();
@@ -309,6 +314,44 @@ function App() {
                   >
                     <Warehouses />
                   </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="warehouses/:warehouse_id/locations"
+              element={
+                <PermissionErrorBoundary
+                  feature="Warehouse Locations"
+                  requiredPermission={PERMISSIONS.VIEW_WAREHOUSES}
+                  resource="warehouses"
+                  action="view"
+                >
+                  <ProtectedRoute
+                    permission={PERMISSIONS.VIEW_WAREHOUSES}
+                    feature="Warehouse Locations"
+                  >
+                    <WarehouseLocations />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="locate/:warehouse_id/:location_code"
+              element={
+                <PermissionErrorBoundary feature="Location Detail">
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><p className="text-gray-500">Loading...</p></div>}>
+                    <LocationDetail />
+                  </Suspense>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="scan"
+              element={
+                <PermissionErrorBoundary feature="QR Scanner">
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><p className="text-gray-500">Loading...</p></div>}>
+                    <QRScannerPage />
+                  </Suspense>
                 </PermissionErrorBoundary>
               }
             />

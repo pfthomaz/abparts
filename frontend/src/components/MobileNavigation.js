@@ -72,7 +72,7 @@ const MobileNavigation = () => {
     <>
       {/* Mobile Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-6 h-16">
           {/* Dashboard */}
           <Link
             to="/"
@@ -107,6 +107,23 @@ const MobileNavigation = () => {
               </div>
             </Link>
           </PermissionGuard>
+
+          {/* Scan QR */}
+          <Link
+            to="/scan"
+            className={`flex flex-col items-center justify-center py-2 text-xs font-medium transition-colors
+              ${location.pathname === '/scan'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 active:bg-gray-100'}`}
+          >
+            <div className="flex flex-col items-center space-y-1">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9V5a2 2 0 012-2h4M3 15v4a2 2 0 002 2h4M15 3h4a2 2 0 012 2v4M15 21h4a2 2 0 002-2v-4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h2v2H7zM7 11h2v2H7zM11 7h2v2h-2zM15 7h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z" />
+              </svg>
+              <span>{t('mobileNav.scan') || 'Scan'}</span>
+            </div>
+          </Link>
 
           {/* Quick Actions Menu */}
           <button

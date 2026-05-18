@@ -27,4 +27,5 @@ locust==2.15.1 # For load testing
 deep-translator==1.11.4 # For AI-powered auto-translation (replaces googletrans)
 python-docx==1.1.0 # For DOCX generation
 reportlab==4.0.7 # For PDF generation
+qrcode[pil]==7.4.2 # For QR code generation
 openai==1.54.0 # For AI-generated insights
