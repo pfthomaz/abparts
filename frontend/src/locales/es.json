@@ -2341,7 +2341,17 @@
     "errorLoadingLocations": "Error al cargar ubicaciones",
     "errorAssigning": "Error al asignar pieza",
     "errorUnassigning": "Error al quitar pieza",
-    "errorBulkAssign": "Error en asignación masiva"
+    "errorBulkAssign": "Error en asignación masiva",
+    "manageParts": "Gestionar Piezas",
+    "currentParts": "Actualmente en esta ubicación",
+    "noPartsAssigned": "No hay piezas asignadas a esta ubicación.",
+    "addParts": "Añadir piezas del inventario del almacén",
+    "searchParts": "Buscar por nombre o número de pieza...",
+    "noInventory": "No hay artículos de inventario en este almacén.",
+    "noMatchingParts": "No se encontraron piezas. Todas pueden estar ya asignadas.",
+    "qty": "Cant",
+    "unassign": "Quitar de ubicación",
+    "showingFirst50": "Mostrando primeros 50 resultados. Refine su búsqueda."
   },
   "qrScanner": {
     "title": "Escáner QR",

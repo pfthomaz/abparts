@@ -2345,7 +2345,17 @@
     "errorLoadingLocations": "Error loading locations",
     "errorAssigning": "Error assigning part to location",
     "errorUnassigning": "Error removing part from location",
-    "errorBulkAssign": "Error assigning parts to location"
+    "errorBulkAssign": "Error assigning parts to location",
+    "manageParts": "Manage Parts",
+    "currentParts": "Currently at this location",
+    "noPartsAssigned": "No parts assigned to this location yet.",
+    "addParts": "Add parts from warehouse inventory",
+    "searchParts": "Search by part name or part number...",
+    "noInventory": "No inventory items in this warehouse.",
+    "noMatchingParts": "No matching parts found. All parts may already be assigned.",
+    "qty": "Qty",
+    "unassign": "Remove from location",
+    "showingFirst50": "Showing first 50 results. Refine your search."
   },
   "qrScanner": {
     "title": "QR Scanner",

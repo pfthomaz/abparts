@@ -2333,7 +2333,17 @@
     "errorLoadingLocations": "خطأ في تحميل المواقع",
     "errorAssigning": "خطأ في تعيين القطعة",
     "errorUnassigning": "خطأ في إزالة القطعة",
-    "errorBulkAssign": "خطأ في التعيين الجماعي"
+    "errorBulkAssign": "خطأ في التعيين الجماعي",
+    "manageParts": "إدارة القطع",
+    "currentParts": "الموجودة حالياً في هذا الموقع",
+    "noPartsAssigned": "لم يتم تعيين قطع لهذا الموقع بعد.",
+    "addParts": "إضافة قطع من مخزون المستودع",
+    "searchParts": "البحث بالاسم أو رقم القطعة...",
+    "noInventory": "لا توجد عناصر مخزون في هذا المستودع.",
+    "noMatchingParts": "لم يتم العثور على قطع مطابقة. قد تكون جميع القطع معينة بالفعل.",
+    "qty": "الكمية",
+    "unassign": "إزالة من الموقع",
+    "showingFirst50": "عرض أول 50 نتيجة. حسّن البحث."
   },
   "qrScanner": {
     "title": "ماسح QR",

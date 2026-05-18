@@ -2341,7 +2341,17 @@
     "errorLoadingLocations": "Konumlar yüklenirken hata",
     "errorAssigning": "Parça atanırken hata",
     "errorUnassigning": "Parça kaldırılırken hata",
-    "errorBulkAssign": "Toplu atama hatası"
+    "errorBulkAssign": "Toplu atama hatası",
+    "manageParts": "Parçaları Yönet",
+    "currentParts": "Şu anda bu konumda",
+    "noPartsAssigned": "Bu konuma henüz parça atanmadı.",
+    "addParts": "Depo envanterinden parça ekle",
+    "searchParts": "Parça adı veya numarasıyla ara...",
+    "noInventory": "Bu depoda envanter öğesi yok.",
+    "noMatchingParts": "Eşleşen parça bulunamadı. Tüm parçalar zaten atanmış olabilir.",
+    "qty": "Adet",
+    "unassign": "Konumdan kaldır",
+    "showingFirst50": "İlk 50 sonuç gösteriliyor. Aramanızı daraltın."
   },
   "qrScanner": {
     "title": "QR Tarayıcı",

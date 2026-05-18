@@ -2341,7 +2341,17 @@
     "errorLoadingLocations": "Feil ved lasting av lokasjoner",
     "errorAssigning": "Feil ved tilordning av del",
     "errorUnassigning": "Feil ved fjerning av del",
-    "errorBulkAssign": "Feil ved massetilordning"
+    "errorBulkAssign": "Feil ved massetilordning",
+    "manageParts": "Administrer Deler",
+    "currentParts": "For øyeblikket på denne plasseringen",
+    "noPartsAssigned": "Ingen deler er tilordnet denne plasseringen ennå.",
+    "addParts": "Legg til deler fra lagerbeholdningen",
+    "searchParts": "Søk etter delnavn eller delnummer...",
+    "noInventory": "Ingen lagervarer i dette lageret.",
+    "noMatchingParts": "Ingen matchende deler funnet. Alle deler kan allerede være tilordnet.",
+    "qty": "Ant",
+    "unassign": "Fjern fra plassering",
+    "showingFirst50": "Viser første 50 resultater. Avgrens søket."
   },
   "qrScanner": {
     "title": "QR-skanner",
