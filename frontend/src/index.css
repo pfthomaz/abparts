@@ -259,9 +259,10 @@ body {
   touch-action: manipulation; /* Improve touch responsiveness */
 }
 
-/* Prevent horizontal scroll on all pages */
-html, body {
+/* Prevent horizontal scroll without breaking vertical scroll */
+body {
   overflow-x: hidden;
+  overflow-y: auto;
   max-width: 100vw;
 }
 
