@@ -259,12 +259,7 @@ body {
   touch-action: manipulation; /* Improve touch responsiveness */
 }
 
-/* Prevent horizontal scroll without breaking vertical scroll */
-body {
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-width: 100vw;
-}
+
 
 /* PWA specific styles */
 @media (display-mode: standalone) {
