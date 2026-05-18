@@ -298,7 +298,7 @@ const WarehouseLocations = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${selectionMode ? 'pb-24 sm:pb-20' : ''}`}
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -807,7 +807,7 @@ const WarehouseLocations = () => {
 
       {/* Floating Action Bar for Label Printing */}
       {selectionMode && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 px-4 py-3">
+        <div className="fixed bottom-16 sm:bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 px-4 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-gray-700">
               {selectedIds.size} {t('warehouseLocations.selected') || 'selected'}
