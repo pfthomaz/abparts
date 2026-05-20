@@ -78,10 +78,18 @@ const Warehouses = () => {
       }
 
       let data;
+      // Always fetch all warehouses and filter client-side
+      // (backend search endpoint has DB column compatibility issues)
+      data = await warehouseService.getWarehouses(filters);
+
+      // Client-side search filtering
       if (searchQuery.trim()) {
-        data = await warehouseService.searchWarehouses(searchQuery, filters);
-      } else {
-        data = await warehouseService.getWarehouses(filters);
+        const q = searchQuery.trim().toLowerCase();
+        data = data.filter(w =>
+          (w.name || '').toLowerCase().includes(q) ||
+          (w.location || '').toLowerCase().includes(q) ||
+          (w.description || '').toLowerCase().includes(q)
+        );
       }
 
       setWarehouses(data);
@@ -102,7 +110,7 @@ const Warehouses = () => {
       setWarehouseSummaries(summaries);
 
     } catch (err) {
-      setError(searchQuery.trim() ? 'Failed to search warehouses' : 'Failed to fetch warehouses');
+      setError('Failed to fetch warehouses');
       console.error('Failed to fetch/search warehouses:', err);
     } finally {
       setLoading(false);
