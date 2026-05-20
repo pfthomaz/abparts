@@ -40,7 +40,7 @@ const searchWarehouses = (query, filters = {}) => {
     });
   }
 
-  return api.get(`/warehouses/search/?${queryParams.toString()}`);
+  return api.get(`/warehouses/search?${queryParams.toString()}`);
 };
 
 /**
