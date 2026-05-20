@@ -471,13 +471,7 @@ const Warehouses = () => {
                     >
                       📍 {t('warehouses.locations') || 'Locations'}
                     </button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => openAdjustmentModal(warehouse)}
-                        className="px-3 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100 text-sm font-medium"
-                      >
-                        ⚖️ {t('warehouses.adjustStock')}
-                      </button>
+                    <div className="grid grid-cols-1 gap-2">
                       <button
                         onClick={() => openPerformanceModal(warehouse)}
                         className="px-3 py-2 bg-purple-50 text-purple-700 rounded-md hover:bg-purple-100 text-sm font-medium"

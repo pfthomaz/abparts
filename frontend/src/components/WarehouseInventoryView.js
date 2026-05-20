@@ -15,6 +15,8 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'low_stock', 'out_of_stock'
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [editingMinStock, setEditingMinStock] = useState(null); // inventory item id being edited
+  const [editMinStockValue, setEditMinStockValue] = useState('');
 
   const fetchWarehouseInventory = useCallback(async () => {
     setLoading(true);
@@ -139,6 +141,39 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
     }
   };
 
+  const handleMinStockClick = (item) => {
+    setEditingMinStock(item.id);
+    setEditMinStockValue(String(parseFloat(item.minimum_stock_recommendation) || 0));
+  };
+
+  const handleMinStockSave = async (itemId) => {
+    const newValue = parseFloat(editMinStockValue);
+    if (isNaN(newValue) || newValue < 0) {
+      setEditingMinStock(null);
+      return;
+    }
+    try {
+      await inventoryService.updateInventoryItem(itemId, {
+        minimum_stock_recommendation: newValue
+      });
+      // Update local state
+      setInventoryItems(prev => prev.map(item =>
+        item.id === itemId ? { ...item, minimum_stock_recommendation: newValue } : item
+      ));
+    } catch (err) {
+      console.error('Failed to update min stock:', err);
+    }
+    setEditingMinStock(null);
+  };
+
+  const handleMinStockKeyDown = (e, itemId) => {
+    if (e.key === 'Enter') {
+      handleMinStockSave(itemId);
+    } else if (e.key === 'Escape') {
+      setEditingMinStock(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -256,9 +291,27 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm text-gray-900">
-                        {parseFloat(item.minimum_stock_recommendation).toLocaleString()}
-                      </div>
+                      {editingMinStock === item.id ? (
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={editMinStockValue}
+                          onChange={(e) => setEditMinStockValue(e.target.value)}
+                          onBlur={() => handleMinStockSave(item.id)}
+                          onKeyDown={(e) => handleMinStockKeyDown(e, item.id)}
+                          autoFocus
+                          className="w-20 px-2 py-1 text-sm text-right border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => handleMinStockClick(item)}
+                          className="text-sm text-gray-900 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded cursor-pointer transition-colors"
+                          title={t('warehouses.clickToEditMinStock') || 'Click to edit minimum stock'}
+                        >
+                          {parseFloat(item.minimum_stock_recommendation).toLocaleString()}
+                        </button>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${stockStatus.bg} ${stockStatus.color}`}>
