@@ -386,7 +386,7 @@ def generate_part_label_pdf(
         )
 
         # Part code below QR (small bold, centered in right area)
-        code_font_size = 7
+        code_font_size = 12
         c.setFont("Helvetica-Bold", code_font_size)
         # Truncate part code if too long
         display_code = part_number
@@ -404,13 +404,13 @@ def generate_part_label_pdf(
         # --- LEFT SIDE: Logo (top-left) + Part name (below logo) ---
         left_x = inner_x
 
-        # Logo: small, top-left corner (~8mm tall)
-        logo_height = 8 * mm
+        # Logo: small, top-left corner (~9.6mm tall, 20% larger than 8mm)
+        logo_height = 9.6 * mm
         logo_y = inner_y + inner_h - logo_height
 
         if logo_reader:
-            # Maintain aspect ratio, max height 8mm, max width = left_width * 0.6
-            max_logo_width = left_width * 0.6
+            # Maintain aspect ratio, max height 9.6mm, max width = left_width * 0.72 (20% larger)
+            max_logo_width = left_width * 0.72
             try:
                 c.drawImage(
                     logo_reader,
@@ -426,7 +426,7 @@ def generate_part_label_pdf(
                 pass  # Skip logo if drawing fails
 
         # Part name: below logo, small text, max 2 lines with wrapping
-        name_font_size = 7
+        name_font_size = 9
         c.setFont("Helvetica", name_font_size)
         name_y = logo_y - name_font_size - 3  # Start below logo with small gap
 

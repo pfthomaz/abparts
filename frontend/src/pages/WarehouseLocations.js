@@ -713,7 +713,7 @@ const WarehouseLocations = () => {
                         </div>
                         <div className="flex items-center gap-2 ml-2">
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded font-medium">
-                            {t('warehouseLocations.qty') || 'Qty'}: {Number(part.quantity)}
+                            {t('warehouseLocations.qty') || 'Qty'}: {Number(part.current_stock || part.quantity)}
                           </span>
                           <button
                             onClick={() => handleUnassignPart(part.inventory_id)}
