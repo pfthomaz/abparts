@@ -358,15 +358,31 @@ const SuperAdminPartsManager = () => {
           <h1 className="text-3xl font-bold text-gray-800">Parts Management</h1>
           <p className="text-gray-600 mt-1">Super Administrator Interface</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingPart(null);
-            setShowModal(true);
-          }}
-          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
-        >
-          Add New Part
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              if (!window.confirm(`Generate labels for all parts in stock?`)) return;
+              try {
+                await partsService.generatePartLabels([]);
+              } catch (err) {
+                console.error('Failed to generate labels:', err);
+                alert('Failed to generate labels');
+              }
+            }}
+            className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+          >
+            🏷️ Print Labels
+          </button>
+          <button
+            onClick={() => {
+              setEditingPart(null);
+              setShowModal(true);
+            }}
+            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+          >
+            Add New Part
+          </button>
+        </div>
       </div>
 
       {/* Analytics Dashboard */}
