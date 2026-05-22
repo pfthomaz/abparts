@@ -67,3 +67,4 @@ backend/static/images/
 # Backup scripts (optional - you might want to keep these)
 # backup_production_db.sh
 # restore_to_local.sh
+.kiro/settings/mcp.json
