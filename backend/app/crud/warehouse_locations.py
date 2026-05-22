@@ -159,8 +159,20 @@ def unassign_part_from_location(
 def get_parts_at_location(db: Session, location_id: uuid.UUID) -> List[dict]:
     """
     Get all parts stored at a location.
-    Returns PartLocationInfo-compatible dicts with actual current stock.
+    Returns PartLocationInfo-compatible dicts with calculated current stock from warehouse inventory.
+    Uses the same calculation logic as the inventory modal (adjustments + transactions).
     """
+    from .inventory_calculator import calculate_current_stock
+
+    # Get the location to know which warehouse it belongs to
+    location = db.query(models.WarehouseLocation).filter(
+        models.WarehouseLocation.id == location_id
+    ).first()
+    if not location:
+        return []
+
+    warehouse_id = location.warehouse_id
+
     assignments = db.query(models.InventoryLocation).filter(
         models.InventoryLocation.location_id == location_id
     ).options(
@@ -172,18 +184,9 @@ def get_parts_at_location(db: Session, location_id: uuid.UUID) -> List[dict]:
         inventory = assignment.inventory
         part = inventory.part
 
-        # Get the actual current stock for this part in this warehouse
-        # (there may be multiple inventory records; find the one with stock)
-        actual_stock = inventory.current_stock
-        if actual_stock == 0:
-            # Try to find another inventory record for same part/warehouse with stock
-            alt_inventory = db.query(models.Inventory).filter(
-                models.Inventory.part_id == part.id,
-                models.Inventory.warehouse_id == inventory.warehouse_id,
-                models.Inventory.current_stock > 0
-            ).first()
-            if alt_inventory:
-                actual_stock = alt_inventory.current_stock
+        # Calculate current stock using the same logic as the inventory modal
+        # (based on stock adjustments + transactions, not the cached current_stock field)
+        calculated_stock = calculate_current_stock(db, warehouse_id, part.id)
 
         # Get first image URL if available
         photo_url = None
@@ -195,7 +198,7 @@ def get_parts_at_location(db: Session, location_id: uuid.UUID) -> List[dict]:
             "part_id": part.id,
             "part_name": part.name,
             "sku": part.part_number,
-            "quantity": actual_stock,
+            "quantity": float(calculated_stock),
             "photo_url": photo_url
         })
 
