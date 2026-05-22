@@ -23,19 +23,25 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 @dataclass
 class LabelLayout:
-    """Configuration for the label grid layout on A4 paper."""
+    """Configuration for the label grid layout on A4 paper.
+    
+    Default configuration matches 70x42.3mm label sheets (3 columns × 7 rows).
+    We skip the top and bottom rows (printer margins) and use the 5 middle rows.
+    This gives 3 × 5 = 15 usable labels per page.
+    Content has 5mm internal padding to stay within printable area.
+    """
 
     columns: int = 3
-    rows: int = 7
+    rows: int = 5
     page_width: float = 210.0  # mm (A4)
     page_height: float = 297.0  # mm (A4)
-    margin_top: float = 10.0  # mm
-    margin_bottom: float = 10.0  # mm
-    margin_left: float = 7.0  # mm
-    margin_right: float = 7.0  # mm
-    label_padding: float = 2.0  # mm - internal padding within each label
-    gap_x: float = 2.0  # mm - horizontal gap between labels
-    gap_y: float = 2.0  # mm - vertical gap between labels
+    margin_top: float = 42.3  # mm (skip first row of labels)
+    margin_bottom: float = 42.3  # mm (skip last row of labels)
+    margin_left: float = 0.0  # mm (3 × 70 = 210, labels fill width exactly)
+    margin_right: float = 0.0  # mm
+    label_padding: float = 5.0  # mm - internal padding within each label
+    gap_x: float = 0.0  # mm - no gap (labels are contiguous)
+    gap_y: float = 0.0  # mm - no gap (labels are contiguous)
 
     @property
     def labels_per_page(self) -> int:
