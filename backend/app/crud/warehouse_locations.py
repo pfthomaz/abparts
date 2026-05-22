@@ -159,7 +159,7 @@ def unassign_part_from_location(
 def get_parts_at_location(db: Session, location_id: uuid.UUID) -> List[dict]:
     """
     Get all parts stored at a location.
-    Returns PartLocationInfo-compatible dicts.
+    Returns PartLocationInfo-compatible dicts with actual current stock.
     """
     assignments = db.query(models.InventoryLocation).filter(
         models.InventoryLocation.location_id == location_id
@@ -171,6 +171,20 @@ def get_parts_at_location(db: Session, location_id: uuid.UUID) -> List[dict]:
     for assignment in assignments:
         inventory = assignment.inventory
         part = inventory.part
+
+        # Get the actual current stock for this part in this warehouse
+        # (there may be multiple inventory records; find the one with stock)
+        actual_stock = inventory.current_stock
+        if actual_stock == 0:
+            # Try to find another inventory record for same part/warehouse with stock
+            alt_inventory = db.query(models.Inventory).filter(
+                models.Inventory.part_id == part.id,
+                models.Inventory.warehouse_id == inventory.warehouse_id,
+                models.Inventory.current_stock > 0
+            ).first()
+            if alt_inventory:
+                actual_stock = alt_inventory.current_stock
+
         # Get first image URL if available
         photo_url = None
         if part.image_urls and len(part.image_urls) > 0:
@@ -181,7 +195,7 @@ def get_parts_at_location(db: Session, location_id: uuid.UUID) -> List[dict]:
             "part_id": part.id,
             "part_name": part.name,
             "sku": part.part_number,
-            "quantity": inventory.current_stock,
+            "quantity": actual_stock,
             "photo_url": photo_url
         })
 
