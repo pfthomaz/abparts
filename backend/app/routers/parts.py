@@ -168,37 +168,54 @@ async def generate_part_labels(
         parts_list = parts_query.all()
         if not parts_list:
             raise HTTPException(status_code=404, detail="No parts found for the given IDs")
+
+        # For specific part_ids, calculate stock to determine label count per part
+        from ..crud.inventory_calculator import calculate_current_stock
+        parts_with_qty = []
+        for part in parts_list:
+            # Sum stock across all warehouses for this part
+            inventories = db.query(models.Inventory).filter(
+                models.Inventory.part_id == part.id
+            ).all()
+            total_stock = 0
+            for inv in inventories:
+                calc_stock = calculate_current_stock(db, inv.warehouse_id, inv.part_id)
+                if calc_stock > 0:
+                    total_stock += int(calc_stock)
+            parts_with_qty.append((part, max(total_stock, 1)))  # At least 1 label
     else:
         # Fetch all parts that have calculated stock > 0 (using the same logic as inventory modal)
         from ..crud.inventory_calculator import calculate_current_stock
 
         # Get all inventory records and check calculated stock
         all_inventory = db.query(models.Inventory).all()
-        part_ids_with_stock = set()
+        # Track total stock per part (across all warehouses)
+        part_stock_map = {}  # part_id -> total_stock
         for inv in all_inventory:
             calc_stock = calculate_current_stock(db, inv.warehouse_id, inv.part_id)
             if calc_stock > 0:
-                part_ids_with_stock.add(inv.part_id)
+                part_stock_map[inv.part_id] = part_stock_map.get(inv.part_id, 0) + int(calc_stock)
 
-        if part_ids_with_stock:
+        if part_stock_map:
             parts_list = db.query(models.Part).filter(
-                models.Part.id.in_(part_ids_with_stock)
+                models.Part.id.in_(part_stock_map.keys())
             ).all()
+            parts_with_qty = [(part, part_stock_map[part.id]) for part in parts_list]
         else:
-            parts_list = []
+            parts_with_qty = []
 
-        if not parts_list:
+        if not parts_with_qty:
             raise HTTPException(status_code=404, detail="No parts with inventory found")
 
-    # Prepare parts data for the label generator
-    parts_data = [
-        {
-            "id": str(part.id),
-            "part_number": part.part_number,
-            "name": part.name,
-        }
-        for part in parts_list
-    ]
+    # Prepare parts data for the label generator - one entry per unit in stock
+    parts_data = []
+    for part, qty in parts_with_qty:
+        for _ in range(qty):
+            parts_data.append({
+                "id": str(part.id),
+                "part_number": part.part_number,
+                "name": part.name,
+            })
 
     # Fetch organization logo from the current user's organization
     logo_bytes = None
