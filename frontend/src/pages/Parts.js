@@ -41,6 +41,7 @@ const Parts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProprietary, setFilterProprietary] = useState('all');
   const [filterPartType, setFilterPartType] = useState('all');
+  const [generatingLabels, setGeneratingLabels] = useState(false);
 
   // Debounced search with loading state
   const { debouncedSearchTerm, isSearching } = useDebounceSearch(searchTerm, 300);
@@ -266,6 +267,29 @@ const Parts = () => {
     }
   };
 
+  const handlePrintLabels = async () => {
+    const partsInStock = parts.filter(p => {
+      const totalStock = p.total_stock || p.current_stock || 
+        (p.inventory_items && p.inventory_items.reduce((sum, inv) => sum + (parseFloat(inv.current_stock) || 0), 0)) || 0;
+      return totalStock > 0;
+    });
+    const count = partsInStock.length || parts.length;
+
+    if (!window.confirm(t('parts.confirmGenerateLabels', { count }) || `Generate labels for ${count} parts?`)) {
+      return;
+    }
+
+    setGeneratingLabels(true);
+    try {
+      await partsService.generatePartLabels([]);
+    } catch (err) {
+      console.error('Error generating part labels:', err);
+      setError({ message: err.message || 'Failed to generate part labels', isRetryable: false });
+    } finally {
+      setGeneratingLabels(false);
+    }
+  };
+
 
 
   const openModal = (part = null) => {
@@ -287,14 +311,35 @@ const Parts = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">{t('parts.title')}</h1>
-        <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => openModal()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+            onClick={handlePrintLabels}
+            disabled={generatingLabels || loading}
+            className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {t('parts.addPart')}
+            {generatingLabels ? (
+              <>
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {t('parts.generatingLabels') || 'Generating...'}
+              </>
+            ) : (
+              <>
+                🏷️ {t('parts.printLabels') || 'Print Labels'}
+              </>
+            )}
           </button>
-        </PermissionGuard>
+          <PermissionGuard permission={PERMISSIONS.MANAGE_PARTS} hideIfNoPermission={true}>
+            <button
+              onClick={() => openModal()}
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+            >
+              {t('parts.addPart')}
+            </button>
+          </PermissionGuard>
+        </div>
       </div>
 
       <ProgressiveLoader

@@ -307,6 +307,50 @@ const searchPartsWithInventory = async (searchTerm, filters = {}) => {
 };
 
 /**
+ * Generate part labels PDF and trigger browser download.
+ * @param {Array<string>} partIds Optional array of part UUIDs. If empty, generates for all parts in stock.
+ * @returns {Promise<void>}
+ * @throws {Error} Throws error with user-friendly message
+ */
+const generatePartLabels = async (partIds = []) => {
+  try {
+    const token = localStorage.getItem('authToken');
+    const API_BASE = process.env.REACT_APP_API_BASE_URL || 
+      (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
+    
+    const response = await fetch(`${API_BASE}/parts/labels`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ part_ids: partIds.length > 0 ? partIds : null }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Failed to generate part labels' }));
+      throw new Error(errorData.detail || 'Failed to generate part labels');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `part_labels_${new Date().toISOString().slice(0, 10)}.pdf`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }, 100);
+  } catch (error) {
+    logError(error, 'partsService.generatePartLabels');
+    throw error;
+  }
+};
+
+/**
  * Fetches parts sorted by order frequency for a specific organization and order type.
  * @param {string} organizationId The organization ID to get order frequency for
  * @param {string} orderType The order type: 'customer' or 'supplier'
@@ -370,4 +414,5 @@ export const partsService = {
   getPartWithInventory,
   searchPartsWithInventory,
   getPartsForOrders,
+  generatePartLabels,
 };

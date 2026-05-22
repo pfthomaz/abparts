@@ -17,7 +17,12 @@ from ..permissions import (
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
 from ..performance_monitoring import monitor_api_performance
+from ..services.qr_label_service import generate_part_label_pdf
 from datetime import datetime, timedelta
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+import io
+import base64
 
 # Set up logging for performance monitoring
 logger = logging.getLogger(__name__)
@@ -136,6 +141,76 @@ async def search_parts(
     response.headers["Cache-Control"] = "public, max-age=60"
     
     return result
+
+# --- Pydantic model for label generation request ---
+class PartLabelRequest(BaseModel):
+    part_ids: Optional[List[uuid.UUID]] = None
+
+
+# --- Part Labels PDF Endpoint ---
+@router.post("/labels", tags=["Part Labels"], responses={200: {"content": {"application/pdf": {}}}})
+async def generate_part_labels(
+    body: PartLabelRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.PART, PermissionType.READ))
+):
+    """
+    Generate a PDF with QR code labels for parts.
+    If part_ids is empty/null, generates labels for ALL parts that have inventory (in stock).
+    Each label contains the organization logo, part name, QR code, and part code.
+    """
+    from sqlalchemy import func as sql_func
+
+    # Determine which parts to generate labels for
+    if body.part_ids:
+        # Fetch specific parts by ID
+        parts_query = db.query(models.Part).filter(models.Part.id.in_(body.part_ids))
+        parts_list = parts_query.all()
+        if not parts_list:
+            raise HTTPException(status_code=404, detail="No parts found for the given IDs")
+    else:
+        # Fetch all parts that have inventory (current_stock > 0)
+        parts_with_stock = (
+            db.query(models.Part)
+            .join(models.Inventory, models.Inventory.part_id == models.Part.id)
+            .filter(models.Inventory.current_stock > 0)
+            .distinct()
+            .all()
+        )
+        parts_list = parts_with_stock
+        if not parts_list:
+            raise HTTPException(status_code=404, detail="No parts with inventory found")
+
+    # Prepare parts data for the label generator
+    parts_data = [
+        {
+            "id": str(part.id),
+            "part_number": part.part_number,
+            "name": part.name,
+        }
+        for part in parts_list
+    ]
+
+    # Fetch organization logo from the current user's organization
+    logo_bytes = None
+    if current_user.organization_id:
+        org = db.query(models.Organization).filter(
+            models.Organization.id == current_user.organization_id
+        ).first()
+        if org and org.logo_data:
+            logo_bytes = org.logo_data
+
+    # Generate the PDF
+    pdf_bytes = generate_part_label_pdf(parts=parts_data, logo_bytes=logo_bytes)
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="part_labels_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
+        },
+    )
+
 
 # --- Parts Inventory Integration Endpoints (must be before /{part_id}) ---
 
