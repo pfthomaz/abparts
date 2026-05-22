@@ -169,15 +169,24 @@ async def generate_part_labels(
         if not parts_list:
             raise HTTPException(status_code=404, detail="No parts found for the given IDs")
     else:
-        # Fetch all parts that have inventory (current_stock > 0)
-        parts_with_stock = (
-            db.query(models.Part)
-            .join(models.Inventory, models.Inventory.part_id == models.Part.id)
-            .filter(models.Inventory.current_stock > 0)
-            .distinct()
-            .all()
-        )
-        parts_list = parts_with_stock
+        # Fetch all parts that have calculated stock > 0 (using the same logic as inventory modal)
+        from ..crud.inventory_calculator import calculate_current_stock
+
+        # Get all inventory records and check calculated stock
+        all_inventory = db.query(models.Inventory).all()
+        part_ids_with_stock = set()
+        for inv in all_inventory:
+            calc_stock = calculate_current_stock(db, inv.warehouse_id, inv.part_id)
+            if calc_stock > 0:
+                part_ids_with_stock.add(inv.part_id)
+
+        if part_ids_with_stock:
+            parts_list = db.query(models.Part).filter(
+                models.Part.id.in_(part_ids_with_stock)
+            ).all()
+        else:
+            parts_list = []
+
         if not parts_list:
             raise HTTPException(status_code=404, detail="No parts with inventory found")
 
