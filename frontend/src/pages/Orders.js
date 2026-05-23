@@ -342,17 +342,17 @@ const Orders = () => {
   };
 
   const canEditOrder = (order) => {
-    // Only admins can edit orders, and only if status is Pending
-    return user && 
-      (user.role === 'admin' || user.role === 'super_admin') &&
-      order.status === 'Pending';
+    // Super admins can edit orders at any stage; regular admins only Pending
+    if (!user) return false;
+    if (user.role === 'super_admin') return true;
+    return user.role === 'admin' && order.status === 'Pending';
   };
 
   const canDeleteOrder = (order) => {
-    // Only admins can delete orders, and only if status is Requested or Pending
-    return user && 
-      (user.role === 'admin' || user.role === 'super_admin') &&
-      (order.status === 'Requested' || order.status === 'Pending');
+    // Super admins can delete orders at any stage; regular admins only Requested/Pending
+    if (!user) return false;
+    if (user.role === 'super_admin') return true;
+    return user.role === 'admin' && (order.status === 'Requested' || order.status === 'Pending');
   };
 
   return (
