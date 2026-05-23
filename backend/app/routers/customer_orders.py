@@ -224,8 +224,8 @@ async def update_customer_order(
     if not order:
         raise HTTPException(status_code=404, detail="Customer order not found")
     
-    # Only allow editing Pending orders
-    if order.status != 'Pending':
+    # Only allow editing Pending orders (super_admins can edit at any stage)
+    if order.status != 'Pending' and not permission_checker.is_super_admin(current_user):
         raise HTTPException(
             status_code=400, 
             detail=f"Cannot edit order with status '{order.status}'. Only orders in 'Pending' status can be edited."
@@ -473,14 +473,20 @@ def delete_customer_order(
         if not (is_customer or is_oraseas):
             raise HTTPException(status_code=403, detail="Cannot delete orders for other organizations")
     
-    # Check if order can be deleted (only if not yet shipped/received)
-    if order.status in ['Shipped', 'Received', 'Delivered']:
+    # Check if order can be deleted (super_admins can delete at any stage)
+    if order.status in ['Shipped', 'Received', 'Delivered'] and not permission_checker.is_super_admin(current_user):
         raise HTTPException(
             status_code=400, 
             detail=f"Cannot delete order with status '{order.status}'. Only orders in 'Requested' or 'Pending' status can be deleted."
         )
     
-    # Delete the order (cascade will delete items and transactions)
+    # If deleting a shipped order, also clean up related transactions
+    if order.status in ['Shipped', 'Received', 'Delivered']:
+        db.query(models.Transaction).filter(
+            models.Transaction.customer_order_id == order.id
+        ).delete()
+    
+    # Delete the order (cascade will delete items)
     db.delete(order)
     db.commit()
     
