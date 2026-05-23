@@ -816,6 +816,7 @@ class CustomerOrderShipRequest(BaseModel):
     """Request schema for marking an order as shipped (Oraseas EE action)"""
     shipped_date: datetime = Field(default_factory=datetime.now)
     tracking_number: Optional[str] = Field(None, max_length=255)
+    source_warehouse_id: Optional[uuid.UUID] = Field(None, description="Warehouse to ship from. If not provided, uses the first warehouse of the Oraseas organization.")
     notes: Optional[str] = None
 
 class CustomerOrderConfirmReceiptRequest(BaseModel):

@@ -311,6 +311,45 @@ def ship_customer_order(
     if ship_request.notes:
         order.notes = f"{order.notes}\n\nShipped: {ship_request.notes}" if order.notes else f"Shipped: {ship_request.notes}"
     
+    # --- Create outgoing transactions to deduct stock from source warehouse ---
+    # Determine source warehouse
+    source_warehouse_id = ship_request.source_warehouse_id
+    if not source_warehouse_id:
+        # Find the first warehouse belonging to the Oraseas organization
+        oraseas_warehouse = db.query(models.Warehouse).filter(
+            models.Warehouse.organization_id == order.oraseas_organization_id
+        ).first()
+        if oraseas_warehouse:
+            source_warehouse_id = oraseas_warehouse.id
+    
+    if source_warehouse_id:
+        # Get order items
+        order_items = db.query(models.CustomerOrderItem).filter(
+            models.CustomerOrderItem.customer_order_id == order.id
+        ).all()
+        
+        for item in order_items:
+            # Get part for unit_of_measure
+            part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
+            if not part:
+                continue
+            
+            # Create outgoing transaction (deducts from source warehouse)
+            transaction = models.Transaction(
+                transaction_type="transfer",
+                part_id=item.part_id,
+                from_warehouse_id=source_warehouse_id,
+                to_warehouse_id=None,  # Shipped out - no receiving warehouse yet
+                customer_order_id=order.id,
+                quantity=item.quantity,
+                unit_of_measure=part.unit_of_measure,
+                performed_by_user_id=current_user.user_id,
+                transaction_date=ship_request.shipped_date,
+                notes=f"Order shipped - Order ID: {order.id}",
+                reference_number=f"SHIP-{str(order.id)[:8]}"
+            )
+            db.add(transaction)
+    
     db.commit()
     db.refresh(order)
     
