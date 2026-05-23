@@ -287,18 +287,16 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Check for suspicious activity and require additional verification if needed
-    if ip_address and session_manager.detect_suspicious_activity(ip_address, user_agent, db):
-        session_manager.require_additional_verification(user.id, ip_address, db)
-        
-        # Send verification code
-        verification_code = session_manager.send_verification_code(user.id, "email", db)
-        
-        raise HTTPException(
-            status_code=status.HTTP_202_ACCEPTED,
-            detail="Additional verification required. Check your email for verification code.",
-            headers={"X-Verification-Required": "true"}
-        )
+    # Suspicious activity detection disabled - not needed for small user base
+    # and email verification flow is not integrated with the frontend
+    # if ip_address and session_manager.detect_suspicious_activity(ip_address, user_agent, db):
+    #     session_manager.require_additional_verification(user.id, ip_address, db)
+    #     verification_code = session_manager.send_verification_code(user.id, "email", db)
+    #     raise HTTPException(
+    #         status_code=status.HTTP_202_ACCEPTED,
+    #         detail="Additional verification required. Check your email for verification code.",
+    #         headers={"X-Verification-Required": "true"}
+    #     )
     
     # Create session instead of JWT token
     session_token = session_manager.create_session(user, ip_address, user_agent, db)
