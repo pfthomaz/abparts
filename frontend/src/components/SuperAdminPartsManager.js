@@ -43,6 +43,11 @@ const SuperAdminPartsManager = () => {
     stockStatus: 'all'
   });
 
+  // Label printing modal state
+  const [showLabelModal, setShowLabelModal] = useState(false);
+  const [labelQuantities, setLabelQuantities] = useState({});
+  const [labelLoading, setLabelLoading] = useState(false);
+
   // Sorting and pagination
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -360,14 +365,12 @@ const SuperAdminPartsManager = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={async () => {
-              if (!window.confirm(`Generate labels for all parts in stock?`)) return;
-              try {
-                await partsService.generatePartLabels([]);
-              } catch (err) {
-                console.error('Failed to generate labels:', err);
-                alert('Failed to generate labels');
-              }
+            onClick={() => {
+              // Initialize quantities: 1 for each part
+              const initialQty = {};
+              parts.forEach(p => { initialQty[p.id] = 1; });
+              setLabelQuantities(initialQty);
+              setShowLabelModal(true);
             }}
             className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
           >
@@ -768,6 +771,110 @@ const SuperAdminPartsManager = () => {
             >
               Confirm
             </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Print Labels Modal */}
+      <Modal
+        isOpen={showLabelModal}
+        onClose={() => setShowLabelModal(false)}
+        title="🏷️ Print Part Labels"
+        size="large"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Set the number of labels to print for each part. Parts with 0 labels will be skipped.
+          </p>
+
+          {/* Quick actions */}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                const q = {};
+                parts.forEach(p => { q[p.id] = 1; });
+                setLabelQuantities(q);
+              }}
+              className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              All = 1
+            </button>
+            <button
+              onClick={() => {
+                const q = {};
+                parts.forEach(p => { q[p.id] = 0; });
+                setLabelQuantities(q);
+              }}
+              className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              All = 0
+            </button>
+          </div>
+
+          {/* Parts list with quantity inputs */}
+          <div className="max-h-96 overflow-y-auto border rounded-lg divide-y">
+            {parts.map(part => (
+              <div key={part.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50">
+                <div className="flex-1 min-w-0 mr-3">
+                  <span className="text-sm font-medium text-gray-900 truncate block">{part.name}</span>
+                  <span className="text-xs text-gray-500 font-mono">{part.part_number}</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={labelQuantities[part.id] || 0}
+                  onChange={(e) => setLabelQuantities(prev => ({
+                    ...prev,
+                    [part.id]: Math.max(0, parseInt(e.target.value) || 0)
+                  }))}
+                  className="w-16 px-2 py-1 text-center border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Summary and actions */}
+          <div className="flex items-center justify-between pt-2 border-t">
+            <span className="text-sm text-gray-600">
+              Total labels: <strong>{Object.values(labelQuantities).reduce((sum, q) => sum + q, 0)}</strong>
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLabelModal(false)}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const totalLabels = Object.values(labelQuantities).reduce((sum, q) => sum + q, 0);
+                  if (totalLabels === 0) {
+                    alert('Set at least 1 label to print.');
+                    return;
+                  }
+                  // Filter out parts with 0 quantity
+                  const quantities = {};
+                  Object.entries(labelQuantities).forEach(([id, qty]) => {
+                    if (qty > 0) quantities[id] = qty;
+                  });
+                  setLabelLoading(true);
+                  try {
+                    await partsService.generatePartLabels([], quantities);
+                    setShowLabelModal(false);
+                  } catch (err) {
+                    console.error('Failed to generate labels:', err);
+                    alert(err.message || 'Failed to generate labels');
+                  } finally {
+                    setLabelLoading(false);
+                  }
+                }}
+                disabled={labelLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {labelLoading ? 'Generating...' : '🖨️ Print'}
+              </button>
+            </div>
           </div>
         </div>
       </Modal>

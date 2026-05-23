@@ -312,19 +312,28 @@ const searchPartsWithInventory = async (searchTerm, filters = {}) => {
  * @returns {Promise<void>}
  * @throws {Error} Throws error with user-friendly message
  */
-const generatePartLabels = async (partIds = []) => {
+const generatePartLabels = async (partIds = [], quantities = null) => {
   try {
     const token = localStorage.getItem('authToken');
     const API_BASE = process.env.REACT_APP_API_BASE_URL || 
       (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
     
+    const body = {};
+    if (quantities) {
+      body.quantities = quantities;
+    } else if (partIds.length > 0) {
+      body.part_ids = partIds;
+    } else {
+      body.part_ids = null;
+    }
+
     const response = await fetch(`${API_BASE}/parts/labels`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ part_ids: partIds.length > 0 ? partIds : null }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
