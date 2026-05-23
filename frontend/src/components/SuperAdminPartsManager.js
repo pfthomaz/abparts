@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { partsService } from '../services/partsService';
+import { warehouseService } from '../services/warehouseService';
+import { warehouseLocationsService } from '../services/warehouseLocationsService';
+import { api } from '../services/api';
 import { isSuperAdmin } from '../utils/permissions';
 import { formatNumber, getTranslatedUnit } from '../utils';
 import { useTranslation } from '../hooks/useTranslation';
@@ -47,6 +50,12 @@ const SuperAdminPartsManager = () => {
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [labelQuantities, setLabelQuantities] = useState({});
   const [labelLoading, setLabelLoading] = useState(false);
+  const [labelWarehouses, setLabelWarehouses] = useState([]);
+  const [labelLocations, setLabelLocations] = useState([]);
+  const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [locationParts, setLocationParts] = useState(null); // null = show all parts
+  const [partStockMap, setPartStockMap] = useState({}); // part_id -> stock quantity
 
   // Sorting and pagination
   const [sortBy, setSortBy] = useState('name');
@@ -355,6 +364,11 @@ const SuperAdminPartsManager = () => {
     );
   }
 
+  // Compute which parts to display in the label modal (with stock info)
+  const displayedLabelParts = locationParts
+    ? locationParts.map(lp => ({ id: lp.part_id, name: lp.part_name, part_number: lp.sku, stock: lp.quantity }))
+    : parts.map(p => ({ ...p, stock: partStockMap[p.id] || 0 }));
+
   return (
     <div className="superadmin-parts-manager">
       {/* Header */}
@@ -365,12 +379,33 @@ const SuperAdminPartsManager = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => {
+            onClick={async () => {
               // Initialize quantities: 1 for each part
               const initialQty = {};
               parts.forEach(p => { initialQty[p.id] = 1; });
               setLabelQuantities(initialQty);
+              setSelectedWarehouse('');
+              setSelectedLocation('');
+              setLabelLocations([]);
+              setLocationParts(null);
+              setPartStockMap({});
               setShowLabelModal(true);
+              // Load warehouses for location filter
+              try {
+                const wh = await warehouseService.getWarehouses();
+                setLabelWarehouses(wh || []);
+                // Auto-load inventory for first warehouse to show stock
+                if (wh && wh.length > 0) {
+                  const inv = await api.get(`/inventory/warehouse/${wh[0].id}?limit=500`);
+                  const stockMap = {};
+                  (inv || []).forEach(item => {
+                    stockMap[item.part_id] = (stockMap[item.part_id] || 0) + Number(item.current_stock || 0);
+                  });
+                  setPartStockMap(stockMap);
+                }
+              } catch (e) {
+                console.error('Failed to load warehouses:', e);
+              }
             }}
             className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
           >
@@ -787,12 +822,103 @@ const SuperAdminPartsManager = () => {
             Set the number of labels to print for each part. Parts with 0 labels will be skipped.
           </p>
 
+          {/* Location filter */}
+          {labelWarehouses.length > 0 && (
+            <div className="flex gap-2 items-end flex-wrap">
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Warehouse</label>
+                <select
+                  value={selectedWarehouse}
+                  onChange={async (e) => {
+                    const whId = e.target.value;
+                    setSelectedWarehouse(whId);
+                    setSelectedLocation('');
+                    setLocationParts(null);
+                    if (whId) {
+                      try {
+                        const locs = await warehouseLocationsService.getLocations(whId);
+                        setLabelLocations(locs || []);
+                        // Fetch inventory for this warehouse to show stock
+                        const inv = await api.get(`/inventory/warehouse/${whId}?limit=500`);
+                        const stockMap = {};
+                        (inv || []).forEach(item => {
+                          stockMap[item.part_id] = (stockMap[item.part_id] || 0) + Number(item.current_stock || 0);
+                        });
+                        setPartStockMap(stockMap);
+                      } catch (err) {
+                        setLabelLocations([]);
+                      }
+                    } else {
+                      setLabelLocations([]);
+                      // Reload stock for first warehouse
+                      if (labelWarehouses.length > 0) {
+                        try {
+                          const inv = await api.get(`/inventory/warehouse/${labelWarehouses[0].id}?limit=500`);
+                          const stockMap = {};
+                          (inv || []).forEach(item => {
+                            stockMap[item.part_id] = (stockMap[item.part_id] || 0) + Number(item.current_stock || 0);
+                          });
+                          setPartStockMap(stockMap);
+                        } catch (err) { /* ignore */ }
+                      }
+                    }
+                    // Reset quantities to all parts = 1
+                    const initialQty = {};
+                    parts.forEach(p => { initialQty[p.id] = 1; });
+                    setLabelQuantities(initialQty);
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">All parts</option>
+                  {labelWarehouses.map(wh => (
+                    <option key={wh.id} value={wh.id}>{wh.name}</option>
+                  ))}
+                </select>
+              </div>
+              {labelLocations.length > 0 && (
+                <div className="flex-1 min-w-[140px]">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Location</label>
+                  <select
+                    value={selectedLocation}
+                    onChange={async (e) => {
+                      const locId = e.target.value;
+                      setSelectedLocation(locId);
+                      if (locId) {
+                        try {
+                          const locParts = await warehouseLocationsService.getPartsAtLocation(locId);
+                          setLocationParts(locParts || []);
+                          // Set quantities based on location parts
+                          const qty = {};
+                          (locParts || []).forEach(p => { qty[p.part_id] = 1; });
+                          setLabelQuantities(qty);
+                        } catch (err) {
+                          setLocationParts([]);
+                        }
+                      } else {
+                        setLocationParts(null);
+                        const initialQty = {};
+                        parts.forEach(p => { initialQty[p.id] = 1; });
+                        setLabelQuantities(initialQty);
+                      }
+                    }}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">All locations</option>
+                    {labelLocations.map(loc => (
+                      <option key={loc.id} value={loc.id}>{loc.location_code}{loc.description ? ` — ${loc.description}` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Quick actions */}
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => {
                 const q = {};
-                parts.forEach(p => { q[p.id] = 1; });
+                displayedLabelParts.forEach(p => { q[p.id] = 1; });
                 setLabelQuantities(q);
               }}
               className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
@@ -802,7 +928,7 @@ const SuperAdminPartsManager = () => {
             <button
               onClick={() => {
                 const q = {};
-                parts.forEach(p => { q[p.id] = 0; });
+                displayedLabelParts.forEach(p => { q[p.id] = 0; });
                 setLabelQuantities(q);
               }}
               className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
@@ -813,25 +939,34 @@ const SuperAdminPartsManager = () => {
 
           {/* Parts list with quantity inputs */}
           <div className="max-h-96 overflow-y-auto border rounded-lg divide-y">
-            {parts.map(part => (
-              <div key={part.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50">
-                <div className="flex-1 min-w-0 mr-3">
-                  <span className="text-sm font-medium text-gray-900 truncate block">{part.name}</span>
-                  <span className="text-xs text-gray-500 font-mono">{part.part_number}</span>
+            {displayedLabelParts.length === 0 ? (
+              <div className="p-4 text-center text-gray-500 text-sm">No parts at this location.</div>
+            ) : (
+              displayedLabelParts.map(part => (
+                <div key={part.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50">
+                  <div className="flex-1 min-w-0 mr-3">
+                    <span className="text-sm font-medium text-gray-900 truncate block">{part.name}</span>
+                    <span className="text-xs text-gray-500 font-mono">{part.part_number || part.sku}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                      Stock: <strong className={part.stock > 0 ? 'text-green-700' : 'text-gray-400'}>{Number(part.stock)}</strong>
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={labelQuantities[part.id] || 0}
+                      onChange={(e) => setLabelQuantities(prev => ({
+                        ...prev,
+                        [part.id]: Math.max(0, parseInt(e.target.value) || 0)
+                      }))}
+                      className="w-16 px-2 py-1 text-center border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    />
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={labelQuantities[part.id] || 0}
-                  onChange={(e) => setLabelQuantities(prev => ({
-                    ...prev,
-                    [part.id]: Math.max(0, parseInt(e.target.value) || 0)
-                  }))}
-                  className="w-16 px-2 py-1 text-center border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Summary and actions */}
