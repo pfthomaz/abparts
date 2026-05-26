@@ -170,12 +170,7 @@ def generate_label_pdf(
         x = margin_left + col * (label_w + gap_x)
         y = page_h - margin_top - (row + 1) * label_h - row * gap_y
 
-        # Draw label border (light gray dashed line for cutting guide)
-        c.saveState()
-        c.setStrokeColorRGB(0.8, 0.8, 0.8)
-        c.setDash(1, 2)
-        c.rect(x, y, label_w, label_h, stroke=1, fill=0)
-        c.restoreState()
+        # (No border drawn - clean labels for printing on label sheets)
 
         # Generate QR code for this location
         url = f"{base_url.rstrip('/')}/{location_code}"
@@ -345,12 +340,7 @@ def generate_part_label_pdf(
         x = margin_left + col * (label_w + gap_x)
         y = page_h - margin_top - (row + 1) * label_h - row * gap_y
 
-        # Draw label border (light gray dashed line for cutting guide)
-        c.saveState()
-        c.setStrokeColorRGB(0.8, 0.8, 0.8)
-        c.setDash(1, 2)
-        c.rect(x, y, label_w, label_h, stroke=1, fill=0)
-        c.restoreState()
+        # (No border drawn - clean labels for printing on label sheets)
 
         # Inner content area with padding
         inner_x = x + padding
