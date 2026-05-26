@@ -29,6 +29,24 @@ function parseLocationUrl(url) {
   }
 }
 
+/**
+ * Parses a scanned QR URL to extract a part ID.
+ * Expected URL format: .../parts/{part_id} where part_id is a UUID.
+ * Returns { partId } or null if invalid.
+ */
+function parsePartUrl(url) {
+  try {
+    const pattern = /\/parts\/([0-9a-f-]{36})/i;
+    const match = url.match(pattern);
+    if (match) {
+      return { partId: match[1] };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 const QRScanner = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -38,23 +56,34 @@ const QRScanner = () => {
   const [manualWarehouseId, setManualWarehouseId] = useState('');
 
   const handleScanSuccess = useCallback((decodedText) => {
-    const parsed = parseLocationUrl(decodedText);
-
-    if (parsed) {
+    // Try location QR first (existing behavior)
+    const locationParsed = parseLocationUrl(decodedText);
+    if (locationParsed) {
       setError('');
       setLastScanned({
-        warehouseId: parsed.warehouseId,
-        locationCode: parsed.locationCode,
+        warehouseId: locationParsed.warehouseId,
+        locationCode: locationParsed.locationCode,
         timestamp: new Date(),
       });
-      // Navigate to the location detail page
-      navigate(`/locate/${parsed.warehouseId}/${parsed.locationCode}`);
-    } else {
-      // Invalid QR code - not a location URL
-      setError(t('qrScanner.invalidQr') || 'Not a valid location QR code');
-      // Clear error after 3 seconds to allow scanning again
-      setTimeout(() => setError(''), 3000);
+      navigate(`/locate/${locationParsed.warehouseId}/${locationParsed.locationCode}`);
+      return;
     }
+
+    // Try part QR
+    const partParsed = parsePartUrl(decodedText);
+    if (partParsed) {
+      setError('');
+      setLastScanned({
+        partId: partParsed.partId,
+        timestamp: new Date(),
+      });
+      navigate(`/parts/${partParsed.partId}`);
+      return;
+    }
+
+    // Neither matched - invalid QR code
+    setError(t('qrScanner.invalidQr') || 'Not a valid QR code');
+    setTimeout(() => setError(''), 3000);
   }, [navigate, t]);
 
   const handleClose = useCallback(() => {

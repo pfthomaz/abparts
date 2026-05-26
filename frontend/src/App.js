@@ -54,6 +54,7 @@ import { api } from './services/api';
 // Lazy-loaded pages for QR location system (placeholders until Tasks 13/14)
 const LocationDetail = lazy(() => import('./pages/LocationDetail'));
 const QRScannerPage = lazy(() => import('./components/QRScanner'));
+const PartDetail = lazy(() => import('./pages/PartDetail'));
 
 function App() {
   const { token, loadingUser, user } = useAuth();
@@ -351,6 +352,16 @@ function App() {
                 <PermissionErrorBoundary feature="QR Scanner">
                   <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><p className="text-gray-500">Loading...</p></div>}>
                     <QRScannerPage />
+                  </Suspense>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="parts/:partId"
+              element={
+                <PermissionErrorBoundary feature="Part Detail">
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><p className="text-gray-500">Loading...</p></div>}>
+                    <PartDetail />
                   </Suspense>
                 </PermissionErrorBoundary>
               }
