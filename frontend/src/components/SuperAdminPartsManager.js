@@ -42,6 +42,7 @@ const SuperAdminPartsManager = () => {
     partType: 'all',
     proprietary: 'all',
     manufacturer: 'all',
+    autobossVersion: 'all',
     hasImages: 'all',
     stockStatus: 'all'
   });
@@ -173,6 +174,12 @@ const SuperAdminPartsManager = () => {
       // Manufacturer filter
       if (filters.manufacturer !== 'all' && part.manufacturer !== filters.manufacturer) {
         return false;
+      }
+
+      // AutoBoss Version filter
+      if (filters.autobossVersion !== 'all') {
+        const partVersion = part.autoboss_version || 'V3/V4';
+        if (partVersion !== filters.autobossVersion) return false;
       }
 
       // Images filter
@@ -316,6 +323,7 @@ const SuperAdminPartsManager = () => {
         partType: 'all',
         proprietary: 'all',
         manufacturer: 'all',
+        autobossVersion: 'all',
         hasImages: 'all',
         stockStatus: 'all'
       });
@@ -458,7 +466,7 @@ const SuperAdminPartsManager = () => {
       {/* Advanced Filters */}
       <div className="bg-white p-6 rounded-lg shadow-md mb-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Advanced Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
           {/* Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -511,6 +519,21 @@ const SuperAdminPartsManager = () => {
             </select>
           </div>
 
+          {/* AutoBoss Version */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">AutoBoss Version</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value={filters.autobossVersion}
+              onChange={(e) => setFilters(prev => ({ ...prev, autobossVersion: e.target.value }))}
+            >
+              <option value="all">All</option>
+              <option value="V3">V3</option>
+              <option value="V4">V4</option>
+              <option value="V3/V4">V3/V4</option>
+            </select>
+          </div>
+
           {/* Has Images */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
@@ -548,6 +571,7 @@ const SuperAdminPartsManager = () => {
               partType: 'all',
               proprietary: 'all',
               manufacturer: 'all',
+              autobossVersion: 'all',
               hasImages: 'all',
               stockStatus: 'all'
             })}

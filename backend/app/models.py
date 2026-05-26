@@ -585,6 +585,7 @@ class Part(Base):
     manufacturer_part_number = Column(String(255), nullable=True)
     manufacturer_delivery_time_days = Column(Integer)
     local_supplier_delivery_time_days = Column(Integer)
+    autoboss_version = Column(String(10), nullable=False, server_default='V3/V4')
     image_urls = Column(ARRAY(Text))  # Array of strings (legacy)
     image_data = Column(ARRAY(LargeBinary))  # Binary image storage
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

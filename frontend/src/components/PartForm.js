@@ -15,6 +15,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
     part_type: 'consumable',
     is_proprietary: false,
     unit_of_measure: 'pieces',
+    autoboss_version: 'V3/V4',
     manufacturer_part_number: '',
     manufacturer_delivery_time_days: '',
     local_supplier_delivery_time_days: '',
@@ -35,6 +36,7 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
       part_type: 'consumable',
       is_proprietary: false,
       unit_of_measure: 'pieces',
+      autoboss_version: 'V3/V4',
       manufacturer_part_number: '',
       manufacturer_delivery_time_days: '',
       local_supplier_delivery_time_days: '',
@@ -177,6 +179,24 @@ function PartForm({ initialData = {}, onSubmit, onClose }) {
             <option value="feet">{t('partForm.units.feet')}</option>
             <option value="boxes">{t('partForm.units.boxes')}</option>
             <option value="sets">{t('partForm.units.sets')}</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="autoboss_version" className="block text-sm font-medium text-gray-700 mb-1">
+            AutoBoss Version
+          </label>
+          <select
+            id="autoboss_version"
+            name="autoboss_version"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            value={formData.autoboss_version}
+            onChange={handleChange}
+            disabled={loading}
+          >
+            <option value="V3/V4">V3/V4</option>
+            <option value="V3">V3</option>
+            <option value="V4">V4</option>
           </select>
         </div>
       </div>

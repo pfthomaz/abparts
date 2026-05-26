@@ -538,6 +538,7 @@ class PartBase(BaseModel):
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
+    autoboss_version: Optional[str] = 'V3/V4'
     image_urls: Optional[List[str]] = Field(None, max_items=20, description="Up to 20 image URLs")
     
     # Validators temporarily removed to test field definitions
@@ -561,12 +562,13 @@ class PartUpdate(BaseModel):
     manufacturer_part_number: Optional[str] = Field(None, max_length=255)
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
+    autoboss_version: Optional[str] = None
     image_urls: Optional[List[str]] = Field(None, max_items=20, description="Up to 20 image URLs")
     
     # Validators temporarily removed to test field definitions
 
 class PartResponse(PartBase, BaseSchema):
-    pass
+    autoboss_version: Optional[str] = None
 
 # --- Enhanced Part Response Schemas ---
 class WarehouseInventoryItem(BaseModel):
@@ -593,6 +595,7 @@ class PartWithInventoryResponse(BaseModel):
     manufacturer_part_number: Optional[str] = None
     manufacturer_delivery_time_days: Optional[int] = None
     local_supplier_delivery_time_days: Optional[int] = None
+    autoboss_version: Optional[str] = None
     image_urls: Optional[List[str]] = None
     created_at: datetime
     updated_at: datetime
