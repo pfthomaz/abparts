@@ -310,7 +310,7 @@ const Warehouses = () => {
               disabled={recalculating}
               className="bg-orange-600 text-white px-3 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm disabled:opacity-50"
             >
-              {recalculating ? t('warehouses.recalculating') || 'Recalculating...' : t('warehouses.recalculateStock') || 'Recalculate Stock'}
+              {recalculating ? 'Recalculating...' : 'Recalculate Stock'}
             </button>
           )}
           <button

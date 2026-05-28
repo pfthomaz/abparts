@@ -187,6 +187,10 @@ def refresh_inventory_cache(
             inventory.part_id
         )
         
+        # Clamp to zero minimum - DB trigger prevents negative stock
+        if calculated_stock < Decimal('0'):
+            calculated_stock = Decimal('0')
+        
         if inventory.current_stock != calculated_stock:
             inventory.current_stock = calculated_stock
             inventory.last_updated = datetime.utcnow()
