@@ -154,6 +154,15 @@ def _create_inventory_on_supplier_delivery(db: Session, order_id: str, receiving
     from decimal import Decimal
     
     try:
+        # Guard: check if transactions already exist for this supplier order
+        existing_txn = db.query(models.Transaction).filter(
+            models.Transaction.reference_number == f"SUP-{str(order_id)[:8]}"
+        ).first()
+        
+        if existing_txn:
+            logger.info(f"Transactions already exist for supplier order {order_id} - skipping")
+            return
+        
         # Get order items
         order_items = db.query(models.SupplierOrderItem).filter(
             models.SupplierOrderItem.supplier_order_id == order_id
