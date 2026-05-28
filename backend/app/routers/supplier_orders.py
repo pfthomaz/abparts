@@ -112,12 +112,14 @@ def update_supplier_order(
     if not order:
         raise HTTPException(status_code=404, detail="Supplier order not found")
     
-    # Only allow editing Pending orders
-    if order.status != 'Pending':
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Cannot edit order with status '{order.status}'. Only orders in 'Pending' status can be edited."
-        )
+    # Only allow editing Pending orders (super_admins and fulfillment actions bypass this)
+    if order.status != 'Pending' and not permission_checker.is_super_admin(current_user):
+        # Allow transitioning Shipped → Delivered (fulfillment)
+        if not (order.status == 'Shipped'):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot edit order with status '{order.status}'. Only orders in 'Pending' or 'Shipped' status can be edited."
+            )
     
     # Check organization access for non-super-admins
     if not permission_checker.is_super_admin(current_user):
