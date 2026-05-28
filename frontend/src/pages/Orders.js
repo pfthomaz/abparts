@@ -1176,9 +1176,10 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filter warehouses to only show those belonging to the customer organization
+  // Filter warehouses: for supplier orders use ordering_organization_id (Oraseas receives goods)
+  // For customer orders use customer_organization_id
   const customerWarehouses = warehouses.filter(
-    w => w.organization_id === order.customer_organization_id
+    w => w.organization_id === (order.ordering_organization_id || order.customer_organization_id)
   );
 
   // Auto-select warehouse if there's only one
