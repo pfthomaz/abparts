@@ -44,6 +44,7 @@ const Warehouses = () => {
   const [selectedWarehouseForInventory, setSelectedWarehouseForInventory] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [currentView, setCurrentView] = useState('warehouses'); // 'warehouses', 'aggregated', 'reports', 'performance'
+  const [recalculating, setRecalculating] = useState(false);
 
   const fetchOrganizations = useCallback(async () => {
     try {
@@ -137,6 +138,20 @@ const Warehouses = () => {
       throw err;
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleRecalculateStock = async () => {
+    setRecalculating(true);
+    setError('');
+    try {
+      const response = await inventoryService.recalculateStock();
+      alert(response.message || 'Stock recalculation complete.');
+    } catch (err) {
+      console.error('Failed to recalculate stock:', err);
+      setError('Failed to recalculate stock: ' + (err.message || 'Unknown error'));
+    } finally {
+      setRecalculating(false);
     }
   };
 
@@ -289,6 +304,15 @@ const Warehouses = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {user?.role === 'super_admin' && (
+            <button
+              onClick={handleRecalculateStock}
+              disabled={recalculating}
+              className="bg-orange-600 text-white px-3 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm disabled:opacity-50"
+            >
+              {recalculating ? t('warehouses.recalculating') || 'Recalculating...' : t('warehouses.recalculateStock') || 'Recalculate Stock'}
+            </button>
+          )}
           <button
             onClick={() => setShowTransferModal(true)}
             className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"

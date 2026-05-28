@@ -739,6 +739,7 @@ class SupplierOrderUpdate(BaseModel):
     status: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = None
     items: Optional[List[SupplierOrderItemInline]] = None
+    receiving_warehouse_id: Optional[uuid.UUID] = None
 
 class SupplierOrderResponse(SupplierOrderBase, BaseSchema):
     items: List['SupplierOrderItemResponse'] = []

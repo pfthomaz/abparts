@@ -206,6 +206,13 @@ const getInventoryReport = (reportParams) => {
   return api.get(endpoint);
 };
 
+/**
+ * Recalculate stock for all inventory records (super_admin only).
+ */
+const recalculateStock = () => {
+  return api.post('/inventory/recalculate');
+};
+
 export const inventoryService = {
   getInventory,
   getWarehouseInventory,
@@ -219,4 +226,5 @@ export const inventoryService = {
   updateInventoryItem,
   deleteInventoryItem,
   getInventoryReport,
+  recalculateStock,
 };

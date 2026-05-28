@@ -23,6 +23,7 @@ class SupplierOrderUpdate(BaseModel):
     actual_delivery_date: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    receiving_warehouse_id: Optional[uuid.UUID] = None
 
 class SupplierOrderResponse(SupplierOrderBase):
     id: uuid.UUID

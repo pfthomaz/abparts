@@ -3,16 +3,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 from typing import List
+from datetime import datetime
+import logging
 
 from .. import models, schemas, crud
 from ..database import get_db
 from ..auth import get_current_user, TokenData
 from ..permissions import (
-    ResourceType, PermissionType, require_permission,
+    ResourceType, PermissionType, require_permission, require_super_admin,
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=schemas.SupplierOrderResponse, status_code=201)
 def create_supplier_order(
@@ -112,6 +115,9 @@ def update_supplier_order(
     if not order:
         raise HTTPException(status_code=404, detail="Supplier order not found")
     
+    # Store old status to detect transitions
+    old_status = order.status
+    
     # Only allow editing Pending orders (super_admins and fulfillment actions bypass this)
     if order.status != 'Pending' and not permission_checker.is_super_admin(current_user):
         # Allow transitioning Shipped → Delivered (fulfillment)
@@ -127,7 +133,85 @@ def update_supplier_order(
         if order.ordering_organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Cannot update orders for other organizations")
     
-    return crud.supplier_orders.update_supplier_order(db=db, order_id=order_id, order_update=order_update)
+    # Extract receiving_warehouse_id before passing to CRUD (it's not a model field)
+    receiving_warehouse_id = order_update.receiving_warehouse_id
+    
+    # Update the order via CRUD
+    updated_order = crud.supplier_orders.update_supplier_order(db=db, order_id=order_id, order_update=order_update)
+    
+    # Check if status changed to Delivered or Received with a receiving warehouse
+    new_status = order_update.status or old_status
+    if (old_status not in ['Delivered', 'Received'] and new_status in ['Delivered', 'Received'] and receiving_warehouse_id):
+        logger.info(f"Supplier order {order_id} marked as {new_status} - creating inventory transactions to warehouse {receiving_warehouse_id}")
+        _create_inventory_on_supplier_delivery(db, order_id, receiving_warehouse_id, current_user.user_id)
+    
+    return updated_order
+
+
+def _create_inventory_on_supplier_delivery(db: Session, order_id: str, receiving_warehouse_id, performed_by_user_id):
+    """Create inventory transactions when a supplier order is delivered."""
+    import uuid as uuid_module
+    from decimal import Decimal
+    
+    try:
+        # Get order items
+        order_items = db.query(models.SupplierOrderItem).filter(
+            models.SupplierOrderItem.supplier_order_id == order_id
+        ).all()
+        
+        if not order_items:
+            logger.warning(f"No items found for supplier order {order_id}")
+            return
+        
+        for item in order_items:
+            # Get part for unit_of_measure
+            part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
+            if not part:
+                logger.error(f"Part {item.part_id} not found for supplier order item")
+                continue
+            
+            # Create a "creation" transaction to add parts to the receiving warehouse
+            transaction = models.Transaction(
+                transaction_type="creation",
+                part_id=item.part_id,
+                to_warehouse_id=receiving_warehouse_id,
+                from_warehouse_id=None,
+                customer_order_id=None,
+                quantity=item.quantity,
+                unit_of_measure=part.unit_of_measure or "units",
+                performed_by_user_id=performed_by_user_id,
+                transaction_date=datetime.utcnow(),
+                notes=f"Supplier order delivery - Order ID: {order_id}",
+                reference_number=f"SUP-{str(order_id)[:8]}"
+            )
+            db.add(transaction)
+            logger.info(f"Created transaction for supplier order {order_id}, part {item.part_id}, qty {item.quantity}")
+            
+            # Ensure an inventory record exists for this part+warehouse combo
+            # (so calculate_all_warehouse_stock can discover it)
+            inventory = db.query(models.Inventory).filter(
+                models.Inventory.part_id == item.part_id,
+                models.Inventory.warehouse_id == receiving_warehouse_id
+            ).first()
+            
+            if not inventory:
+                inventory = models.Inventory(
+                    part_id=item.part_id,
+                    warehouse_id=receiving_warehouse_id,
+                    current_stock=Decimal('0'),  # Will be recalculated
+                    minimum_stock_recommendation=Decimal('0'),
+                    unit_of_measure=part.unit_of_measure or "units"
+                )
+                db.add(inventory)
+                logger.info(f"Created inventory record for part {item.part_id} in warehouse {receiving_warehouse_id}")
+        
+        db.commit()
+        logger.info(f"Successfully created inventory transactions for supplier order {order_id}")
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating inventory for supplier order {order_id}: {e}")
+        raise HTTPException(status_code=400, detail=f"Error updating inventory: {str(e)}")
 
 @router.get("/{order_id}", response_model=schemas.SupplierOrderResponse)
 def get_supplier_order(

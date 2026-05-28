@@ -46,8 +46,11 @@ def update_supplier_order(db: Session, order_id: uuid.UUID, order_update: schema
     update_data = order_update.dict(exclude_unset=True)
     full_update_data = order_update.dict()
     
+    # Fields that are not DB columns on the SupplierOrder model
+    non_model_fields = {'items', 'receiving_warehouse_id'}
+    
     for key, value in update_data.items():
-        if key != 'items':  # Don't try to set items on the order object
+        if key not in non_model_fields:
             setattr(db_order, key, value)
     
     try:

@@ -1075,3 +1075,34 @@ async def create_warehouse_stock_adjustment(
             detail="Internal server error while creating stock adjustment"
         )
 
+
+# --- Recalculate Stock Endpoint (Super Admin only) ---
+@router.post("/recalculate")
+async def recalculate_all_stock(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_admin())
+):
+    """
+    Recalculate current_stock for all inventory records across all warehouses.
+    This refreshes the cached stock values based on actual transactions and adjustments.
+    Only super_admin users can trigger this.
+    """
+    if not permission_checker.is_super_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only super admins can recalculate stock")
+    
+    try:
+        from ..crud.inventory_calculator import refresh_inventory_cache
+        
+        updated_count = refresh_inventory_cache(db)
+        
+        return {
+            "success": True,
+            "message": f"Stock recalculation complete. {updated_count} inventory records updated.",
+            "updated_count": updated_count
+        }
+    except Exception as e:
+        logger.error(f"Error recalculating stock: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error recalculating stock: {str(e)}"
+        )
