@@ -1076,6 +1076,141 @@ async def create_warehouse_stock_adjustment(
         )
 
 
+# --- Stock Traceability Endpoint ---
+@router.get("/traceability/{warehouse_id}/{part_id}")
+async def get_stock_traceability(
+    warehouse_id: uuid.UUID,
+    part_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Get stock traceability for a specific part in a warehouse.
+    Returns the chronological history of stock-affecting events from present
+    back to the last stock adjustment, with a running balance.
+    """
+    try:
+        # Check warehouse access
+        if not check_warehouse_access(current_user, warehouse_id, db):
+            raise HTTPException(status_code=403, detail="Not authorized to view this warehouse")
+        
+        from ..crud.inventory_calculator import calculate_current_stock
+        from decimal import Decimal
+        
+        # Step 1: Find the last stock adjustment for this part/warehouse
+        last_adjustment = db.query(
+            models.StockAdjustmentItem.quantity_after,
+            models.StockAdjustment.adjustment_date,
+            models.StockAdjustment.id.label("adjustment_id")
+        ).join(
+            models.StockAdjustment,
+            models.StockAdjustmentItem.stock_adjustment_id == models.StockAdjustment.id
+        ).filter(
+            models.StockAdjustment.warehouse_id == warehouse_id,
+            models.StockAdjustmentItem.part_id == part_id
+        ).order_by(
+            models.StockAdjustment.adjustment_date.desc()
+        ).first()
+        
+        baseline_date = None
+        baseline_stock = Decimal('0')
+        
+        if last_adjustment:
+            baseline_date = last_adjustment.adjustment_date
+            baseline_stock = last_adjustment.quantity_after
+        
+        # Step 2: Get all transactions after the baseline date
+        txn_query = db.query(models.Transaction).filter(
+            models.Transaction.part_id == part_id,
+            (models.Transaction.to_warehouse_id == warehouse_id) | 
+            (models.Transaction.from_warehouse_id == warehouse_id)
+        )
+        
+        if baseline_date:
+            txn_query = txn_query.filter(models.Transaction.transaction_date > baseline_date)
+        
+        transactions = txn_query.order_by(models.Transaction.transaction_date.asc()).all()
+        
+        # Step 3: Build the traceability list with running balance
+        events = []
+        running_balance = baseline_stock
+        
+        # Add the baseline event (stock adjustment)
+        if last_adjustment:
+            events.append({
+                "date": last_adjustment.adjustment_date.isoformat(),
+                "type": "stock_adjustment",
+                "description": "Stock Adjustment (baseline)",
+                "quantity_change": None,
+                "balance_after": float(baseline_stock),
+                "notes": f"Adjusted to {float(baseline_stock)}"
+            })
+        else:
+            events.append({
+                "date": None,
+                "type": "initial",
+                "description": "No stock adjustment found - starting from 0",
+                "quantity_change": None,
+                "balance_after": 0,
+                "notes": "Baseline: 0"
+            })
+        
+        # Add each transaction
+        for txn in transactions:
+            if txn.to_warehouse_id == warehouse_id:
+                # Incoming
+                change = txn.quantity
+                running_balance += change
+                direction = "IN"
+            elif txn.from_warehouse_id == warehouse_id:
+                # Outgoing
+                change = -txn.quantity
+                running_balance += change
+                direction = "OUT"
+            else:
+                continue
+            
+            # Get user name
+            user = db.query(models.User).filter(models.User.id == txn.performed_by_user_id).first()
+            user_name = user.name or user.username if user else "Unknown"
+            
+            events.append({
+                "date": txn.transaction_date.isoformat(),
+                "type": txn.transaction_type,
+                "description": f"{direction} - {txn.transaction_type.capitalize()}",
+                "quantity_change": float(change),
+                "balance_after": float(running_balance),
+                "notes": txn.notes or "",
+                "reference": txn.reference_number or "",
+                "performed_by": user_name
+            })
+        
+        # Current calculated stock
+        current_stock = calculate_current_stock(db, warehouse_id, part_id)
+        
+        # Get part info
+        part = db.query(models.Part).filter(models.Part.id == part_id).first()
+        
+        return {
+            "part_id": str(part_id),
+            "warehouse_id": str(warehouse_id),
+            "part_name": part.name if part else "Unknown",
+            "part_number": part.part_number if part else "",
+            "current_stock": float(current_stock),
+            "events": list(reversed(events)),  # Most recent first
+            "total_events": len(events)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting stock traceability: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while getting stock traceability"
+        )
+
+
 # --- Recalculate Stock Endpoint (Super Admin only) ---
 @router.post("/recalculate")
 async def recalculate_all_stock(

@@ -1,3 +1,4 @@
+
 # Warehouse QR Location System - Implementation Tasks
 
 ## Phase 1: Backend - Location Model & API

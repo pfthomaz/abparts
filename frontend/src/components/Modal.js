@@ -29,7 +29,7 @@ function Modal({ isOpen, onClose, title, children, size = 'medium' }) {
             &times;
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto pr-2"> {/* Added max-height and overflow for scrollability */}
+        <div className="max-h-[70vh] overflow-y-auto overflow-x-auto pr-2"> {/* Added max-height and overflow for scrollability */}
           {children}
         </div>
       </div>

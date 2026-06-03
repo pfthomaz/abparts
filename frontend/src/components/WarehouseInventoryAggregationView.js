@@ -694,7 +694,7 @@ const WarehouseInventoryAggregationView = ({ organizationId }) => {
             </div>
           </div>
         ) : (
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <div className="bg-white shadow overflow-x-auto sm:rounded-md">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

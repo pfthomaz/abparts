@@ -213,6 +213,14 @@ const recalculateStock = () => {
   return api.post('/inventory/recalculate');
 };
 
+/**
+ * Get stock traceability for a part in a warehouse.
+ * Returns chronological history of stock-affecting events.
+ */
+const getStockTraceability = (warehouseId, partId) => {
+  return api.get(`/inventory/traceability/${warehouseId}/${partId}`);
+};
+
 export const inventoryService = {
   getInventory,
   getWarehouseInventory,
@@ -227,4 +235,5 @@ export const inventoryService = {
   deleteInventoryItem,
   getInventoryReport,
   recalculateStock,
+  getStockTraceability,
 };
