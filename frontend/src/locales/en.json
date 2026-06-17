@@ -222,7 +222,8 @@
     "deleteConfirm": "Are you sure you want to delete this part?",
     "deleteSuccess": "Part deleted successfully",
     "createSuccess": "Part created successfully",
-    "updateSuccess": "Part updated successfully"
+    "updateSuccess": "Part updated successfully",
+    "printLabels": "Print Labels"
   },
   "warehouses": {
     "title": "Warehouse & Inventory Management",

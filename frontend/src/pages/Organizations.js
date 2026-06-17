@@ -23,6 +23,8 @@ const Organizations = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'hierarchy'
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [supplierName, setSupplierName] = useState('');
   const [hierarchyData, setHierarchyData] = useState([]);
   const [loadingHierarchy, setLoadingHierarchy] = useState(false);
 
@@ -129,6 +131,30 @@ const Organizations = () => {
     setEditingOrganization(null);
   };
 
+  const openSupplierModal = () => {
+    setSupplierName('');
+    setShowSupplierModal(true);
+  };
+
+  const handleCreateSupplier = async () => {
+    if (!supplierName.trim()) return;
+    try {
+      const supplierData = {
+        name: supplierName.trim(),
+        organization_type: 'supplier',
+        parent_organization_id: user.organization_id
+      };
+      const response = await organizationsService.createSupplierOrganization(user.organization_id, supplierData);
+      const newOrg = response.data || response;
+      setOrganizations(prev => [newOrg, ...prev]);
+      setShowSupplierModal(false);
+      setSupplierName('');
+    } catch (err) {
+      console.error("Error creating supplier:", err);
+      setError(err.message || 'Failed to create supplier');
+    }
+  };
+
   const getOrganizationTypeInfo = (type) => {
     const ORGANIZATION_TYPE_CONFIG = getOrganizationTypeConfig(t);
     return ORGANIZATION_TYPE_CONFIG[type] || {
@@ -218,6 +244,14 @@ const Organizations = () => {
               {t('organizations.addOrganization')}
             </button>
           </PermissionGuard>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => openSupplierModal()}
+              className="bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"
+            >
+              Add Supplier
+            </button>
+          )}
         </div>
       </div>
 
@@ -387,6 +421,45 @@ const Organizations = () => {
           onSubmit={handleCreateOrUpdate}
           onClose={closeModal}
         />
+      </Modal>
+
+      {/* Add Supplier Modal (for admin users) */}
+      <Modal
+        isOpen={showSupplierModal}
+        onClose={() => setShowSupplierModal(false)}
+        title="Add Supplier"
+        size="small"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Supplier Name
+            </label>
+            <input
+              type="text"
+              value={supplierName}
+              onChange={(e) => setSupplierName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+              placeholder="Enter supplier name..."
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowSupplierModal(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateSupplier}
+              disabled={!supplierName.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 disabled:opacity-50"
+            >
+              Create Supplier
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

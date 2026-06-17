@@ -152,6 +152,16 @@ const transferOrganizationOwnership = (organizationId, newParentId) => {
   });
 };
 
+/**
+ * Create a supplier organization under a parent organization.
+ * Admins can use this to create suppliers under their own org.
+ * @param {string} parentOrgId Parent organization ID
+ * @param {object} supplierData Supplier organization data
+ */
+const createSupplierOrganization = (parentOrgId, supplierData) => {
+  return api.post(`/organizations/${parentOrgId}/suppliers`, supplierData);
+};
+
 export const organizationsService = {
   getOrganizations,
   getOrganization,
@@ -164,4 +174,5 @@ export const organizationsService = {
   validateOrganization,
   getOrganizationChildren,
   transferOrganizationOwnership,
+  createSupplierOrganization,
 };
