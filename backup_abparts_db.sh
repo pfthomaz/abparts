@@ -16,7 +16,7 @@ mkdir -p "$BACKUP_DIR"
 echo "[$(date)] Starting backup..." >> "$LOG_FILE"
 
 # Dump database from Docker container, compress with gzip
-docker exec abparts_db_prod pg_dump -U abparts_user -d abparts_prod | gzip > "${BACKUP_DIR}/${BACKUP_FILE}"
+docker compose -f /home/diogo/abparts/docker-compose.prod.yml exec -T db pg_dump -U abparts_user -d abparts_prod | gzip > "${BACKUP_DIR}/${BACKUP_FILE}"
 
 # Check if backup succeeded
 if [ $? -eq 0 ] && [ -s "${BACKUP_DIR}/${BACKUP_FILE}" ]; then

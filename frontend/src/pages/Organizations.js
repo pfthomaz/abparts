@@ -244,7 +244,7 @@ const Organizations = () => {
               {t('organizations.addOrganization')}
             </button>
           </PermissionGuard>
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'super_admin') && (
             <button
               onClick={() => openSupplierModal()}
               className="bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition duration-150 ease-in-out font-semibold"

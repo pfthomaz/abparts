@@ -51,7 +51,7 @@ const SupplierManager = ({ organizationId, onSupplierChange }) => {
         parent_organization_id: organizationId
       };
 
-      await organizationsService.createOrganization(newSupplierData);
+      await organizationsService.createSupplierOrganization(organizationId, newSupplierData);
       setShowCreateModal(false);
       await loadSuppliers();
       if (onSupplierChange) onSupplierChange();

@@ -1,6 +1,6 @@
 // frontend/src/pages/OrganizationManagement.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import OrganizationHierarchy from '../components/OrganizationHierarchy';
 import SupplierManager from '../components/SupplierManager';
@@ -13,6 +13,19 @@ const OrganizationManagement = () => {
   const { user } = useAuth();
   const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [activeTab, setActiveTab] = useState('hierarchy');
+
+  // Auto-select the user's own organization for admin users (non-super-admin)
+  useEffect(() => {
+    if (user && user.role === 'admin' && user.organization_id && !selectedOrganization) {
+      // Set the user's organization as selected and go to suppliers tab
+      setSelectedOrganization({
+        id: user.organization_id,
+        name: user.organization_name || 'My Organization',
+        organization_type: 'customer'
+      });
+      setActiveTab('suppliers');
+    }
+  }, [user, selectedOrganization]);
 
   // Handle organization selection from hierarchy
   const handleOrganizationSelect = (organization) => {
