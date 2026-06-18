@@ -92,15 +92,29 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
   }, [oraseasOrg, formData.oraseas_organization_id]);
 
   // Effect to pre-fill customer data for non-super_admin users
+  // Only pre-fill for customer org admins (they are the customer).
+  // Oraseas admins should leave customer_organization_id empty (they select the customer).
   useEffect(() => {
     if (user && user.role !== 'super_admin' && !initialData.id) {
-      setFormData(prevData => ({
-        ...prevData,
-        customer_organization_id: user.organization_id || '',
-        ordered_by_user_id: user.id || ''
-      }));
+      // Check if user's org is Oraseas type - if so, don't pre-fill customer org
+      const userOrg = organizations.find(org => org.id === user.organization_id);
+      const isOraseas = userOrg && (userOrg.organization_type === 'oraseas_ee' || userOrg.name === 'Oraseas EE' || userOrg.name === 'BossServ LLC' || userOrg.name === 'BossServ Ltd');
+      
+      if (!isOraseas) {
+        setFormData(prevData => ({
+          ...prevData,
+          customer_organization_id: user.organization_id || '',
+          ordered_by_user_id: user.id || ''
+        }));
+      } else {
+        // Oraseas admin: just pre-fill the ordered_by_user_id
+        setFormData(prevData => ({
+          ...prevData,
+          ordered_by_user_id: user.id || ''
+        }));
+      }
     }
-  }, [user, initialData.id]);
+  }, [user, initialData.id, organizations]);
   
   // Effect to pre-select current user if not already set
   useEffect(() => {
@@ -269,8 +283,11 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
   }, [users, formData.customer_organization_id, user]);
 
   // Determine if the organization dropdown should be disabled
-  // Non-super_admin users can only order for their own organization
-  const disableOrgSelection = loading || (user && user.role !== 'super_admin');
+  // Only customer org admins are locked to their own org. Oraseas admins can select any customer.
+  const isOraseasOrg = organizations.some(org => 
+    org.id === user?.organization_id && (org.organization_type === 'oraseas_ee' || org.name === 'Oraseas EE' || org.name === 'BossServ LLC' || org.name === 'BossServ Ltd')
+  );
+  const disableOrgSelection = loading || (user && user.role !== 'super_admin' && !isOraseasOrg);
   // User dropdown is always enabled (users can change who placed the order)
 
   return (
