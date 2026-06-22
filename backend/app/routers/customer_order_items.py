@@ -16,6 +16,15 @@ from ..permissions import (
 
 router = APIRouter()
 
+
+def _can_access_customer_order(current_user: TokenData, order: models.CustomerOrder) -> bool:
+    """Customer order items are accessible to either side of the order."""
+    return (
+        permission_checker.is_super_admin(current_user) or
+        order.customer_organization_id == current_user.organization_id or
+        order.oraseas_organization_id == current_user.organization_id
+    )
+
 # --- Customer Order Items CRUD ---
 @router.get("/", response_model=List[schemas.CustomerOrderItemResponse])
 def get_customer_order_items(
@@ -30,7 +39,7 @@ def get_customer_order_items(
         filtered_items = []
         for item in items:
             customer_order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == item.customer_order_id).first()
-            if customer_order and customer_order.customer_organization_id == current_user.organization_id:
+            if customer_order and _can_access_customer_order(current_user, customer_order):
                 filtered_items.append(item)
         return filtered_items
     
@@ -51,9 +60,8 @@ def get_customer_order_item(
         raise HTTPException(status_code=404, detail="Associated customer order not found for item")
 
     # Check permissions
-    if not permission_checker.is_super_admin(current_user):
-        if customer_order.customer_organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Access denied to this order item")
+    if not _can_access_customer_order(current_user, customer_order):
+        raise HTTPException(status_code=403, detail="Access denied to this order item")
 
     return item
 
@@ -70,10 +78,8 @@ def create_customer_order_item(
     if not part:
         raise HTTPException(status_code=400, detail="Part ID not found")
 
-    # Check permissions - users can only add items to orders from their organization
-    if not permission_checker.is_super_admin(current_user):
-        if order.customer_organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Cannot add items to orders from other organizations")
+    if not _can_access_customer_order(current_user, order):
+        raise HTTPException(status_code=403, detail="Cannot add items to orders from other organizations")
 
     db_item = crud.customer_order_items.create_customer_order_item(db, item)
     if not db_item:
@@ -96,9 +102,8 @@ def update_customer_order_item(
         raise HTTPException(status_code=404, detail="Associated customer order not found")
 
     # Check permissions
-    if not permission_checker.is_super_admin(current_user):
-        if customer_order.customer_organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Cannot update order items from other organizations")
+    if not _can_access_customer_order(current_user, customer_order):
+        raise HTTPException(status_code=403, detail="Cannot update order items from other organizations")
 
     # Prevent changing customer_order_id or part_id
     if item_update.customer_order_id is not None and item_update.customer_order_id != db_item.customer_order_id:
@@ -126,9 +131,8 @@ def delete_customer_order_item(
         raise HTTPException(status_code=404, detail="Associated customer order not found")
 
     # Check permissions
-    if not permission_checker.is_super_admin(current_user):
-        if customer_order.customer_organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Cannot delete order items from other organizations")
+    if not _can_access_customer_order(current_user, customer_order):
+        raise HTTPException(status_code=403, detail="Cannot delete order items from other organizations")
 
     result = crud.customer_order_items.delete_customer_order_item(db, item_id)
     if not result:
