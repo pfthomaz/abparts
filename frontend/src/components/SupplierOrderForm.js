@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { partsService } from '../services/partsService';
+import PartSearchSelector from './PartSearchSelector';
 
 function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth();
@@ -354,23 +355,13 @@ function SupplierOrderForm({ organizations = [], parts = [], initialData = {}, o
             <label htmlFor="part_id" className="block text-sm font-medium text-gray-700 mb-1">
               Part
             </label>
-            <select
-              id="part_id"
-              name="part_id"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            <PartSearchSelector
+              parts={safeParts}
               value={currentItem.part_id}
-              onChange={handleItemChange}
+              onChange={(partId) => setCurrentItem(prev => ({ ...prev, part_id: partId }))}
               disabled={loading || partsLoading}
-            >
-              <option value="">
-                {partsLoading ? 'Loading parts...' : 'Select Part'}
-              </option>
-              {safeParts.map(part => (
-                <option key={part.id} value={part.id}>
-                  {part.name} ({part.part_number})
-                </option>
-              ))}
-            </select>
+              placeholder={partsLoading ? t('orders.loadingParts') : t('orders.searchPartPlaceholder')}
+            />
             <div className="h-5 mt-1">
               {smartParts.length > 0 && (
                 <p className="text-[10px] text-gray-500 leading-tight">
