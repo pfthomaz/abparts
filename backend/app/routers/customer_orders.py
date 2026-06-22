@@ -73,9 +73,19 @@ def create_customer_order(
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     """Create a new customer order with organization access control."""
-    # Ensure user can only create orders for their own organization (unless super admin)
+    # Non-super-admins can create a customer order only when they are one of the two
+    # organizations involved in the order: the customer placing it or the Oraseas org receiving it.
     if not permission_checker.is_super_admin(current_user):
-        if hasattr(order, 'customer_organization_id') and order.customer_organization_id != current_user.organization_id:
+        is_customer = (
+            hasattr(order, 'customer_organization_id') and
+            order.customer_organization_id == current_user.organization_id
+        )
+        is_oraseas = (
+            hasattr(order, 'oraseas_organization_id') and
+            order.oraseas_organization_id == current_user.organization_id
+        )
+
+        if not (is_customer or is_oraseas):
             raise HTTPException(status_code=403, detail="Cannot create orders for other organizations")
     
     return crud.customer_orders.create_customer_order(db=db, order=order)
@@ -268,7 +278,10 @@ def get_customer_order(
     
     # Check permissions
     if not permission_checker.is_super_admin(current_user):
-        if order.customer_organization_id != current_user.organization_id:
+        is_customer = order.customer_organization_id == current_user.organization_id
+        is_oraseas = order.oraseas_organization_id == current_user.organization_id
+
+        if not (is_customer or is_oraseas):
             raise HTTPException(status_code=403, detail="Access denied to this order")
     
     return order
