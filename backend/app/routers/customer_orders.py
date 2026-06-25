@@ -193,6 +193,136 @@ def read_customer_orders(
     
     return response_orders
 
+
+@router.get("/stock-availability/check")
+def check_stock_availability(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.READ))
+):
+    """
+    Check stock availability for pending/requested customer orders against Oraseas warehouses.
+    Returns orders that cannot be fully fulfilled due to insufficient stock.
+    Only available to Oraseas EE organization users and super admins.
+    """
+    # Determine the Oraseas organization
+    user_org = db.query(models.Organization).filter(
+        models.Organization.id == current_user.organization_id
+    ).first()
+
+    if not permission_checker.is_super_admin(current_user):
+        if not user_org or user_org.name not in ['Oraseas EE', 'BossServ LLC', 'BossServ Ltd']:
+            raise HTTPException(
+                status_code=403,
+                detail="Stock availability check is only available to Oraseas EE users"
+            )
+
+    # Find the Oraseas organization (for super admins who might not be in Oraseas org)
+    oraseas_org = db.query(models.Organization).filter(
+        models.Organization.name.in_(['Oraseas EE', 'BossServ LLC', 'BossServ Ltd'])
+    ).first()
+
+    if not oraseas_org:
+        return {"unfulfillable_orders": [], "total_missing_parts": 0, "total_unfulfillable_orders": 0}
+
+    # Get all active (Requested/Pending) customer orders for Oraseas
+    active_orders = db.query(models.CustomerOrder).options(
+        selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part),
+        selectinload(models.CustomerOrder.customer_organization)
+    ).filter(
+        models.CustomerOrder.oraseas_organization_id == oraseas_org.id,
+        models.CustomerOrder.status.in_(['Requested', 'Pending'])
+    ).order_by(models.CustomerOrder.order_date.asc()).all()
+
+    if not active_orders:
+        return {"unfulfillable_orders": [], "total_missing_parts": 0, "total_unfulfillable_orders": 0}
+
+    # Get all Oraseas warehouse IDs
+    oraseas_warehouse_ids = [
+        w.id for w in db.query(models.Warehouse).filter(
+            models.Warehouse.organization_id == oraseas_org.id,
+            models.Warehouse.is_active == True
+        ).all()
+    ]
+
+    if not oraseas_warehouse_ids:
+        # No warehouses means nothing in stock — all orders are unfulfillable
+        unfulfillable_orders = []
+        for order in active_orders:
+            missing_items = []
+            for item in order.items:
+                missing_items.append({
+                    "part_id": str(item.part_id),
+                    "part_name": item.part.name if item.part else "Unknown",
+                    "part_number": item.part.part_number if item.part else "Unknown",
+                    "quantity_ordered": float(item.quantity),
+                    "quantity_available": 0.0,
+                    "quantity_missing": float(item.quantity),
+                })
+            if missing_items:
+                unfulfillable_orders.append({
+                    "order_id": str(order.id),
+                    "customer_organization_name": order.customer_organization.name if order.customer_organization else "Unknown",
+                    "customer_organization_id": str(order.customer_organization_id),
+                    "order_date": order.order_date.isoformat() if order.order_date else None,
+                    "status": order.status,
+                    "missing_items": missing_items,
+                })
+        return {
+            "unfulfillable_orders": unfulfillable_orders,
+            "total_missing_parts": sum(len(o["missing_items"]) for o in unfulfillable_orders),
+            "total_unfulfillable_orders": len(unfulfillable_orders),
+        }
+
+    # Get total available stock per part in Oraseas warehouses
+    stock_query = db.query(
+        models.Inventory.part_id,
+        func.sum(models.Inventory.current_stock).label("total_stock")
+    ).filter(
+        models.Inventory.warehouse_id.in_(oraseas_warehouse_ids)
+    ).group_by(models.Inventory.part_id).all()
+
+    # Build a dict: part_id -> total available stock
+    stock_by_part = {str(row.part_id): float(row.total_stock) for row in stock_query}
+
+    # For each order, check which items cannot be fulfilled
+    unfulfillable_orders = []
+    all_missing_part_ids = set()
+
+    for order in active_orders:
+        missing_items = []
+        for item in order.items:
+            part_id_str = str(item.part_id)
+            available = stock_by_part.get(part_id_str, 0.0)
+            ordered = float(item.quantity)
+
+            if available < ordered:
+                missing_items.append({
+                    "part_id": part_id_str,
+                    "part_name": item.part.name if item.part else "Unknown",
+                    "part_number": item.part.part_number if item.part else "Unknown",
+                    "quantity_ordered": ordered,
+                    "quantity_available": available,
+                    "quantity_missing": round(ordered - available, 3),
+                })
+                all_missing_part_ids.add(part_id_str)
+
+        if missing_items:
+            unfulfillable_orders.append({
+                "order_id": str(order.id),
+                "customer_organization_name": order.customer_organization.name if order.customer_organization else "Unknown",
+                "customer_organization_id": str(order.customer_organization_id),
+                "order_date": order.order_date.isoformat() if order.order_date else None,
+                "status": order.status,
+                "missing_items": missing_items,
+            })
+
+    return {
+        "unfulfillable_orders": unfulfillable_orders,
+        "total_missing_parts": len(all_missing_part_ids),
+        "total_unfulfillable_orders": len(unfulfillable_orders),
+    }
+
+
 @router.put("/{order_id}", response_model=schemas.CustomerOrderResponse)
 async def update_customer_order(
     order_id: str,

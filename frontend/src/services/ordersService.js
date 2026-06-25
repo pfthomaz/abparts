@@ -101,6 +101,15 @@ const confirmCustomerOrderReceipt = (orderId, receiptData) => {
 };
 
 /**
+ * Checks stock availability for pending/requested customer orders.
+ * Returns orders that cannot be fully fulfilled due to insufficient stock.
+ * Only available to Oraseas EE organization users and super admins.
+ */
+const checkStockAvailability = () => {
+  return api.get('/customer_orders/stock-availability/check');
+};
+
+/**
  * Deletes a supplier order.
  * @param {string} orderId The ID of the supplier order to delete.
  */
@@ -131,4 +140,5 @@ export const ordersService = {
   createCustomerOrderItem,
   shipCustomerOrder,
   confirmCustomerOrderReceipt,
+  checkStockAvailability,
 };

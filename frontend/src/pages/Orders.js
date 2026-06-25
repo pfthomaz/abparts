@@ -43,6 +43,9 @@ const Orders = () => {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [activeView, setActiveView] = useState('list'); // 'list' or 'calendar'
+  const [stockAvailability, setStockAvailability] = useState(null);
+  const [showStockWarningModal, setShowStockWarningModal] = useState(false);
+  const [selectedOrderMissingParts, setSelectedOrderMissingParts] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -70,6 +73,15 @@ const Orders = () => {
       const partsArray = partsData?.items || partsData || [];
       setParts(Array.isArray(partsArray) ? partsArray : []);
       setWarehouses(warehousesData);
+
+      // Fetch stock availability (non-critical, silently handle errors)
+      try {
+        const stockData = await ordersService.checkStockAvailability();
+        setStockAvailability(stockData);
+      } catch (stockErr) {
+        // Silently ignore - user may not have permission (non-Oraseas users)
+        console.debug('Stock availability check skipped:', stockErr.message);
+      }
     } catch (err) {
       setError(err.message || 'Failed to fetch order data.');
     } finally {
@@ -89,6 +101,16 @@ const Orders = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Build a lookup: order_id -> missing items from stock availability check
+  const unfulfillableOrderMap = useMemo(() => {
+    if (!stockAvailability || !stockAvailability.unfulfillable_orders) return {};
+    const map = {};
+    for (const order of stockAvailability.unfulfillable_orders) {
+      map[order.order_id] = order.missing_items;
+    }
+    return map;
+  }, [stockAvailability]);
 
   const filteredSupplierOrders = useMemo(() => {
     return supplierOrders
@@ -617,12 +639,32 @@ const Orders = () => {
           {filteredCustomerOrders.length > 0 ? (
             <div className="flex flex-col space-y-4 mb-12">
               {filteredCustomerOrders.map((order) => (
-                <div key={order.id} className="bg-white p-4 rounded-lg shadow-md border border-gray-200 transition-shadow duration-200 hover:shadow-lg">
+                <div key={order.id} className={`bg-white p-4 rounded-lg shadow-md border transition-shadow duration-200 hover:shadow-lg ${unfulfillableOrderMap[order.id] ? 'border-orange-300' : 'border-gray-200'}`}>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-semibold text-indigo-700">{t('orders.orderFor')} {order.customer_organization_name || 'Unknown'}</h3>
                         <div className="flex items-center space-x-2">
+                          {/* Stock warning indicator */}
+                          {unfulfillableOrderMap[order.id] && (
+                            <button
+                              onClick={() => {
+                                setSelectedOrderMissingParts({
+                                  order_id: order.id,
+                                  customer_organization_name: order.customer_organization_name,
+                                  missing_items: unfulfillableOrderMap[order.id],
+                                });
+                                setShowStockWarningModal(true);
+                              }}
+                              className="flex items-center space-x-1 px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200 transition-colors cursor-pointer"
+                              title={t('orders.insufficientStock', { fallback: 'Insufficient stock to fulfill this order' })}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span>{t('orders.missingParts', { count: unfulfillableOrderMap[order.id].length, fallback: `${unfulfillableOrderMap[order.id].length} missing` })}</span>
+                            </button>
+                          )}
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' :
                             order.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
                               order.status === 'Shipped' ? 'bg-purple-100 text-purple-800' :
@@ -885,6 +927,65 @@ const Orders = () => {
               setSelectedOrderForReceipt(null);
             }}
           />
+        )}
+      </Modal>
+
+      {/* Stock Warning Modal - Missing Parts Detail */}
+      <Modal
+        isOpen={showStockWarningModal}
+        onClose={() => {
+          setShowStockWarningModal(false);
+          setSelectedOrderMissingParts(null);
+        }}
+        title={t('orders.missingPartsTitle', { fallback: 'Missing Parts for Order' })}
+        size="lg"
+      >
+        {selectedOrderMissingParts && (
+          <div className="p-4">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                {t('orders.missingPartsDesc', { fallback: 'The following parts are not available in sufficient quantity to fulfill this order:' })}
+              </p>
+              <p className="text-sm font-medium text-gray-800 mt-1">
+                {t('orders.customerLabel', { fallback: 'Customer' })}: {selectedOrderMissingParts.customer_organization_name}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left py-2 px-3 font-medium text-gray-600">{t('common.part', { fallback: 'Part' })}</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-600">{t('orders.partNumber', { fallback: 'Part #' })}</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.ordered', { fallback: 'Ordered' })}</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.available', { fallback: 'Available' })}</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.missing', { fallback: 'Missing' })}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedOrderMissingParts.missing_items.map((item, idx) => (
+                    <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                      <td className="py-2 px-3 font-medium text-gray-800">{item.part_name}</td>
+                      <td className="py-2 px-3 text-gray-600">{item.part_number}</td>
+                      <td className="text-right py-2 px-3 text-gray-700">{item.quantity_ordered}</td>
+                      <td className="text-right py-2 px-3 text-gray-700">{item.quantity_available}</td>
+                      <td className="text-right py-2 px-3 font-semibold text-red-600">{item.quantity_missing}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowStockWarningModal(false);
+                  setSelectedOrderMissingParts(null);
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition-colors text-sm"
+              >
+                {t('common.close', { fallback: 'Close' })}
+              </button>
+            </div>
+          </div>
         )}
       </Modal>
     </div>

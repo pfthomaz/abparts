@@ -4,9 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { dashboardService } from '../services/dashboardService';
+import { ordersService } from '../services/ordersService';
 import { isSuperAdmin, hasPermission, PERMISSIONS, getContextualPermissions } from '../utils/permissions';
 import PermissionGuard from '../components/PermissionGuard';
 import OrganizationSelector from '../components/OrganizationSelector';
+import Modal from '../components/Modal';
 import { useTranslation } from '../hooks/useTranslation';
 import {
   BarChart,
@@ -302,6 +304,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedOrganization, setSelectedOrganization] = useState(null);
+  const [stockAvailability, setStockAvailability] = useState(null);
+  const [showStockWarningModal, setShowStockWarningModal] = useState(false);
   const fetchMetrics = async () => {
     try {
       setLoading(true);
@@ -315,6 +319,15 @@ const Dashboard = () => {
       // console.log('DEBUG: total_nets =', metricsData?.total_nets);
       setMetrics(metricsData);
       setLowStockData(lowStockChartData);
+
+      // Fetch stock availability for orders (Oraseas users and super admins)
+      try {
+        const stockData = await ordersService.checkStockAvailability();
+        setStockAvailability(stockData);
+      } catch (stockErr) {
+        // Non-critical - silently ignore if user doesn't have permission
+        console.debug('Stock availability check skipped:', stockErr.message);
+      }
     } catch (err) {
       setError(err.message || 'Failed to load dashboard metrics.');
     } finally {
@@ -879,7 +892,7 @@ const Dashboard = () => {
             </div>
 
             {/* Alerts & Notifications */}
-            {(metrics.low_stock_items > 0 || metrics.out_of_stock_items > 0 || metrics.pending_invitations > 0) && (
+            {(metrics.low_stock_items > 0 || metrics.out_of_stock_items > 0 || metrics.pending_invitations > 0 || (stockAvailability && stockAvailability.total_unfulfillable_orders > 0)) && (
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 shadow-lg border border-yellow-200">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="p-2 bg-yellow-500 rounded-xl">
@@ -888,7 +901,26 @@ const Dashboard = () => {
                   <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.attentionRequired')}</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Unfulfillable Orders Warning */}
+                  {stockAvailability && stockAvailability.total_unfulfillable_orders > 0 && (
+                    <div
+                      className="bg-white rounded-lg p-4 border border-orange-300 cursor-pointer hover:shadow-md hover:border-orange-400 transition-all"
+                      onClick={() => setShowStockWarningModal(true)}
+                    >
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <span className="font-semibold text-orange-700">{t('dashboard.ordersCannotFulfill', { fallback: 'Orders Cannot Be Fulfilled' })}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {t('dashboard.ordersLackingStock', { count: stockAvailability.total_unfulfillable_orders, parts: stockAvailability.total_missing_parts, fallback: `${stockAvailability.total_unfulfillable_orders} order(s) with ${stockAvailability.total_missing_parts} part(s) not in stock` })}
+                      </p>
+                      <span className="text-sm text-orange-600 hover:text-orange-800 font-medium mt-2 inline-block">
+                        {t('dashboard.viewMissingParts', { fallback: 'View missing parts' })} →
+                      </span>
+                    </div>
+                  )}
+
                   {metrics.out_of_stock_items > 0 && (
                     <div className="bg-white rounded-lg p-4 border border-red-200">
                       <div className="flex items-center space-x-2 mb-2">
@@ -1038,6 +1070,73 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Stock Availability Warning Modal */}
+      <Modal
+        isOpen={showStockWarningModal}
+        onClose={() => setShowStockWarningModal(false)}
+        title={t('dashboard.unfulfillableOrdersTitle', { fallback: 'Orders With Insufficient Stock' })}
+        size="xl"
+      >
+        <div className="p-4 max-h-[70vh] overflow-y-auto">
+          {stockAvailability && stockAvailability.unfulfillable_orders?.length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 mb-4">
+                {t('dashboard.unfulfillableOrdersDesc', { fallback: 'The following orders cannot be fully serviced because some parts are not available in your warehouses.' })}
+              </p>
+              {stockAvailability.unfulfillable_orders.map((order) => (
+                <div key={order.order_id} className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-semibold text-gray-800">
+                        {order.customer_organization_name}
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        {t('orders.orderDate', { fallback: 'Order date' })}: {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
+                        {' '} · {t('common.status', { fallback: 'Status' })}: <span className="font-medium">{order.status}</span>
+                      </p>
+                    </div>
+                    <Link
+                      to="/orders"
+                      onClick={() => setShowStockWarningModal(false)}
+                      className="text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 px-2 py-1 rounded transition-colors"
+                    >
+                      {t('dashboard.goToOrders', { fallback: 'Go to Orders' })}
+                    </Link>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-orange-200">
+                          <th className="text-left py-1 px-2 text-gray-600 font-medium">{t('common.part', { fallback: 'Part' })}</th>
+                          <th className="text-right py-1 px-2 text-gray-600 font-medium">{t('dashboard.ordered', { fallback: 'Ordered' })}</th>
+                          <th className="text-right py-1 px-2 text-gray-600 font-medium">{t('dashboard.available', { fallback: 'Available' })}</th>
+                          <th className="text-right py-1 px-2 text-gray-600 font-medium">{t('dashboard.missing', { fallback: 'Missing' })}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.missing_items.map((item, idx) => (
+                          <tr key={idx} className="border-b border-orange-100 last:border-0">
+                            <td className="py-1.5 px-2">
+                              <span className="font-medium text-gray-800">{item.part_name}</span>
+                              <span className="text-xs text-gray-500 ml-1">({item.part_number})</span>
+                            </td>
+                            <td className="text-right py-1.5 px-2 text-gray-700">{item.quantity_ordered}</td>
+                            <td className="text-right py-1.5 px-2 text-gray-700">{item.quantity_available}</td>
+                            <td className="text-right py-1.5 px-2 font-semibold text-red-600">{item.quantity_missing}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">{t('dashboard.noUnfulfillableOrders', { fallback: 'All orders can be fulfilled with current stock.' })}</p>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };
