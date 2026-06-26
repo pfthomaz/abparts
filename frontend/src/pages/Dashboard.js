@@ -892,7 +892,7 @@ const Dashboard = () => {
             </div>
 
             {/* Alerts & Notifications */}
-            {(metrics.low_stock_items > 0 || metrics.out_of_stock_items > 0 || metrics.pending_invitations > 0 || (stockAvailability && stockAvailability.total_unfulfillable_orders > 0)) && (
+            {(metrics.low_stock_items > 0 || metrics.out_of_stock_items > 0 || metrics.pending_invitations > 0 || (stockAvailability && stockAvailability.parts_short && stockAvailability.parts_short.length > 0)) && (
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 shadow-lg border border-yellow-200">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="p-2 bg-yellow-500 rounded-xl">
@@ -902,18 +902,18 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Unfulfillable Orders Warning */}
-                  {stockAvailability && stockAvailability.total_unfulfillable_orders > 0 && (
+                  {/* Parts Short of Stock Warning */}
+                  {stockAvailability && stockAvailability.parts_short && stockAvailability.parts_short.length > 0 && (
                     <div
                       className="bg-white rounded-lg p-4 border border-orange-300 cursor-pointer hover:shadow-md hover:border-orange-400 transition-all"
                       onClick={() => setShowStockWarningModal(true)}
                     >
                       <div className="flex items-center space-x-2 mb-2">
                         <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                        <span className="font-semibold text-orange-700">{t('dashboard.ordersCannotFulfill', { fallback: 'Orders Cannot Be Fulfilled' })}</span>
+                        <span className="font-semibold text-orange-700">{t('dashboard.ordersCannotFulfill', { fallback: 'Parts Short for Orders' })}</span>
                       </div>
                       <p className="text-sm text-gray-600">
-                        {t('dashboard.ordersLackingStock', { count: stockAvailability.total_unfulfillable_orders, parts: stockAvailability.total_missing_parts, fallback: `${stockAvailability.total_unfulfillable_orders} order(s) with ${stockAvailability.total_missing_parts} part(s) not in stock` })}
+                        {t('dashboard.partsShortForOrders', { count: stockAvailability.parts_short.length, fallback: `${stockAvailability.parts_short.length} part(s) have insufficient stock to cover active orders` })}
                       </p>
                       <span className="text-sm text-orange-600 hover:text-orange-800 font-medium mt-2 inline-block">
                         {t('dashboard.viewMissingParts', { fallback: 'View missing parts' })} →
@@ -1079,22 +1079,27 @@ const Dashboard = () => {
         size="xl"
       >
         <div className="p-4 max-h-[70vh] overflow-y-auto">
-          {stockAvailability && stockAvailability.unfulfillable_orders?.length > 0 ? (
+          {stockAvailability && stockAvailability.parts_short?.length > 0 ? (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 mb-4">
-                {t('dashboard.unfulfillableOrdersDesc', { fallback: 'The following orders cannot be fully serviced because some parts are not available in your warehouses.' })}
+                {t('dashboard.partsShortDesc', { fallback: 'The following parts have more items ordered across active orders than currently available in stock.' })}
               </p>
-              {stockAvailability.unfulfillable_orders.map((order) => (
-                <div key={order.order_id} className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+              {stockAvailability.parts_short.map((part) => (
+                <div key={part.part_id} className="border border-orange-200 rounded-lg p-4 bg-orange-50">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h4 className="font-semibold text-gray-800">
-                        {order.customer_organization_name}
+                        {part.part_name}
+                        <span className="text-sm text-gray-500 font-normal ml-2">({part.part_number})</span>
                       </h4>
-                      <p className="text-xs text-gray-500">
-                        {t('orders.orderDate', { fallback: 'Order date' })}: {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
-                        {' '} · {t('common.status', { fallback: 'Status' })}: <span className="font-medium">{order.status}</span>
-                      </p>
+                      <div className="flex items-center space-x-4 mt-1 text-sm">
+                        <span className="text-gray-600">
+                          {t('dashboard.inStock', { fallback: 'In stock' })}: <span className="font-semibold text-gray-800">{part.quantity_in_stock}</span>
+                        </span>
+                        <span className="text-red-600">
+                          {t('dashboard.totalOrdered', { fallback: 'Total ordered' })}: <span className="font-semibold">{part.total_quantity_ordered}</span>
+                        </span>
+                      </div>
                     </div>
                     <Link
                       to="/orders"
@@ -1104,30 +1109,19 @@ const Dashboard = () => {
                       {t('dashboard.goToOrders', { fallback: 'Go to Orders' })}
                     </Link>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-orange-200">
-                          <th className="text-left py-1 px-2 text-gray-600 font-medium">{t('common.part', { fallback: 'Part' })}</th>
-                          <th className="text-right py-1 px-2 text-gray-600 font-medium">{t('dashboard.ordered', { fallback: 'Ordered' })}</th>
-                          <th className="text-right py-1 px-2 text-gray-600 font-medium">{t('dashboard.available', { fallback: 'Available' })}</th>
-                          <th className="text-right py-1 px-2 text-gray-600 font-medium">{t('dashboard.missing', { fallback: 'Missing' })}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {order.missing_items.map((item, idx) => (
-                          <tr key={idx} className="border-b border-orange-100 last:border-0">
-                            <td className="py-1.5 px-2">
-                              <span className="font-medium text-gray-800">{item.part_name}</span>
-                              <span className="text-xs text-gray-500 ml-1">({item.part_number})</span>
-                            </td>
-                            <td className="text-right py-1.5 px-2 text-gray-700">{item.quantity_ordered}</td>
-                            <td className="text-right py-1.5 px-2 text-gray-700">{item.quantity_available}</td>
-                            <td className="text-right py-1.5 px-2 font-semibold text-red-600">{item.quantity_missing}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-gray-500 mb-1">{t('dashboard.ordersContainingPart', { fallback: 'Orders containing this part:' })}</p>
+                    <div className="space-y-1">
+                      {part.orders.map((order, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm bg-white rounded px-3 py-1.5 border border-orange-100">
+                          <span className="text-gray-700">{order.customer_organization_name}</span>
+                          <div className="flex items-center space-x-3 text-xs text-gray-500">
+                            <span>{order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}</span>
+                            <span className="font-medium text-gray-700">{t('dashboard.qty', { fallback: 'Qty' })}: {order.quantity_in_order}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}

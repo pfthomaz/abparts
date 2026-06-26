@@ -102,12 +102,12 @@ const Orders = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Build a lookup: order_id -> missing items from stock availability check
+  // Build a lookup: order_id -> items_short from stock availability check
   const unfulfillableOrderMap = useMemo(() => {
-    if (!stockAvailability || !stockAvailability.unfulfillable_orders) return {};
+    if (!stockAvailability || !stockAvailability.orders) return {};
     const map = {};
-    for (const order of stockAvailability.unfulfillable_orders) {
-      map[order.order_id] = order.missing_items;
+    for (const order of stockAvailability.orders) {
+      map[order.order_id] = order.items_short;
     }
     return map;
   }, [stockAvailability]);
@@ -652,7 +652,7 @@ const Orders = () => {
                                 setSelectedOrderMissingParts({
                                   order_id: order.id,
                                   customer_organization_name: order.customer_organization_name,
-                                  missing_items: unfulfillableOrderMap[order.id],
+                                  items_short: unfulfillableOrderMap[order.id],
                                 });
                                 setShowStockWarningModal(true);
                               }}
@@ -937,14 +937,14 @@ const Orders = () => {
           setShowStockWarningModal(false);
           setSelectedOrderMissingParts(null);
         }}
-        title={t('orders.missingPartsTitle', { fallback: 'Missing Parts for Order' })}
+        title={t('orders.missingPartsTitle', { fallback: 'Insufficient Stock for Order' })}
         size="lg"
       >
         {selectedOrderMissingParts && (
           <div className="p-4">
             <div className="mb-4">
               <p className="text-sm text-gray-600">
-                {t('orders.missingPartsDesc', { fallback: 'The following parts are not available in sufficient quantity to fulfill this order:' })}
+                {t('orders.missingPartsDesc', { fallback: 'The following parts in this order exceed available stock in Oraseas warehouses:' })}
               </p>
               <p className="text-sm font-medium text-gray-800 mt-1">
                 {t('orders.customerLabel', { fallback: 'Customer' })}: {selectedOrderMissingParts.customer_organization_name}
@@ -955,20 +955,21 @@ const Orders = () => {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="text-left py-2 px-3 font-medium text-gray-600">{t('common.part', { fallback: 'Part' })}</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-600">{t('orders.partNumber', { fallback: 'Part #' })}</th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.ordered', { fallback: 'Ordered' })}</th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.available', { fallback: 'Available' })}</th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.missing', { fallback: 'Missing' })}</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('dashboard.inStock', { fallback: 'In Stock' })}</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('orders.inThisOrder', { fallback: 'In This Order' })}</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-600">{t('orders.totalAllActiveOrders', { fallback: 'Total All Active Orders' })}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrderMissingParts.missing_items.map((item, idx) => (
+                  {selectedOrderMissingParts.items_short.map((item, idx) => (
                     <tr key={idx} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                      <td className="py-2 px-3 font-medium text-gray-800">{item.part_name}</td>
-                      <td className="py-2 px-3 text-gray-600">{item.part_number}</td>
-                      <td className="text-right py-2 px-3 text-gray-700">{item.quantity_ordered}</td>
-                      <td className="text-right py-2 px-3 text-gray-700">{item.quantity_available}</td>
-                      <td className="text-right py-2 px-3 font-semibold text-red-600">{item.quantity_missing}</td>
+                      <td className="py-2 px-3">
+                        <span className="font-medium text-gray-800">{item.part_name}</span>
+                        <span className="text-xs text-gray-500 ml-1">({item.part_number})</span>
+                      </td>
+                      <td className="text-right py-2 px-3 text-gray-700">{item.quantity_in_stock}</td>
+                      <td className="text-right py-2 px-3 font-semibold text-red-600">{item.quantity_in_this_order}</td>
+                      <td className="text-right py-2 px-3 text-orange-600">{item.total_quantity_all_active_orders}</td>
                     </tr>
                   ))}
                 </tbody>

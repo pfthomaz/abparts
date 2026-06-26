@@ -200,11 +200,20 @@ def check_stock_availability(
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.READ))
 ):
     """
-    Check stock availability for pending/requested customer orders against Oraseas warehouses.
-    Returns orders that cannot be fully fulfilled due to insufficient stock.
+    Check stock availability for active customer orders against Oraseas warehouses.
+
+    Returns two views:
+    1. **parts_short** (global/dashboard view): For each part where total demand across
+       ALL active orders exceeds stock, lists: part info, stock qty, total ordered qty,
+       and which orders contain that part.
+    2. **orders** (per-order view): For each order that has at least one item where the
+       order's own quantity exceeds stock, lists: part info, stock qty, qty in this order,
+       total qty of that part across all active orders.
+
+    Active orders = status in ('Requested', 'Pending') — i.e. not yet shipped.
     Only available to Oraseas EE organization users and super admins.
     """
-    # Determine the Oraseas organization
+    # Permission check
     user_org = db.query(models.Organization).filter(
         models.Organization.id == current_user.organization_id
     ).first()
@@ -216,15 +225,15 @@ def check_stock_availability(
                 detail="Stock availability check is only available to Oraseas EE users"
             )
 
-    # Find the Oraseas organization (for super admins who might not be in Oraseas org)
+    # Find the Oraseas organization
     oraseas_org = db.query(models.Organization).filter(
         models.Organization.name.in_(['Oraseas EE', 'BossServ LLC', 'BossServ Ltd'])
     ).first()
 
     if not oraseas_org:
-        return {"unfulfillable_orders": [], "total_missing_parts": 0, "total_unfulfillable_orders": 0}
+        return {"parts_short": [], "orders": []}
 
-    # Get all active (Requested/Pending) customer orders for Oraseas
+    # Get all active (not shipped) customer orders for Oraseas
     active_orders = db.query(models.CustomerOrder).options(
         selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part),
         selectinload(models.CustomerOrder.customer_organization)
@@ -234,7 +243,7 @@ def check_stock_availability(
     ).order_by(models.CustomerOrder.order_date.asc()).all()
 
     if not active_orders:
-        return {"unfulfillable_orders": [], "total_missing_parts": 0, "total_unfulfillable_orders": 0}
+        return {"parts_short": [], "orders": []}
 
     # Get all Oraseas warehouse IDs
     oraseas_warehouse_ids = [
@@ -244,82 +253,85 @@ def check_stock_availability(
         ).all()
     ]
 
-    if not oraseas_warehouse_ids:
-        # No warehouses means nothing in stock — all orders are unfulfillable
-        unfulfillable_orders = []
-        for order in active_orders:
-            missing_items = []
-            for item in order.items:
-                missing_items.append({
-                    "part_id": str(item.part_id),
-                    "part_name": item.part.name if item.part else "Unknown",
-                    "part_number": item.part.part_number if item.part else "Unknown",
-                    "quantity_ordered": float(item.quantity),
-                    "quantity_available": 0.0,
-                    "quantity_missing": float(item.quantity),
-                })
-            if missing_items:
-                unfulfillable_orders.append({
-                    "order_id": str(order.id),
-                    "customer_organization_name": order.customer_organization.name if order.customer_organization else "Unknown",
-                    "customer_organization_id": str(order.customer_organization_id),
-                    "order_date": order.order_date.isoformat() if order.order_date else None,
-                    "status": order.status,
-                    "missing_items": missing_items,
-                })
-        return {
-            "unfulfillable_orders": unfulfillable_orders,
-            "total_missing_parts": sum(len(o["missing_items"]) for o in unfulfillable_orders),
-            "total_unfulfillable_orders": len(unfulfillable_orders),
-        }
-
     # Get total available stock per part in Oraseas warehouses
-    stock_query = db.query(
-        models.Inventory.part_id,
-        func.sum(models.Inventory.current_stock).label("total_stock")
-    ).filter(
-        models.Inventory.warehouse_id.in_(oraseas_warehouse_ids)
-    ).group_by(models.Inventory.part_id).all()
+    stock_by_part = {}
+    if oraseas_warehouse_ids:
+        stock_query = db.query(
+            models.Inventory.part_id,
+            func.sum(models.Inventory.current_stock).label("total_stock")
+        ).filter(
+            models.Inventory.warehouse_id.in_(oraseas_warehouse_ids)
+        ).group_by(models.Inventory.part_id).all()
+        stock_by_part = {str(row.part_id): float(row.total_stock) for row in stock_query}
 
-    # Build a dict: part_id -> total available stock
-    stock_by_part = {str(row.part_id): float(row.total_stock) for row in stock_query}
-
-    # For each order, check which items cannot be fulfilled
-    unfulfillable_orders = []
-    all_missing_part_ids = set()
-
+    # --- Build aggregated demand per part across ALL active orders ---
+    # part_id -> { total_demand, part_name, part_number, orders: [{order_id, customer, order_date, qty}] }
+    demand_by_part = {}
     for order in active_orders:
-        missing_items = []
         for item in order.items:
             part_id_str = str(item.part_id)
-            available = stock_by_part.get(part_id_str, 0.0)
-            ordered = float(item.quantity)
-
-            if available < ordered:
-                missing_items.append({
+            if part_id_str not in demand_by_part:
+                demand_by_part[part_id_str] = {
                     "part_id": part_id_str,
                     "part_name": item.part.name if item.part else "Unknown",
                     "part_number": item.part.part_number if item.part else "Unknown",
-                    "quantity_ordered": ordered,
-                    "quantity_available": available,
-                    "quantity_missing": round(ordered - available, 3),
-                })
-                all_missing_part_ids.add(part_id_str)
-
-        if missing_items:
-            unfulfillable_orders.append({
+                    "total_demand": 0.0,
+                    "orders": [],
+                }
+            demand_by_part[part_id_str]["total_demand"] += float(item.quantity)
+            demand_by_part[part_id_str]["orders"].append({
                 "order_id": str(order.id),
                 "customer_organization_name": order.customer_organization.name if order.customer_organization else "Unknown",
-                "customer_organization_id": str(order.customer_organization_id),
+                "order_date": order.order_date.isoformat() if order.order_date else None,
+                "quantity_in_order": float(item.quantity),
+            })
+
+    # --- DASHBOARD VIEW: parts where total demand > stock ---
+    parts_short = []
+    for part_id_str, info in demand_by_part.items():
+        stock = stock_by_part.get(part_id_str, 0.0)
+        if info["total_demand"] > stock:
+            parts_short.append({
+                "part_id": info["part_id"],
+                "part_name": info["part_name"],
+                "part_number": info["part_number"],
+                "quantity_in_stock": round(stock, 3),
+                "total_quantity_ordered": round(info["total_demand"], 3),
+                "orders": info["orders"],
+            })
+
+    # --- ORDERS VIEW: per order, items where THIS order's qty > stock ---
+    orders_with_issues = []
+    for order in active_orders:
+        order_missing = []
+        for item in order.items:
+            part_id_str = str(item.part_id)
+            stock = stock_by_part.get(part_id_str, 0.0)
+            qty_this_order = float(item.quantity)
+
+            if qty_this_order > stock:
+                total_demand = demand_by_part[part_id_str]["total_demand"]
+                order_missing.append({
+                    "part_id": part_id_str,
+                    "part_name": item.part.name if item.part else "Unknown",
+                    "part_number": item.part.part_number if item.part else "Unknown",
+                    "quantity_in_stock": round(stock, 3),
+                    "quantity_in_this_order": round(qty_this_order, 3),
+                    "total_quantity_all_active_orders": round(total_demand, 3),
+                })
+
+        if order_missing:
+            orders_with_issues.append({
+                "order_id": str(order.id),
+                "customer_organization_name": order.customer_organization.name if order.customer_organization else "Unknown",
                 "order_date": order.order_date.isoformat() if order.order_date else None,
                 "status": order.status,
-                "missing_items": missing_items,
+                "items_short": order_missing,
             })
 
     return {
-        "unfulfillable_orders": unfulfillable_orders,
-        "total_missing_parts": len(all_missing_part_ids),
-        "total_unfulfillable_orders": len(unfulfillable_orders),
+        "parts_short": parts_short,
+        "orders": orders_with_issues,
     }
 
 
