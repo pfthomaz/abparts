@@ -219,16 +219,22 @@ def check_stock_availability(
     ).first()
 
     if not permission_checker.is_super_admin(current_user):
-        if not user_org or user_org.name not in ['Oraseas EE', 'BossServ LLC', 'BossServ Ltd']:
+        if not user_org or user_org.organization_type != models.OrganizationType.oraseas_ee:
             raise HTTPException(
                 status_code=403,
                 detail="Stock availability check is only available to Oraseas EE users"
             )
 
-    # Find the Oraseas organization
-    oraseas_org = db.query(models.Organization).filter(
-        models.Organization.name.in_(['Oraseas EE', 'BossServ LLC', 'BossServ Ltd'])
-    ).first()
+    # Find the Oraseas organization by type
+    oraseas_org = None
+    if not permission_checker.is_super_admin(current_user):
+        # Non-super-admin Oraseas user: their own org is the Oraseas org
+        oraseas_org = user_org
+    else:
+        # Super admin: find any oraseas_ee org
+        oraseas_org = db.query(models.Organization).filter(
+            models.Organization.organization_type == models.OrganizationType.oraseas_ee
+        ).first()
 
     if not oraseas_org:
         return {"parts_short": [], "orders": []}
@@ -254,15 +260,25 @@ def check_stock_availability(
     ]
 
     # Get total available stock per part in Oraseas warehouses
+    # Uses the same calculated stock as the warehouse inventory page (transactions + adjustments)
     stock_by_part = {}
     if oraseas_warehouse_ids:
-        stock_query = db.query(
+        from ..crud.inventory_calculator import calculate_current_stock
+
+        # Get all inventory records (part_ids) across Oraseas warehouses
+        inventory_records = db.query(
             models.Inventory.part_id,
-            func.sum(models.Inventory.current_stock).label("total_stock")
+            models.Inventory.warehouse_id
         ).filter(
             models.Inventory.warehouse_id.in_(oraseas_warehouse_ids)
-        ).group_by(models.Inventory.part_id).all()
-        stock_by_part = {str(row.part_id): float(row.total_stock) for row in stock_query}
+        ).all()
+
+        # Calculate actual stock for each part across all Oraseas warehouses
+        for record in inventory_records:
+            part_id_str = str(record.part_id)
+            calculated = float(calculate_current_stock(db, record.warehouse_id, record.part_id))
+            if calculated > 0:
+                stock_by_part[part_id_str] = stock_by_part.get(part_id_str, 0.0) + calculated
 
     # --- Build aggregated demand per part across ALL active orders ---
     # part_id -> { total_demand, part_name, part_number, orders: [{order_id, customer, order_date, qty}] }
