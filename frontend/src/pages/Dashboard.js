@@ -419,9 +419,9 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
-          {/* Good afternoon greeting card with rounded corners */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-4">
-            <div className="flex items-center space-x-4">
+          {/* Combined greeting + role card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+            <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-gray-900 mb-2">
                   {t(`dashboard.${new Date().getHours() < 12 ? 'goodMorning' : new Date().getHours() < 18 ? 'goodAfternoon' : 'goodEvening'}`)}!
@@ -436,36 +436,30 @@ const Dashboard = () => {
                   </p>
                 )}
               </div>
-
-
-            </div>
-          </div>
-
-          {/* Global Access card with full width matching the page */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/30">
-            <div className="text-right space-y-2">
-              <div className="flex items-center justify-end space-x-2">
-                <span className="text-sm font-semibold text-gray-900">
-                  {user.role === 'super_admin' ? t('dashboard.superAdministrator') :
-                    user.role === 'admin' ? t('dashboard.administrator') : t('dashboard.user')}
-                </span>
-                {isSuperAdmin(user) && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
-                    {t('dashboard.globalAccess')}
+              <div className="text-right space-y-1">
+                <div className="flex items-center justify-end space-x-2">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {user.role === 'super_admin' ? t('dashboard.superAdministrator') :
+                      user.role === 'admin' ? t('dashboard.administrator') : t('dashboard.user')}
                   </span>
+                  {isSuperAdmin(user) && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
+                      {t('dashboard.globalAccess')}
+                    </span>
+                  )}
+                </div>
+                {!isSuperAdmin(user) && user.organization && (
+                  <p className="text-sm text-gray-600 font-medium">{user.organization.name}</p>
                 )}
+                <p className="text-xs text-gray-500">
+                  {t('common.scope')}: {isSuperAdmin(user) ? t('dashboard.scopeAllOrganizations') : t('dashboard.scopeOrganizationOnly')}
+                </p>
+                {/* Organization Selector for Superadmin */}
+                <OrganizationSelector
+                  selectedOrganization={selectedOrganization}
+                  onOrganizationChange={setSelectedOrganization}
+                />
               </div>
-              {!isSuperAdmin(user) && user.organization && (
-                <p className="text-sm text-gray-600 font-medium">{user.organization.name}</p>
-              )}
-              <p className="text-xs text-gray-500">
-                {t('common.scope')}: {isSuperAdmin(user) ? t('dashboard.scopeAllOrganizations') : t('dashboard.scopeOrganizationOnly')}
-              </p>
-              {/* Organization Selector for Superadmin */}
-              <OrganizationSelector
-                selectedOrganization={selectedOrganization}
-                onOrganizationChange={setSelectedOrganization}
-              />
             </div>
           </div>
         </div>
