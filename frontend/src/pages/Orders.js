@@ -640,11 +640,11 @@ const Orders = () => {
             <div className="flex flex-col space-y-4 mb-12">
               {filteredCustomerOrders.map((order) => (
                 <div key={order.id} className={`bg-white p-4 rounded-lg shadow-md border transition-shadow duration-200 hover:shadow-lg ${unfulfillableOrderMap[order.id] ? 'border-orange-300' : 'border-gray-200'}`}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-semibold text-indigo-700">{t('orders.orderFor')} {order.customer_organization_name || 'Unknown'}</h3>
-                        <div className="flex items-center space-x-2">
+                        <h3 className="text-lg sm:text-xl font-semibold text-indigo-700 truncate">{t('orders.orderFor')} {order.customer_organization_name || 'Unknown'}</h3>
+                        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                           {/* Stock warning indicator */}
                           {unfulfillableOrderMap[order.id] && (
                             <button
@@ -676,7 +676,7 @@ const Orders = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm text-gray-600">
                         <p><span className="font-medium">{t('orders.orderDate')}:</span> {new Date(order.order_date).toLocaleDateString()}</p>
                         {order.expected_delivery_date && (
                           <p><span className="font-medium">{t('orders.expected')}:</span> {new Date(order.expected_delivery_date).toLocaleDateString()}</p>
@@ -695,7 +695,7 @@ const Orders = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex space-x-2 ml-4">
+                    <div className="flex flex-wrap gap-2 mt-3 sm:mt-0 sm:ml-4 sm:flex-nowrap">
                       {canShipOrder(order) && (
                         <button
                           onClick={() => handleShipOrder(order)}
