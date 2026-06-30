@@ -60,12 +60,14 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
         description: editCase.description || '',
         machine_model: editCase.machine_model || '',
         symptoms: editCase.symptoms || '',
+        root_cause: editCase.root_cause || '',
+        resolution: editCase.resolution || '',
         priority: editCase.priority || 'medium',
         tags: (editCase.tags || []).join(', '),
         assigned_to: editCase.assigned_to || '',
       });
     } else {
-      setFormData({ title: '', description: '', machine_model: '', symptoms: '', priority: 'medium', tags: '', assigned_to: '' });
+      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', tags: '', assigned_to: '' });
     }
   }, [editCase, isOpen]);
 
@@ -77,6 +79,8 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
     };
     if (!payload.machine_model) delete payload.machine_model;
     if (!payload.assigned_to) delete payload.assigned_to;
+    if (!payload.root_cause) delete payload.root_cause;
+    if (!payload.resolution) delete payload.resolution;
     onSave(payload);
   };
 
@@ -124,6 +128,20 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
               onChange={e => setFormData(f => ({ ...f, symptoms: e.target.value }))}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               placeholder="What symptoms were observed?" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Diagnostics / Possible Causes</label>
+            <textarea rows={3} value={formData.root_cause}
+              onChange={e => setFormData(f => ({ ...f, root_cause: e.target.value }))}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              placeholder="What could be causing this? Diagnostic steps taken, possible root causes..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Resolution</label>
+            <textarea rows={3} value={formData.resolution}
+              onChange={e => setFormData(f => ({ ...f, resolution: e.target.value }))}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              placeholder="How was the problem resolved? Steps taken to fix it..." />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
