@@ -264,7 +264,7 @@ class LLMClient:
                     search_results = await knowledge_service.search_documents(
                         query=query,
                         language=language,
-                        limit=5  # Get top 5 results per query
+                        limit=8  # Get top 8 results per query for broader coverage
                     )
                     all_results.extend(search_results)
                 
@@ -278,9 +278,11 @@ class LLMClient:
                         seen_docs.add(chunk_key)
                         unique_results.append(result)
                 
-                # Sort by relevance and take top 8 for better coverage
+                # Sort by relevance and take top 12 for maximum coverage
                 unique_results.sort(key=lambda x: x['relevance_score'], reverse=True)
-                final_results = unique_results[:8]
+                # Filter out low-relevance results (below 0.3 threshold)
+                unique_results = [r for r in unique_results if r['relevance_score'] > 0.3]
+                final_results = unique_results[:12]
                 
                 # Build context from search results with better formatting
                 if final_results:
@@ -288,19 +290,24 @@ class LLMClient:
                     for i, result in enumerate(final_results):
                         doc = result['document']
                         content = result['matched_content']
-                        # Include more content for better context
-                        if len(content) > 1500:
-                            content = content[:1500] + "..."
+                        # Include full chunk content (chunks are now 500 chars, so no need to truncate aggressively)
+                        if len(content) > 800:
+                            content = content[:800] + "..."
                         
                         # Add machine model info if available
                         model_info = ""
                         if doc.get('machine_models'):
                             model_info = f" (AutoBoss {', '.join(doc['machine_models'])})"
                         
-                        context_parts.append(f"=== MANUAL SECTION {i+1} ===\nFrom: {doc['title']}{model_info}\nRelevance: {result['relevance_score']:.3f}\nContent: {content}")
+                        # Add source type for resolved cases
+                        source_type = ""
+                        if doc.get('document_type') == 'support_case':
+                            source_type = " [VERIFIED FIELD EXPERIENCE]"
+                        
+                        context_parts.append(f"=== KNOWLEDGE ENTRY {i+1}{source_type} ===\nFrom: {doc['title']}{model_info}\nRelevance: {result['relevance_score']:.3f}\nContent: {content}")
                     
                     knowledge_context = "\n\n".join(context_parts)
-                    logger.info(f"Found {len(final_results)} relevant knowledge base entries")
+                    logger.info(f"Found {len(final_results)} relevant knowledge base entries (filtered from {len(unique_results)} unique)")
                     logger.debug(f"Knowledge context length: {len(knowledge_context)} characters")
                     logger.debug(f"Search queries used: {search_queries}")
                 

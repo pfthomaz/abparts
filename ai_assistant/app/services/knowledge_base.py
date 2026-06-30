@@ -37,8 +37,8 @@ class KnowledgeBaseService:
         """
         self.llm_client = llm_client
         self.vector_db = vector_db
-        self.chunk_size = 1000  # Characters per chunk
-        self.chunk_overlap = 200  # Overlap between chunks
+        self.chunk_size = 500  # Smaller chunks for more precise retrieval
+        self.chunk_overlap = 250  # Higher overlap to preserve context across boundaries
     
     async def create_document(self, title: str, content: str, document_type: str,
                             machine_models: List[str], tags: List[str], 
@@ -412,6 +412,7 @@ class KnowledgeBaseService:
     def _chunk_text(self, text: str) -> List[str]:
         """
         Split text into overlapping chunks for embedding.
+        Uses sentence-aware splitting to avoid breaking mid-thought.
         
         Args:
             text: Text to chunk
@@ -430,13 +431,18 @@ class KnowledgeBaseService:
             
             # Try to break at sentence boundary
             if end < len(text):
-                # Look for sentence endings within the last 100 characters
-                sentence_end = text.rfind('.', end - 100, end)
-                if sentence_end > start:
-                    end = sentence_end + 1
+                # Look for sentence endings (. ! ? or newline) within the last 150 chars
+                best_break = -1
+                for sep in ['. ', '.\n', '! ', '?\n', '? ', '!\n', '\n\n', '\n']:
+                    pos = text.rfind(sep, start + (self.chunk_size // 2), end)
+                    if pos > best_break:
+                        best_break = pos + len(sep)
+                
+                if best_break > start:
+                    end = best_break
             
             chunk = text[start:end].strip()
-            if chunk:
+            if chunk and len(chunk) > 50:  # Skip tiny fragments
                 chunks.append(chunk)
             
             # Move start position with overlap
