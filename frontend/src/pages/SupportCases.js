@@ -63,11 +63,12 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
         root_cause: editCase.root_cause || '',
         resolution: editCase.resolution || '',
         priority: editCase.priority || 'medium',
+        customer: editCase.organization_id || '',
         tags: (editCase.tags || []).join(', '),
         assigned_to: editCase.assigned_to || '',
       });
     } else {
-      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', tags: '', assigned_to: '' });
+      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', customer: '', tags: '', assigned_to: '' });
     }
   }, [editCase, isOpen]);
 
@@ -75,12 +76,15 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
     e.preventDefault();
     const payload = {
       ...formData,
+      organization_id: formData.customer || undefined,
       tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
     };
+    delete payload.customer;
     if (!payload.machine_model) delete payload.machine_model;
     if (!payload.assigned_to) delete payload.assigned_to;
     if (!payload.root_cause) delete payload.root_cause;
     if (!payload.resolution) delete payload.resolution;
+    if (!payload.organization_id) delete payload.organization_id;
     onSave(payload);
   };
 
@@ -102,6 +106,13 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
             <textarea required rows={3} value={formData.description}
               onChange={e => setFormData(f => ({ ...f, description: e.target.value }))}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Customer / Company</label>
+            <input type="text" value={formData.customer}
+              onChange={e => setFormData(f => ({ ...f, customer: e.target.value }))}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              placeholder="Which company reported this issue?" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
