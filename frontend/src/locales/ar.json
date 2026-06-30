@@ -104,7 +104,11 @@
     "netCleaningRecords": "سجلات تنظيف الشباك",
     "netCleaningRecordsDescription": "تتبع عمليات تنظيف الشباك",
     "syncStatus": "حالة المزامنة",
-    "syncStatusDescription": "عرض حالة مزامنة البيانات غير المتصلة"
+    "syncStatusDescription": "عرض حالة مزامنة البيانات غير المتصلة",
+    "supportCases": "حالات الدعم",
+    "supportCasesDescription": "تسجيل وتتبع مشاكل العملاء",
+    "knowledgeBase": "قاعدة المعرفة",
+    "knowledgeBaseDescription": "إدارة مستندات معرفة المساعد الذكي"
   },
   "auth": {
     "login": "تسجيل الدخول",

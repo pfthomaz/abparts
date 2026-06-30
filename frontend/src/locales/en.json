@@ -105,7 +105,11 @@
     "netCleaningRecords": "Net Cleaning Records",
     "netCleaningRecordsDescription": "Track net cleaning operations",
     "syncStatus": "Sync Status",
-    "syncStatusDescription": "View offline data synchronization status"
+    "syncStatusDescription": "View offline data synchronization status",
+    "supportCases": "Support Cases",
+    "supportCasesDescription": "Record and track customer issues for AI knowledge building",
+    "knowledgeBase": "Knowledge Base",
+    "knowledgeBaseDescription": "Manage AI assistant knowledge documents"
   },
   "auth": {
     "login": "Login",

@@ -104,7 +104,11 @@
     "netCleaningRecords": "Αρχεία Καθαρισμού Διχτυών",
     "netCleaningRecordsDescription": "Παρακολούθηση λειτουργιών καθαρισμού διχτυών",
     "syncStatus": "Κατάσταση Συγχρονισμού",
-    "syncStatusDescription": "Προβολή κατάστασης συγχρονισμού δεδομένων εκτός σύνδεσης"
+    "syncStatusDescription": "Προβολή κατάστασης συγχρονισμού δεδομένων εκτός σύνδεσης",
+    "supportCases": "Υποθέσεις Υποστήριξης",
+    "supportCasesDescription": "Καταγραφή και παρακολούθηση ζητημάτων πελατών",
+    "knowledgeBase": "Βάση Γνώσεων",
+    "knowledgeBaseDescription": "Διαχείριση εγγράφων γνώσεων AI βοηθού"
   },
   "auth": {
     "login": "Σύνδεση",

@@ -504,6 +504,22 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Knowledge Base - super admin only (manage AI knowledge documents)
+  if (isSuperAdmin(user)) {
+    items.push({
+      name: 'knowledgeBase',
+      path: '/knowledge-base',
+      label: 'Knowledge Base',
+      icon: 'knowledge',
+      permission: null,
+      description: 'Manage AI assistant knowledge documents',
+      adminOnly: true,
+      superAdminOnly: true,
+      category: 'administration',
+      accessScope: 'global'
+    });
+  }
+
   // Configuration - admin and above
   if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN) {
     items.push({
