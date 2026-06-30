@@ -32,6 +32,7 @@ import Warehouses from './pages/Warehouses'; // New: Import Warehouses page
 import Transactions from './pages/Transactions'; // New: Import Transactions page
 import OrganizationManagement from './pages/OrganizationManagement'; // New: Import OrganizationManagement page
 import Configuration from './pages/Configuration'; // New: Import Configuration page
+import SupportCases from './pages/SupportCases'; // New: Import Support Cases page
 import StockAdjustments from './pages/StockAdjustments'; // New: Import StockAdjustments page
 import MaintenanceProtocols from './pages/MaintenanceProtocols'; // New: Import MaintenanceProtocols page
 import MaintenanceExecutions from './pages/MaintenanceExecutions'; // New: Import MaintenanceExecutions page
@@ -569,6 +570,22 @@ function App() {
                     feature="Administrative Configuration"
                   >
                     <Configuration />
+                  </ProtectedRoute>
+                </PermissionErrorBoundary>
+              }
+            />
+            <Route
+              path="support-cases"
+              element={
+                <PermissionErrorBoundary
+                  feature="Support Cases"
+                  requiredRole="admin"
+                >
+                  <ProtectedRoute
+                    requiredRole="admin"
+                    feature="Support Cases"
+                  >
+                    <SupportCases />
                   </ProtectedRoute>
                 </PermissionErrorBoundary>
               }

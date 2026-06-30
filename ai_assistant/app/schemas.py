@@ -39,6 +39,7 @@ class DocumentTypeEnum(str, Enum):
     faq = "faq"
     expert_input = "expert_input"
     troubleshooting_guide = "troubleshooting_guide"
+    support_case = "support_case"
 
 
 class EscalationReasonEnum(str, Enum):

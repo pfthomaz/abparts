@@ -489,6 +489,21 @@ export const getNavigationItems = (user) => {
     });
   }
 
+  // Support Cases - admin and above (for recording customer issues)
+  if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN) {
+    items.push({
+      name: 'supportCases',
+      path: '/support-cases',
+      label: 'Support Cases',
+      icon: 'support',
+      permission: null,
+      description: 'Record and track customer issues for AI knowledge building',
+      adminOnly: true,
+      category: 'administration',
+      accessScope: user.role === USER_ROLES.SUPER_ADMIN ? 'global' : 'organization'
+    });
+  }
+
   // Configuration - admin and above
   if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN) {
     items.push({

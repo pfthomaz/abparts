@@ -18,7 +18,7 @@ from .config import settings
 from .llm_client import LLMClient
 from .session_manager import session_manager
 from .database import init_database, close_database
-from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines, escalation, analytics, privacy, audit_compliance
+from .routers import health, chat, sessions, knowledge_base, troubleshooting, machines, escalation, analytics, privacy, audit_compliance, support_cases
 from .logging_config import setup_logging, get_logger
 
 # Configure logging
@@ -93,6 +93,7 @@ app.include_router(analytics.router, prefix="/api/ai", tags=["analytics"])
 app.include_router(privacy.router, prefix="/api/ai/privacy", tags=["privacy"])
 app.include_router(audit_compliance.router, prefix="/api/ai/audit-compliance", tags=["audit-compliance"])
 app.include_router(machines.router, tags=["machines"])
+app.include_router(support_cases.router, prefix="/api/ai", tags=["support-cases"])
 
 # Mount static files
 import os

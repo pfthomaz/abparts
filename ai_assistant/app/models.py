@@ -45,6 +45,24 @@ class DocumentType(enum.Enum):
     faq = "faq"
     expert_input = "expert_input"
     troubleshooting_guide = "troubleshooting_guide"
+    support_case = "support_case"
+
+
+class SupportCaseStatus(enum.Enum):
+    """Status of a support case."""
+    open = "open"
+    investigating = "investigating"
+    waiting_on_customer = "waiting_on_customer"
+    resolved = "resolved"
+    closed = "closed"
+
+
+class SupportCasePriority(enum.Enum):
+    """Priority of a support case."""
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
 
 
 # SQLAlchemy database models
@@ -208,6 +226,55 @@ class ExpertFeedback(Base):
     # Relationships
     session = relationship("AISession")
     message = relationship("AIMessage")
+
+
+# Support Case model for recording customer issues
+class SupportCase(Base):
+    """Support case for recording customer issues and their resolutions."""
+    __tablename__ = "support_cases"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_number = Column(String, nullable=False, unique=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    machine_model = Column(String, nullable=True)  # AutoBoss version (V4.0, V3.1B, etc.)
+    machine_id = Column(String, nullable=True)  # Link to specific machine if known
+    symptoms = Column(Text, nullable=True)  # Observed symptoms
+    root_cause = Column(Text, nullable=True)  # Identified root cause
+    resolution = Column(Text, nullable=True)  # How it was resolved
+    status = Column(String, nullable=False, default="open")  # open, investigating, waiting_on_customer, resolved, closed
+    priority = Column(String, nullable=False, default="medium")  # low, medium, high, critical
+    organization_id = Column(String, nullable=True)  # Customer organization
+    created_by = Column(String, nullable=False)  # User who created the case
+    assigned_to = Column(String, nullable=True)  # Expert assigned to investigate
+    tags = Column(JSON, nullable=True)  # Tags for categorization
+    related_parts = Column(JSON, nullable=True)  # Part IDs involved
+    attachments = Column(JSON, nullable=True)  # File references
+    internal_notes = Column(Text, nullable=True)  # Internal-only notes
+    knowledge_doc_id = Column(String, nullable=True)  # Link to generated knowledge doc
+    session_id = Column(String, ForeignKey("ai_sessions.id"), nullable=True)  # Link to AI session if created from one
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    session = relationship("AISession", foreign_keys=[session_id])
+
+
+class SupportCaseComment(Base):
+    """Comment/update on a support case."""
+    __tablename__ = "support_case_comments"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_id = Column(String, ForeignKey("support_cases.id"), nullable=False)
+    author_id = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    is_internal = Column(Boolean, nullable=False, default=False)  # Internal notes vs customer-visible
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    # Relationships
+    case = relationship("SupportCase", backref="comments")
 
 
 # Pydantic models for API requests/responses (keeping for compatibility)
