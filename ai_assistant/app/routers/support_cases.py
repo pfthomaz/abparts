@@ -572,7 +572,8 @@ async def _publish_case_to_knowledge_base(case_row) -> Optional[str]:
         machine_models = ["ALL"]
 
     # Build tags from case tags + additional context
-    tags = list(case_row.tags) if case_row.tags else []    tags.extend(["support_case", "resolved_issue", "troubleshooting"])
+    tags = list(case_row.tags) if case_row.tags else []
+    tags.extend(["support_case", "resolved_issue", "troubleshooting"])
 
     # Create the knowledge base document
     llm_client = LLMClient()
