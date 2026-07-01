@@ -226,9 +226,11 @@ def get_inventory_aggregation_by_organization(db: Session, organization_id: uuid
                 total_stock += stock
                 warehouse_count += 1
         
-        # Get minimum stock recommendation (sum from inventory records)
-        min_stock_sum = db.query(
-            func.sum(models.Inventory.minimum_stock_recommendation)
+        # Get maximum minimum stock recommendation across warehouses
+        # Using MAX rather than SUM: we want the highest single-warehouse requirement,
+        # not the sum of all warehouses (which inflates the number by warehouse count)
+        min_stock_max = db.query(
+            func.max(models.Inventory.minimum_stock_recommendation)
         ).join(
             models.Warehouse
         ).filter(
@@ -243,8 +245,8 @@ def get_inventory_aggregation_by_organization(db: Session, organization_id: uuid
             'unit_of_measure': part.unit_of_measure,
             'total_stock': float(total_stock),
             'warehouse_count': warehouse_count,
-            'total_minimum_stock': float(min_stock_sum),
-            'is_low_stock': total_stock <= min_stock_sum
+            'total_minimum_stock': float(min_stock_max),
+            'is_low_stock': total_stock <= min_stock_max
         })
     
     return results
