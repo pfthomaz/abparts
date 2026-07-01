@@ -145,7 +145,7 @@ const getWarehouseStockAdjustments = (warehouseId, filters = {}) => {
  * @param {object} inventoryData The data for the new item.
  */
 const createInventoryItem = (inventoryData) => {
-  return api.post('/inventory', inventoryData);
+  return api.post('/inventory/', inventoryData);
 };
 
 /**
