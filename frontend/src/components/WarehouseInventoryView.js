@@ -193,17 +193,24 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
     try {
       // Virtual row — need to create the inventory record first
       if (String(itemId).startsWith('virtual_')) {
+        // Don't create a record just to set minimum to 0 — that's the default
+        if (newValue === 0) {
+          setEditingMinStock(null);
+          return;
+        }
         const partId = String(itemId).replace('virtual_', '');
         const part = getPartDetails(partId);
+        // unit_of_measure is required — use the part's field or a safe default
+        const uom = part.unit_of_measure || part.uom || part.unit || 'pcs';
         await inventoryService.createInventoryItem({
           warehouse_id: warehouseId,
           part_id: partId,
           current_stock: 0,
           minimum_stock_recommendation: newValue,
-          unit_of_measure: part.unit_of_measure || 'pcs',
+          unit_of_measure: uom,
           reorder_threshold_set_by: 'user',
         });
-        // Refresh to get the real DB row
+        // Refresh to replace the virtual row with the real DB row
         await fetchWarehouseInventory();
       } else {
         await inventoryService.updateInventoryItem(itemId, {
@@ -214,7 +221,8 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
         ));
       }
     } catch (err) {
-      console.error('Failed to update min stock:', err);
+      console.error('Failed to save min stock:', err);
+      alert(`Failed to save minimum stock: ${err.message || err}`);
     }
     setEditingMinStock(null);
   };
