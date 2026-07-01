@@ -36,6 +36,23 @@ def _generate_case_number() -> str:
     return f"SC-{date_part}-{random_part}"
 
 
+def _parse_jsonb_list(value) -> list:
+    """Safely parse a JSONB value that should be a list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        return []  # empty JSONB object stored instead of array
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except Exception:
+            return []
+    return []
+
+
 def _row_to_case_response(row, comments=None) -> SupportCaseResponse:
     """Convert a database row to a SupportCaseResponse."""
     return SupportCaseResponse(
@@ -53,8 +70,8 @@ def _row_to_case_response(row, comments=None) -> SupportCaseResponse:
         organization_id=row.organization_id,
         created_by=row.created_by,
         assigned_to=row.assigned_to,
-        tags=row.tags,
-        related_parts=row.related_parts,
+        tags=_parse_jsonb_list(row.tags),
+        related_parts=_parse_jsonb_list(row.related_parts),
         internal_notes=row.internal_notes,
         knowledge_doc_id=row.knowledge_doc_id,
         session_id=row.session_id,
@@ -97,8 +114,8 @@ async def create_support_case(request: CreateSupportCaseRequest):
                 'organization_id': request.organization_id,
                 'created_by': request.assigned_to or 'system',  # Will be overridden by auth
                 'assigned_to': request.assigned_to,
-                'tags': json.dumps(request.tags) if request.tags else None,
-                'related_parts': json.dumps(request.related_parts) if request.related_parts else None,
+                'tags': json.dumps(request.tags if request.tags else []),
+                'related_parts': json.dumps(request.related_parts if request.related_parts else []),
                 'session_id': request.session_id,
             })
 
