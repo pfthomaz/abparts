@@ -8,6 +8,7 @@ from sqlalchemy import text
 from datetime import datetime
 import logging
 import uuid
+import json
 
 from ..database import get_db_session
 from ..schemas_support_cases import (
@@ -96,8 +97,8 @@ async def create_support_case(request: CreateSupportCaseRequest):
                 'organization_id': request.organization_id,
                 'created_by': request.assigned_to or 'system',  # Will be overridden by auth
                 'assigned_to': request.assigned_to,
-                'tags': request.tags if request.tags else None,
-                'related_parts': request.related_parts if request.related_parts else None,
+                'tags': json.dumps(request.tags) if request.tags else None,
+                'related_parts': json.dumps(request.related_parts) if request.related_parts else None,
                 'session_id': request.session_id,
             })
 
@@ -338,10 +339,10 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
             params['assigned_to'] = request.assigned_to
         if request.tags is not None:
             set_clauses.append("tags = :tags")
-            params['tags'] = request.tags
+            params['tags'] = json.dumps(request.tags)
         if request.related_parts is not None:
             set_clauses.append("related_parts = :related_parts")
-            params['related_parts'] = request.related_parts
+            params['related_parts'] = json.dumps(request.related_parts)
         if request.internal_notes is not None:
             set_clauses.append("internal_notes = :internal_notes")
             params['internal_notes'] = request.internal_notes
@@ -554,8 +555,7 @@ async def _publish_case_to_knowledge_base(case_row) -> Optional[str]:
         machine_models = ["ALL"]
 
     # Build tags from case tags + additional context
-    tags = list(case_row.tags) if case_row.tags else []
-    tags.extend(["support_case", "resolved_issue", "troubleshooting"])
+    tags = list(case_row.tags) if case_row.tags else []    tags.extend(["support_case", "resolved_issue", "troubleshooting"])
 
     # Create the knowledge base document
     llm_client = LLMClient()

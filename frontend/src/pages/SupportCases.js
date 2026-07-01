@@ -50,8 +50,21 @@ const PriorityBadge = ({ priority }) => {
 const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
   const [formData, setFormData] = useState({
     title: '', description: '', machine_model: '', symptoms: '',
-    priority: 'medium', tags: '', assigned_to: '',
+    priority: 'medium', tags: '', assigned_to: '', customer: '',
   });
+  const [organizations, setOrganizations] = useState([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const apiBase = process.env.REACT_APP_API_BASE_URL ||
+      (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
+    fetch(`${apiBase}/organizations/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setOrganizations(Array.isArray(data) ? data : []))
+      .catch(() => setOrganizations([]));
+  }, []);
 
   useEffect(() => {
     if (editCase) {
@@ -109,10 +122,14 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Customer / Company</label>
-            <input type="text" value={formData.customer}
+            <select value={formData.customer}
               onChange={e => setFormData(f => ({ ...f, customer: e.target.value }))}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-              placeholder="Which company reported this issue?" />
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+              <option value="">-- Select customer --</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.name}>{org.name}</option>
+              ))}
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -606,6 +623,7 @@ const SupportCases = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
@@ -620,6 +638,7 @@ const SupportCases = () => {
                   <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
                   <td className="px-4 py-3"><PriorityBadge priority={c.priority} /></td>
                   <td className="px-4 py-3 text-sm text-gray-600">{c.machine_model || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{c.organization_id || '-'}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <button onClick={(e) => { e.stopPropagation(); setEditCase(c); }}
