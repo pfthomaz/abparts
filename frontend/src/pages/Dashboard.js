@@ -9,6 +9,7 @@ import { isSuperAdmin, hasPermission, PERMISSIONS, getContextualPermissions } fr
 import PermissionGuard from '../components/PermissionGuard';
 import OrganizationSelector from '../components/OrganizationSelector';
 import Modal from '../components/Modal';
+import ReorderListModal from '../components/ReorderListModal';
 import { useTranslation } from '../hooks/useTranslation';
 import {
   BarChart,
@@ -306,6 +307,8 @@ const Dashboard = () => {
   const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [stockAvailability, setStockAvailability] = useState(null);
   const [showStockWarningModal, setShowStockWarningModal] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [reorderFilter, setReorderFilter] = useState('all');
   const fetchMetrics = async () => {
     try {
       setLoading(true);
@@ -916,28 +919,34 @@ const Dashboard = () => {
                   )}
 
                   {metrics.out_of_stock_items > 0 && (
-                    <div className="bg-white rounded-lg p-4 border border-red-200">
+                    <div
+                      className="bg-white rounded-lg p-4 border border-red-200 cursor-pointer hover:shadow-md hover:border-red-400 transition-all"
+                      onClick={() => { setReorderFilter('critical'); setShowReorderModal(true); }}
+                    >
                       <div className="flex items-center space-x-2 mb-2">
                         <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                         <span className="font-semibold text-red-700">{t('dashboard.criticalStockAlert')}</span>
                       </div>
                       <p className="text-sm text-gray-600">{t('dashboard.partsOutOfStock', { count: metrics.out_of_stock_items })}</p>
-                      <Link to="/inventory" className="text-sm text-red-600 hover:text-red-800 font-medium mt-2 inline-block">
+                      <span className="text-sm text-red-600 hover:text-red-800 font-medium mt-2 inline-block">
                         {t('dashboard.viewDetails')} →
-                      </Link>
+                      </span>
                     </div>
                   )}
 
                   {metrics.low_stock_items > 0 && (
-                    <div className="bg-white rounded-lg p-4 border border-yellow-200">
+                    <div
+                      className="bg-white rounded-lg p-4 border border-yellow-200 cursor-pointer hover:shadow-md hover:border-yellow-400 transition-all"
+                      onClick={() => { setReorderFilter('low'); setShowReorderModal(true); }}
+                    >
                       <div className="flex items-center space-x-2 mb-2">
                         <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                         <span className="font-semibold text-yellow-700">{t('dashboard.lowStockWarning')}</span>
                       </div>
                       <p className="text-sm text-gray-600">{t('dashboard.partsRunningLow', { count: metrics.low_stock_items })}</p>
-                      <Link to="/inventory" className="text-sm text-yellow-600 hover:text-yellow-800 font-medium mt-2 inline-block">
+                      <span className="text-sm text-yellow-600 hover:text-yellow-800 font-medium mt-2 inline-block">
                         {t('dashboard.reorderNow')} →
-                      </Link>
+                      </span>
                     </div>
                   )}
 
@@ -1065,9 +1074,15 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* Reorder List Modal */}
+      <ReorderListModal
+        isOpen={showReorderModal}
+        onClose={() => setShowReorderModal(false)}
+        initialFilter={reorderFilter}
+      />
+
       {/* Stock Availability Warning Modal */}
-      <Modal
-        isOpen={showStockWarningModal}
+      <Modal        isOpen={showStockWarningModal}
         onClose={() => setShowStockWarningModal(false)}
         title={t('dashboard.unfulfillableOrdersTitle', { fallback: 'Orders With Insufficient Stock' })}
         size="xl"
