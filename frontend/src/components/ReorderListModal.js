@@ -126,32 +126,66 @@ const ReorderListModal = ({ isOpen, onClose, initialFilter = 'all' }) => {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState(initialFilter);
   const [exporting, setExporting] = useState(null); // 'pdf' | 'excel' | null
+  const [warehouses, setWarehouses] = useState([]);
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
 
   const orgId = user?.organization_id || user?.organization?.id;
 
+  // Load warehouses for this organization on open
+  useEffect(() => {
+    if (!isOpen || !orgId) return;
+    const token = localStorage.getItem('authToken');
+    const apiBase = process.env.REACT_APP_API_BASE_URL ||
+      (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
+    fetch(`${apiBase}/warehouses/?organization_id=${orgId}&limit=100`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.items || data?.warehouses || []);
+        setWarehouses(list);
+        if (list.length > 0 && !selectedWarehouseId) {
+          setSelectedWarehouseId(list[0].id);
+        }
+      })
+      .catch(() => setWarehouses([]));
+  }, [isOpen, orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const fetchData = useCallback(async () => {
-    if (!orgId) return;
+    if (!selectedWarehouseId) return;
     setLoading(true);
     setError('');
     try {
-      const data = await inventoryService.getOrganizationInventoryAggregation(orgId);
-      const inventory = data?.inventory_summary || (Array.isArray(data) ? data : []);
-      setRows(buildReorderRows(inventory, filter));
+      // Use per-warehouse inventory — accurate stock + minimum per warehouse
+      const data = await inventoryService.getWarehouseInventory(selectedWarehouseId);
+      const items = Array.isArray(data) ? data : [];
+      // Map warehouse inventory rows to the same shape buildReorderRows expects
+      const mapped = items.map(item => ({
+        part_id: item.part_id,
+        part_number: item.part_number || '',
+        part_name: item.part_name || item.part?.name || '',
+        unit_of_measure: item.unit_of_measure || '',
+        total_stock: parseFloat(item.current_stock || 0),
+        total_minimum_stock: parseFloat(item.minimum_stock_recommendation || 0),
+        warehouse_count: 1,
+      }));
+      setRows(buildReorderRows(mapped, filter));
     } catch (err) {
       setError('Failed to load inventory data: ' + (err.message || err));
     } finally {
       setLoading(false);
     }
-  }, [orgId, filter]);
+  }, [selectedWarehouseId, filter]);
 
   useEffect(() => {
-    if (isOpen) fetchData();
-  }, [isOpen, fetchData]);
+    if (isOpen && selectedWarehouseId) fetchData();
+  }, [isOpen, fetchData, selectedWarehouseId]);
 
+  const warehouseName = warehouses.find(w => w.id === selectedWarehouseId)?.name || '';
   const title =
-    filter === 'critical' ? 'Critical Stock — Parts to Order'
-      : filter === 'low' ? 'Low Stock — Parts to Order'
-        : 'Reorder List — All Under-Stocked Parts';
+    filter === 'critical' ? `Critical Stock — ${warehouseName}`
+      : filter === 'low' ? `Low Stock — ${warehouseName}`
+        : `Reorder List — ${warehouseName}`;
 
   const handleExportPDF = async () => {
     setExporting('pdf');
@@ -193,26 +227,45 @@ const ReorderListModal = ({ isOpen, onClose, initialFilter = 'all' }) => {
           </button>
         </div>
 
-        {/* Filter tabs + export buttons */}
+        {/* Warehouse selector + filter tabs + export buttons */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-gray-100 bg-gray-50">
-          <div className="flex space-x-1">
-            {[
-              { key: 'all', label: 'All under-stocked' },
-              { key: 'critical', label: `Out of stock (${criticalCount})` },
-              { key: 'low', label: `Low stock (${lowCount})` },
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-                  filter === key
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-200'
-                }`}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Warehouse selector */}
+            {warehouses.length > 1 && (
+              <select
+                value={selectedWarehouseId}
+                onChange={e => setSelectedWarehouseId(e.target.value)}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {label}
-              </button>
-            ))}
+                {warehouses.map(w => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
+            )}
+            {warehouses.length === 1 && (
+              <span className="text-sm font-medium text-gray-700">{warehouses[0]?.name}</span>
+            )}
+
+            {/* Filter tabs */}
+            <div className="flex space-x-1">
+              {[
+                { key: 'all', label: 'All under-stocked' },
+                { key: 'critical', label: `Out of stock (${rows.filter(r => r.status === 'critical').length})` },
+                { key: 'low', label: `Low stock (${rows.filter(r => r.status === 'low').length})` },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                    filter === key
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex space-x-2">
