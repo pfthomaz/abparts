@@ -95,6 +95,7 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
         try:
             low_stock_items = inventory_query.filter(
                 models.Inventory.current_stock <= models.Inventory.minimum_stock_recommendation,
+                models.Inventory.current_stock > 0,
                 models.Inventory.minimum_stock_recommendation > 0
             ).count()
         except:
@@ -102,7 +103,10 @@ def get_dashboard_metrics(db: Session, organization_id: Optional[uuid.UUID] = No
             
         # Try to get out of stock items
         try:
-            out_of_stock_items = inventory_query.filter(models.Inventory.current_stock == 0).count()
+            out_of_stock_items = inventory_query.filter(
+                models.Inventory.current_stock == 0,
+                models.Inventory.minimum_stock_recommendation > 0
+            ).count()
         except:
             pass
     except Exception as e:

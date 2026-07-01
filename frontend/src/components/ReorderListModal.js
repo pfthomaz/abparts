@@ -130,6 +130,23 @@ const ReorderListModal = ({ isOpen, onClose, initialFilter = 'all' }) => {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
 
   const orgId = user?.organization_id || user?.organization?.id;
+  const orgName = user?.organization?.name || '';
+
+  const pickPreferredWarehouseId = useCallback((warehouseList) => {
+    if (!Array.isArray(warehouseList) || warehouseList.length === 0) {
+      return '';
+    }
+
+    // Customer organizations typically have a default warehouse with the same name.
+    if (orgName) {
+      const defaultWarehouse = warehouseList.find((warehouse) => warehouse.name === orgName);
+      if (defaultWarehouse) {
+        return defaultWarehouse.id;
+      }
+    }
+
+    return warehouseList[0].id;
+  }, [orgName]);
 
   // Load warehouses for this organization on open
   useEffect(() => {
@@ -144,12 +161,20 @@ const ReorderListModal = ({ isOpen, onClose, initialFilter = 'all' }) => {
       .then(data => {
         const list = Array.isArray(data) ? data : (data?.items || data?.warehouses || []);
         setWarehouses(list);
-        if (list.length > 0 && !selectedWarehouseId) {
-          setSelectedWarehouseId(list[0].id);
+        if (list.length === 0) {
+          setSelectedWarehouseId('');
+          return;
         }
+        setSelectedWarehouseId((currentSelection) => {
+          const currentSelectionStillValid = list.some((warehouse) => warehouse.id === currentSelection);
+          return currentSelectionStillValid ? currentSelection : pickPreferredWarehouseId(list);
+        });
       })
-      .catch(() => setWarehouses([]));
-  }, [isOpen, orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => {
+        setWarehouses([]);
+        setSelectedWarehouseId('');
+      });
+  }, [isOpen, orgId, pickPreferredWarehouseId]);
 
   const fetchData = useCallback(async () => {
     if (!selectedWarehouseId) return;
