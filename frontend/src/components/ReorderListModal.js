@@ -15,10 +15,11 @@ function buildReorderRows(aggregatedInventory, filter) {
   return aggregatedInventory
     .map((item) => {
       const current = parseFloat(item.total_stock || 0);
-      const minimum = parseFloat(item.min_stock_recommendation || 0);
+      // API returns 'total_minimum_stock' from the aggregation endpoint
+      const minimum = parseFloat(item.total_minimum_stock || item.min_stock_recommendation || 0);
       const deficit = Math.max(0, minimum - current);
-      const isCritical = current === 0;
-      const isLow = current > 0 && current <= minimum;
+      const isCritical = current === 0 && minimum > 0; // only critical if there's an actual minimum to meet
+      const isLow = current > 0 && minimum > 0 && current <= minimum;
       return {
         part_number: item.part_number || '',
         part_name: item.part_name || 'Unknown Part',
