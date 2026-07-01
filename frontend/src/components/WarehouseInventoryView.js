@@ -13,7 +13,7 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all', 'low_stock', 'out_of_stock'
+  const [filterType, setFilterType] = useState('in_stock'); // 'all_parts', 'in_stock', 'low_stock'
   const [lastUpdated, setLastUpdated] = useState(null);
   const [editingMinStock, setEditingMinStock] = useState(null); // inventory item id being edited
   const [editMinStockValue, setEditMinStockValue] = useState('');
@@ -98,21 +98,49 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
     return parts.find(p => p.id === partId) || {};
   };
 
+  // Build the list to display — for 'all_parts' include parts with no inventory record
+  const displayItems = React.useMemo(() => {
+    if (filterType !== 'all_parts') {
+      return inventoryItems; // existing inventory rows only
+    }
+    // Merge: all parts + existing inventory (keyed by part_id)
+    const inventoryByPartId = {};
+    inventoryItems.forEach(item => { inventoryByPartId[item.part_id] = item; });
+
+    return parts.map(part => {
+      if (inventoryByPartId[part.id]) {
+        return inventoryByPartId[part.id]; // real inventory row
+      }
+      // Virtual row — part exists but has no inventory record in this warehouse
+      return {
+        id: `virtual_${part.id}`,
+        part_id: part.id,
+        current_stock: 0,
+        minimum_stock_recommendation: 0,
+        unit_of_measure: part.unit_of_measure || '',
+        _virtual: true, // flag — no real DB row yet
+      };
+    });
+  }, [filterType, inventoryItems, parts]);
+
   // Safe filtering with validation using utility function
-  const filteredInventory = safeFilter(inventoryItems, item => {
+  const filteredInventory = safeFilter(displayItems, item => {
     try {
       if (!item) return false;
 
-      // Always exclude items with zero stock from the main inventory view
       const currentStock = parseFloat(item.current_stock);
-      if (currentStock === 0) return false;
+
+      // 'in_stock' mode: exclude zero-stock items (original behaviour)
+      if (filterType === 'in_stock' && currentStock === 0) return false;
 
       const part = getPartDetails(item.part_id);
       const matchesSearch = !searchTerm ||
         part.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         part.part_number?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesFilter = filterType === 'all' ||
+      const matchesFilter =
+        filterType === 'all_parts' ||
+        filterType === 'in_stock' ||
         (filterType === 'low_stock' && currentStock <= parseFloat(item.minimum_stock_recommendation));
 
       return matchesSearch && matchesFilter;
@@ -120,7 +148,14 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
       console.error('Error filtering inventory item:', error, item);
       return false;
     }
-  }, []);
+  }, []).sort((a, b) => {
+    // Sort alphabetically by part_number then by name
+    const partA = getPartDetails(a.part_id);
+    const partB = getPartDetails(b.part_id);
+    const codeA = (partA.part_number || partA.name || '').toLowerCase();
+    const codeB = (partB.part_number || partB.name || '').toLowerCase();
+    return codeA.localeCompare(codeB);
+  });
 
   const getStockStatus = (currentStock, minStock) => {
     const current = parseFloat(currentStock);
@@ -156,13 +191,28 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
       return;
     }
     try {
-      await inventoryService.updateInventoryItem(itemId, {
-        minimum_stock_recommendation: newValue
-      });
-      // Update local state
-      setInventoryItems(prev => prev.map(item =>
-        item.id === itemId ? { ...item, minimum_stock_recommendation: newValue } : item
-      ));
+      // Virtual row — need to create the inventory record first
+      if (String(itemId).startsWith('virtual_')) {
+        const partId = String(itemId).replace('virtual_', '');
+        const part = getPartDetails(partId);
+        await inventoryService.createInventoryItem({
+          warehouse_id: warehouseId,
+          part_id: partId,
+          current_stock: 0,
+          minimum_stock_recommendation: newValue,
+          unit_of_measure: part.unit_of_measure || 'pcs',
+          reorder_threshold_set_by: 'user',
+        });
+        // Refresh to get the real DB row
+        await fetchWarehouseInventory();
+      } else {
+        await inventoryService.updateInventoryItem(itemId, {
+          minimum_stock_recommendation: newValue
+        });
+        setInventoryItems(prev => prev.map(item =>
+          item.id === itemId ? { ...item, minimum_stock_recommendation: newValue } : item
+        ));
+      }
     } catch (err) {
       console.error('Failed to update min stock:', err);
     }
@@ -248,8 +298,9 @@ const WarehouseInventoryView = ({ warehouseId, warehouse, onRefresh }) => {
             onChange={(e) => setFilterType(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="all">{t('warehouses.allItemsInStock')}</option>
+            <option value="in_stock">{t('warehouses.allItemsInStock')}</option>
             <option value="low_stock">{t('warehouses.lowStock')}</option>
+            <option value="all_parts">{t('warehouses.allParts') || 'All Parts'}</option>
           </select>
         </div>
       </div>

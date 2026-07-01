@@ -110,8 +110,7 @@
     "supportCasesDescription": "Record and track customer issues for AI knowledge building",
     "knowledgeBase": "Knowledge Base",
     "knowledgeBaseDescription": "Manage AI assistant knowledge documents"
-  },
-  "auth": {
+  },  "auth": {
     "login": "Login",
     "logout": "Logout",
     "username": "Username",
@@ -369,6 +368,7 @@
     "items": "items",
     "lastUpdated": "Last updated",
     "allItemsInStock": "All Items (In Stock)",
+    "allParts": "All Parts (incl. zero stock)",
     "unknownPart": "Unknown Part",
     "unit": "Unit",
     "itemsInStock": "Items In Stock",
