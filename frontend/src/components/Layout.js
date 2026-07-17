@@ -14,6 +14,7 @@ import ChatWidget from './ChatWidget';
 import FloatingActionButton from './FloatingActionButton';
 import { useTranslation } from '../hooks/useTranslation';
 import { useOffline } from '../contexts/OfflineContext';
+import { APP_VERSION, APP_VERSION_DATE } from '../version';
 
 const Layout = () => {
   const { t } = useTranslation();
@@ -82,13 +83,14 @@ const Layout = () => {
         <nav className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-8">
-              <Link to="/" className="flex items-center">
-                <img 
-                  src="/logo.png" 
-                  alt="ABParts - Intelligent Parts Management" 
+              <Link to="/" className="flex flex-col items-center">
+                <img
+                  src="/logo.png"
+                  alt="ABParts - Intelligent Parts Management"
                   style={{ height: '6rem' }}
                   className="w-auto"
                 />
+                <span className="text-xs text-gray-400 mt-0.5">{APP_VERSION} &middot; {APP_VERSION_DATE}</span>
               </Link>
 
               {/* Desktop Navigation */}
