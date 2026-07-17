@@ -202,6 +202,29 @@ def _update_inventory_on_fulfillment(db: Session, order: models.CustomerOrder, r
         logger.error(f"Error updating inventory for customer order {order.id}: {e}")
         raise HTTPException(status_code=400, detail=f"Error updating inventory: {str(e)}")
 
+def recompute_customer_order_status(order: models.CustomerOrder) -> str:
+    """
+    Derive the order's status from the cumulative shipped/received quantities
+    on its items. Shipped-completeness gates before received-completeness,
+    since an order can't be "Received" while some of it hasn't shipped yet.
+
+    Leaves the status untouched if nothing has been shipped yet (order.items
+    must already be loaded).
+    """
+    total_ordered = sum(item.quantity for item in order.items)
+    total_shipped = sum(item.quantity_shipped for item in order.items)
+    total_received = sum(item.quantity_received for item in order.items)
+
+    if total_shipped == 0:
+        return order.status
+    if total_shipped < total_ordered:
+        return "Partially Shipped"
+    if total_received == 0:
+        return "Shipped"
+    if total_received < total_shipped:
+        return "Partially Received"
+    return "Received"
+
 def delete_customer_order(db: Session, order_id: uuid.UUID):
     """Delete a customer order by ID."""
     db_order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()

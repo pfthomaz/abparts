@@ -296,11 +296,6 @@ class CrossOrganizationalAccessValidator:
                 "to": [OrganizationType.customer],
                 "required_role": ["super_admin"]
             },
-            "part_order": {
-                "from": [OrganizationType.customer],
-                "to": [OrganizationType.oraseas_ee, OrganizationType.supplier],
-                "required_role": ["user", "admin", "super_admin"]
-            },
             "inventory_transfer": {
                 "from": [OrganizationType.oraseas_ee],
                 "to": [OrganizationType.customer],

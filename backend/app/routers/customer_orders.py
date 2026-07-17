@@ -153,7 +153,7 @@ def read_customer_orders(
         
         # Get receiving warehouse from transactions (if order has been received)
         receiving_warehouse_name = None
-        if order.status in ['Received', 'Delivered']:
+        if order.status in ['Received', 'Delivered', 'Partially Received']:
             try:
                 # Query for transaction with this order's customer_order_id
                 txn = db.query(models.Transaction).filter(
@@ -180,6 +180,8 @@ def read_customer_orders(
                 "customer_order_id": item.customer_order_id,
                 "part_id": item.part_id,
                 "quantity": item.quantity,
+                "quantity_shipped": item.quantity_shipped,
+                "quantity_received": item.quantity_received,
                 "unit_price": item.unit_price,
                 "created_at": item.created_at,
                 "updated_at": item.updated_at,
@@ -210,7 +212,9 @@ def check_stock_availability(
        order's own quantity exceeds stock, lists: part info, stock qty, qty in this order,
        total qty of that part across all active orders.
 
-    Active orders = status in ('Requested', 'Pending') — i.e. not yet shipped.
+    Active orders = status in ('Requested', 'Pending', 'Partially Shipped') — i.e. still
+    have some unshipped quantity outstanding. Demand is computed against the remaining
+    (not-yet-shipped) quantity of each item, not the original ordered quantity.
     Only available to Oraseas EE organization users and super admins.
     """
     # Permission check
@@ -245,7 +249,7 @@ def check_stock_availability(
         selectinload(models.CustomerOrder.customer_organization)
     ).filter(
         models.CustomerOrder.oraseas_organization_id == oraseas_org.id,
-        models.CustomerOrder.status.in_(['Requested', 'Pending'])
+        models.CustomerOrder.status.in_(['Requested', 'Pending', 'Partially Shipped'])
     ).order_by(models.CustomerOrder.order_date.asc()).all()
 
     if not active_orders:
@@ -285,6 +289,9 @@ def check_stock_availability(
     demand_by_part = {}
     for order in active_orders:
         for item in order.items:
+            remaining_to_ship = item.quantity - item.quantity_shipped
+            if remaining_to_ship <= 0:
+                continue
             part_id_str = str(item.part_id)
             if part_id_str not in demand_by_part:
                 demand_by_part[part_id_str] = {
@@ -294,12 +301,12 @@ def check_stock_availability(
                     "total_demand": 0.0,
                     "orders": [],
                 }
-            demand_by_part[part_id_str]["total_demand"] += float(item.quantity)
+            demand_by_part[part_id_str]["total_demand"] += float(remaining_to_ship)
             demand_by_part[part_id_str]["orders"].append({
                 "order_id": str(order.id),
                 "customer_organization_name": order.customer_organization.name if order.customer_organization else "Unknown",
                 "order_date": order.order_date.isoformat() if order.order_date else None,
-                "quantity_in_order": float(item.quantity),
+                "quantity_in_order": float(remaining_to_ship),
             })
 
     # --- DASHBOARD VIEW: parts where total demand > stock ---
@@ -321,9 +328,12 @@ def check_stock_availability(
     for order in active_orders:
         order_missing = []
         for item in order.items:
+            remaining_to_ship = item.quantity - item.quantity_shipped
+            if remaining_to_ship <= 0:
+                continue
             part_id_str = str(item.part_id)
             stock = stock_by_part.get(part_id_str, 0.0)
-            qty_this_order = float(item.quantity)
+            qty_this_order = float(remaining_to_ship)
 
             if qty_this_order > stock:
                 total_demand = demand_by_part[part_id_str]["total_demand"]
@@ -453,77 +463,98 @@ def ship_customer_order(
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     """
-    Mark a customer order as shipped (Oraseas EE only).
-    Updates status to 'Shipped' and records the shipped_date.
+    Ship a customer order, in full or in part (Oraseas EE only).
+    Can be called more than once for the same order to ship successive batches as
+    stock becomes available. `ship_request.items` specifies which line items and
+    quantities are going out in this batch (up to the remaining unshipped quantity
+    of each). The order moves to 'Partially Shipped' or 'Shipped' depending on
+    whether any ordered quantity remains unshipped afterward.
     """
-    # Get the order
-    order = db.query(models.CustomerOrder).filter(models.CustomerOrder.id == order_id).first()
+    order = db.query(models.CustomerOrder).options(
+        selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part)
+    ).filter(models.CustomerOrder.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Customer order not found")
-    
+
     # Verify user is from Oraseas EE organization
     user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
     if not user_org:
         raise HTTPException(status_code=404, detail="User organization not found")
-    
+
     # Check if user is from Oraseas EE (or super admin)
     is_oraseas_ee = user_org.name in ['Oraseas EE', 'BossServ LLC', 'BossServ Ltd']
     if not permission_checker.is_super_admin(current_user) and not is_oraseas_ee:
         raise HTTPException(status_code=403, detail="Only Oraseas EE can mark orders as shipped")
-    
-    # Verify order is in correct status
-    if order.status not in ['Requested', 'Pending']:
-        raise HTTPException(status_code=400, detail=f"Cannot ship order with status '{order.status}'")
-    
-    # Update order
-    order.status = 'Shipped'
-    order.shipped_date = ship_request.shipped_date
-    order.shipped_by_user_id = current_user.user_id  # Record who shipped the order
-    if ship_request.notes:
-        order.notes = f"{order.notes}\n\nShipped: {ship_request.notes}" if order.notes else f"Shipped: {ship_request.notes}"
-    
-    # --- Create outgoing transactions to deduct stock from source warehouse ---
+
+    items_by_id = {str(item.id): item for item in order.items}
+    if all(item.quantity_shipped >= item.quantity for item in order.items):
+        raise HTTPException(status_code=400, detail="Order is already fully shipped")
+
     # Determine source warehouse
     source_warehouse_id = ship_request.source_warehouse_id
     if not source_warehouse_id:
-        # Find the first warehouse belonging to the Oraseas organization
         oraseas_warehouse = db.query(models.Warehouse).filter(
             models.Warehouse.organization_id == order.oraseas_organization_id
         ).first()
         if oraseas_warehouse:
             source_warehouse_id = oraseas_warehouse.id
-    
-    if source_warehouse_id:
-        # Get order items
-        order_items = db.query(models.CustomerOrderItem).filter(
-            models.CustomerOrderItem.customer_order_id == order.id
-        ).all()
-        
-        for item in order_items:
-            # Get part for unit_of_measure
-            part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
-            if not part:
-                continue
-            
-            # Create outgoing transaction (deducts from source warehouse)
-            transaction = models.Transaction(
-                transaction_type="transfer",
-                part_id=item.part_id,
-                from_warehouse_id=source_warehouse_id,
-                to_warehouse_id=None,  # Shipped out - no receiving warehouse yet
-                customer_order_id=order.id,
-                quantity=item.quantity,
-                unit_of_measure=part.unit_of_measure,
-                performed_by_user_id=current_user.user_id,
-                transaction_date=ship_request.shipped_date,
-                notes=f"Order shipped - Order ID: {order.id}",
-                reference_number=f"SHIP-{str(order.id)[:8]}"
+    if not source_warehouse_id:
+        raise HTTPException(status_code=400, detail="No source warehouse available to ship from")
+
+    # Validate every requested line before mutating anything
+    from ..crud.inventory_calculator import calculate_current_stock
+    for req_item in ship_request.items:
+        item = items_by_id.get(str(req_item.customer_order_item_id))
+        if item is None:
+            raise HTTPException(status_code=400, detail=f"Item {req_item.customer_order_item_id} does not belong to this order")
+        remaining = item.quantity - item.quantity_shipped
+        if req_item.quantity > remaining:
+            part_name = item.part.name if item.part else str(item.part_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot ship {req_item.quantity} of '{part_name}': only {remaining} remaining to ship"
             )
-            db.add(transaction)
-    
+        available = calculate_current_stock(db, source_warehouse_id, item.part_id)
+        if req_item.quantity > available:
+            part_name = item.part.name if item.part else str(item.part_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock to ship {req_item.quantity} of '{part_name}': only {available} available in source warehouse"
+            )
+
+    # Create outgoing transactions to deduct stock from source warehouse
+    for req_item in ship_request.items:
+        item = items_by_id[str(req_item.customer_order_item_id)]
+        transaction = models.Transaction(
+            transaction_type="transfer",
+            part_id=item.part_id,
+            from_warehouse_id=source_warehouse_id,
+            to_warehouse_id=None,  # Shipped out - no receiving warehouse yet
+            customer_order_id=order.id,
+            customer_order_item_id=item.id,
+            quantity=req_item.quantity,
+            unit_of_measure=item.part.unit_of_measure if item.part else "units",
+            performed_by_user_id=current_user.user_id,
+            transaction_date=ship_request.shipped_date,
+            notes=f"Order shipped - Order ID: {order.id}",
+            reference_number=f"SHIP-{str(order.id)[:8]}-{str(item.id)[:8]}"
+        )
+        db.add(transaction)
+        item.quantity_shipped += req_item.quantity
+
+    # Record shipped_date/shipped_by only on the first shipment; later partial
+    # shipments are still individually timestamped via their own Transaction rows.
+    if order.shipped_date is None:
+        order.shipped_date = ship_request.shipped_date
+        order.shipped_by_user_id = current_user.user_id
+    if ship_request.notes:
+        order.notes = f"{order.notes}\n\nShipped: {ship_request.notes}" if order.notes else f"Shipped: {ship_request.notes}"
+
+    order.status = crud.customer_orders.recompute_customer_order_status(order)
+
     db.commit()
     db.refresh(order)
-    
+
     return order
 
 
@@ -535,8 +566,12 @@ def confirm_order_receipt(
     current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
 ):
     """
-    Confirm receipt of a customer order (Customer organization only).
-    Updates status to 'Received' and records the actual_delivery_date.
+    Confirm receipt of a customer order, in full or in part (Customer organization only).
+    Can be called more than once for the same order as successive shipments arrive.
+    `receipt_request.items` specifies which line items and quantities are being
+    confirmed as received now (up to the shipped-but-not-yet-received quantity of
+    each). The order moves to 'Partially Received' or 'Received' depending on
+    whether any shipped quantity is still outstanding afterward.
     """
     # Get the order with items and parts
     order = db.query(models.CustomerOrder).options(
@@ -544,32 +579,40 @@ def confirm_order_receipt(
     ).filter(models.CustomerOrder.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Customer order not found")
-    
+
     # Verify user is from the customer organization that placed the order
     if not permission_checker.is_super_admin(current_user):
         if order.customer_organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Only the ordering organization can confirm receipt")
-    
-    # Verify order is in correct status
-    if order.status != 'Shipped':
-        raise HTTPException(status_code=400, detail=f"Cannot confirm receipt for order with status '{order.status}'")
-    
+
+    items_by_id = {str(item.id): item for item in order.items}
+    if all(item.quantity_received >= item.quantity_shipped for item in order.items):
+        raise HTTPException(status_code=400, detail="Nothing has been shipped yet, or everything shipped has already been received")
+
     # Verify warehouse belongs to customer organization
     warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == receipt_request.receiving_warehouse_id).first()
     if not warehouse:
         raise HTTPException(status_code=404, detail="Warehouse not found")
-    
+
     if warehouse.organization_id != order.customer_organization_id:
         raise HTTPException(status_code=400, detail="Warehouse must belong to the customer organization")
-    
-    # Update order
-    order.status = 'Received'
-    order.actual_delivery_date = receipt_request.actual_delivery_date
-    if receipt_request.notes:
-        order.notes = f"{order.notes}\n\nReceived: {receipt_request.notes}" if order.notes else f"Received: {receipt_request.notes}"
-    
-    # Create inventory transactions for each order item
-    for item in order.items:
+
+    # Validate every requested line before mutating anything
+    for req_item in receipt_request.items:
+        item = items_by_id.get(str(req_item.customer_order_item_id))
+        if item is None:
+            raise HTTPException(status_code=400, detail=f"Item {req_item.customer_order_item_id} does not belong to this order")
+        remaining = item.quantity_shipped - item.quantity_received
+        if req_item.quantity > remaining:
+            part_name = item.part.name if item.part else str(item.part_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot receive {req_item.quantity} of '{part_name}': only {remaining} shipped and awaiting receipt"
+            )
+
+    # Create inventory transactions for each confirmed line item
+    for req_item in receipt_request.items:
+        item = items_by_id[str(req_item.customer_order_item_id)]
         # Create transaction record
         # Use current timestamp for transaction_date to ensure proper ordering with adjustments
         transaction = models.Transaction(
@@ -577,7 +620,8 @@ def confirm_order_receipt(
             part_id=item.part_id,
             to_warehouse_id=receipt_request.receiving_warehouse_id,
             customer_order_id=order.id,
-            quantity=item.quantity,
+            customer_order_item_id=item.id,
+            quantity=req_item.quantity,
             unit_of_measure=item.part.unit_of_measure if item.part else "units",
             performed_by_user_id=current_user.user_id,
             transaction_date=datetime.utcnow(),  # Use actual timestamp, not midnight
@@ -585,30 +629,41 @@ def confirm_order_receipt(
             reference_number=str(order.id)
         )
         db.add(transaction)
-        
+
         # Update inventory
         inventory = db.query(models.Inventory).filter(
             models.Inventory.part_id == item.part_id,
             models.Inventory.warehouse_id == receipt_request.receiving_warehouse_id
         ).first()
-        
+
         if inventory:
-            inventory.current_stock += item.quantity
+            inventory.current_stock += req_item.quantity
             inventory.last_updated = datetime.now()
         else:
             # Create new inventory record
             inventory = models.Inventory(
                 part_id=item.part_id,
                 warehouse_id=receipt_request.receiving_warehouse_id,
-                current_stock=item.quantity,
+                current_stock=req_item.quantity,
                 minimum_stock_recommendation=0,
                 unit_of_measure=item.part.unit_of_measure if item.part else "units"
             )
             db.add(inventory)
-    
+
+        item.quantity_received += req_item.quantity
+
+    # Record actual_delivery_date only on the first confirmed receipt; later
+    # partial receipts are still individually timestamped via their own Transaction rows.
+    if order.actual_delivery_date is None:
+        order.actual_delivery_date = receipt_request.actual_delivery_date
+    if receipt_request.notes:
+        order.notes = f"{order.notes}\n\nReceived: {receipt_request.notes}" if order.notes else f"Received: {receipt_request.notes}"
+
+    order.status = crud.customer_orders.recompute_customer_order_status(order)
+
     db.commit()
     db.refresh(order)
-    
+
     return order
 
 
@@ -645,14 +700,15 @@ def delete_customer_order(
             raise HTTPException(status_code=403, detail="Cannot delete orders for other organizations")
     
     # Check if order can be deleted (super_admins can delete at any stage)
-    if order.status in ['Shipped', 'Received', 'Delivered'] and not permission_checker.is_super_admin(current_user):
+    fulfillment_started_statuses = ['Partially Shipped', 'Shipped', 'Partially Received', 'Received', 'Delivered']
+    if order.status in fulfillment_started_statuses and not permission_checker.is_super_admin(current_user):
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Cannot delete order with status '{order.status}'. Only orders in 'Requested' or 'Pending' status can be deleted."
         )
-    
-    # If deleting a shipped order, also clean up related transactions
-    if order.status in ['Shipped', 'Received', 'Delivered']:
+
+    # If deleting an order that has started shipping, also clean up related transactions
+    if order.status in fulfillment_started_statuses:
         db.query(models.Transaction).filter(
             models.Transaction.customer_order_id == order.id
         ).delete()

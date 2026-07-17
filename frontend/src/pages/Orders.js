@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ordersService } from '../services/ordersService';
 import { organizationsService } from '../services/organizationsService';
+import { inventoryService } from '../services/inventoryService';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import Modal from '../components/Modal';
@@ -347,20 +348,22 @@ const Orders = () => {
   };
 
   const canShipOrder = (order) => {
-    // Receiver organization (Oraseas EE, BossServe, BossAqua) can ship Requested or Pending orders
+    // Receiver organization (Oraseas EE, BossServe, BossAqua) can ship an order as long as
+    // it still has any unshipped quantity remaining (can be called repeatedly for partial shipments).
     // Check if current user's organization is the receiver (oraseas_organization_id)
-    return user && 
+    return user &&
       (user.role === 'admin' || user.role === 'super_admin') &&
       order.oraseas_organization_id === user.organization_id &&
-      (order.status === 'Requested' || order.status === 'Pending');
+      ['Requested', 'Pending', 'Partially Shipped'].includes(order.status);
   };
 
   const canConfirmReceipt = (order) => {
-    // Customer organization can confirm receipt of Shipped orders
+    // Customer organization can confirm receipt as long as anything shipped is still
+    // awaiting receipt (can be called repeatedly as successive partial shipments arrive).
     // Check if current user's organization is the customer (customer_organization_id)
-    return user && 
+    return user &&
       order.customer_organization_id === user.organization_id &&
-      order.status === 'Shipped';
+      ['Shipped', 'Partially Received'].includes(order.status);
   };
 
   const canEditOrder = (order) => {
@@ -375,6 +378,19 @@ const Orders = () => {
     if (!user) return false;
     if (user.role === 'super_admin') return true;
     return user.role === 'admin' && (order.status === 'Requested' || order.status === 'Pending');
+  };
+
+  const getOrderStatusBadgeClasses = (status) => {
+    switch (status) {
+      case 'Requested': return 'bg-yellow-100 text-yellow-800';
+      case 'Pending': return 'bg-blue-100 text-blue-800';
+      case 'Partially Shipped': return 'bg-indigo-100 text-indigo-800';
+      case 'Shipped': return 'bg-purple-100 text-purple-800';
+      case 'Partially Received': return 'bg-teal-100 text-teal-800';
+      case 'Received': return 'bg-green-100 text-green-800';
+      case 'Delivered': return 'bg-green-100 text-green-800';
+      default: return 'bg-red-100 text-red-800';
+    }
   };
 
   return (
@@ -554,13 +570,7 @@ const Orders = () => {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-semibold text-red-700">{t('orders.orderFrom')} {order.supplier_name}</h3>
                         <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' :
-                            order.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
-                              order.status === 'Shipped' ? 'bg-purple-100 text-purple-800' :
-                                order.status === 'Received' ? 'bg-green-100 text-green-800' :
-                                  order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                    'bg-red-100 text-red-800'
-                            }`}>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getOrderStatusBadgeClasses(order.status)}`}>
                             {order.status}
                           </span>
                         </div>
@@ -665,13 +675,7 @@ const Orders = () => {
                               <span>{t('orders.missingParts', { count: unfulfillableOrderMap[order.id].length, fallback: `${unfulfillableOrderMap[order.id].length} missing` })}</span>
                             </button>
                           )}
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Requested' ? 'bg-yellow-100 text-yellow-800' :
-                            order.status === 'Pending' ? 'bg-blue-100 text-blue-800' :
-                              order.status === 'Shipped' ? 'bg-purple-100 text-purple-800' :
-                                order.status === 'Received' ? 'bg-green-100 text-green-800' :
-                                  order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                    'bg-red-100 text-red-800'
-                            }`}>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getOrderStatusBadgeClasses(order.status)}`}>
                             {order.status}
                           </span>
                         </div>
@@ -690,7 +694,7 @@ const Orders = () => {
                         {order.ordered_by_username && (
                           <p><span className="font-medium">{t('orders.orderedBy')}:</span> {order.ordered_by_username}</p>
                         )}
-                        {order.receiving_warehouse_name && (order.status === 'Received' || order.status === 'Delivered') && (
+                        {order.receiving_warehouse_name && ['Received', 'Delivered', 'Partially Received'].includes(order.status) && (
                           <p><span className="font-medium">Warehouse:</span> {order.receiving_warehouse_name}</p>
                         )}
                       </div>
@@ -744,6 +748,11 @@ const Orders = () => {
                           {order.items.map(item => (
                             <li key={item.id}>
                               {item.quantity} x {item.part_name} ({item.part_number})
+                              {Number(item.quantity_shipped) > 0 && (
+                                <span className="text-xs text-gray-500 ml-1">
+                                  &mdash; {item.quantity_shipped} {t('orders.shipped', { fallback: 'shipped' })}, {item.quantity_received} {t('orders.received', { fallback: 'received' })}
+                                </span>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -899,6 +908,7 @@ const Orders = () => {
         {selectedOrderForShipping && (
           <ShipOrderForm
             order={selectedOrderForShipping}
+            warehouses={warehouses}
             onSubmit={handleOrderShipped}
             onClose={() => {
               setShowShipOrderModal(false);
@@ -994,14 +1004,63 @@ const Orders = () => {
 };
 
 // Ship Order Form Component
-const ShipOrderForm = ({ order, onSubmit, onClose }) => {
+const ShipOrderForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     shipped_date: new Date().toISOString().split('T')[0],
     tracking_number: '',
     notes: ''
   });
+  const [itemQuantities, setItemQuantities] = useState({});
+  const [availableStock, setAvailableStock] = useState({});
+  const [stockLoading, setStockLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Only items with something left to ship. Falls back to the full quantity
+  // for orders created before partial-shipment tracking existed.
+  const shippableItems = (order.items || []).filter(
+    item => Number(item.quantity) - Number(item.quantity_shipped || 0) > 0
+  );
+
+  // Mirrors the backend's default: first warehouse belonging to the Oraseas organization.
+  const sourceWarehouse = (warehouses || []).find(
+    w => w.organization_id === order.oraseas_organization_id
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStock = async () => {
+      if (!sourceWarehouse) {
+        setStockLoading(false);
+        return;
+      }
+      setStockLoading(true);
+      try {
+        const inventoryItems = await inventoryService.getWarehouseInventory(sourceWarehouse.id);
+        if (cancelled) return;
+        const stockByPart = {};
+        (inventoryItems || []).forEach(inv => {
+          stockByPart[inv.part_id] = Number(inv.current_stock) || 0;
+        });
+        setAvailableStock(stockByPart);
+
+        const initialQuantities = {};
+        shippableItems.forEach(item => {
+          const remaining = Number(item.quantity) - Number(item.quantity_shipped || 0);
+          const available = stockByPart[item.part_id] || 0;
+          initialQuantities[item.id] = Math.max(0, Math.min(remaining, available));
+        });
+        setItemQuantities(initialQuantities);
+      } finally {
+        if (!cancelled) setStockLoading(false);
+      }
+    };
+
+    loadStock();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.id, sourceWarehouse && sourceWarehouse.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1011,13 +1070,35 @@ const ShipOrderForm = ({ order, onSubmit, onClose }) => {
     }));
   };
 
+  const handleQuantityChange = (itemId, value) => {
+    setItemQuantities(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const isQuantityValid = (item) => {
+    const qty = Number(itemQuantities[item.id]);
+    const remaining = Number(item.quantity) - Number(item.quantity_shipped || 0);
+    const available = availableStock[item.part_id] || 0;
+    return !isNaN(qty) && qty >= 0 && qty <= remaining && qty <= available;
+  };
+
+  const hasAnythingToShip = shippableItems.some(item => Number(itemQuantities[item.id]) > 0);
+  const allValid = shippableItems.every(isQuantityValid);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!sourceWarehouse) {
+      setError('No source warehouse available to ship from');
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
-      await onSubmit(order.id, formData);
+      const items = shippableItems
+        .filter(item => Number(itemQuantities[item.id]) > 0)
+        .map(item => ({ customer_order_item_id: item.id, quantity: Number(itemQuantities[item.id]) }));
+
+      await onSubmit(order.id, { ...formData, items });
     } catch (err) {
       setError(err.message || 'Failed to ship order');
     } finally {
@@ -1045,6 +1126,49 @@ const ShipOrderForm = ({ order, onSubmit, onClose }) => {
         <p className="text-sm text-gray-600">
           <span className="font-medium">Current Status:</span> {order.status}
         </p>
+        {sourceWarehouse && (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium">Shipping from:</span> {sourceWarehouse.name}
+          </p>
+        )}
+        {!sourceWarehouse && (
+          <p className="text-sm text-red-600 mt-1">No warehouse found for the Oraseas organization</p>
+        )}
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-2">Items to Ship</h3>
+        {stockLoading ? (
+          <p className="text-sm text-gray-500">Loading available stock...</p>
+        ) : shippableItems.length === 0 ? (
+          <p className="text-sm text-gray-500">Everything on this order has already been shipped.</p>
+        ) : (
+          <div className="space-y-2">
+            {shippableItems.map(item => {
+              const remaining = Number(item.quantity) - Number(item.quantity_shipped || 0);
+              const available = availableStock[item.part_id] || 0;
+              const valid = isQuantityValid(item);
+              return (
+                <div key={item.id} className="flex items-center justify-between gap-3 border border-gray-200 rounded-md p-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{item.part_name} ({item.part_number})</p>
+                    <p className="text-xs text-gray-500">Remaining to ship: {remaining} &middot; Available in warehouse: {available}</p>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max={Math.min(remaining, available)}
+                    step="0.001"
+                    className={`w-24 px-2 py-1 border rounded-md text-sm ${valid ? 'border-gray-300' : 'border-red-400'}`}
+                    value={itemQuantities[item.id] ?? 0}
+                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div>
@@ -1106,10 +1230,10 @@ const ShipOrderForm = ({ order, onSubmit, onClose }) => {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={loading || stockLoading || !hasAnythingToShip || !allValid}
         >
-          {loading ? 'Shipping...' : 'Mark as Shipped'}
+          {loading ? 'Shipping...' : 'Ship Selected Items'}
         </button>
       </div>
     </form>
@@ -1125,6 +1249,20 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Only items with something shipped but not yet received. Falls back to the full
+  // quantity for orders created before partial-shipment tracking existed.
+  const receivableItems = (order.items || []).filter(
+    item => Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) > 0
+  );
+
+  const [itemQuantities, setItemQuantities] = useState(() => {
+    const initial = {};
+    receivableItems.forEach(item => {
+      initial[item.id] = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0);
+    });
+    return initial;
+  });
 
   // Filter warehouses to only show those belonging to the customer organization
   const customerWarehouses = warehouses.filter(
@@ -1149,13 +1287,30 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
     }));
   };
 
+  const handleQuantityChange = (itemId, value) => {
+    setItemQuantities(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const isQuantityValid = (item) => {
+    const qty = Number(itemQuantities[item.id]);
+    const remaining = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0);
+    return !isNaN(qty) && qty >= 0 && qty <= remaining;
+  };
+
+  const hasAnythingToReceive = receivableItems.some(item => Number(itemQuantities[item.id]) > 0);
+  const allValid = receivableItems.every(isQuantityValid);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      await onSubmit(order.id, formData);
+      const items = receivableItems
+        .filter(item => Number(itemQuantities[item.id]) > 0)
+        .map(item => ({ customer_order_item_id: item.id, quantity: Number(itemQuantities[item.id]) }));
+
+      await onSubmit(order.id, { ...formData, items });
     } catch (err) {
       setError(err.message || 'Failed to confirm receipt');
     } finally {
@@ -1188,6 +1343,38 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
         <p className="text-sm text-gray-600">
           <span className="font-medium">Current Status:</span> {order.status}
         </p>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-2">Items to Receive</h3>
+        {receivableItems.length === 0 ? (
+          <p className="text-sm text-gray-500">Nothing shipped is currently awaiting receipt.</p>
+        ) : (
+          <div className="space-y-2">
+            {receivableItems.map(item => {
+              const remaining = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0);
+              const valid = isQuantityValid(item);
+              return (
+                <div key={item.id} className="flex items-center justify-between gap-3 border border-gray-200 rounded-md p-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{item.part_name} ({item.part_number})</p>
+                    <p className="text-xs text-gray-500">Shipped and awaiting receipt: {remaining}</p>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max={remaining}
+                    step="0.001"
+                    className={`w-24 px-2 py-1 border rounded-md text-sm ${valid ? 'border-gray-300' : 'border-red-400'}`}
+                    value={itemQuantities[item.id] ?? 0}
+                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div>
@@ -1258,10 +1445,10 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={loading || !hasAnythingToReceive || !allValid}
         >
-          {loading ? 'Confirming...' : 'Confirm Receipt'}
+          {loading ? 'Confirming...' : 'Confirm Selected Items'}
         </button>
       </div>
     </form>

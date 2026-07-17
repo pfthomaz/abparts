@@ -72,9 +72,17 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
     }
 
     try {
+      const currentStock = getCurrentStock(formData.part_id);
       const submitData = {
-        ...formData,
-        quantity_change: quantityChange
+        warehouse_id: warehouseId,
+        adjustment_type: REASON_TO_ADJUSTMENT_TYPE[formData.reason] || 'other',
+        reason: formData.reason,
+        notes: formData.notes,
+        items: [{
+          part_id: formData.part_id,
+          quantity_after: currentStock + quantityChange,
+          reason: formData.reason
+        }]
       };
 
       await onSubmit(submitData);
@@ -139,6 +147,23 @@ const WarehouseStockAdjustmentForm = ({ warehouseId, warehouse, onSubmit, onCanc
     { key: 'customerReturnDamaged', value: 'Customer return - damaged' },
     { key: 'other', value: 'Other' }
   ];
+
+  // Maps this form's free-text reason labels onto the stock-adjustments API's adjustment_type enum
+  // (stock_take/damage/loss/found/correction/return/other).
+  const REASON_TO_ADJUSTMENT_TYPE = {
+    'Stocktake adjustment': 'stock_take',
+    'Damaged goods': 'damage',
+    'Expired items': 'damage',
+    'Found items': 'found',
+    'Lost items': 'loss',
+    'Transfer correction': 'correction',
+    'System error correction': 'correction',
+    'Initial stock entry': 'correction',
+    'Return to vendor': 'return',
+    'Customer return - resalable': 'return',
+    'Customer return - damaged': 'return',
+    'Other': 'other'
+  };
 
   return (
     <div className="space-y-4">

@@ -7,6 +7,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { warehouseService } from '../services/warehouseService';
 import { organizationsService } from '../services/organizationsService';
 import { inventoryService } from '../services/inventoryService';
+import { stockAdjustmentsService } from '../services/stockAdjustmentsService';
 import { partsService } from '../services/partsService';
 import Modal from '../components/Modal';
 import WarehouseForm from '../components/WarehouseForm';
@@ -248,15 +249,13 @@ const Warehouses = () => {
 
   const handleStockAdjustment = async (adjustmentData) => {
     try {
-      await inventoryService.createWarehouseStockAdjustment(selectedWarehouseForInventory.id, adjustmentData);
+      await stockAdjustmentsService.create(adjustmentData);
       setShowAdjustmentModal(false);
       setSelectedWarehouseForInventory(null);
       await handleSearch();
       window.dispatchEvent(new CustomEvent('inventoryUpdated', {
         detail: {
-          warehouseId: selectedWarehouseForInventory.id,
-          partId: adjustmentData.part_id,
-          adjustment: adjustmentData.quantity_change
+          warehouseId: selectedWarehouseForInventory.id
         }
       }));
     } catch (err) {

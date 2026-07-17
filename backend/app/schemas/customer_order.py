@@ -48,18 +48,30 @@ class CustomerOrderResponse(CustomerOrderBase):
         from_attributes = True
 
 # --- Customer Order Action Schemas ---
+class CustomerOrderShipItemRequest(BaseModel):
+    """A single line item being shipped now, as part of a (possibly partial) shipment."""
+    customer_order_item_id: uuid.UUID
+    quantity: Decimal = Field(..., gt=0, decimal_places=3)
+
 class CustomerOrderShipRequest(BaseModel):
     """Request schema for marking an order as shipped (Oraseas EE action)"""
     shipped_date: datetime = Field(default_factory=datetime.now)
     tracking_number: Optional[str] = Field(None, max_length=255)
     source_warehouse_id: Optional[uuid.UUID] = Field(None, description="Warehouse to ship from. If not provided, uses the first warehouse of the Oraseas organization.")
     notes: Optional[str] = None
+    items: List[CustomerOrderShipItemRequest] = Field(..., min_length=1, description="Line items and quantities being shipped in this batch. Can be less than the full remaining quantity for a partial shipment.")
+
+class CustomerOrderReceiptItemRequest(BaseModel):
+    """A single line item being confirmed as received now, as part of a (possibly partial) receipt."""
+    customer_order_item_id: uuid.UUID
+    quantity: Decimal = Field(..., gt=0, decimal_places=3)
 
 class CustomerOrderConfirmReceiptRequest(BaseModel):
     """Request schema for confirming order receipt (Customer action)"""
     actual_delivery_date: datetime = Field(default_factory=datetime.now)
     receiving_warehouse_id: uuid.UUID
     notes: Optional[str] = None
+    items: List[CustomerOrderReceiptItemRequest] = Field(..., min_length=1, description="Line items and quantities being confirmed as received now. Can be less than the full shipped-but-unreceived quantity for a partial receipt.")
 
 class CustomerOrderItemBase(BaseModel):
     customer_order_id: uuid.UUID
@@ -78,11 +90,13 @@ class CustomerOrderItemResponse(CustomerOrderItemBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
-    
+
     # Include related data for easier display
     part_number: Optional[str] = None
     part_name: Optional[str] = None
     unit_of_measure: Optional[str] = None
+    quantity_shipped: Decimal = Field(default=0, decimal_places=3)
+    quantity_received: Decimal = Field(default=0, decimal_places=3)
 
     class Config:
         from_attributes = True

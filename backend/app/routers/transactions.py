@@ -15,9 +15,8 @@ from ..permissions import (
     OrganizationScopedQueries, check_organization_access, permission_checker
 )
 from ..schemas.machine_sale import MachineSaleRequest, MachineSaleResponse
-from ..schemas.part_order_transaction import PartOrderRequest, PartOrderReceiptRequest, PartOrderResponse
 from ..schemas.part_usage import PartUsageRequest, PartUsageResponse
-from ..crud import machine_sale, part_order_transaction, part_usage
+from ..crud import machine_sale, part_usage
 
 router = APIRouter()
 
@@ -397,76 +396,6 @@ async def create_machine_sale(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/part-order", response_model=PartOrderResponse, status_code=status.HTTP_201_CREATED)
-async def create_part_order(
-    part_order_request: PartOrderRequest,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
-):
-    """
-    Create a part order request (phase 1 of two-phase recording).
-    Users can only create orders from their own organization.
-    """
-    # Validate organizational access
-    if not permission_checker.is_super_admin(current_user):
-        # Users can only create orders from their own organization
-        if part_order_request.from_organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Not authorized to create orders from this organization")
-        
-        # Validate warehouse access if provided
-        if part_order_request.from_warehouse_id:
-            warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == part_order_request.from_warehouse_id).first()
-            if not warehouse or warehouse.organization_id != current_user.organization_id:
-                raise HTTPException(status_code=403, detail="Not authorized to use this warehouse")
-    
-    # Set performed_by_user_id to current user if not provided
-    if not part_order_request.performed_by_user_id:
-        part_order_request.performed_by_user_id = current_user.user_id
-    
-    try:
-        db_part_order = part_order_transaction.create_part_order(db, part_order_request)
-        
-        # Get the response with related data
-        result = part_order_transaction.get_part_order(db, db_part_order.id)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.post("/part-order/{order_id}/receipt", response_model=PartOrderResponse)
-async def receive_part_order(
-    order_id: uuid.UUID,
-    receipt_request: PartOrderReceiptRequest,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.WRITE))
-):
-    """
-    Process part order receipt (phase 2 of two-phase recording).
-    Creates inventory transactions and updates stock levels.
-    """
-    # Validate that the order exists and user has access
-    order = db.query(models.PartOrderRequest).filter(models.PartOrderRequest.id == order_id).first()
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    
-    # Check organizational access
-    if not permission_checker.is_super_admin(current_user):
-        if order.customer_organization_id != current_user.organization_id:
-            raise HTTPException(status_code=403, detail="Not authorized to receive this order")
-    
-    # Set the order_id and performed_by_user_id
-    receipt_request.order_id = order_id
-    if not receipt_request.performed_by_user_id:
-        receipt_request.performed_by_user_id = current_user.user_id
-    
-    try:
-        db_part_order = part_order_transaction.receive_part_order(db, receipt_request)
-        
-        # Get the response with related data
-        result = part_order_transaction.get_part_order(db, db_part_order.id)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 @router.post("/part-usage", response_model=PartUsageResponse, status_code=status.HTTP_201_CREATED)
 async def create_part_usage(
     part_usage_request: PartUsageRequest,
@@ -524,24 +453,6 @@ async def get_machine_sales(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/part-orders", response_model=List[PartOrderResponse])
-async def get_part_orders(
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(require_permission(ResourceType.TRANSACTION, PermissionType.READ))
-):
-    """
-    Get part orders with pagination.
-    Users see only orders involving their organization.
-    """
-    organization_id = None if permission_checker.is_super_admin(current_user) else current_user.organization_id
-    
-    try:
-        orders = part_order_transaction.get_part_orders(db, skip=skip, limit=limit, organization_id=organization_id)
-        return orders
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/part-usages", response_model=List[PartUsageResponse])
 async def get_part_usages(

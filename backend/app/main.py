@@ -37,7 +37,6 @@ from .routers.customer_order_items import router as customer_order_items_router
 from .routers.part_usage import router as part_usage_router
 from .routers.machines import router as machines_router
 from .routers.predictive_maintenance import router as predictive_maintenance_router
-from .routers.part_order import router as part_order_router
 from .routers.stock_adjustments import router as stock_adjustments_router # New: Import stock_adjustments_router
 # from .routers.stocktake import router as stocktake_router  # Replaced by inventory_workflow_router
 from .routers.dashboard import router as dashboard_router # New: Import dashboard router
@@ -243,7 +242,6 @@ app.include_router(customer_order_items_router, prefix="/customer_order_items", 
 app.include_router(part_usage_router, prefix="/part_usage", tags=["Part Usage"])
 app.include_router(machines_router, prefix="/machines", tags=["Machines"])
 app.include_router(predictive_maintenance_router, prefix="/predictive-maintenance", tags=["Predictive Maintenance"])
-app.include_router(part_order_router, prefix="/part-orders", tags=["Part Orders"])
 app.include_router(stock_adjustments_router, prefix="/stock-adjustments", tags=["Stock Adjustments"])
 # app.include_router(stocktake_router, prefix="/stocktake", tags=["Stocktake"])  # Replaced by inventory_workflow_router
 app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])

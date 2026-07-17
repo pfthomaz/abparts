@@ -773,7 +773,225 @@ class TestPerformanceAndScalability:
         response = client.get("/inventory/", headers=super_admin_headers)
         assert response.status_code == 200
         all_inventory = response.json()
-        
+
         # Should include inventory from multiple organizations
         org_ids = {item["warehouse"]["organization_id"] for item in all_inventory}
         assert len(org_ids) >= 2  # Should have multiple organizations
+
+
+class TestPartialCustomerOrderShipment:
+    """Test shipping and receiving a customer order in multiple partial batches."""
+
+    def _seed_stock(self, db_session: Session, warehouse_id, part_id, quantity, user_id):
+        """Add stock to a warehouse via a 'creation' transaction, matching how
+        calculate_current_stock (the source of truth) derives available stock."""
+        transaction = Transaction(
+            transaction_type="creation",
+            part_id=part_id,
+            to_warehouse_id=warehouse_id,
+            quantity=Decimal(str(quantity)),
+            unit_of_measure="pieces",
+            performed_by_user_id=user_id,
+            transaction_date=datetime.utcnow(),
+        )
+        db_session.add(transaction)
+        db_session.commit()
+
+    def test_partial_ship_and_receive_full_lifecycle(
+        self, client: TestClient, auth_headers, test_organizations,
+        test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        """Order 3 units with only 2 in stock: ship 2, receive 2, restock, ship/receive the last 1."""
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+        customer_warehouse = test_warehouses["customer1_main"]
+        part = test_parts["oil_filter"]
+
+        # Only 2 in stock at Oraseas to start
+        self._seed_stock(db_session, oraseas_warehouse.id, part.id, 2, test_users["oraseas_admin"].id)
+
+        order_data = {
+            "customer_organization_id": str(test_organizations["customer1"].id),
+            "oraseas_organization_id": str(test_organizations["oraseas"].id),
+            "order_date": datetime.utcnow().isoformat(),
+            "status": "Requested",
+        }
+        response = client.post("/customer_orders/", json=order_data, headers=customer_headers)
+        assert response.status_code == 201
+        order_id = response.json()["id"]
+
+        item_data = {
+            "customer_order_id": order_id,
+            "part_id": str(part.id),
+            "quantity": "3.000",
+            "unit_price": "15.50",
+        }
+        response = client.post("/customer_order_items/", json=item_data, headers=customer_headers)
+        assert response.status_code == 201
+        item_id = response.json()["id"]
+
+        # Shipping all 3 should fail: only 2 are in stock
+        response = client.patch(
+            f"/customer_orders/{order_id}/ship",
+            json={
+                "shipped_date": datetime.utcnow().isoformat(),
+                "source_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "3.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 400
+
+        # Ship the 2 that are available
+        response = client.patch(
+            f"/customer_orders/{order_id}/ship",
+            json={
+                "shipped_date": datetime.utcnow().isoformat(),
+                "source_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "2.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        order = response.json()
+        assert order["status"] == "Partially Shipped"
+        assert Decimal(str(order["items"][0]["quantity_shipped"])) == Decimal("2.000")
+
+        # Customer confirms receipt of the 2 that shipped
+        response = client.patch(
+            f"/customer_orders/{order_id}/confirm-receipt",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(customer_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "2.000"}],
+            },
+            headers=customer_headers,
+        )
+        assert response.status_code == 200
+        order = response.json()
+        # Still "Partially Shipped": 1 unit remains unshipped, even though everything
+        # shipped so far has been received. Shipped-completeness gates the status.
+        assert order["status"] == "Partially Shipped"
+        assert Decimal(str(order["items"][0]["quantity_received"])) == Decimal("2.000")
+
+        customer_inventory = db_session.query(Inventory).filter(
+            Inventory.warehouse_id == customer_warehouse.id,
+            Inventory.part_id == part.id,
+        ).first()
+        assert customer_inventory is not None
+        assert customer_inventory.current_stock == Decimal("2.000")
+
+        # Restock Oraseas with the remaining unit and ship/receive it
+        self._seed_stock(db_session, oraseas_warehouse.id, part.id, 1, test_users["oraseas_admin"].id)
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/ship",
+            json={
+                "shipped_date": datetime.utcnow().isoformat(),
+                "source_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "1.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        # Now fully shipped (3/3), but only 2/3 received so far.
+        assert response.json()["status"] == "Partially Received"
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/confirm-receipt",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(customer_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "1.000"}],
+            },
+            headers=customer_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Received"
+
+        db_session.refresh(customer_inventory)
+        assert customer_inventory.current_stock == Decimal("3.000")
+
+    def test_ship_rejects_quantity_beyond_remaining_ordered(
+        self, client: TestClient, auth_headers, test_organizations,
+        test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        """Shipping more than was ordered should fail, independent of stock availability."""
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+        part = test_parts["oil_filter"]
+
+        # Plenty of stock, but the order is only for 3
+        self._seed_stock(db_session, oraseas_warehouse.id, part.id, 100, test_users["oraseas_admin"].id)
+
+        order_data = {
+            "customer_organization_id": str(test_organizations["customer1"].id),
+            "oraseas_organization_id": str(test_organizations["oraseas"].id),
+            "order_date": datetime.utcnow().isoformat(),
+            "status": "Requested",
+        }
+        response = client.post("/customer_orders/", json=order_data, headers=customer_headers)
+        order_id = response.json()["id"]
+
+        item_data = {
+            "customer_order_id": order_id,
+            "part_id": str(part.id),
+            "quantity": "3.000",
+            "unit_price": "15.50",
+        }
+        response = client.post("/customer_order_items/", json=item_data, headers=customer_headers)
+        item_id = response.json()["id"]
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/ship",
+            json={
+                "shipped_date": datetime.utcnow().isoformat(),
+                "source_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "5.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 400
+
+
+class TestWarehouseStockAdjustmentPayload:
+    """Regression test for the WarehouseStockAdjustmentForm fix: the form used to call the
+    broken legacy `/inventory/warehouse/{id}/adjustment` endpoint (which referenced
+    StockAdjustment.inventory_id/quantity_adjusted columns that don't exist on the model).
+    It now posts directly to `/stock-adjustments` with an absolute quantity_after, in the
+    exact shape the form builds client-side."""
+
+    def test_warehouse_form_payload_creates_adjustment_and_updates_stock(
+        self, client: TestClient, auth_headers, test_warehouses, test_inventory, test_parts
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        warehouse = test_warehouses["oraseas_main"]
+        part = test_parts["oil_filter"]
+
+        # test_inventory seeds oraseas_main/oil_filter at current_stock=100.000
+        payload = {
+            "warehouse_id": str(warehouse.id),
+            "adjustment_type": "damage",
+            "reason": "Damaged goods",
+            "notes": "Box crushed in transit",
+            "items": [{
+                "part_id": str(part.id),
+                "quantity_after": "97.000",
+                "reason": "Damaged goods",
+            }],
+        }
+
+        response = client.post("/stock-adjustments/", json=payload, headers=oraseas_headers)
+        assert response.status_code in (200, 201)
+        body = response.json()
+        assert body["warehouse_id"] == str(warehouse.id)
+
+        inv_response = client.get(f"/inventory/warehouse/{warehouse.id}", headers=oraseas_headers)
+        assert inv_response.status_code == 200
+        inventory_items = inv_response.json()
+        oil_filter_inventory = next(item for item in inventory_items if item["part_id"] == str(part.id))
+        assert Decimal(str(oil_filter_inventory["current_stock"])) == Decimal("97.000")

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { inventoryService } from '../services/inventoryService';
+import { stockAdjustmentsService } from '../services/stockAdjustmentsService';
 import { warehouseService } from '../services/warehouseService';
 import { partsService } from '../services/partsService';
 import { api } from '../services/api'; // For fetching related data
@@ -214,7 +215,7 @@ const Inventory = () => {
 
   const handleStockAdjustment = async (adjustmentData) => {
     try {
-      await inventoryService.createWarehouseStockAdjustment(selectedWarehouseId, adjustmentData);
+      await stockAdjustmentsService.create(adjustmentData);
 
       // Refresh the main inventory data first
       await fetchData();
@@ -234,9 +235,7 @@ const Inventory = () => {
       // Also trigger a page-level refresh to ensure all components are updated
       window.dispatchEvent(new CustomEvent('inventoryUpdated', {
         detail: {
-          warehouseId: selectedWarehouseId,
-          partId: adjustmentData.part_id,
-          adjustment: adjustmentData.quantity_change
+          warehouseId: selectedWarehouseId
         }
       }));
 

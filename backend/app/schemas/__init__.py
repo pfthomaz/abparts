@@ -13,7 +13,6 @@ from .stock_adjustment import *
 from .stocktake import *
 from .transaction import *
 from .predictive_maintenance import *
-from .part_order import *
 from .token import *
 from .session import *
 from .invitation import *

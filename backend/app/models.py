@@ -772,6 +772,9 @@ class CustomerOrderItem(Base):
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
     quantity = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
     unit_price = Column(DECIMAL(10, 2))
+    # Cumulative quantities fulfilled so far, to support shipping/receiving an order in multiple partial batches.
+    quantity_shipped = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
+    quantity_received = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -827,6 +830,7 @@ class Transaction(Base):
     to_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
     machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
     customer_order_id = Column(UUID(as_uuid=True), ForeignKey("customer_orders.id"), nullable=True)
+    customer_order_item_id = Column(UUID(as_uuid=True), ForeignKey("customer_order_items.id"), nullable=True)
     quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
     unit_of_measure = Column(String(50), nullable=False)
     performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -842,6 +846,7 @@ class Transaction(Base):
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id], back_populates="transactions_to")
     machine = relationship("Machine")
     customer_order = relationship("CustomerOrder", back_populates="transactions")
+    customer_order_item = relationship("CustomerOrderItem")
     performed_by_user = relationship("User", back_populates="transactions_performed")
     approvals = relationship("TransactionApproval", back_populates="transaction", cascade="all, delete-orphan")
 
@@ -1402,88 +1407,6 @@ class MaintenanceReminder(Base):
 
     def __repr__(self):
         return f"<MaintenanceReminder(id={self.id}, machine_id={self.machine_id}, type='{self.reminder_type}')>"
-
-
-# Part Order Models
-class OrderStatus(enum.Enum):
-    REQUESTED = "requested"
-    APPROVED = "approved"
-    ORDERED = "ordered"
-    SHIPPED = "shipped"
-    RECEIVED = "received"
-    CANCELLED = "cancelled"
-
-class SupplierType(enum.Enum):
-    ORASEAS_EE = "oraseas_ee"
-    EXTERNAL_SUPPLIER = "external_supplier"
-
-class OrderPriority(enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    URGENT = "urgent"
-
-class PartOrderRequest(Base):
-    """
-    SQLAlchemy model for the 'part_order_requests' table.
-    Represents part order requests from customers.
-    """
-    __tablename__ = "part_order_requests"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_number = Column(String(50), unique=True, nullable=False, index=True)
-    customer_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
-    supplier_type = Column(Enum(SupplierType), nullable=False)
-    supplier_organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True)
-    supplier_name = Column(String(255), nullable=True)
-    status = Column(Enum(OrderStatus), nullable=False)
-    priority = Column(Enum(OrderPriority), nullable=False)
-    requested_delivery_date = Column(DateTime(timezone=True), nullable=True)
-    expected_delivery_date = Column(DateTime(timezone=True), nullable=True)
-    actual_delivery_date = Column(DateTime(timezone=True), nullable=True)
-    notes = Column(Text, nullable=True)
-    fulfillment_notes = Column(Text, nullable=True)
-    requested_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    approved_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    received_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-    # Relationships
-    customer_organization = relationship("Organization", foreign_keys=[customer_organization_id])
-    supplier_organization = relationship("Organization", foreign_keys=[supplier_organization_id])
-    requested_by_user = relationship("User", foreign_keys=[requested_by_user_id])
-    approved_by_user = relationship("User", foreign_keys=[approved_by_user_id])
-    received_by_user = relationship("User", foreign_keys=[received_by_user_id])
-
-    def __repr__(self):
-        return f"<PartOrderRequest(id={self.id}, order_number='{self.order_number}', status='{self.status.value}')>"
-
-class PartOrderItem(Base):
-    """
-    SQLAlchemy model for the 'part_order_items' table.
-    Represents individual items within a part order request.
-    """
-    __tablename__ = "part_order_items"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_request_id = Column(UUID(as_uuid=True), ForeignKey("part_order_requests.id"), nullable=False)
-    part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
-    quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
-    unit_price = Column(DECIMAL(precision=10, scale=2), nullable=True)
-    destination_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=False)
-    received_quantity = Column(DECIMAL(precision=10, scale=3), nullable=True, server_default='0')
-    notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-    # Relationships
-    order_request = relationship("PartOrderRequest")
-    part = relationship("Part")
-    destination_warehouse = relationship("Warehouse")
-
-    def __repr__(self):
-        return f"<PartOrderItem(id={self.id}, order_request_id={self.order_request_id}, part_id={self.part_id}, quantity={self.quantity})>"
 
 
 # Machine Sale Models

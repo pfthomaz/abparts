@@ -106,15 +106,6 @@ const getInventoryTransfers = (filters = {}) => {
 };
 
 /**
- * Create warehouse-specific stock adjustment
- * @param {string} warehouseId Warehouse ID
- * @param {object} adjustmentData Adjustment details
- */
-const createWarehouseStockAdjustment = (warehouseId, adjustmentData) => {
-  return api.post(`/inventory/warehouse/${warehouseId}/adjustment`, adjustmentData);
-};
-
-/**
  * Get stock adjustment history for a warehouse
  * @param {string} warehouseId Warehouse ID
  * @param {object} filters Optional filters
@@ -228,7 +219,6 @@ export const inventoryService = {
   getWarehouseInventoryAnalytics,
   transferInventory,
   getInventoryTransfers,
-  createWarehouseStockAdjustment,
   getWarehouseStockAdjustments,
   createInventoryItem,
   updateInventoryItem,
