@@ -85,6 +85,26 @@ def update_supplier_order(db: Session, order_id: uuid.UUID, order_update: schema
         logger.error(f"Error updating supplier order: {e}")
         raise HTTPException(status_code=400, detail="Error updating supplier order")
 
+def recompute_supplier_order_status(order: models.SupplierOrder) -> str:
+    """
+    Derive the order's status from the cumulative received/written-off quantities
+    on its items. A written-off quantity (declared never coming) counts as
+    resolved, same as a received one - it closes the tracking gap without a
+    delivery.
+
+    Leaves the status untouched if nothing has been resolved yet (order.items
+    must already be loaded).
+    """
+    total_ordered = sum(item.quantity for item in order.items)
+    total_received = sum(item.quantity_received for item in order.items)
+    total_resolved = total_received + sum(item.quantity_written_off for item in order.items)
+
+    if total_resolved == 0:
+        return order.status
+    if total_resolved < total_ordered:
+        return "Partially Received"
+    return "Received"
+
 def delete_supplier_order(db: Session, order_id: uuid.UUID):
     """Delete a supplier order by ID."""
     db_order = db.query(models.SupplierOrder).filter(models.SupplierOrder.id == order_id).first()

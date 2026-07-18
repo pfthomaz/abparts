@@ -85,6 +85,8 @@ def read_supplier_orders(
                 "supplier_order_id": item.supplier_order_id,
                 "part_id": item.part_id,
                 "quantity": item.quantity,
+                "quantity_received": item.quantity_received,
+                "quantity_written_off": item.quantity_written_off,
                 "unit_price": item.unit_price,
                 "created_at": item.created_at,
                 "updated_at": item.updated_at,
@@ -222,6 +224,186 @@ def _create_inventory_on_supplier_delivery(db: Session, order_id: str, receiving
         logger.error(f"Error creating inventory for supplier order {order_id}: {e}")
         raise HTTPException(status_code=400, detail=f"Error updating inventory: {str(e)}")
 
+
+@router.patch("/{order_id}/receive", response_model=schemas.SupplierOrderResponse)
+def receive_supplier_order_items(
+    order_id: str,
+    receive_request: schemas.SupplierOrderReceiveRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
+):
+    """
+    Receive a supplier order, in full or in part. Can be called more than once
+    for the same order to record successive partial deliveries. `receive_request.items`
+    specifies which line items and quantities arrived now (up to the remaining
+    ordered-but-unresolved quantity of each). The order moves to 'Partially
+    Received' or 'Received' depending on whether any ordered quantity is still
+    outstanding afterward.
+    """
+    if not permission_checker.is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can receive supplier orders")
+
+    order = db.query(models.SupplierOrder).options(
+        selectinload(models.SupplierOrder.items).selectinload(models.SupplierOrderItem.part)
+    ).filter(models.SupplierOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Supplier order not found")
+
+    if not permission_checker.is_super_admin(current_user):
+        if order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot receive orders for other organizations")
+
+    items_by_id = {str(item.id): item for item in order.items}
+    if all(item.quantity_received + item.quantity_written_off >= item.quantity for item in order.items):
+        raise HTTPException(status_code=400, detail="Nothing is outstanding on this order")
+
+    warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == receive_request.receiving_warehouse_id).first()
+    if not warehouse:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    if warehouse.organization_id != order.ordering_organization_id:
+        raise HTTPException(status_code=400, detail="Warehouse must belong to the ordering organization")
+
+    # Validate every requested line before mutating anything
+    for req_item in receive_request.items:
+        item = items_by_id.get(str(req_item.supplier_order_item_id))
+        if item is None:
+            raise HTTPException(status_code=400, detail=f"Item {req_item.supplier_order_item_id} does not belong to this order")
+        remaining = item.quantity - item.quantity_received - item.quantity_written_off
+        if req_item.quantity > remaining:
+            part_name = item.part.name if item.part else str(item.part_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot receive {req_item.quantity} of '{part_name}': only {remaining} outstanding"
+            )
+
+    # Create inventory transactions for each received line item
+    for req_item in receive_request.items:
+        item = items_by_id[str(req_item.supplier_order_item_id)]
+        transaction = models.Transaction(
+            transaction_type="creation",
+            part_id=item.part_id,
+            to_warehouse_id=receive_request.receiving_warehouse_id,
+            supplier_order_id=order.id,
+            supplier_order_item_id=item.id,
+            quantity=req_item.quantity,
+            unit_of_measure=item.part.unit_of_measure if item.part else "units",
+            performed_by_user_id=current_user.user_id,
+            transaction_date=datetime.utcnow(),
+            notes=f"Received from supplier order #{str(order.id)[:8]}",
+            reference_number=f"SUP-{str(order.id)[:8]}-{str(item.id)[:8]}"
+        )
+        db.add(transaction)
+
+        inventory = db.query(models.Inventory).filter(
+            models.Inventory.part_id == item.part_id,
+            models.Inventory.warehouse_id == receive_request.receiving_warehouse_id
+        ).first()
+
+        if inventory:
+            inventory.current_stock += req_item.quantity
+            inventory.last_updated = datetime.now()
+        else:
+            inventory = models.Inventory(
+                part_id=item.part_id,
+                warehouse_id=receive_request.receiving_warehouse_id,
+                current_stock=req_item.quantity,
+                minimum_stock_recommendation=0,
+                unit_of_measure=item.part.unit_of_measure if item.part else "units"
+            )
+            db.add(inventory)
+
+        item.quantity_received += req_item.quantity
+
+    # Record actual_delivery_date only on the first confirmed receipt; later
+    # partial receipts are still individually timestamped via their own Transaction rows.
+    if order.actual_delivery_date is None:
+        order.actual_delivery_date = receive_request.actual_delivery_date
+    if receive_request.notes:
+        order.notes = f"{order.notes}\n\nReceived: {receive_request.notes}" if order.notes else f"Received: {receive_request.notes}"
+
+    order.status = crud.supplier_orders.recompute_supplier_order_status(order)
+
+    db.commit()
+    db.refresh(order)
+
+    return order
+
+
+@router.patch("/{order_id}/write-off", response_model=schemas.SupplierOrderResponse)
+def write_off_supplier_order_items(
+    order_id: str,
+    write_off_request: schemas.SupplierOrderWriteOffRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
+):
+    """
+    Declare an outstanding ordered-but-never-received quantity as never coming
+    (e.g. supplier backorder cancelled, item discontinued). Closes the tracking
+    gap without a delivery - it counts as resolved for status purposes, but is
+    never added to inventory. Each line requires a reason. Can be called more
+    than once; only the still-outstanding (ordered minus received minus
+    already-written-off) quantity of each item is eligible.
+    """
+    if not permission_checker.is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can write off supplier order items")
+
+    order = db.query(models.SupplierOrder).options(
+        selectinload(models.SupplierOrder.items).selectinload(models.SupplierOrderItem.part)
+    ).filter(models.SupplierOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Supplier order not found")
+
+    if not permission_checker.is_super_admin(current_user):
+        if order.ordering_organization_id != current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Cannot write off items for other organizations")
+
+    items_by_id = {str(item.id): item for item in order.items}
+    if all(item.quantity_received + item.quantity_written_off >= item.quantity for item in order.items):
+        raise HTTPException(status_code=400, detail="Nothing is outstanding on this order")
+
+    # Validate every requested line before mutating anything
+    for req_item in write_off_request.items:
+        item = items_by_id.get(str(req_item.supplier_order_item_id))
+        if item is None:
+            raise HTTPException(status_code=400, detail=f"Item {req_item.supplier_order_item_id} does not belong to this order")
+        remaining = item.quantity - item.quantity_received - item.quantity_written_off
+        if req_item.quantity > remaining:
+            part_name = item.part.name if item.part else str(item.part_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot write off {req_item.quantity} of '{part_name}': only {remaining} still outstanding"
+            )
+
+    # Record a loss transaction per line item - no warehouse gains or loses stock,
+    # this only closes the receiving-tracking gap.
+    for req_item in write_off_request.items:
+        item = items_by_id[str(req_item.supplier_order_item_id)]
+        transaction = models.Transaction(
+            transaction_type="loss",
+            part_id=item.part_id,
+            supplier_order_id=order.id,
+            supplier_order_item_id=item.id,
+            quantity=req_item.quantity,
+            unit_of_measure=item.part.unit_of_measure if item.part else "units",
+            performed_by_user_id=current_user.user_id,
+            transaction_date=datetime.utcnow(),
+            notes=f"Written off - {req_item.reason}",
+            reference_number=str(order.id)
+        )
+        db.add(transaction)
+        item.quantity_written_off += req_item.quantity
+
+    if write_off_request.notes:
+        order.notes = f"{order.notes}\n\nWritten off: {write_off_request.notes}" if order.notes else f"Written off: {write_off_request.notes}"
+
+    order.status = crud.supplier_orders.recompute_supplier_order_status(order)
+
+    db.commit()
+    db.refresh(order)
+
+    return order
+
+
 @router.get("/{order_id}", response_model=schemas.SupplierOrderResponse)
 def get_supplier_order(
     order_id: str,
@@ -238,8 +420,7 @@ def get_supplier_order(
     
     # Check permissions
     if not permission_checker.is_super_admin(current_user):
-        if (order.customer_organization_id != current_user.organization_id and 
-            order.supplier_organization_id != current_user.organization_id):
+        if order.ordering_organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail="Access denied to this order")
     
     return order
@@ -269,9 +450,9 @@ def delete_supplier_order(
             raise HTTPException(status_code=403, detail="Cannot delete orders for other organizations")
     
     # Check if order can be deleted (only if not yet shipped/received)
-    if order.status in ['Shipped', 'Received', 'Delivered']:
+    if order.status in ['Shipped', 'Partially Received', 'Received', 'Delivered']:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Cannot delete order with status '{order.status}'. Only orders in 'Requested' or 'Pending' status can be deleted."
         )
     

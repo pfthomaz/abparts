@@ -42,6 +42,24 @@ const updateSupplierOrder = (orderId, updateData) => {
 };
 
 /**
+ * Receives a supplier order, in full or in part.
+ * @param {string} orderId The ID of the supplier order.
+ * @param {object} receiveData ({ receiving_warehouse_id, actual_delivery_date, notes, items: [{supplier_order_item_id, quantity}] })
+ */
+const receiveSupplierOrderItems = (orderId, receiveData) => {
+  return api.patch(`/supplier_orders/${orderId}/receive`, receiveData);
+};
+
+/**
+ * Writes off an outstanding supplier order quantity as never coming (e.g. cancelled backorder).
+ * @param {string} orderId The ID of the supplier order.
+ * @param {object} writeOffData ({ items: [{supplier_order_item_id, quantity, reason}], notes })
+ */
+const writeOffSupplierOrderItems = (orderId, writeOffData) => {
+  return api.patch(`/supplier_orders/${orderId}/write-off`, writeOffData);
+};
+
+/**
  * Updates a customer order.
  * @param {string} orderId The ID of the customer order to update.
  * @param {object} updateData The data to update the customer order with.
@@ -141,6 +159,8 @@ export const ordersService = {
   createCustomerOrder,
   updateSupplierOrder,
   updateCustomerOrder,
+  receiveSupplierOrderItems,
+  writeOffSupplierOrderItems,
   deleteSupplierOrder,
   deleteCustomerOrder,
   getOrderAnalytics,

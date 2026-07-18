@@ -1211,3 +1211,182 @@ class TestCustomerOrderWriteOff:
             headers=customer_headers,
         )
         assert response.status_code == 400
+
+
+class TestSupplierOrderPartialReceipt:
+    """Test receiving and writing off a supplier order in multiple partial batches."""
+
+    def _create_supplier_order(self, client, test_organizations, test_parts, oraseas_headers, quantity="3.000"):
+        part = test_parts["oil_filter"]
+
+        response = client.post(
+            "/supplier_orders/",
+            json={
+                "ordering_organization_id": str(test_organizations["oraseas"].id),
+                "supplier_name": "Acme Parts Co",
+                "order_date": datetime.utcnow().isoformat(),
+                "status": "Pending",
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 201
+        order_id = response.json()["id"]
+
+        response = client.post(
+            "/supplier_order_items/",
+            json={
+                "supplier_order_id": order_id,
+                "part_id": str(part.id),
+                "quantity": quantity,
+                "unit_price": "12.00",
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 201
+        item_id = response.json()["id"]
+
+        return order_id, item_id
+
+    def test_partial_receive_then_receive_rest(
+        self, client: TestClient, auth_headers, test_organizations, test_parts, test_warehouses, db_session: Session
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+        part = test_parts["oil_filter"]
+
+        order_id, item_id = self._create_supplier_order(client, test_organizations, test_parts, oraseas_headers, quantity="3.000")
+
+        # Receive 2 of the 3 ordered
+        response = client.patch(
+            f"/supplier_orders/{order_id}/receive",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"supplier_order_item_id": item_id, "quantity": "2.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        order = response.json()
+        assert order["status"] == "Partially Received"
+        assert Decimal(str(order["items"][0]["quantity_received"])) == Decimal("2.000")
+
+        # Attempting to receive more than what's left (1) should fail
+        response = client.patch(
+            f"/supplier_orders/{order_id}/receive",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"supplier_order_item_id": item_id, "quantity": "5.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 400
+
+        # Receive the last 1
+        response = client.patch(
+            f"/supplier_orders/{order_id}/receive",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"supplier_order_item_id": item_id, "quantity": "1.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Received"
+
+        inventory = db_session.query(Inventory).filter(
+            Inventory.warehouse_id == oraseas_warehouse.id,
+            Inventory.part_id == part.id,
+        ).first()
+        assert inventory is not None
+        assert inventory.current_stock == Decimal("3.000")
+
+    def test_write_off_partial_then_receive_rest_resolves_order(
+        self, client: TestClient, auth_headers, test_organizations, test_parts, test_warehouses, db_session: Session
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+
+        order_id, item_id = self._create_supplier_order(client, test_organizations, test_parts, oraseas_headers, quantity="3.000")
+
+        response = client.patch(
+            f"/supplier_orders/{order_id}/write-off",
+            json={
+                "items": [{"supplier_order_item_id": item_id, "quantity": "1.000", "reason": "Backordered - cancelled"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        order = response.json()
+        assert order["status"] == "Partially Received"
+        assert Decimal(str(order["items"][0]["quantity_written_off"])) == Decimal("1.000")
+
+        response = client.patch(
+            f"/supplier_orders/{order_id}/receive",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"supplier_order_item_id": item_id, "quantity": "2.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Received"
+
+    def test_receive_requires_org_membership(
+        self, client: TestClient, auth_headers, test_organizations, test_parts, test_warehouses, db_session: Session
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+
+        order_id, item_id = self._create_supplier_order(client, test_organizations, test_parts, oraseas_headers, quantity="1.000")
+
+        response = client.patch(
+            f"/supplier_orders/{order_id}/receive",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"supplier_order_item_id": item_id, "quantity": "1.000"}],
+            },
+            headers=customer_headers,
+        )
+        assert response.status_code == 403
+
+    def test_write_off_requires_reason(
+        self, client: TestClient, auth_headers, test_organizations, test_parts, test_warehouses, db_session: Session
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        order_id, item_id = self._create_supplier_order(client, test_organizations, test_parts, oraseas_headers, quantity="1.000")
+
+        response = client.patch(
+            f"/supplier_orders/{order_id}/write-off",
+            json={"items": [{"supplier_order_item_id": item_id, "quantity": "1.000", "reason": ""}]},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 422
+
+    def test_can_delete_pending_order_but_not_after_partial_receipt(
+        self, client: TestClient, auth_headers, test_organizations, test_parts, test_warehouses, db_session: Session
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+
+        order_id, item_id = self._create_supplier_order(client, test_organizations, test_parts, oraseas_headers, quantity="2.000")
+
+        response = client.patch(
+            f"/supplier_orders/{order_id}/receive",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"supplier_order_item_id": item_id, "quantity": "1.000"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Partially Received"
+
+        response = client.delete(f"/supplier_orders/{order_id}", headers=oraseas_headers)
+        assert response.status_code == 400

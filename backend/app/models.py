@@ -709,6 +709,9 @@ class SupplierOrderItem(Base):
     part_id = Column(UUID(as_uuid=True), ForeignKey("parts.id"), nullable=False)
     quantity = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='1')
     unit_price = Column(DECIMAL(10, 2))
+    # Cumulative quantities resolved so far, to support receiving an order in multiple partial batches.
+    quantity_received = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
+    quantity_written_off = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -834,6 +837,8 @@ class Transaction(Base):
     machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id"), nullable=True)
     customer_order_id = Column(UUID(as_uuid=True), ForeignKey("customer_orders.id"), nullable=True)
     customer_order_item_id = Column(UUID(as_uuid=True), ForeignKey("customer_order_items.id"), nullable=True)
+    supplier_order_id = Column(UUID(as_uuid=True), ForeignKey("supplier_orders.id"), nullable=True)
+    supplier_order_item_id = Column(UUID(as_uuid=True), ForeignKey("supplier_order_items.id"), nullable=True)
     quantity = Column(DECIMAL(precision=10, scale=3), nullable=False)
     unit_of_measure = Column(String(50), nullable=False)
     performed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -850,6 +855,8 @@ class Transaction(Base):
     machine = relationship("Machine")
     customer_order = relationship("CustomerOrder", back_populates="transactions")
     customer_order_item = relationship("CustomerOrderItem")
+    supplier_order = relationship("SupplierOrder")
+    supplier_order_item = relationship("SupplierOrderItem")
     performed_by_user = relationship("User", back_populates="transactions_performed")
     approvals = relationship("TransactionApproval", back_populates="transaction", cascade="all, delete-orphan")
 

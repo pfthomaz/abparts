@@ -27,15 +27,17 @@ const Orders = () => {
   const [error, setError] = useState(null);
   const [showSupplierOrderModal, setShowSupplierOrderModal] = useState(false);
   const [showCustomerOrderModal, setShowCustomerOrderModal] = useState(false);
-  const [showFulfillmentModal, setShowFulfillmentModal] = useState(false);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
   const [showShipOrderModal, setShowShipOrderModal] = useState(false);
   const [showConfirmReceiptModal, setShowConfirmReceiptModal] = useState(false);
   const [showWriteOffModal, setShowWriteOffModal] = useState(false);
-  const [selectedOrderForFulfillment, setSelectedOrderForFulfillment] = useState(null);
+  const [showSupplierReceiveModal, setShowSupplierReceiveModal] = useState(false);
+  const [showSupplierWriteOffModal, setShowSupplierWriteOffModal] = useState(false);
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null);
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);
   const [selectedOrderForWriteOff, setSelectedOrderForWriteOff] = useState(null);
+  const [selectedSupplierOrderForReceive, setSelectedSupplierOrderForReceive] = useState(null);
+  const [selectedSupplierOrderForWriteOff, setSelectedSupplierOrderForWriteOff] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
   const [editOrderType, setEditOrderType] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -242,34 +244,38 @@ const Orders = () => {
 
 
 
-  const handleOrderStatusUpdate = async (orderId, orderType, newStatus, fulfillmentData = null) => {
+  const handleReceiveSupplierOrder = (order) => {
+    setSelectedSupplierOrderForReceive(order);
+    setShowSupplierReceiveModal(true);
+  };
+
+  const handleSupplierOrderReceived = async (orderId, receiveData) => {
     try {
-      const updateData = { status: newStatus };
-
-      if (fulfillmentData) {
-        updateData.actual_delivery_date = fulfillmentData.actual_delivery_date;
-        updateData.receiving_warehouse_id = fulfillmentData.receiving_warehouse_id;
-        updateData.notes = fulfillmentData.notes;
-      }
-
-      if (orderType === 'supplier') {
-        await ordersService.updateSupplierOrder(orderId, updateData);
-      } else {
-        await ordersService.updateCustomerOrder(orderId, updateData);
-      }
-
+      await ordersService.receiveSupplierOrderItems(orderId, receiveData);
       await fetchData(); // Refresh all data
-      setShowFulfillmentModal(false);
-      setSelectedOrderForFulfillment(null);
+      setShowSupplierReceiveModal(false);
+      setSelectedSupplierOrderForReceive(null);
     } catch (err) {
-      console.error("Error updating order status:", err);
+      console.error("Error receiving supplier order:", err);
       throw err;
     }
   };
 
-  const handleFulfillOrder = (order, orderType) => {
-    setSelectedOrderForFulfillment({ ...order, orderType });
-    setShowFulfillmentModal(true);
+  const handleWriteOffSupplierOrder = (order) => {
+    setSelectedSupplierOrderForWriteOff(order);
+    setShowSupplierWriteOffModal(true);
+  };
+
+  const handleSupplierOrderWrittenOff = async (orderId, writeOffData) => {
+    try {
+      await ordersService.writeOffSupplierOrderItems(orderId, writeOffData);
+      await fetchData(); // Refresh all data
+      setShowSupplierWriteOffModal(false);
+      setSelectedSupplierOrderForWriteOff(null);
+    } catch (err) {
+      console.error("Error writing off supplier order items:", err);
+      throw err;
+    }
   };
 
   const handleShipOrder = (order) => {
@@ -362,8 +368,20 @@ const Orders = () => {
     setOrderToDelete(null);
   };
 
-  const canFulfillOrder = (order) => {
-    return order.status === 'Requested' || order.status === 'Pending' || order.status === 'Shipped';
+  const canReceiveSupplierOrder = (order) => {
+    // Can receive as long as anything ordered is still outstanding (neither received nor
+    // written off yet). Repeatable, so successive partial deliveries can each be recorded.
+    if (!user) return false;
+    const hasOutstanding = (order.items || []).some(item =>
+      Number(item.quantity || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0) > 0
+    );
+    if (!hasOutstanding) return false;
+    if (user.role === 'super_admin') return true;
+    return user.role === 'admin' && order.ordering_organization_id === user.organization_id;
+  };
+
+  const canWriteOffSupplierOrder = (order) => {
+    return canReceiveSupplierOrder(order);
   };
 
   const canShipOrder = (order) => {
@@ -616,12 +634,20 @@ const Orders = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2 ml-4">
-                      {canFulfillOrder(order) && (
+                      {canReceiveSupplierOrder(order) && (
                         <button
-                          onClick={() => handleFulfillOrder(order, 'supplier')}
+                          onClick={() => handleReceiveSupplierOrder(order)}
                           className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
                         >
-                          {t('orders.fulfillOrder')}
+                          Receive
+                        </button>
+                      )}
+                      {canWriteOffSupplierOrder(order) && (
+                        <button
+                          onClick={() => handleWriteOffSupplierOrder(order)}
+                          className="text-sm bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Report Loss
                         </button>
                       )}
                       {canEditOrder(order) && (
@@ -656,6 +682,14 @@ const Orders = () => {
                           {order.items.map(item => (
                             <li key={item.id}>
                               {item.quantity} x {item.part_name} ({item.part_number})
+                              {(Number(item.quantity_received) > 0 || Number(item.quantity_written_off) > 0) && (
+                                <span className="text-xs text-gray-500 ml-1">
+                                  &mdash; {item.quantity_received || 0} received
+                                  {Number(item.quantity_written_off) > 0 && (
+                                    <>, <span className="text-orange-600">{item.quantity_written_off} written off</span></>
+                                  )}
+                                </span>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -906,23 +940,44 @@ const Orders = () => {
 
 
 
-      {/* Order Fulfillment Modal */}
+      {/* Supplier Order Receive Modal */}
       <Modal
-        isOpen={showFulfillmentModal}
+        isOpen={showSupplierReceiveModal}
         onClose={() => {
-          setShowFulfillmentModal(false);
-          setSelectedOrderForFulfillment(null);
+          setShowSupplierReceiveModal(false);
+          setSelectedSupplierOrderForReceive(null);
         }}
-        title="Fulfill Order"
+        title="Receive Supplier Order"
       >
-        {selectedOrderForFulfillment && (
-          <OrderFulfillmentForm
-            order={selectedOrderForFulfillment}
+        {selectedSupplierOrderForReceive && (
+          <SupplierOrderReceiveForm
+            order={selectedSupplierOrderForReceive}
             warehouses={warehouses}
-            onSubmit={handleOrderStatusUpdate}
+            onSubmit={handleSupplierOrderReceived}
             onClose={() => {
-              setShowFulfillmentModal(false);
-              setSelectedOrderForFulfillment(null);
+              setShowSupplierReceiveModal(false);
+              setSelectedSupplierOrderForReceive(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      {/* Supplier Order Write Off Modal */}
+      <Modal
+        isOpen={showSupplierWriteOffModal}
+        onClose={() => {
+          setShowSupplierWriteOffModal(false);
+          setSelectedSupplierOrderForWriteOff(null);
+        }}
+        title="Report Loss"
+      >
+        {selectedSupplierOrderForWriteOff && (
+          <SupplierOrderWriteOffForm
+            order={selectedSupplierOrderForWriteOff}
+            onSubmit={handleSupplierOrderWrittenOff}
+            onClose={() => {
+              setShowSupplierWriteOffModal(false);
+              setSelectedSupplierOrderForWriteOff(null);
             }}
           />
         )}
@@ -1525,6 +1580,14 @@ const WRITE_OFF_REASONS = [
   'Other'
 ];
 
+const SUPPLIER_WRITE_OFF_REASONS = [
+  'Backordered - cancelled',
+  'Discontinued by supplier',
+  'Lost in transit',
+  'Damaged in transit',
+  'Other'
+];
+
 const WriteOffForm = ({ order, onSubmit, onClose }) => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1695,8 +1758,8 @@ const WriteOffForm = ({ order, onSubmit, onClose }) => {
   );
 };
 
-// Order Fulfillment Form Component
-const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
+// Supplier Order Receive Form Component - per-item partial receiving
+const SupplierOrderReceiveForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     actual_delivery_date: new Date().toISOString().split('T')[0],
     receiving_warehouse_id: '',
@@ -1705,21 +1768,32 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filter warehouses: for supplier orders use ordering_organization_id (Oraseas receives goods)
-  // For customer orders use customer_organization_id
-  const customerWarehouses = warehouses.filter(
-    w => w.organization_id === (order.ordering_organization_id || order.customer_organization_id)
+  const orderingWarehouses = warehouses.filter(
+    w => w.organization_id === order.ordering_organization_id
   );
+
+  // Only items with something ordered but neither received nor written off.
+  const outstandingItems = (order.items || []).filter(
+    item => Number(item.quantity || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0) > 0
+  );
+
+  const [itemQuantities, setItemQuantities] = useState(() => {
+    const initial = {};
+    outstandingItems.forEach(item => {
+      initial[item.id] = Number(item.quantity || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
+    });
+    return initial;
+  });
 
   // Auto-select warehouse if there's only one
   useEffect(() => {
-    if (customerWarehouses.length === 1 && !formData.receiving_warehouse_id) {
+    if (orderingWarehouses.length === 1 && !formData.receiving_warehouse_id) {
       setFormData(prev => ({
         ...prev,
-        receiving_warehouse_id: customerWarehouses[0].id
+        receiving_warehouse_id: orderingWarehouses[0].id
       }));
     }
-  }, [customerWarehouses, formData.receiving_warehouse_id]);
+  }, [orderingWarehouses, formData.receiving_warehouse_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1729,15 +1803,34 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
     }));
   };
 
+  const handleQuantityChange = (itemId, value) => {
+    setItemQuantities(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const getRemaining = (item) =>
+    Number(item.quantity || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
+
+  const isQuantityValid = (item) => {
+    const qty = Number(itemQuantities[item.id]);
+    return !isNaN(qty) && qty >= 0 && qty <= getRemaining(item);
+  };
+
+  const hasAnythingToReceive = outstandingItems.some(item => Number(itemQuantities[item.id]) > 0);
+  const allValid = outstandingItems.every(isQuantityValid);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      await onSubmit(order.id, order.orderType, 'Received', formData);
+      const items = outstandingItems
+        .filter(item => Number(itemQuantities[item.id]) > 0)
+        .map(item => ({ supplier_order_item_id: item.id, quantity: Number(itemQuantities[item.id]) }));
+
+      await onSubmit(order.id, { ...formData, items });
     } catch (err) {
-      setError(err.message || 'Failed to fulfill order');
+      setError(err.message || 'Failed to receive order');
     } finally {
       setLoading(false);
     }
@@ -1755,7 +1848,7 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="font-semibold text-gray-800 mb-2">Order Details</h3>
         <p className="text-sm text-gray-600">
-          <span className="font-medium">Order from:</span> {order.supplier_name || order.customer_organization?.name}
+          <span className="font-medium">Order from:</span> {order.supplier_name}
         </p>
         <p className="text-sm text-gray-600">
           <span className="font-medium">Order Date:</span> {new Date(order.order_date).toLocaleDateString()}
@@ -1763,6 +1856,38 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
         <p className="text-sm text-gray-600">
           <span className="font-medium">Current Status:</span> {order.status}
         </p>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-2">Items to Receive</h3>
+        {outstandingItems.length === 0 ? (
+          <p className="text-sm text-gray-500">Nothing is currently outstanding on this order.</p>
+        ) : (
+          <div className="space-y-2">
+            {outstandingItems.map(item => {
+              const remaining = getRemaining(item);
+              const valid = isQuantityValid(item);
+              return (
+                <div key={item.id} className="flex items-center justify-between gap-3 border border-gray-200 rounded-md p-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{item.part_name} ({item.part_number})</p>
+                    <p className="text-xs text-gray-500">Ordered and still outstanding: {remaining}</p>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max={remaining}
+                    step="0.001"
+                    className={`w-24 px-2 py-1 border rounded-md text-sm ${valid ? 'border-gray-300' : 'border-red-400'}`}
+                    value={itemQuantities[item.id] ?? 0}
+                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div>
@@ -1795,20 +1920,20 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
           disabled={loading}
         >
           <option value="">Select Warehouse</option>
-          {customerWarehouses.map(warehouse => (
+          {orderingWarehouses.map(warehouse => (
             <option key={warehouse.id} value={warehouse.id}>
               {warehouse.name}
             </option>
           ))}
         </select>
-        {customerWarehouses.length === 0 && (
-          <p className="mt-1 text-sm text-red-600">No warehouses found for this customer organization</p>
+        {orderingWarehouses.length === 0 && (
+          <p className="mt-1 text-sm text-red-600">No warehouses found for your organization</p>
         )}
       </div>
 
       <div>
         <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-          Fulfillment Notes
+          Notes
         </label>
         <textarea
           id="notes"
@@ -1817,7 +1942,7 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           value={formData.notes}
           onChange={handleChange}
-          placeholder="Any notes about the fulfillment..."
+          placeholder="Any notes about this delivery..."
           disabled={loading}
         />
       </div>
@@ -1833,10 +1958,180 @@ const OrderFulfillmentForm = ({ order, warehouses, onSubmit, onClose }) => {
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={loading || !hasAnythingToReceive || !allValid}
+        >
+          {loading ? 'Receiving...' : 'Receive Selected Items'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// Supplier Order Write Off Form Component - declares an outstanding ordered-but-never-received quantity
+const SupplierOrderWriteOffForm = ({ order, onSubmit, onClose }) => {
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const outstandingItems = (order.items || []).filter(
+    item => Number(item.quantity || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0) > 0
+  );
+
+  const [itemQuantities, setItemQuantities] = useState(() => {
+    const initial = {};
+    outstandingItems.forEach(item => { initial[item.id] = 0; });
+    return initial;
+  });
+  const [itemReasons, setItemReasons] = useState(() => {
+    const initial = {};
+    outstandingItems.forEach(item => { initial[item.id] = ''; });
+    return initial;
+  });
+
+  const getRemaining = (item) =>
+    Number(item.quantity || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
+
+  const handleQuantityChange = (itemId, value) => {
+    setItemQuantities(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const handleReasonChange = (itemId, value) => {
+    setItemReasons(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const isItemValid = (item) => {
+    const qty = Number(itemQuantities[item.id]);
+    if (qty <= 0) return true;
+    return qty <= getRemaining(item) && !!itemReasons[item.id];
+  };
+
+  const selectedItems = outstandingItems.filter(item => Number(itemQuantities[item.id]) > 0);
+  const hasAnythingSelected = selectedItems.length > 0;
+  const allValid = outstandingItems.every(isItemValid);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const items = selectedItems.map(item => ({
+        supplier_order_item_id: item.id,
+        quantity: Number(itemQuantities[item.id]),
+        reason: itemReasons[item.id]
+      }));
+
+      await onSubmit(order.id, { notes, items });
+    } catch (err) {
+      setError(err.message || 'Failed to write off items');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline ml-2">{error}</span>
+        </div>
+      )}
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-gray-800 mb-2">Order Details</h3>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Order from:</span> {order.supplier_name}
+        </p>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Current Status:</span> {order.status}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Only enter a quantity for items that are confirmed never coming (backordered and cancelled,
+          discontinued, etc.) — this closes the tracking gap.
+        </p>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-2">Items to Write Off</h3>
+        {outstandingItems.length === 0 ? (
+          <p className="text-sm text-gray-500">Nothing is currently outstanding on this order.</p>
+        ) : (
+          <div className="space-y-3">
+            {outstandingItems.map(item => {
+              const remaining = getRemaining(item);
+              const valid = isItemValid(item);
+              const qty = Number(itemQuantities[item.id]);
+              return (
+                <div key={item.id} className="border border-gray-200 rounded-md p-2 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{item.part_name} ({item.part_number})</p>
+                      <p className="text-xs text-gray-500">Ordered and still outstanding: {remaining}</p>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max={remaining}
+                      step="0.001"
+                      className={`w-24 px-2 py-1 border rounded-md text-sm ${valid ? 'border-gray-300' : 'border-red-400'}`}
+                      value={itemQuantities[item.id] ?? 0}
+                      onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  {qty > 0 && (
+                    <select
+                      className={`w-full px-2 py-1 border rounded-md text-sm ${itemReasons[item.id] ? 'border-gray-300' : 'border-red-400'}`}
+                      value={itemReasons[item.id]}
+                      onChange={(e) => handleReasonChange(item.id, e.target.value)}
+                      disabled={loading}
+                    >
+                      <option value="">Select a reason...</option>
+                      {SUPPLIER_WRITE_OFF_REASONS.map(reason => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="supplier_write_off_notes" className="block text-sm font-medium text-gray-700 mb-1">
+          Notes
+        </label>
+        <textarea
+          id="supplier_write_off_notes"
+          name="notes"
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Any additional context..."
+          disabled={loading}
+        />
+      </div>
+
+      <div className="flex justify-end space-x-3 mt-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           disabled={loading}
         >
-          {loading ? 'Fulfilling...' : 'Mark as Received'}
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={loading || !hasAnythingSelected || !allValid}
+        >
+          {loading ? 'Reporting...' : 'Report Loss'}
         </button>
       </div>
     </form>
