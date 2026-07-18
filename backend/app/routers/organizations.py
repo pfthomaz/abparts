@@ -414,12 +414,22 @@ async def update_organization(
         if not db_organization:
             raise HTTPException(status_code=404, detail="Organization not found")
 
-        # Check permissions
-        if permission_checker.is_super_admin(current_user) or (permission_checker.is_admin(current_user) and org_id == current_user.organization_id):
+        # Check permissions: super admin can edit any organization; an admin can edit
+        # their own organization, or a supplier organization under their own organization.
+        is_own_org = org_id == current_user.organization_id
+        is_own_supplier = (
+            db_organization.organization_type == models.OrganizationType.supplier
+            and db_organization.parent_organization_id == current_user.organization_id
+        )
+        if permission_checker.is_super_admin(current_user) or (
+            permission_checker.is_admin(current_user) and (is_own_org or is_own_supplier)
+        ):
             updated_org = crud.organizations.update_organization(db, org_id, org_update)
             return updated_org
         else:
             raise HTTPException(status_code=403, detail="Not authorized to update this organization")
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -506,6 +516,8 @@ async def toggle_organization_active_status(
         update_data = schemas.OrganizationUpdate(is_active=activate)
         updated_org = crud.organizations.update_organization(db, org_id, update_data)
         return updated_org
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -529,15 +541,19 @@ async def create_supplier_organization(
         # Check permissions
         if current_user.role == "super_admin" or (current_user.role == "admin" and org_id == current_user.organization_id):
             # Force supplier type and set parent
-            supplier_data.organization_type = schemas.OrganizationTypeEnum.SUPPLIER
+            supplier_data.organization_type = schemas.OrganizationTypeEnum.supplier
             supplier_data.parent_organization_id = org_id
-            
+
             supplier_org = crud.organizations.create_organization(db, supplier_data)
             return supplier_org
         else:
             raise HTTPException(status_code=403, detail="Not authorized to create suppliers for this organization")
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        import logging
+        logging.error(f"Error creating supplier organization under {org_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create supplier organization")
 

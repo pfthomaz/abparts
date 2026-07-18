@@ -204,8 +204,12 @@ class PermissionChecker:
                 if org_id and db:
                     return organizational_isolation.validate_organization_access(user, org_id, db)
                 return self.is_user(user)  # Can read own organization
-            elif permission in [PermissionType.WRITE, PermissionType.DELETE]:
-                # Only super admins can write/delete organizations
+            elif permission == PermissionType.WRITE:
+                # Admins can write organizations; the endpoint itself narrows this
+                # down to their own organization or suppliers under their organization.
+                return self.is_admin(user)
+            elif permission == PermissionType.DELETE:
+                # Only super admins can delete organizations
                 return self.is_super_admin(user)
         
         elif resource == ResourceType.USER:

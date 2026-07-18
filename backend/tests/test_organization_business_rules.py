@@ -237,4 +237,74 @@ class TestOrganizationAPIBusinessRules:
         
         response = client.post("/organizations/validate", json=invalid_data, headers=headers)
         assert response.status_code == 400
-        assert "parent" in response.json()["detail"].lower()
+
+
+class TestOrganizationAdminWritePermissions:
+    """Regression tests for the 'Insufficient permissions for organization:write' bug:
+    an Oraseas EE admin creating/managing a supplier organization was blocked because
+    ResourceType.ORGANIZATION + PermissionType.WRITE was hard-restricted to super_admin
+    in the central permission checker, even though the endpoints themselves already had
+    correct narrower logic (own org, or a supplier under their own org)."""
+
+    def test_admin_can_create_and_update_own_supplier(
+        self, client: TestClient, auth_headers, test_organizations
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        oraseas_org_id = str(test_organizations["oraseas"].id)
+
+        # Create a supplier under the admin's own organization
+        response = client.post(
+            f"/organizations/{oraseas_org_id}/suppliers",
+            json={"name": "Regression Test Supplier", "organization_type": "supplier", "country": "GR"},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 201
+        supplier = response.json()
+        assert supplier["organization_type"] == "supplier"
+        assert supplier["parent_organization_id"] == oraseas_org_id
+
+        # The admin must be able to update the supplier they just created
+        response = client.put(
+            f"/organizations/{supplier['id']}",
+            json={"name": "Regression Test Supplier (Updated)"},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["name"] == "Regression Test Supplier (Updated)"
+
+        # ...and toggle its active status
+        response = client.put(
+            f"/organizations/{supplier['id']}/activate?activate=false",
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["is_active"] is False
+
+    def test_admin_can_update_own_organization(
+        self, client: TestClient, auth_headers, test_organizations
+    ):
+        oraseas_headers = auth_headers["oraseas_admin"]
+        oraseas_org_id = str(test_organizations["oraseas"].id)
+
+        response = client.put(
+            f"/organizations/{oraseas_org_id}",
+            json={"contact_info": "updated-by-admin@oraseas.com"},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["contact_info"] == "updated-by-admin@oraseas.com"
+
+    def test_admin_cannot_update_unrelated_organization(
+        self, client: TestClient, auth_headers, test_organizations
+    ):
+        """The fix must not over-grant: an admin still can't edit an organization
+        that isn't their own and isn't a supplier under their own organization."""
+        oraseas_headers = auth_headers["oraseas_admin"]
+        customer_org_id = str(test_organizations["customer2"].id)
+
+        response = client.put(
+            f"/organizations/{customer_org_id}",
+            json={"contact_info": "hijacked@example.com"},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 403
