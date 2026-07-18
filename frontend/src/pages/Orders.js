@@ -31,9 +31,11 @@ const Orders = () => {
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
   const [showShipOrderModal, setShowShipOrderModal] = useState(false);
   const [showConfirmReceiptModal, setShowConfirmReceiptModal] = useState(false);
+  const [showWriteOffModal, setShowWriteOffModal] = useState(false);
   const [selectedOrderForFulfillment, setSelectedOrderForFulfillment] = useState(null);
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null);
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);
+  const [selectedOrderForWriteOff, setSelectedOrderForWriteOff] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
   const [editOrderType, setEditOrderType] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -280,6 +282,11 @@ const Orders = () => {
     setShowConfirmReceiptModal(true);
   };
 
+  const handleWriteOff = (order) => {
+    setSelectedOrderForWriteOff(order);
+    setShowWriteOffModal(true);
+  };
+
   const handleOrderShipped = async (orderId, shipData) => {
     try {
       await ordersService.shipCustomerOrder(orderId, shipData);
@@ -300,6 +307,18 @@ const Orders = () => {
       setSelectedOrderForReceipt(null);
     } catch (err) {
       console.error("Error confirming receipt:", err);
+      throw err;
+    }
+  };
+
+  const handleWriteOffSubmitted = async (orderId, writeOffData) => {
+    try {
+      await ordersService.writeOffCustomerOrderItems(orderId, writeOffData);
+      await fetchData(); // Refresh all data
+      setShowWriteOffModal(false);
+      setSelectedOrderForWriteOff(null);
+    } catch (err) {
+      console.error("Error writing off order items:", err);
       throw err;
     }
   };
@@ -364,6 +383,17 @@ const Orders = () => {
     return user &&
       order.customer_organization_id === user.organization_id &&
       ['Shipped', 'Partially Received'].includes(order.status);
+  };
+
+  const canWriteOffOrder = (order) => {
+    // Oraseas EE admin can write off a shipped quantity that's still outstanding
+    // (shipped but neither received nor already written off).
+    return user &&
+      (user.role === 'admin' || user.role === 'super_admin') &&
+      order.oraseas_organization_id === user.organization_id &&
+      (order.items || []).some(item =>
+        Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0) > 0
+      );
   };
 
   const canEditOrder = (order) => {
@@ -716,6 +746,14 @@ const Orders = () => {
                           Confirm Receipt
                         </button>
                       )}
+                      {canWriteOffOrder(order) && (
+                        <button
+                          onClick={() => handleWriteOff(order)}
+                          className="text-sm bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1 px-3 rounded-md transition-colors"
+                        >
+                          Report Loss
+                        </button>
+                      )}
                       {canEditOrder(order) && (
                         <button
                           onClick={() => handleEditOrder(order, 'customer')}
@@ -751,6 +789,9 @@ const Orders = () => {
                               {Number(item.quantity_shipped) > 0 && (
                                 <span className="text-xs text-gray-500 ml-1">
                                   &mdash; {item.quantity_shipped} {t('orders.shipped', { fallback: 'shipped' })}, {item.quantity_received} {t('orders.received', { fallback: 'received' })}
+                                  {Number(item.quantity_written_off) > 0 && (
+                                    <>, <span className="text-orange-600">{item.quantity_written_off} written off</span></>
+                                  )}
                                 </span>
                               )}
                             </li>
@@ -935,6 +976,27 @@ const Orders = () => {
             onClose={() => {
               setShowConfirmReceiptModal(false);
               setSelectedOrderForReceipt(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      {/* Write Off Modal */}
+      <Modal
+        isOpen={showWriteOffModal}
+        onClose={() => {
+          setShowWriteOffModal(false);
+          setSelectedOrderForWriteOff(null);
+        }}
+        title="Report Loss"
+      >
+        {selectedOrderForWriteOff && (
+          <WriteOffForm
+            order={selectedOrderForWriteOff}
+            onSubmit={handleWriteOffSubmitted}
+            onClose={() => {
+              setShowWriteOffModal(false);
+              setSelectedOrderForWriteOff(null);
             }}
           />
         )}
@@ -1250,16 +1312,16 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Only items with something shipped but not yet received. Falls back to the full
-  // quantity for orders created before partial-shipment tracking existed.
+  // Only items with something shipped but not yet received or written off. Falls back
+  // to the full quantity for orders created before partial-shipment tracking existed.
   const receivableItems = (order.items || []).filter(
-    item => Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) > 0
+    item => Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0) > 0
   );
 
   const [itemQuantities, setItemQuantities] = useState(() => {
     const initial = {};
     receivableItems.forEach(item => {
-      initial[item.id] = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0);
+      initial[item.id] = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
     });
     return initial;
   });
@@ -1293,7 +1355,7 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
 
   const isQuantityValid = (item) => {
     const qty = Number(itemQuantities[item.id]);
-    const remaining = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0);
+    const remaining = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
     return !isNaN(qty) && qty >= 0 && qty <= remaining;
   };
 
@@ -1352,7 +1414,7 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
         ) : (
           <div className="space-y-2">
             {receivableItems.map(item => {
-              const remaining = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0);
+              const remaining = Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
               const valid = isQuantityValid(item);
               return (
                 <div key={item.id} className="flex items-center justify-between gap-3 border border-gray-200 rounded-md p-2">
@@ -1449,6 +1511,184 @@ const ConfirmReceiptForm = ({ order, warehouses, onSubmit, onClose }) => {
           disabled={loading || !hasAnythingToReceive || !allValid}
         >
           {loading ? 'Confirming...' : 'Confirm Selected Items'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// Write Off Form Component - declares a shipped-but-outstanding quantity lost/damaged in transit
+const WRITE_OFF_REASONS = [
+  'Lost in transit',
+  'Damaged in transit',
+  'Carrier/courier error',
+  'Other'
+];
+
+const WriteOffForm = ({ order, onSubmit, onClose }) => {
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Only items with something shipped but neither received nor already written off.
+  const outstandingItems = (order.items || []).filter(
+    item => Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0) > 0
+  );
+
+  const [itemQuantities, setItemQuantities] = useState(() => {
+    const initial = {};
+    outstandingItems.forEach(item => { initial[item.id] = 0; });
+    return initial;
+  });
+  const [itemReasons, setItemReasons] = useState(() => {
+    const initial = {};
+    outstandingItems.forEach(item => { initial[item.id] = ''; });
+    return initial;
+  });
+
+  const getRemaining = (item) =>
+    Number(item.quantity_shipped || 0) - Number(item.quantity_received || 0) - Number(item.quantity_written_off || 0);
+
+  const handleQuantityChange = (itemId, value) => {
+    setItemQuantities(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const handleReasonChange = (itemId, value) => {
+    setItemReasons(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const isItemValid = (item) => {
+    const qty = Number(itemQuantities[item.id]);
+    if (qty <= 0) return true; // not being written off, nothing to validate
+    return qty <= getRemaining(item) && !!itemReasons[item.id];
+  };
+
+  const selectedItems = outstandingItems.filter(item => Number(itemQuantities[item.id]) > 0);
+  const hasAnythingSelected = selectedItems.length > 0;
+  const allValid = outstandingItems.every(isItemValid);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const items = selectedItems.map(item => ({
+        customer_order_item_id: item.id,
+        quantity: Number(itemQuantities[item.id]),
+        reason: itemReasons[item.id]
+      }));
+
+      await onSubmit(order.id, { notes, items });
+    } catch (err) {
+      setError(err.message || 'Failed to write off items');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline ml-2">{error}</span>
+        </div>
+      )}
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-gray-800 mb-2">Order Details</h3>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Customer:</span> {order.customer_organization_name}
+        </p>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">Current Status:</span> {order.status}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Only enter a quantity for items that are confirmed lost or damaged in transit — this closes the
+          tracking gap without adding anything to the customer's inventory.
+        </p>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-2">Items to Write Off</h3>
+        {outstandingItems.length === 0 ? (
+          <p className="text-sm text-gray-500">Nothing shipped is currently outstanding.</p>
+        ) : (
+          <div className="space-y-3">
+            {outstandingItems.map(item => {
+              const remaining = getRemaining(item);
+              const valid = isItemValid(item);
+              const qty = Number(itemQuantities[item.id]);
+              return (
+                <div key={item.id} className="border border-gray-200 rounded-md p-2 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{item.part_name} ({item.part_number})</p>
+                      <p className="text-xs text-gray-500">Shipped and still outstanding: {remaining}</p>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max={remaining}
+                      step="0.001"
+                      className={`w-24 px-2 py-1 border rounded-md text-sm ${valid ? 'border-gray-300' : 'border-red-400'}`}
+                      value={itemQuantities[item.id] ?? 0}
+                      onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  {qty > 0 && (
+                    <select
+                      className={`w-full px-2 py-1 border rounded-md text-sm ${itemReasons[item.id] ? 'border-gray-300' : 'border-red-400'}`}
+                      value={itemReasons[item.id]}
+                      onChange={(e) => handleReasonChange(item.id, e.target.value)}
+                      disabled={loading}
+                    >
+                      <option value="">Select a reason...</option>
+                      {WRITE_OFF_REASONS.map(reason => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="write_off_notes" className="block text-sm font-medium text-gray-700 mb-1">
+          Notes
+        </label>
+        <textarea
+          id="write_off_notes"
+          name="notes"
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Any additional context (carrier claim number, etc.)..."
+          disabled={loading}
+        />
+      </div>
+
+      <div className="flex justify-end space-x-3 mt-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          disabled={loading}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={loading || !hasAnythingSelected || !allValid}
+        >
+          {loading ? 'Reporting...' : 'Report Loss'}
         </button>
       </div>
     </form>

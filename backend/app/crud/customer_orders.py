@@ -204,9 +204,11 @@ def _update_inventory_on_fulfillment(db: Session, order: models.CustomerOrder, r
 
 def recompute_customer_order_status(order: models.CustomerOrder) -> str:
     """
-    Derive the order's status from the cumulative shipped/received quantities
-    on its items. Shipped-completeness gates before received-completeness,
-    since an order can't be "Received" while some of it hasn't shipped yet.
+    Derive the order's status from the cumulative shipped/received/written-off
+    quantities on its items. Shipped-completeness gates before received-completeness,
+    since an order can't be "Received" while some of it hasn't shipped yet. A
+    written-off quantity (declared lost/damaged in transit) counts as resolved,
+    same as a received one - it closes the tracking gap without a receipt.
 
     Leaves the status untouched if nothing has been shipped yet (order.items
     must already be loaded).
@@ -214,14 +216,15 @@ def recompute_customer_order_status(order: models.CustomerOrder) -> str:
     total_ordered = sum(item.quantity for item in order.items)
     total_shipped = sum(item.quantity_shipped for item in order.items)
     total_received = sum(item.quantity_received for item in order.items)
+    total_resolved = total_received + sum(item.quantity_written_off for item in order.items)
 
     if total_shipped == 0:
         return order.status
     if total_shipped < total_ordered:
         return "Partially Shipped"
-    if total_received == 0:
+    if total_resolved == 0:
         return "Shipped"
-    if total_received < total_shipped:
+    if total_resolved < total_shipped:
         return "Partially Received"
     return "Received"
 

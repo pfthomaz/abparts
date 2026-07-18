@@ -182,6 +182,7 @@ def read_customer_orders(
                 "quantity": item.quantity,
                 "quantity_shipped": item.quantity_shipped,
                 "quantity_received": item.quantity_received,
+                "quantity_written_off": item.quantity_written_off,
                 "unit_price": item.unit_price,
                 "created_at": item.created_at,
                 "updated_at": item.updated_at,
@@ -586,8 +587,8 @@ def confirm_order_receipt(
             raise HTTPException(status_code=403, detail="Only the ordering organization can confirm receipt")
 
     items_by_id = {str(item.id): item for item in order.items}
-    if all(item.quantity_received >= item.quantity_shipped for item in order.items):
-        raise HTTPException(status_code=400, detail="Nothing has been shipped yet, or everything shipped has already been received")
+    if all(item.quantity_received + item.quantity_written_off >= item.quantity_shipped for item in order.items):
+        raise HTTPException(status_code=400, detail="Nothing has been shipped yet, or everything shipped has already been received or written off")
 
     # Verify warehouse belongs to customer organization
     warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == receipt_request.receiving_warehouse_id).first()
@@ -602,7 +603,7 @@ def confirm_order_receipt(
         item = items_by_id.get(str(req_item.customer_order_item_id))
         if item is None:
             raise HTTPException(status_code=400, detail=f"Item {req_item.customer_order_item_id} does not belong to this order")
-        remaining = item.quantity_shipped - item.quantity_received
+        remaining = item.quantity_shipped - item.quantity_received - item.quantity_written_off
         if req_item.quantity > remaining:
             part_name = item.part.name if item.part else str(item.part_id)
             raise HTTPException(
@@ -658,6 +659,83 @@ def confirm_order_receipt(
         order.actual_delivery_date = receipt_request.actual_delivery_date
     if receipt_request.notes:
         order.notes = f"{order.notes}\n\nReceived: {receipt_request.notes}" if order.notes else f"Received: {receipt_request.notes}"
+
+    order.status = crud.customer_orders.recompute_customer_order_status(order)
+
+    db.commit()
+    db.refresh(order)
+
+    return order
+
+
+@router.patch("/{order_id}/write-off", response_model=schemas.CustomerOrderResponse)
+def write_off_customer_order_items(
+    order_id: str,
+    write_off_request: schemas.CustomerOrderWriteOffRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(require_permission(ResourceType.ORDER, PermissionType.WRITE))
+):
+    """
+    Declare a shipped-but-never-received quantity lost or damaged in transit
+    (Oraseas EE only). Closes the tracking gap for that quantity without a
+    receipt confirmation - it counts as resolved for status purposes, but is
+    never added to the customer's inventory. Each line requires a reason.
+    Can be called more than once; only the still-outstanding (shipped minus
+    received minus already-written-off) quantity of each item is eligible.
+    """
+    order = db.query(models.CustomerOrder).options(
+        selectinload(models.CustomerOrder.items).selectinload(models.CustomerOrderItem.part)
+    ).filter(models.CustomerOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Customer order not found")
+
+    # Verify user is from Oraseas EE organization
+    user_org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    if not user_org:
+        raise HTTPException(status_code=404, detail="User organization not found")
+
+    is_oraseas_ee = user_org.name in ['Oraseas EE', 'BossServ LLC', 'BossServ Ltd']
+    if not permission_checker.is_super_admin(current_user) and not is_oraseas_ee:
+        raise HTTPException(status_code=403, detail="Only Oraseas EE can write off missing quantities")
+
+    items_by_id = {str(item.id): item for item in order.items}
+    if all(item.quantity_received + item.quantity_written_off >= item.quantity_shipped for item in order.items):
+        raise HTTPException(status_code=400, detail="Nothing has been shipped yet, or everything shipped has already been received or written off")
+
+    # Validate every requested line before mutating anything
+    for req_item in write_off_request.items:
+        item = items_by_id.get(str(req_item.customer_order_item_id))
+        if item is None:
+            raise HTTPException(status_code=400, detail=f"Item {req_item.customer_order_item_id} does not belong to this order")
+        remaining = item.quantity_shipped - item.quantity_received - item.quantity_written_off
+        if req_item.quantity > remaining:
+            part_name = item.part.name if item.part else str(item.part_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot write off {req_item.quantity} of '{part_name}': only {remaining} shipped and still outstanding"
+            )
+
+    # Record a loss transaction per line item - no warehouse gains or loses stock,
+    # this only closes the receipt-tracking gap.
+    for req_item in write_off_request.items:
+        item = items_by_id[str(req_item.customer_order_item_id)]
+        transaction = models.Transaction(
+            transaction_type="loss",
+            part_id=item.part_id,
+            customer_order_id=order.id,
+            customer_order_item_id=item.id,
+            quantity=req_item.quantity,
+            unit_of_measure=item.part.unit_of_measure if item.part else "units",
+            performed_by_user_id=current_user.user_id,
+            transaction_date=datetime.utcnow(),
+            notes=f"Written off - {req_item.reason}",
+            reference_number=str(order.id)
+        )
+        db.add(transaction)
+        item.quantity_written_off += req_item.quantity
+
+    if write_off_request.notes:
+        order.notes = f"{order.notes}\n\nWritten off: {write_off_request.notes}" if order.notes else f"Written off: {write_off_request.notes}"
 
     order.status = crud.customer_orders.recompute_customer_order_status(order)
 

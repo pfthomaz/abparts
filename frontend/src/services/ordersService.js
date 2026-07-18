@@ -101,6 +101,15 @@ const confirmCustomerOrderReceipt = (orderId, receiptData) => {
 };
 
 /**
+ * Writes off shipped-but-never-received quantity as lost/damaged in transit (Oraseas EE only).
+ * @param {string} orderId The ID of the customer order.
+ * @param {object} writeOffData The write-off data ({ items: [{customer_order_item_id, quantity, reason}], notes }).
+ */
+const writeOffCustomerOrderItems = (orderId, writeOffData) => {
+  return api.patch(`/customer_orders/${orderId}/write-off`, writeOffData);
+};
+
+/**
  * Checks stock availability for pending/requested customer orders.
  * Returns orders that cannot be fully fulfilled due to insufficient stock.
  * Only available to Oraseas EE organization users and super admins.
@@ -140,5 +149,6 @@ export const ordersService = {
   createCustomerOrderItem,
   shipCustomerOrder,
   confirmCustomerOrderReceipt,
+  writeOffCustomerOrderItems,
   checkStockAvailability,
 };

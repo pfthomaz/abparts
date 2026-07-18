@@ -73,6 +73,17 @@ class CustomerOrderConfirmReceiptRequest(BaseModel):
     notes: Optional[str] = None
     items: List[CustomerOrderReceiptItemRequest] = Field(..., min_length=1, description="Line items and quantities being confirmed as received now. Can be less than the full shipped-but-unreceived quantity for a partial receipt.")
 
+class CustomerOrderWriteOffItemRequest(BaseModel):
+    """A single line item being declared lost/damaged in transit, closing the receipt gap for that quantity."""
+    customer_order_item_id: uuid.UUID
+    quantity: Decimal = Field(..., gt=0, decimal_places=3)
+    reason: str = Field(..., min_length=1, max_length=255, description="Why this quantity is being written off, e.g. 'Lost in transit'.")
+
+class CustomerOrderWriteOffRequest(BaseModel):
+    """Request schema for writing off shipped-but-never-received quantity (Oraseas EE action)"""
+    notes: Optional[str] = None
+    items: List[CustomerOrderWriteOffItemRequest] = Field(..., min_length=1, description="Line items and quantities being written off as lost/damaged in transit.")
+
 class CustomerOrderItemBase(BaseModel):
     customer_order_id: uuid.UUID
     part_id: uuid.UUID
@@ -97,6 +108,7 @@ class CustomerOrderItemResponse(CustomerOrderItemBase):
     unit_of_measure: Optional[str] = None
     quantity_shipped: Decimal = Field(default=0, decimal_places=3)
     quantity_received: Decimal = Field(default=0, decimal_places=3)
+    quantity_written_off: Decimal = Field(default=0, decimal_places=3)
 
     class Config:
         from_attributes = True

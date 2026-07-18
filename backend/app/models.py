@@ -61,6 +61,7 @@ class TransactionType(enum.Enum):
     CONSUMPTION = "consumption"
     ADJUSTMENT = "adjustment"
     STOCK_RESET = "stock_reset"  # For stock reset operations - sets absolute values, not processed as adjustments
+    LOSS = "loss"  # Shipped quantity written off as lost/damaged in transit, never received
 
 
 class StockAdjustmentReason(enum.Enum):
@@ -775,6 +776,8 @@ class CustomerOrderItem(Base):
     # Cumulative quantities fulfilled so far, to support shipping/receiving an order in multiple partial batches.
     quantity_shipped = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
     quantity_received = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
+    # Shipped quantity declared lost/damaged in transit - closes the tracking gap without a receipt.
+    quantity_written_off = Column(DECIMAL(precision=10, scale=3), nullable=False, server_default='0')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

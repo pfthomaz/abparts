@@ -995,3 +995,219 @@ class TestWarehouseStockAdjustmentPayload:
         inventory_items = inv_response.json()
         oil_filter_inventory = next(item for item in inventory_items if item["part_id"] == str(part.id))
         assert Decimal(str(oil_filter_inventory["current_stock"])) == Decimal("97.000")
+
+
+class TestCustomerOrderWriteOff:
+    """Test writing off a shipped-but-never-received quantity as lost/damaged in transit."""
+
+    def _seed_stock(self, db_session: Session, warehouse_id, part_id, quantity, user_id):
+        transaction = Transaction(
+            transaction_type="creation",
+            part_id=part_id,
+            to_warehouse_id=warehouse_id,
+            quantity=Decimal(str(quantity)),
+            unit_of_measure="pieces",
+            performed_by_user_id=user_id,
+            transaction_date=datetime.utcnow(),
+        )
+        db_session.add(transaction)
+        db_session.commit()
+
+    def _create_shipped_order(self, client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+                               oraseas_headers, customer_headers, quantity="3.000"):
+        oraseas_warehouse = test_warehouses["oraseas_main"]
+        part = test_parts["oil_filter"]
+        self._seed_stock(db_session, oraseas_warehouse.id, part.id, float(quantity), test_users["oraseas_admin"].id)
+
+        response = client.post(
+            "/customer_orders/",
+            json={
+                "customer_organization_id": str(test_organizations["customer1"].id),
+                "oraseas_organization_id": str(test_organizations["oraseas"].id),
+                "order_date": datetime.utcnow().isoformat(),
+                "status": "Requested",
+            },
+            headers=customer_headers,
+        )
+        order_id = response.json()["id"]
+
+        response = client.post(
+            "/customer_order_items/",
+            json={
+                "customer_order_id": order_id,
+                "part_id": str(part.id),
+                "quantity": quantity,
+                "unit_price": "15.50",
+            },
+            headers=customer_headers,
+        )
+        item_id = response.json()["id"]
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/ship",
+            json={
+                "shipped_date": datetime.utcnow().isoformat(),
+                "source_warehouse_id": str(oraseas_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": quantity}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Shipped"
+
+        return order_id, item_id
+
+    def test_write_off_partial_then_receive_rest_resolves_order(
+        self, client: TestClient, auth_headers, test_organizations, test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+        customer_warehouse = test_warehouses["customer1_main"]
+
+        order_id, item_id = self._create_shipped_order(
+            client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+            oraseas_headers, customer_headers, quantity="3.000"
+        )
+
+        # Write off 1 of the 3 shipped units as lost in transit
+        response = client.patch(
+            f"/customer_orders/{order_id}/write-off",
+            json={
+                "notes": "Carrier confirmed loss",
+                "items": [{"customer_order_item_id": item_id, "quantity": "1.000", "reason": "Lost in transit"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        order = response.json()
+        assert order["status"] == "Partially Received"
+        assert Decimal(str(order["items"][0]["quantity_written_off"])) == Decimal("1.000")
+
+        # Customer confirms receipt of the remaining 2
+        response = client.patch(
+            f"/customer_orders/{order_id}/confirm-receipt",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(customer_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "2.000"}],
+            },
+            headers=customer_headers,
+        )
+        assert response.status_code == 200
+        order = response.json()
+        # Fully resolved: 2 received + 1 written off == 3 shipped, even though only 2 physically arrived
+        assert order["status"] == "Received"
+
+        customer_inventory = db_session.query(Inventory).filter(
+            Inventory.warehouse_id == customer_warehouse.id,
+            Inventory.part_id == test_parts["oil_filter"].id,
+        ).first()
+        # Only the actually-received quantity lands in inventory - the write-off never does
+        assert customer_inventory.current_stock == Decimal("2.000")
+
+    def test_write_off_entire_shipment_resolves_order_without_any_receipt(
+        self, client: TestClient, auth_headers, test_organizations, test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+
+        order_id, item_id = self._create_shipped_order(
+            client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+            oraseas_headers, customer_headers, quantity="2.000"
+        )
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/write-off",
+            json={
+                "items": [{"customer_order_item_id": item_id, "quantity": "2.000", "reason": "Damaged in transit"}],
+            },
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Received"
+
+    def test_write_off_requires_oraseas_ee(
+        self, client: TestClient, auth_headers, test_organizations, test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+
+        order_id, item_id = self._create_shipped_order(
+            client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+            oraseas_headers, customer_headers, quantity="1.000"
+        )
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/write-off",
+            json={"items": [{"customer_order_item_id": item_id, "quantity": "1.000", "reason": "Lost in transit"}]},
+            headers=customer_headers,
+        )
+        assert response.status_code == 403
+
+    def test_write_off_rejects_quantity_beyond_outstanding(
+        self, client: TestClient, auth_headers, test_organizations, test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+
+        order_id, item_id = self._create_shipped_order(
+            client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+            oraseas_headers, customer_headers, quantity="2.000"
+        )
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/write-off",
+            json={"items": [{"customer_order_item_id": item_id, "quantity": "5.000", "reason": "Lost in transit"}]},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 400
+
+    def test_write_off_requires_reason(
+        self, client: TestClient, auth_headers, test_organizations, test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+
+        order_id, item_id = self._create_shipped_order(
+            client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+            oraseas_headers, customer_headers, quantity="1.000"
+        )
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/write-off",
+            json={"items": [{"customer_order_item_id": item_id, "quantity": "1.000", "reason": ""}]},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 422
+
+    def test_confirm_receipt_cannot_exceed_written_off_boundary(
+        self, client: TestClient, auth_headers, test_organizations, test_users, test_parts, test_warehouses, db_session: Session
+    ):
+        """Once part of a shipment is written off, the customer can't 'receive' that portion too."""
+        customer_headers = auth_headers["customer_admin"]
+        oraseas_headers = auth_headers["oraseas_admin"]
+        customer_warehouse = test_warehouses["customer1_main"]
+
+        order_id, item_id = self._create_shipped_order(
+            client, db_session, test_organizations, test_users, test_warehouses, test_parts,
+            oraseas_headers, customer_headers, quantity="2.000"
+        )
+
+        response = client.patch(
+            f"/customer_orders/{order_id}/write-off",
+            json={"items": [{"customer_order_item_id": item_id, "quantity": "1.000", "reason": "Lost in transit"}]},
+            headers=oraseas_headers,
+        )
+        assert response.status_code == 200
+
+        # Only 1 remains receivable (2 shipped - 1 written off); requesting 2 should fail
+        response = client.patch(
+            f"/customer_orders/{order_id}/confirm-receipt",
+            json={
+                "actual_delivery_date": datetime.utcnow().isoformat(),
+                "receiving_warehouse_id": str(customer_warehouse.id),
+                "items": [{"customer_order_item_id": item_id, "quantity": "2.000"}],
+            },
+            headers=customer_headers,
+        )
+        assert response.status_code == 400
