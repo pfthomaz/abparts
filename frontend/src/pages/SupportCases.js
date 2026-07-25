@@ -208,8 +208,8 @@ const ResolveModal = ({ isOpen, onClose, onResolve }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold mb-4">Resolve Support Case</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

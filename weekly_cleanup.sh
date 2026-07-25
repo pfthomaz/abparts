@@ -37,6 +37,7 @@ for file in *.md; do
         # Check if file is older than 2 days
         if [ $(find "$file" -mtime +2 2>/dev/null | wc -l) -gt 0 ]; then
             mv "$file" docs/archive/
+            touch "docs/archive/$file"
             ((MOVED_DOCS++))
         fi
     fi
@@ -50,6 +51,7 @@ for file in *.sh; do
     if [ -f "$file" ] && [ "$file" != "weekly_cleanup.sh" ]; then
         if [ $(find "$file" -mtime +2 2>/dev/null | wc -l) -gt 0 ]; then
             mv "$file" scripts/archive/
+            touch "scripts/archive/$file"
             ((MOVED_SCRIPTS++))
         fi
     fi
@@ -67,6 +69,7 @@ for file in *.py; do
                 mv "$file" tests/integration/
             else
                 mv "$file" scripts/archive/
+                touch "scripts/archive/$file"
             fi
             ((MOVED_PY++))
         fi
@@ -80,6 +83,7 @@ MOVED_SQL=0
 for file in *.sql; do
     if [ -f "$file" ]; then
         mv "$file" scripts/archive/
+        touch "scripts/archive/$file"
         ((MOVED_SQL++))
     fi
 done
