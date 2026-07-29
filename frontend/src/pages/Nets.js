@@ -7,6 +7,7 @@ import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import Modal from '../components/Modal';
 import NetForm from '../components/NetForm';
+import { sortNetsByName } from '../utils/sortNets';
 
 const Nets = () => {
   const [nets, setNets] = useState([]);
@@ -48,7 +49,7 @@ const Nets = () => {
   }, [farmSites]);
 
   const filteredNets = useMemo(() => {
-    return nets
+    const filtered = nets
       .map(net => ({
         ...net,
         farmSiteName: farmSitesMap.get(net.farm_site_id)?.name || 'Unknown'
@@ -64,6 +65,7 @@ const Nets = () => {
         }
         return true;
       });
+    return sortNetsByName(filtered);
   }, [nets, farmSitesMap, searchTerm, filterFarmSiteId]);
 
   const handleCreateOrUpdate = async (netData) => {

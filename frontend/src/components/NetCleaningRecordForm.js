@@ -12,6 +12,7 @@ import {
   STORES
 } from '../db/indexedDB';
 import { queueNetCleaningRecord, queueNetCleaningPhoto } from '../services/syncQueueManager';
+import { sortNetsByName } from '../utils/sortNets';
 
 const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, onCancel }) => {
   const { t } = useTranslation();
@@ -277,8 +278,8 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
     }
   };
 
-  const filteredNets = nets.filter(net => 
-    !selectedFarmSiteId || net.farm_site_id === selectedFarmSiteId
+  const filteredNets = sortNetsByName(
+    nets.filter(net => !selectedFarmSiteId || net.farm_site_id === selectedFarmSiteId)
   );
 
   return (

@@ -1,5 +1,8 @@
 # backend/app/crud/nets.py
 
+import re
+from itertools import groupby
+
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 from typing import List, Optional
@@ -8,6 +11,16 @@ from datetime import datetime
 
 from ..models import Net, FarmSite, NetCleaningRecord
 from ..schemas.net_cleaning import NetCreate, NetUpdate
+
+_NUMERIC_NAME_RE = re.compile(r'^\d+$')
+
+
+def _sort_nets_by_name(nets: List[Net]) -> List[Net]:
+    """Sort nets by name: numerically (ascending) if every name in the list
+    consists only of digits, otherwise alphabetically (case-insensitive)."""
+    if nets and all(_NUMERIC_NAME_RE.match(n.name.strip()) for n in nets):
+        return sorted(nets, key=lambda n: int(n.name.strip()))
+    return sorted(nets, key=lambda n: n.name.strip().lower())
 
 
 def get_net(db: Session, net_id: UUID) -> Optional[Net]:
@@ -23,18 +36,25 @@ def get_nets(
     limit: int = 100,
     active_only: bool = True
 ) -> List[Net]:
-    """Get all nets with optional farm site filter."""
+    """Get all nets with optional farm site filter, grouped by farm site
+    (alphabetically) and sorted by name within each farm site."""
     query = db.query(Net).join(FarmSite).filter(
         FarmSite.organization_id == organization_id
     )
-    
+
     if farm_site_id:
         query = query.filter(Net.farm_site_id == farm_site_id)
-    
+
     if active_only:
         query = query.filter(Net.active == True)
-    
-    return query.order_by(FarmSite.name, Net.name).offset(skip).limit(limit).all()
+
+    all_nets = query.order_by(FarmSite.name).all()
+
+    result: List[Net] = []
+    for _, group in groupby(all_nets, key=lambda n: n.farm_site_id):
+        result.extend(_sort_nets_by_name(list(group)))
+
+    return result[skip:skip + limit]
 
 
 def get_nets_count(
@@ -137,8 +157,9 @@ def search_nets(
     if search_term:
         search_pattern = f"%{search_term}%"
         query = query.filter(Net.name.ilike(search_pattern))
-    
-    return query.order_by(Net.name).offset(skip).limit(limit).all()
+
+    sorted_nets = _sort_nets_by_name(query.all())
+    return sorted_nets[skip:skip + limit]
 
 
 def get_nets_by_farm_site(
@@ -148,8 +169,8 @@ def get_nets_by_farm_site(
 ) -> List[Net]:
     """Get all nets for a specific farm site."""
     query = db.query(Net).filter(Net.farm_site_id == farm_site_id)
-    
+
     if active_only:
         query = query.filter(Net.active == True)
-    
-    return query.order_by(Net.name).all()
+
+    return _sort_nets_by_name(query.all())

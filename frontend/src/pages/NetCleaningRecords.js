@@ -11,6 +11,7 @@ import { useOffline } from '../contexts/OfflineContext';
 import { getUnsyncedNetCleaningRecords } from '../db/indexedDB';
 import Modal from '../components/Modal';
 import NetCleaningRecordForm from '../components/NetCleaningRecordForm';
+import { sortNetsByName } from '../utils/sortNets';
 
 const NetCleaningRecords = () => {
   const [records, setRecords] = useState([]);
@@ -232,11 +233,11 @@ const NetCleaningRecords = () => {
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">{t('netCleaning.records.allNets')}</option>
-          {nets
-            .filter(net => filterFarmSiteId === 'all' || net.farm_site_id === filterFarmSiteId)
-            .map(net => (
-              <option key={net.id} value={net.id}>{net.name}</option>
-            ))}
+          {sortNetsByName(
+            nets.filter(net => filterFarmSiteId === 'all' || net.farm_site_id === filterFarmSiteId)
+          ).map(net => (
+            <option key={net.id} value={net.id}>{net.name}</option>
+          ))}
         </select>
       </div>
 
