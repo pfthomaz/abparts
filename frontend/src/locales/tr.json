@@ -2059,6 +2059,8 @@
       "addNet": "+ Ağ Ekle",
       "editNet": "Ağı Düzenle",
       "addNewNet": "Ağ Ekle",
+      "duplicate": "Çoğalt",
+      "duplicateNet": "Ağı Çoğalt",
       "loading": "Ağlar yükleniyor...",
       "searchPlaceholder": "Ağ ara...",
       "allFarmSites": "Tüm Sahalar",

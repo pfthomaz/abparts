@@ -16,18 +16,21 @@ const MATERIAL_OPTIONS = [
   'other'
 ];
 
-const NetForm = ({ net, farmSites, onSubmit, onCancel, preselectedFarmSiteId }) => {
+const NetForm = ({ net, farmSites, onSubmit, onCancel, preselectedFarmSiteId, initialValues }) => {
   const { t } = useTranslation();
+  // `net` (editing an existing net) takes precedence; otherwise `initialValues` prefills
+  // a new net's fields (used when duplicating), leaving `net` falsy so this still creates.
+  const source = net || initialValues;
   const [formData, setFormData] = useState({
-    farm_site_id: net?.farm_site_id || preselectedFarmSiteId || '',
+    farm_site_id: source?.farm_site_id || preselectedFarmSiteId || '',
     name: net?.name || '',
-    diameter: net?.diameter || '',
-    vertical_depth: net?.vertical_depth || '',
-    cone_depth: net?.cone_depth || '',
-    mesh_size: net?.mesh_size || '',
-    material: net?.material || '',
-    notes: net?.notes || '',
-    active: net?.active !== undefined ? net.active : true,
+    diameter: source?.diameter || '',
+    vertical_depth: source?.vertical_depth || '',
+    cone_depth: source?.cone_depth || '',
+    mesh_size: source?.mesh_size || '',
+    material: source?.material || '',
+    notes: source?.notes || '',
+    active: source?.active !== undefined ? source.active : true,
   });
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);

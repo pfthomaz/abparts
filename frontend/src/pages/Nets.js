@@ -16,6 +16,7 @@ const Nets = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingNet, setEditingNet] = useState(null);
+  const [duplicateSource, setDuplicateSource] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFarmSiteId, setFilterFarmSiteId] = useState('all');
 
@@ -98,12 +99,20 @@ const Nets = () => {
 
   const openModal = (net = null) => {
     setEditingNet(net);
+    setDuplicateSource(null);
+    setShowModal(true);
+  };
+
+  const openDuplicateModal = (net) => {
+    setEditingNet(null);
+    setDuplicateSource(net);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingNet(null);
+    setDuplicateSource(null);
   };
 
   if (loading) {
@@ -191,6 +200,12 @@ const Nets = () => {
                   {t('common.edit')}
                 </button>
                 <button
+                  onClick={() => openDuplicateModal(net)}
+                  className="flex-1 bg-teal-500 hover:bg-teal-600 text-white px-3 py-1.5 rounded text-sm"
+                >
+                  {t('netCleaning.nets.duplicate')}
+                </button>
+                <button
                   onClick={() => handleDelete(net.id)}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm"
                 >
@@ -209,9 +224,20 @@ const Nets = () => {
       )}
 
       {showModal && (
-        <Modal isOpen={showModal} onClose={closeModal} title={editingNet ? t('netCleaning.nets.editNet') : t('netCleaning.nets.addNewNet')}>
+        <Modal
+          isOpen={showModal}
+          onClose={closeModal}
+          title={
+            editingNet
+              ? t('netCleaning.nets.editNet')
+              : duplicateSource
+                ? t('netCleaning.nets.duplicateNet')
+                : t('netCleaning.nets.addNewNet')
+          }
+        >
           <NetForm
             net={editingNet}
+            initialValues={duplicateSource}
             farmSites={farmSites}
             onSubmit={handleCreateOrUpdate}
             onCancel={closeModal}

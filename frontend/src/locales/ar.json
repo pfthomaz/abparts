@@ -2055,6 +2055,8 @@
       "addNet": "+ إضافة شبكة",
       "editNet": "تعديل الشبكة",
       "addNewNet": "إضافة شبكة",
+      "duplicate": "تكرار",
+      "duplicateNet": "تكرار الشبكة",
       "loading": "جاري تحميل الشباك...",
       "searchPlaceholder": "البحث عن الشباك...",
       "allFarmSites": "جميع المواقع",

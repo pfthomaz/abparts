@@ -2059,6 +2059,8 @@
       "addNet": "+ Legg til Not",
       "editNet": "Rediger Not",
       "addNewNet": "Legg til Not",
+      "duplicate": "Dupliser",
+      "duplicateNet": "Dupliser Not",
       "loading": "Laster nøter...",
       "searchPlaceholder": "Søk etter nøter...",
       "allFarmSites": "Alle Anlegg",

@@ -2079,6 +2079,8 @@
       "addNet": "+ Add Net",
       "editNet": "Edit Net",
       "addNewNet": "Add Net",
+      "duplicate": "Duplicate",
+      "duplicateNet": "Duplicate Net",
       "loading": "Loading nets...",
       "searchPlaceholder": "Search nets...",
       "allFarmSites": "All Farm Sites",

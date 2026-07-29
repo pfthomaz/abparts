@@ -2059,6 +2059,8 @@
       "addNet": "+ Agregar Red",
       "editNet": "Editar Red",
       "addNewNet": "Agregar Red",
+      "duplicate": "Duplicar",
+      "duplicateNet": "Duplicar Red",
       "loading": "Cargando redes...",
       "searchPlaceholder": "Buscar redes...",
       "allFarmSites": "Todos los Sitios",
