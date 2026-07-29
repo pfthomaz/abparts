@@ -1,6 +1,6 @@
 // frontend/src/components/NetCleaningRecordForm.js
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuth } from '../AuthContext';
 import { useOffline } from '../contexts/OfflineContext';
@@ -46,6 +46,11 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
   const [photos, setPhotos] = useState([]);
   const [photoPreview, setPhotoPreview] = useState([]);
 
+  const filteredNets = useMemo(
+    () => sortNetsByName(nets.filter(net => !selectedFarmSiteId || net.farm_site_id === selectedFarmSiteId)),
+    [nets, selectedFarmSiteId]
+  );
+
   // Set initial farm site if editing
   useEffect(() => {
     if (record && record.net_id) {
@@ -55,6 +60,32 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
       }
     }
   }, [record, nets]);
+
+  // When creating a new record, pre-fill any dropdown that has only one option.
+  useEffect(() => {
+    if (!record && !selectedFarmSiteId && farmSites.length === 1) {
+      setSelectedFarmSiteId(farmSites[0].id);
+    }
+  }, [record, farmSites, selectedFarmSiteId]);
+
+  useEffect(() => {
+    if (!record && !formData.net_id && filteredNets.length === 1) {
+      setFormData(prev => ({ ...prev, net_id: filteredNets[0].id }));
+    }
+  }, [record, filteredNets, formData.net_id]);
+
+  useEffect(() => {
+    if (!record && !formData.machine_id && machines.length === 1) {
+      setFormData(prev => ({ ...prev, machine_id: machines[0].id }));
+    }
+  }, [record, machines, formData.machine_id]);
+
+  useEffect(() => {
+    if (!record && !formData.operator_name && organizationUsers.length === 1) {
+      const [onlyUser] = organizationUsers;
+      setFormData(prev => ({ ...prev, operator_name: onlyUser.name || onlyUser.username }));
+    }
+  }, [record, organizationUsers, formData.operator_name]);
 
   // Fetch organization users based on selected farm site's organization
   useEffect(() => {
@@ -277,10 +308,6 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
       setSubmitting(false);
     }
   };
-
-  const filteredNets = sortNetsByName(
-    nets.filter(net => !selectedFarmSiteId || net.farm_site_id === selectedFarmSiteId)
-  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
