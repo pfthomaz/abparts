@@ -7,6 +7,7 @@ import PermissionGuard from '../components/PermissionGuard';
 import { userService } from '../services/userService';
 import { organizationsService } from '../services/organizationsService';
 import { PERMISSIONS } from '../utils/permissions';
+import { sortUsersByName } from '../utils/sortUsers';
 import { useTranslation } from '../hooks/useTranslation';
 
 // New role system aligned with business model
@@ -195,22 +196,24 @@ function UsersPage() {
   };
 
   // Enhanced filtering logic with user_status support
-  const filteredUsers = users
-    .filter(u => {
-      const matchesSearch = !search ||
-        u.name?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase()) ||
-        u.username?.toLowerCase().includes(search.toLowerCase());
+  const filteredUsers = sortUsersByName(
+    users
+      .filter(u => {
+        const matchesSearch = !search ||
+          u.name?.toLowerCase().includes(search.toLowerCase()) ||
+          u.email?.toLowerCase().includes(search.toLowerCase()) ||
+          u.username?.toLowerCase().includes(search.toLowerCase());
 
-      const matchesRole = !filterRole || u.role === filterRole;
+        const matchesRole = !filterRole || u.role === filterRole;
 
-      const matchesStatus = !filterStatus ||
-        (filterStatus === 'active' ? u.is_active && u.user_status === 'active' :
-          filterStatus === 'inactive' ? !u.is_active || u.user_status === 'inactive' :
-            u.user_status === filterStatus);
+        const matchesStatus = !filterStatus ||
+          (filterStatus === 'active' ? u.is_active && u.user_status === 'active' :
+            filterStatus === 'inactive' ? !u.is_active || u.user_status === 'inactive' :
+              u.user_status === filterStatus);
 
-      return matchesSearch && matchesRole && matchesStatus;
-    });
+        return matchesSearch && matchesRole && matchesStatus;
+      })
+  );
 
   // Helper function to get user status display
   const getUserStatusDisplay = (user) => {

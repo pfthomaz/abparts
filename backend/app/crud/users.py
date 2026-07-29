@@ -3,11 +3,15 @@
 import uuid
 import secrets
 from datetime import datetime, timedelta
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from .. import models, schemas
 from ..auth import get_password_hash
+
+# Users are listed alphabetically by display name (name, falling back to username).
+USER_NAME_ORDER = func.lower(func.coalesce(models.User.name, models.User.username))
 
 def get_user(db: Session, user_id: uuid.UUID) -> models.User | None:
     return db.query(models.User).filter(models.User.id == user_id).first()
@@ -16,7 +20,7 @@ def get_user_by_username(db: Session, username: str) -> models.User | None:
     return db.query(models.User).filter(models.User.username == username).first()
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]:
-    return db.query(models.User).offset(skip).limit(limit).all()
+    return db.query(models.User).order_by(USER_NAME_ORDER).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     from sqlalchemy.exc import IntegrityError
@@ -295,7 +299,7 @@ def get_users_by_organization(db: Session, organization_id: uuid.UUID, skip: int
     """
     return db.query(models.User).filter(
         models.User.organization_id == organization_id
-    ).offset(skip).limit(limit).all()
+    ).order_by(USER_NAME_ORDER).offset(skip).limit(limit).all()
 
 
 # --- User Profile and Self-Service Functions ---
@@ -554,7 +558,7 @@ def search_users(
             (models.User.username.ilike(search_pattern))
         )
     
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(USER_NAME_ORDER).offset(skip).limit(limit).all()
 
 def deactivate_user_with_session_termination(
     db: Session, 
@@ -730,8 +734,8 @@ def get_inactive_users(
     
     if organization_id:
         query = query.filter(models.User.organization_id == organization_id)
-    
-    return query.offset(skip).limit(limit).all()
+
+    return query.order_by(USER_NAME_ORDER).offset(skip).limit(limit).all()
 
 def get_user_management_audit_logs(
     db: Session,

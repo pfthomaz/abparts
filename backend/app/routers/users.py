@@ -98,7 +98,7 @@ async def get_users(
     # Get base query and apply organization-scoped filtering
     query = db.query(models.User)
     query = OrganizationScopedQueries.filter_users(query, current_user)
-    users = query.all()
+    users = query.order_by(crud.users.USER_NAME_ORDER).all()
     return users
 
 @router.get("/me/")

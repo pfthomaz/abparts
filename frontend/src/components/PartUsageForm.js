@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import QuantityInput from './QuantityInput';
+import { sortUsersByName } from '../utils/sortUsers';
 
 function PartUsageForm({ organizations = [], parts = [], users = [], initialData = {}, onSubmit, onClose }) {
   const { token, user } = useAuth(); // Current logged-in user
@@ -76,7 +77,9 @@ function PartUsageForm({ organizations = [], parts = [], users = [], initialData
   const customerOrganizations = organizations.filter(org => org.type === 'Customer');
 
   // Filter users based on the selected customer_organization_id
-  const filteredUsers = users.filter(usr => usr.organization_id === formData.customer_organization_id);
+  const filteredUsers = sortUsersByName(
+    users.filter(usr => usr.organization_id === formData.customer_organization_id)
+  );
 
   // Determine if the organization dropdown should be disabled
   const disableOrgSelection = loading || (user && (user.role === 'Customer Admin' || user.role === 'Customer User'));

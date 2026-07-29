@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 import { partsService } from '../services/partsService';
 import PartSearchSelector from './PartSearchSelector';
+import { sortUsersByName } from '../utils/sortUsers';
 import { useTranslation } from '../hooks/useTranslation';
 
 function CustomerOrderForm({ organizations = [], users = [], parts = [], initialData = {}, onSubmit, onClose }) {
@@ -279,7 +280,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
       }
     }
     
-    return filtered;
+    return sortUsersByName(filtered);
   }, [users, formData.customer_organization_id, user]);
 
   // Determine if the organization dropdown should be disabled

@@ -12,6 +12,7 @@ import {
 import PermissionGuard from './PermissionGuard';
 import PermissionVisualization from './PermissionVisualization';
 import { userService } from '../services/userService';
+import { sortUsersByName } from '../utils/sortUsers';
 
 /**
  * Comprehensive permission management panel for administrators
@@ -216,7 +217,7 @@ const PermissionManagementPanel = () => {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Select User to View Permissions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map(user => (
+          {sortUsersByName(users).map(user => (
             <button
               key={user.id}
               onClick={() => setSelectedUser(user)}
