@@ -133,6 +133,7 @@ const NetCleaningRecordForm = ({ record, nets, farmSites, machines, onSubmit, on
         const response = await fetch(
           `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/users/organization/${targetOrganizationId}/users`,
           {
+            cache: 'no-store', // always get the current name, not a browser-cached copy
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
