@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from sqlalchemy import text
 from datetime import datetime
+import asyncio
 import logging
 import uuid
 import json
@@ -373,6 +374,25 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
             if not result:
                 raise HTTPException(status_code=404, detail="Support case not found")
 
+        # Keep the knowledge base in sync when a resolved case's content changes
+        kb_relevant = ('title', 'description', 'symptoms', 'root_cause',
+                       'resolution', 'machine_model', 'related_parts', 'tags', 'status')
+        if (result.status == 'resolved' and result.resolution
+                and any(getattr(request, f, None) is not None for f in kb_relevant)):
+            try:
+                doc_id = await _sync_case_to_knowledge_base(result)
+                if doc_id and doc_id != result.knowledge_doc_id:
+                    with get_db_session() as db:
+                        db.execute(
+                            text("UPDATE support_cases SET knowledge_doc_id = :d WHERE id = :id"),
+                            {'d': doc_id, 'id': case_id}
+                        )
+                        result = db.execute(
+                            text("SELECT * FROM support_cases WHERE id = :id"), {'id': case_id}
+                        ).fetchone()
+            except Exception as e:
+                logger.warning(f"Failed to re-sync case {case_id} to knowledge base: {e}")
+
         logger.info(f"Updated support case {case_id}")
         return _row_to_case_response(result)
 
@@ -414,11 +434,11 @@ async def resolve_support_case(case_id: str, request: ResolveSupportCaseRequest)
             if not result:
                 raise HTTPException(status_code=404, detail="Support case not found")
 
-        # Publish to knowledge base if requested
+        # Publish / refresh in the knowledge base if requested
         if request.publish_to_knowledge_base:
             try:
-                knowledge_doc_id = await _publish_case_to_knowledge_base(result)
-                if knowledge_doc_id:
+                knowledge_doc_id = await _sync_case_to_knowledge_base(result)
+                if knowledge_doc_id and knowledge_doc_id != result.knowledge_doc_id:
                     with get_db_session() as db:
                         db.execute(
                             text("UPDATE support_cases SET knowledge_doc_id = :doc_id WHERE id = :case_id"),
@@ -444,6 +464,93 @@ async def resolve_support_case(case_id: str, request: ResolveSupportCaseRequest)
     except Exception as e:
         logger.error(f"Failed to resolve support case {case_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to resolve support case: {str(e)}")
+
+
+# Guard against two overlapping backfills writing the vector index at once.
+_backfill_lock = asyncio.Lock()
+
+
+@router.post("/support-cases/backfill-knowledge-base")
+async def backfill_knowledge_base(
+    dry_run: bool = Query(False, description="List what would be published, change nothing"),
+    refresh_existing: bool = Query(False, description="Also refresh cases already linked to a KB doc"),
+):
+    """
+    Publish resolved support cases into the AI knowledge base.
+
+    By default this only touches resolved cases that have a resolution but are
+    NOT yet in the knowledge base (no knowledge_doc_id). With refresh_existing=true
+    it also re-syncs cases that are already linked, picking up later edits.
+
+    Idempotent and safe to re-run. Synchronous admin operation - runtime scales
+    with the number of cases processed (a few embedding calls each).
+    """
+    if _backfill_lock.locked():
+        raise HTTPException(status_code=409, detail="A knowledge base backfill is already running")
+
+    async with _backfill_lock:
+        kb_filter = "" if refresh_existing else \
+            "AND (knowledge_doc_id IS NULL OR btrim(knowledge_doc_id) = '')"
+
+        with get_db_session() as db:
+            rows = db.execute(text(f"""
+                SELECT * FROM support_cases
+                WHERE status = 'resolved'
+                  AND resolution IS NOT NULL AND btrim(resolution) <> ''
+                  {kb_filter}
+                ORDER BY resolved_at NULLS LAST
+            """)).fetchall()
+
+        summary = {
+            "eligible": len(rows),
+            "published": 0,
+            "failed": 0,
+            "dry_run": dry_run,
+            "refresh_existing": refresh_existing,
+            "cases": [],
+        }
+
+        if dry_run:
+            summary["cases"] = [{"case_number": r.case_number, "title": r.title} for r in rows]
+            return summary
+
+        if not rows:
+            return summary
+
+        # One shared LLM client + vector index for the whole batch
+        from ..llm_client import LLMClient
+        from ..services.knowledge_base import KnowledgeBaseService
+        from ..services.vector_database import VectorDatabase
+
+        llm_client = LLMClient()
+        await llm_client.initialize()
+        try:
+            kb_service = KnowledgeBaseService(llm_client, VectorDatabase())
+            for r in rows:
+                try:
+                    doc_id = await _sync_case_to_knowledge_base(r, kb_service=kb_service)
+                    if not doc_id:
+                        summary["failed"] += 1
+                        continue
+                    if doc_id != r.knowledge_doc_id:
+                        with get_db_session() as db:
+                            db.execute(text(
+                                "UPDATE support_cases SET knowledge_doc_id = :d, updated_at = NOW() "
+                                "WHERE id = :id"
+                            ), {"d": doc_id, "id": r.id})
+                    summary["published"] += 1
+                    summary["cases"].append({"case_number": r.case_number, "knowledge_doc_id": doc_id})
+                except Exception as e:
+                    logger.warning(f"Backfill failed for case {r.case_number}: {e}")
+                    summary["failed"] += 1
+        finally:
+            await llm_client.cleanup()
+
+        logger.info(
+            f"Support case KB backfill: {summary['published']} published, "
+            f"{summary['failed']} failed (eligible {summary['eligible']})"
+        )
+        return summary
 
 
 @router.post("/support-cases/{case_id}/comments", response_model=SupportCaseCommentResponse)
@@ -537,70 +644,95 @@ async def list_comments(case_id: str, include_internal: bool = Query(True)):
         raise HTTPException(status_code=500, detail=f"Failed to list comments: {str(e)}")
 
 
-async def _publish_case_to_knowledge_base(case_row) -> Optional[str]:
+def _build_case_document_content(case_row) -> str:
+    """Render a resolved support case into the text that gets embedded for the AI."""
+    parts = [
+        f"Issue: {case_row.title}",
+        f"\nDescription: {case_row.description}",
+    ]
+    if case_row.symptoms:
+        parts.append(f"\nSymptoms: {case_row.symptoms}")
+    parts.append(f"\nRoot Cause: {case_row.root_cause}")
+    parts.append(f"\nResolution: {case_row.resolution}")
+
+    related_parts = _parse_jsonb_list(getattr(case_row, "related_parts", None))
+    if related_parts:
+        parts.append(f"\nRelated Parts: {', '.join(str(p) for p in related_parts)}")
+
+    if case_row.machine_model:
+        parts.append(f"\nApplicable Machine Model: AutoBoss {case_row.machine_model}")
+
+    return "\n".join(parts)
+
+
+async def _sync_case_to_knowledge_base(case_row, kb_service=None) -> Optional[str]:
     """
-    Publish a resolved support case to the knowledge base as a searchable document.
-    
-    This creates a knowledge base document from the case's symptoms, root cause,
-    and resolution so the AI can reference it in future troubleshooting sessions.
+    Create or update the knowledge base document for a resolved support case so
+    the AI assistant can cite it as verified field experience.
+
+    - If the case already has a knowledge_doc_id and that document still exists,
+      its content is refreshed in place (no duplicate).
+    - Otherwise a new knowledge document is created.
+    - Returns the knowledge document id, or None if the case has no resolution yet.
+
+    Pass an existing kb_service to reuse one LLM client / vector index across a
+    batch (see the backfill endpoint).
     """
+    if not (case_row.resolution and str(case_row.resolution).strip()):
+        return None
+
+    title = f"[Resolved Case] {case_row.title}"
+    content = _build_case_document_content(case_row)
+    machine_models = [case_row.machine_model] if case_row.machine_model else ["ALL"]
+
+    tags = _parse_jsonb_list(case_row.tags) + ["support_case", "resolved_issue", "troubleshooting"]
+    tags = list(dict.fromkeys(tags))  # de-dupe, keep order
+
+    metadata = {
+        "source": "support_case",
+        "case_id": case_row.id,
+        "case_number": case_row.case_number,
+        "priority": case_row.priority,
+        "resolved_at": str(case_row.resolved_at) if case_row.resolved_at else None,
+    }
+
     from ..llm_client import LLMClient
     from ..services.knowledge_base import KnowledgeBaseService
     from ..services.vector_database import VectorDatabase
 
-    # Build the document content from case data
-    content_parts = []
-    content_parts.append(f"Issue: {case_row.title}")
-    content_parts.append(f"\nDescription: {case_row.description}")
-
-    if case_row.symptoms:
-        content_parts.append(f"\nSymptoms: {case_row.symptoms}")
-
-    content_parts.append(f"\nRoot Cause: {case_row.root_cause}")
-    content_parts.append(f"\nResolution: {case_row.resolution}")
-
-    if case_row.machine_model:
-        content_parts.append(f"\nApplicable Machine Model: AutoBoss {case_row.machine_model}")
-
-    content = "\n".join(content_parts)
-
-    # Determine machine models for the document
-    machine_models = []
-    if case_row.machine_model:
-        machine_models = [case_row.machine_model]
-    else:
-        machine_models = ["ALL"]
-
-    # Build tags from case tags + additional context
-    tags = list(case_row.tags) if case_row.tags else []
-    tags.extend(["support_case", "resolved_issue", "troubleshooting"])
-
-    # Create the knowledge base document
-    llm_client = LLMClient()
-    await llm_client.initialize()
+    own_client = None
+    if kb_service is None:
+        own_client = LLMClient()
+        await own_client.initialize()
+        kb_service = KnowledgeBaseService(own_client, VectorDatabase())
 
     try:
-        vector_db = VectorDatabase()
-        kb_service = KnowledgeBaseService(llm_client, vector_db)
+        existing_id = getattr(case_row, "knowledge_doc_id", None)
+        if existing_id and await kb_service.get_document(existing_id):
+            await kb_service.update_document(
+                existing_id,
+                title=title,
+                content=content,
+                machine_models=machine_models,
+                tags=tags,
+                metadata=metadata,
+            )
+            logger.info(f"Refreshed KB doc {existing_id} for case {case_row.case_number}")
+            return existing_id
 
         doc_id = await kb_service.create_document(
-            title=f"[Resolved Case] {case_row.title}",
+            title=title,
             content=content,
             document_type="support_case",
             machine_models=machine_models,
             tags=tags,
             language="en",
             version="1.0",
-            metadata={
-                "source": "support_case",
-                "case_id": case_row.id,
-                "case_number": case_row.case_number,
-                "priority": case_row.priority,
-                "resolved_at": str(case_row.resolved_at) if case_row.resolved_at else None,
-            }
+            metadata=metadata,
         )
-
+        logger.info(f"Created KB doc {doc_id} for case {case_row.case_number}")
         return doc_id
 
     finally:
-        await llm_client.cleanup()
+        if own_client is not None:
+            await own_client.cleanup()

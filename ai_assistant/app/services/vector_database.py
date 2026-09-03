@@ -114,17 +114,24 @@ class VectorDatabase:
         logger.info("Vector index reset to empty")
     
     def _save_index(self):
-        """Save FAISS index and metadata to disk."""
+        """Save FAISS index and metadata to disk atomically (write temp + rename)
+        so a concurrent reader never sees a half-written index."""
         try:
-            index_file = self.index_path / "faiss.index"
-            metadata_file = self.index_path / "metadata.pkl"
-            
-            faiss.write_index(self.index, str(index_file))
-            with open(metadata_file, 'wb') as f:
+            index_file = self._index_file
+            metadata_file = self._metadata_file
+            tmp_index = index_file.with_suffix(".index.tmp")
+            tmp_meta = metadata_file.with_suffix(".pkl.tmp")
+
+            faiss.write_index(self.index, str(tmp_index))
+            with open(tmp_meta, 'wb') as f:
                 pickle.dump({
                     'metadata': self.document_metadata,
                     'next_id': self.next_id
                 }, f)
+
+            os.replace(tmp_index, index_file)
+            os.replace(tmp_meta, metadata_file)
+
             try:
                 self._loaded_mtime = index_file.stat().st_mtime
             except OSError:
