@@ -2,6 +2,7 @@
 Knowledge base management API endpoints.
 """
 
+import asyncio
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
@@ -484,18 +485,49 @@ async def rebuild_vector_index(
     service: KnowledgeBaseService = Depends(get_knowledge_service)
 ):
     """
-    Rebuild the vector index (admin operation).
-    
-    Args:
-        service: Knowledge base service
-        
-    Returns:
-        Success message
+    Compact the in-memory vector index by dropping soft-deleted vectors.
+
+    NOTE: this only reshuffles vectors already in FAISS. If the index file was
+    lost, use POST /knowledge/reindex instead - it rebuilds from Postgres.
     """
     try:
         service.vector_db.rebuild_index()
-        return {"message": "Vector index rebuilt successfully"}
-        
+        return {"message": "Vector index rebuilt successfully", **service.vector_db.get_stats()}
+
     except Exception as e:
         logger.error(f"Failed to rebuild vector index: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Guard against two overlapping reindex runs trampling the same index file.
+_reindex_lock = asyncio.Lock()
+
+
+@router.post("/reindex")
+async def reindex_knowledge_base(
+    re_embed: bool = False,
+    service: KnowledgeBaseService = Depends(get_knowledge_service),
+):
+    """
+    Rebuild the entire vector index from Postgres (knowledge_documents +
+    document_chunks). Use this to recover after the FAISS index file is lost,
+    or after changing the embedding model.
+
+    Query params:
+        re_embed=false (default): reuse embeddings stored on document_chunks,
+            only call OpenAI for chunks missing one. Fast and cheap.
+        re_embed=true: re-embed every chunk from its text. Required after
+            changing OPENAI_EMBEDDING_MODEL / EMBEDDING_DIMENSION.
+
+    This is a synchronous admin operation; for a large corpus it can take a
+    while (it is bounded by OpenAI embedding throughput when re_embed=true).
+    """
+    if _reindex_lock.locked():
+        raise HTTPException(status_code=409, detail="A reindex is already running")
+    try:
+        async with _reindex_lock:
+            summary = await service.reindex_from_database(re_embed=re_embed)
+        return {"message": "Knowledge base reindexed", **summary}
+    except Exception as e:
+        logger.error(f"Failed to reindex knowledge base: {e}")
         raise HTTPException(status_code=500, detail=str(e))

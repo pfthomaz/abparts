@@ -11,6 +11,8 @@ from typing import List, Dict, Any, Tuple, Optional
 from pathlib import Path
 import logging
 
+from ..config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,46 +20,98 @@ class VectorDatabase:
     """
     Local vector database using FAISS for document embeddings.
     """
-    
-    def __init__(self, dimension: int = 1536, index_path: str = "data/vector_index"):
+
+    def __init__(self, dimension: Optional[int] = None, index_path: Optional[str] = None):
         """
         Initialize vector database.
-        
+
         Args:
-            dimension: Embedding vector dimension (1536 for OpenAI)
-            index_path: Path to store FAISS index files
+            dimension: Embedding vector dimension (defaults to settings.EMBEDDING_DIMENSION)
+            index_path: Path to store FAISS index files (defaults to settings.VECTOR_INDEX_PATH)
         """
-        self.dimension = dimension
-        self.index_path = Path(index_path)
+        self.dimension = dimension or settings.EMBEDDING_DIMENSION
+        self.index_path = Path(index_path or settings.VECTOR_INDEX_PATH)
         self.index_path.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize FAISS index
-        self.index = faiss.IndexFlatIP(dimension)  # Inner product for cosine similarity
+        self.index = faiss.IndexFlatIP(self.dimension)  # Inner product for cosine similarity
         self.document_metadata: Dict[int, Dict[str, Any]] = {}
         self.next_id = 0
-        
+        self._loaded_mtime: float = 0.0
+
         # Load existing index if available
         self._load_index()
-    
+
+    @property
+    def _index_file(self) -> Path:
+        return self.index_path / "faiss.index"
+
+    @property
+    def _metadata_file(self) -> Path:
+        return self.index_path / "metadata.pkl"
+
     def _load_index(self):
         """Load existing FAISS index and metadata from disk."""
-        index_file = self.index_path / "faiss.index"
-        metadata_file = self.index_path / "metadata.pkl"
-        
+        index_file = self._index_file
+        metadata_file = self._metadata_file
+
         try:
             if index_file.exists() and metadata_file.exists():
-                self.index = faiss.read_index(str(index_file))
+                loaded_index = faiss.read_index(str(index_file))
+                if loaded_index.d != self.dimension:
+                    logger.error(
+                        f"On-disk vector index has dimension {loaded_index.d} but the "
+                        f"configured embedding dimension is {self.dimension}. Ignoring the "
+                        f"stale index - run POST /knowledge/reindex to rebuild it."
+                    )
+                    return
+                self.index = loaded_index
                 with open(metadata_file, 'rb') as f:
                     data = pickle.load(f)
                     self.document_metadata = data.get('metadata', {})
                     self.next_id = data.get('next_id', 0)
+                try:
+                    self._loaded_mtime = index_file.stat().st_mtime
+                except OSError:
+                    self._loaded_mtime = 0.0
                 logger.info(f"Loaded vector index with {self.index.ntotal} vectors")
+            else:
+                logger.warning(
+                    f"No vector index found at {self.index_path}. The knowledge base will "
+                    f"return no results until documents are indexed (POST /knowledge/reindex)."
+                )
         except Exception as e:
             logger.warning(f"Could not load existing index: {e}")
             # Reset to empty index
             self.index = faiss.IndexFlatIP(self.dimension)
             self.document_metadata = {}
             self.next_id = 0
+
+    def reload_if_stale(self) -> bool:
+        """
+        Reload the index from disk if it has changed since we last loaded it.
+        Lets a long-lived process pick up a rebuild performed by /knowledge/reindex.
+        Returns True if a reload happened.
+        """
+        try:
+            if not self._index_file.exists():
+                return False
+            mtime = self._index_file.stat().st_mtime
+            if mtime > self._loaded_mtime:
+                logger.info("Vector index on disk changed - reloading")
+                self._load_index()
+                return True
+        except Exception as e:
+            logger.warning(f"Could not check vector index freshness: {e}")
+        return False
+
+    def reset(self):
+        """Drop every vector and start from an empty index (used by full reindex)."""
+        self.index = faiss.IndexFlatIP(self.dimension)
+        self.document_metadata = {}
+        self.next_id = 0
+        self._save_index()
+        logger.info("Vector index reset to empty")
     
     def _save_index(self):
         """Save FAISS index and metadata to disk."""
@@ -71,53 +125,69 @@ class VectorDatabase:
                     'metadata': self.document_metadata,
                     'next_id': self.next_id
                 }, f)
+            try:
+                self._loaded_mtime = index_file.stat().st_mtime
+            except OSError:
+                pass
             logger.info(f"Saved vector index with {self.index.ntotal} vectors")
         except Exception as e:
             logger.error(f"Failed to save index: {e}")
             raise
     
-    def add_document(self, document_id: str, content_chunks: List[str], 
-                    embeddings: List[List[float]], metadata: Dict[str, Any]) -> List[int]:
+    def add_document(self, document_id: str, content_chunks: List[str],
+                    embeddings: List[List[float]], metadata: Dict[str, Any],
+                    chunk_metadata: Optional[List[Dict[str, Any]]] = None,
+                    save: bool = True) -> List[int]:
         """
         Add document chunks and their embeddings to the vector database.
-        
+
         Args:
             document_id: Unique document identifier
             content_chunks: List of text chunks
             embeddings: List of embedding vectors for each chunk
-            metadata: Document metadata
-            
+            metadata: Document-level metadata applied to every chunk
+            chunk_metadata: Optional per-chunk metadata (e.g. section heading)
+            save: Persist to disk immediately (set False for bulk reindex, then
+                  call save_index() once at the end)
+
         Returns:
             List of vector IDs assigned to the chunks
         """
         if len(content_chunks) != len(embeddings):
             raise ValueError("Number of chunks must match number of embeddings")
-        
+
         vector_ids = []
         vectors = np.array(embeddings, dtype=np.float32)
-        
+
         # Normalize vectors for cosine similarity
         faiss.normalize_L2(vectors)
-        
+
         for i, (chunk, embedding) in enumerate(zip(content_chunks, embeddings)):
             vector_id = self.next_id
+            extra = (chunk_metadata[i] if chunk_metadata and i < len(chunk_metadata) else {})
             self.document_metadata[vector_id] = {
                 'document_id': document_id,
                 'content_chunk': chunk,
                 'chunk_index': i,
-                **metadata
+                **metadata,
+                **extra,
             }
             vector_ids.append(vector_id)
             self.next_id += 1
-        
+
         # Add vectors to index
         self.index.add(vectors)
-        
+
         # Save to disk
-        self._save_index()
-        
+        if save:
+            self._save_index()
+
         logger.info(f"Added {len(content_chunks)} chunks for document {document_id}")
         return vector_ids
+
+    def save_index(self):
+        """Public wrapper to flush the index to disk (used after bulk add)."""
+        self._save_index()
     
     def search(self, query_embedding: List[float], k: int = 10, 
               filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -148,7 +218,11 @@ class VectorDatabase:
                 continue
                 
             metadata = self.document_metadata.get(idx, {})
-            
+
+            # Skip chunks belonging to deleted documents (FAISS has no real delete)
+            if metadata.get('deleted', False):
+                continue
+
             # Apply filters if provided
             if filters:
                 if not self._matches_filters(metadata, filters):

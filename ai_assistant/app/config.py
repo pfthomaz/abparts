@@ -23,7 +23,27 @@ class Settings(BaseSettings):
     OPENAI_TEMPERATURE: float = Field(default=0.7)
     OPENAI_TIMEOUT: int = Field(default=30)
     OPENAI_MAX_RETRIES: int = Field(default=3)
-    
+
+    # Embedding configuration
+    # text-embedding-3-small: 1536 dims, cheaper and materially better retrieval
+    # quality than the legacy text-embedding-ada-002. If you change the model or
+    # dimension you MUST rebuild the vector index (POST /knowledge/reindex).
+    OPENAI_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
+    EMBEDDING_DIMENSION: int = Field(default=1536)
+
+    # Knowledge base / retrieval tuning
+    # VECTOR_INDEX_PATH must live on a persistent volume in production, otherwise
+    # the FAISS index is wiped on every container recreate and the assistant
+    # silently loses all of its knowledge.
+    VECTOR_INDEX_PATH: str = Field(default="data/vector_index")
+    KB_CHUNK_SIZE: int = Field(default=1100)
+    KB_CHUNK_OVERLAP: int = Field(default=300)
+    KB_SEARCH_MIN_RELEVANCE: float = Field(default=0.18)
+    KB_SEARCH_MAX_CONTEXT_CHUNKS: int = Field(default=14)
+    KB_SEARCH_NEIGHBOR_RADIUS: int = Field(default=1)
+    KB_QUERY_EXPANSION: bool = Field(default=True)
+    KB_EMBED_CONCURRENCY: int = Field(default=6)
+
     # Database configuration (for session storage)
     DATABASE_URL: str = Field(default="")
     

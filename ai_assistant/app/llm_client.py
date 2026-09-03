@@ -21,6 +21,36 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 
+class EmbeddingGenerationError(RuntimeError):
+    """Raised when an embedding could not be produced after retries.
+
+    Callers use this to tell 'the knowledge base has no answer' apart from
+    'the retrieval pipeline is down' - the two need very different replies.
+    """
+
+
+# Process-wide knowledge base service, so we don't reload the FAISS index from
+# disk on every single chat turn. It transparently picks up a rebuild done by
+# POST /knowledge/reindex via reload_if_stale().
+_kb_service = None
+
+
+def _get_knowledge_service(llm_client: "LLMClient"):
+    """Lazily build and cache the KnowledgeBaseService, refreshing the index if it changed."""
+    global _kb_service
+    from .services.knowledge_base import KnowledgeBaseService
+    from .services.vector_database import VectorDatabase
+
+    if _kb_service is None:
+        _kb_service = KnowledgeBaseService(llm_client, VectorDatabase())
+    else:
+        try:
+            _kb_service.vector_db.reload_if_stale()
+        except Exception as e:
+            logger.warning(f"Vector index refresh check failed: {e}")
+    return _kb_service
+
+
 class ModelType(Enum):
     """Available OpenAI models."""
     GPT_4 = "gpt-4"
@@ -110,6 +140,25 @@ class LLMClient:
         except Exception as e:
             logger.error(f"OpenAI API connection test failed: {e}")
             raise
+
+        # Non-fatal: surface embedding-model / dimension problems at startup
+        try:
+            emb = await self.client.embeddings.create(
+                model=settings.OPENAI_EMBEDDING_MODEL, input="connection test"
+            )
+            dim = len(emb.data[0].embedding)
+            if dim != settings.EMBEDDING_DIMENSION:
+                logger.error(
+                    f"Embedding model {settings.OPENAI_EMBEDDING_MODEL} returns dim {dim} "
+                    f"but EMBEDDING_DIMENSION is {settings.EMBEDDING_DIMENSION}. Fix config "
+                    f"and run POST /knowledge/reindex?re_embed=true."
+                )
+            else:
+                logger.info(
+                    f"Embedding model {settings.OPENAI_EMBEDDING_MODEL} OK (dim {dim})"
+                )
+        except Exception as e:
+            logger.error(f"Embedding API test failed ({settings.OPENAI_EMBEDDING_MODEL}): {e}")
     
     def _clean_response_formatting(self, content: str) -> str:
         """
@@ -148,8 +197,81 @@ class LLMClient:
         # Clean up extra whitespace
         content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
         content = content.strip()
-        
+
         return content
+
+    async def _expand_search_queries(self, user_message: str, language: str) -> List[str]:
+        """
+        Ask the fast model for a few alternative search queries (paraphrases,
+        underlying symptoms, likely manual terminology) to widen retrieval
+        recall. Best-effort: any failure returns an empty list.
+        """
+        if not self.client or len(user_message.strip()) < 3:
+            return []
+        try:
+            prompt = (
+                "You expand a user's AutoBoss net-cleaning-machine question into search "
+                "queries for a technical manual + resolved support cases. "
+                "Return ONLY a JSON array of 3-5 short query strings (no prose). "
+                "Include likely manual phrasing, component names, symptoms and the "
+                "underlying fault.\n\nUser question: " + user_message.strip()
+            )
+            resp = await self.client.chat.completions.create(
+                model=self.fallback_model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=180,
+                temperature=0.3,
+            )
+            raw = (resp.choices[0].message.content or "").strip()
+            start, end = raw.find("["), raw.rfind("]")
+            if start != -1 and end != -1:
+                import json as _json
+                queries = _json.loads(raw[start:end + 1])
+                out = []
+                for q in queries:
+                    if isinstance(q, str) and 2 < len(q.strip()) <= 200:
+                        out.append(q.strip())
+                return out[:5]
+        except Exception as e:
+            logger.debug(f"Query expansion skipped: {e}")
+        return []
+
+    def _build_system_prompt(self, language: str, knowledge_context: str,
+                             caller_system: str = "") -> str:
+        """Assemble the system prompt: grounded in the knowledge base, but allowed
+        to synthesise a genuinely useful, structured answer."""
+        extra = ""
+        if caller_system.strip():
+            extra = f"\n\nADDITIONAL TASK INSTRUCTIONS FROM THE WORKFLOW:\n{caller_system.strip()}\n"
+
+        if knowledge_context:
+            return f"""You are AutoBoss AI Assistant, the support assistant for AutoBoss underwater net-cleaning robots (built by BossAqua, distributed by Oraseas EE). These machines use hydraulics, a PLC, HP water jets, walking wheels and remote-control operation - they have NO mains power cord or household electrical parts.
+
+GROUNDING RULES:
+- Base every technical claim on the KNOWLEDGE BASE CONTENT below (operator manual, troubleshooting guides, resolved support cases).
+- You MAY combine and summarise multiple entries, infer the obvious next diagnostic step, and put steps in a sensible order - but do NOT invent AutoBoss-specific values, part names or procedures that are not supported by the content.
+- Treat entries marked [VERIFIED FIELD EXPERIENCE] as high-confidence.
+- If the content only partially covers the question, give what IS supported, then clearly state what is missing and recommend escalation to Oraseas support.
+- Only if NOTHING below is relevant: say briefly that the knowledge base doesn't cover this and recommend contacting Oraseas EE support.
+
+KNOWLEDGE BASE CONTENT:
+{knowledge_context}
+
+ANSWER STYLE:
+- Lead with the most likely cause / the direct answer.
+- Then numbered, actionable steps. One action per step. Include specific readings, pressures, section numbers and part names when the content gives them.
+- Call out safety warnings first, in CAPITALS.
+- Cite sources inline, e.g. "(Operator Manual, Section 8)" or "(Resolved case)".
+- Plain text only - no markdown, no asterisks. Use CAPITALS or numbered lists for emphasis.
+- End with what to check next, or when to escalate.
+- Respond in {language}.{extra}"""
+
+        return f"""You are AutoBoss AI Assistant for AutoBoss underwater net-cleaning robots (BossAqua / Oraseas EE). They use hydraulics, a PLC, HP water jets, walking wheels and remote control - NO mains cord or household electrical parts.
+
+No knowledge-base entries matched this question. Do NOT guess AutoBoss-specific procedures or values, and do NOT give generic "check the power cord / restart it" advice.
+
+You may still: ask 1-2 focused clarifying questions about the symptom (when did it start, what changed, any gauge readings, error codes, noises), and explain what information would let you help. Then recommend contacting the Oraseas EE support team.
+Plain text only, be concise, respond in {language}.{extra}"""
 
     async def generate_response(
         self,
@@ -199,186 +321,98 @@ class LLMClient:
                     user_message = msg.content
                     break
         
-        # Search knowledge base for relevant information
+        # Retrieve relevant knowledge from the vector store
         knowledge_context = ""
+        retrieval_failed = False
         if user_message:
             try:
-                # Import here to avoid circular imports
-                from .services.knowledge_base import KnowledgeBaseService
-                from .services.vector_database import VectorDatabase
-                
-                # Initialize knowledge base service
-                vector_db = VectorDatabase()
-                knowledge_service = KnowledgeBaseService(self, vector_db)
-                
-                # Enhanced search strategy with multiple specific queries
+                knowledge_service = _get_knowledge_service(self)
+
+                # Multi-query retrieval: raw question + LLM-generated paraphrases /
+                # sub-questions. Far more robust than the old keyword heuristics.
                 search_queries = [user_message]
-                
-                # Add specific search terms for common queries
-                if any(word in user_message.lower() for word in ['start', 'startup', 'begin', 'turn on', 'power on', 'how to start']):
-                    search_queries.extend([
-                        "Section 8 Step 3 Pre-operation Check and Warm-Up",
-                        "Turn on master switch PLC set desired cleaning profile depth",
-                        "Attach umbilical hose rear Power Pack Assembly",
-                        "Lift AutoBoss into water start up via remote control",
-                        "Step 3 Pre-operation Check Warm-Up master switch",
-                        "operating the AutoBoss Section 8 startup procedure",
-                        "Step 1 Turn on master switch Step 2 PLC set desired cleaning",
-                        "Step 4 Lift AutoBoss into water start up remote control"
-                    ])
-                
-                # Also search for troubleshooting if user mentions problems
-                if any(word in user_message.lower() for word in ['problem', 'issue', 'trouble', 'not working', 'broken', 'error']):
-                    search_queries.extend([
-                        "troubleshooting guide Section 10",
-                        "HP Water Gauge Reading Low",
-                        "Walking Wheels slow won't turn",
-                        "Remote working intermittently"
-                    ])
-                
-                # Search for HP gauge specific issues
-                if any(word in user_message.lower() for word in ['hp', 'pressure', 'gauge', 'red', 'low', 'high']):
-                    search_queries.extend([
-                        "HP Water Gauge Reading Low in low red zone",
-                        "HP Water Gauge Reading High in high red zone", 
-                        "charge pressure gauge",
-                        "water pressure system",
-                        "unloader valve system"
-                    ])
-                
-                # Search for maintenance related queries
-                if any(word in user_message.lower() for word in ['maintenance', 'service', 'repair', 'replace', 'check']):
-                    search_queries.extend([
-                        "Daily Monitoring and Maintenance",
-                        "Weekly Monitoring and Maintenance",
-                        "250 hour maintenance requirements",
-                        "500 hour maintenance requirements",
-                        "maintenance check sheet"
-                    ])
-                
-                # Always search for resolved support cases - these contain real field experience
-                search_queries.append(f"Resolved Case {user_message}")
-                
-                all_results = []
-                for query in search_queries:
-                    search_results = await knowledge_service.search_documents(
-                        query=query,
-                        language=language,
-                        limit=8  # Get top 8 results per query for broader coverage
-                    )
-                    all_results.extend(search_results)
-                
-                # Remove duplicates and get best results
-                seen_docs = set()
-                unique_results = []
-                for result in all_results:
-                    doc_id = result['document']['document_id']
-                    chunk_key = f"{doc_id}_{result['matched_content'][:100]}"  # Use content snippet as key
-                    if chunk_key not in seen_docs:
-                        seen_docs.add(chunk_key)
-                        unique_results.append(result)
-                
-                # Sort by relevance and take top 12 for maximum coverage
-                unique_results.sort(key=lambda x: x['relevance_score'], reverse=True)
-                # Filter out low-relevance results (below 0.3 threshold)
-                unique_results = [r for r in unique_results if r['relevance_score'] > 0.3]
-                final_results = unique_results[:12]
-                
-                # Build context from search results with better formatting
-                if final_results:
+                if settings.KB_QUERY_EXPANSION:
+                    search_queries.extend(await self._expand_search_queries(user_message, language))
+
+                results = await knowledge_service.multi_search(
+                    search_queries,
+                    language=language,
+                )
+
+                if results:
                     context_parts = []
-                    for i, result in enumerate(final_results):
+                    for i, result in enumerate(results):
                         doc = result['document']
-                        content = result['matched_content']
-                        # Include full chunk content (chunks are now 500 chars, so no need to truncate aggressively)
-                        if len(content) > 800:
-                            content = content[:800] + "..."
-                        
-                        # Add machine model info if available
+                        content = result['matched_content'] or ""
+                        if len(content) > 1200:
+                            content = content[:1200] + "..."
+
                         model_info = ""
                         if doc.get('machine_models'):
                             model_info = f" (AutoBoss {', '.join(doc['machine_models'])})"
-                        
-                        # Add source type for resolved cases
+
                         source_type = ""
                         if doc.get('document_type') == 'support_case':
                             source_type = " [VERIFIED FIELD EXPERIENCE]"
-                        
-                        context_parts.append(f"=== KNOWLEDGE ENTRY {i+1}{source_type} ===\nFrom: {doc['title']}{model_info}\nRelevance: {result['relevance_score']:.3f}\nContent: {content}")
-                    
+                        elif doc.get('document_type'):
+                            source_type = f" [{str(doc['document_type']).upper()}]"
+
+                        context_parts.append(
+                            f"=== KNOWLEDGE ENTRY {i + 1}{source_type} ===\n"
+                            f"Source: {doc['title']}{model_info}\n"
+                            f"Relevance: {result['relevance_score']:.3f}\n"
+                            f"{content}"
+                        )
+
                     knowledge_context = "\n\n".join(context_parts)
-                    logger.info(f"Found {len(final_results)} relevant knowledge base entries (filtered from {len(unique_results)} unique)")
-                    logger.debug(f"Knowledge context length: {len(knowledge_context)} characters")
-                    logger.debug(f"Search queries used: {search_queries}")
-                
+                    logger.info(
+                        f"Knowledge retrieval: {len(results)} chunks from "
+                        f"{len(search_queries)} queries ({len(knowledge_context)} chars)"
+                    )
+                else:
+                    logger.info("Knowledge retrieval returned no chunks above threshold")
+
+            except EmbeddingGenerationError as e:
+                retrieval_failed = True
+                logger.error(f"Knowledge retrieval unavailable (embeddings down): {e}")
             except Exception as e:
-                logger.warning(f"Failed to search knowledge base: {e}")
-                # Continue without knowledge base context
-        
-        # Convert messages to OpenAI format
-        openai_messages = [
-            {"role": msg.role, "content": msg.content}
-            for msg in messages
-        ]
-        
-        # Build system message based on whether we have knowledge context
-        system_content = ""
-        
-        if knowledge_context:
-            # Create a concise system prompt with proper formatting
-            system_content = f"""You are AutoBoss AI Assistant, the ONLY support assistant for AutoBoss net cleaning machines manufactured by BossAqua and distributed by Oraseas EE.
+                retrieval_failed = True
+                logger.warning(f"Knowledge retrieval failed: {e}")
 
-CRITICAL RULES:
-- You MUST answer ONLY based on the knowledge base content provided below.
-- NEVER provide generic troubleshooting advice that does not come from the knowledge base.
-- AutoBoss machines are specialized underwater net cleaning robots. They have NO power cords, NO standard electrical outlets, NO household components.
-- If the knowledge base content does not contain information relevant to the user's question, say: "I don't have specific information about this in my knowledge base. Please contact Oraseas support for assistance."
-- NEVER guess or infer solutions from general engineering knowledge. Only state facts from the provided content.
-- If a resolved support case is referenced, treat it as verified field experience.
+        # If retrieval is broken (not merely empty), don't pretend the KB has no
+        # answer - say so and let the user retry.
+        if retrieval_failed and not knowledge_context:
+            msg = {
+                "en": "I could not search the AutoBoss knowledge base just now due to a temporary technical issue. Please try again in a moment.",
+                "el": "Δεν μπόρεσα να αναζητήσω τη βάση γνώσεων AutoBoss αυτή τη στιγμή λόγω προσωρινού τεχνικού προβλήματος. Δοκιμάστε ξανά σε λίγο.",
+                "ar": "لم أتمكن من البحث في قاعدة معارف AutoBoss الآن بسبب مشكلة تقنية مؤقتة. يرجى المحاولة مرة أخرى بعد قليل.",
+                "es": "No pude buscar en la base de conocimientos de AutoBoss en este momento debido a un problema técnico temporal. Inténtalo de nuevo en un momento.",
+                "tr": "Geçici bir teknik sorun nedeniyle AutoBoss bilgi tabanında şu anda arama yapamadım. Lütfen birazdan tekrar deneyin.",
+                "no": "Jeg kunne ikke søke i AutoBoss-kunnskapsbasen akkurat nå på grunn av et midlertidig teknisk problem. Prøv igjen om et øyeblikk.",
+            }.get(language, "I could not search the AutoBoss knowledge base just now due to a temporary technical issue. Please try again in a moment.")
+            return LLMResponse(
+                content=msg,
+                model_used="retrieval-unavailable",
+                tokens_used=0,
+                response_time=time.time() - start_time,
+                success=False,
+                error_message="knowledge_retrieval_unavailable",
+            )
 
-KNOWLEDGE BASE CONTENT:
-{knowledge_context}
+        # Convert messages to OpenAI format, lifting out any caller-provided
+        # system prompt so we don't end up with two competing system messages.
+        openai_messages = [{"role": msg.role, "content": msg.content} for msg in messages]
+        caller_system = ""
+        if openai_messages and openai_messages[0]["role"] == "system":
+            caller_system = openai_messages.pop(0)["content"]
 
-RESPONSE FORMAT:
-1. Be direct and concise - no pleasantries like "I'm sorry to hear that"
-2. Provide step-by-step instructions when the knowledge base contains them
-3. Include section references and specific values/readings when available
-4. Prioritize safety warnings from the manual
-5. Use plain text formatting - NO markdown asterisks or bold formatting
-6. For emphasis, use CAPITAL LETTERS or numbered lists
-7. Respond in {language}
+        system_content = self._build_system_prompt(
+            language=language,
+            knowledge_context=knowledge_context,
+            caller_system=caller_system,
+        )
+        openai_messages.insert(0, {"role": "system", "content": system_content})
 
-RESPONSE STYLE:
-- Direct and to-the-point
-- Clear numbered steps from the manual
-- No unnecessary pleasantries
-- Technical but accessible language
-- Always cite the source (manual section, resolved case number, etc.)
-- If information is from a resolved support case, mention it was verified in the field"""
-            logger.info(f"Using comprehensive system prompt with {len(knowledge_context)} characters of manual content")
-        else:
-            # No knowledge context - strictly refuse to provide generic advice
-            system_content = f"""You are AutoBoss AI Assistant, the ONLY support assistant for AutoBoss net cleaning machines manufactured by BossAqua and distributed by Oraseas EE.
-
-CRITICAL RULES:
-- You could NOT find relevant information in the knowledge base for this query.
-- DO NOT provide generic troubleshooting advice or guess solutions.
-- DO NOT suggest things like "check the power cord", "restart the device", or any generic advice that does not apply to AutoBoss machines.
-- AutoBoss machines are specialized underwater net cleaning robots with hydraulic systems, PLC controllers, HP water jets, walking wheels, and remote control operation. They have NO power cords, NO standard electrical components.
-- You MUST tell the user that you don't have specific information about their query in the knowledge base.
-- Suggest they contact Oraseas support directly for assistance.
-- If the question is clearly about AutoBoss but you lack the specific information, acknowledge this honestly.
-
-RESPONSE: Tell the user you could not find relevant information in the AutoBoss knowledge base for their specific question. Suggest contacting Oraseas EE support team directly. Be direct and concise. Use plain text - NO markdown formatting or asterisks.
-
-Respond in {language}."""
-            logger.info("Using basic system prompt - no knowledge context found")
-        
-        openai_messages.insert(0, {
-            "role": "system",
-            "content": system_content
-        })
-        
         # Attempt generation with retries and fallback
         for attempt in range(self.max_retries):
             try:
@@ -880,56 +914,47 @@ Bruk denne omfattende maskininformasjonen til å gi svært målrettet feilsøkin
         
         return response.content if response.success else (response.error_message or "Could not generate response.")
     
-    async def generate_embedding(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
+    async def generate_embedding(self, text: str, model: Optional[str] = None) -> List[float]:
         """
-        Generate embedding vector for text using OpenAI embeddings API.
-        
+        Generate an embedding vector for text using the OpenAI embeddings API.
+
         Args:
             text: Text to generate embedding for
-            model: Embedding model to use
-            
+            model: Embedding model (defaults to settings.OPENAI_EMBEDDING_MODEL)
+
         Returns:
             List of floats representing the embedding vector
+
+        Raises:
+            EmbeddingGenerationError: if no embedding could be produced. We do
+            NOT return a zero vector - a zero vector silently poisons the index
+            and makes retrieval look "empty" instead of "broken".
         """
+        model = model or settings.OPENAI_EMBEDDING_MODEL
+
         if not self.client:
-            logger.error("OpenAI client not initialized for embedding generation")
-            # Return a zero vector of the expected dimension (1536 for ada-002)
-            return [0.0] * 1536
-        
-        try:
-            # Clean and truncate text if necessary
-            text = text.strip()
-            if len(text) > 8000:  # OpenAI embedding limit is ~8191 tokens
-                text = text[:8000]
-            
-            if not text:
-                logger.warning("Empty text provided for embedding generation")
-                return [0.0] * 1536
-            
-            response = await self.client.embeddings.create(
-                model=model,
-                input=text
-            )
-            
-            embedding = response.data[0].embedding
-            logger.debug(f"Generated embedding of dimension {len(embedding)} for text length {len(text)}")
-            
-            return embedding
-            
-        except openai.RateLimitError as e:
-            logger.warning(f"Rate limit hit during embedding generation: {e}")
-            # Wait and retry once
-            await asyncio.sleep(1)
+            raise EmbeddingGenerationError("OpenAI client not initialized")
+
+        text = (text or "").strip()
+        if not text:
+            raise EmbeddingGenerationError("Empty text provided for embedding")
+        if len(text) > 8000:  # OpenAI embedding limit is ~8191 tokens
+            text = text[:8000]
+
+        last_err: Optional[Exception] = None
+        for attempt in range(self.max_retries):
             try:
-                response = await self.client.embeddings.create(
-                    model=model,
-                    input=text
-                )
+                response = await self.client.embeddings.create(model=model, input=text)
                 return response.data[0].embedding
-            except Exception as retry_e:
-                logger.error(f"Failed to generate embedding after retry: {retry_e}")
-                return [0.0] * 1536
-                
-        except Exception as e:
-            logger.error(f"Failed to generate embedding: {e}")
-            return [0.0] * 1536
+            except openai.RateLimitError as e:
+                last_err = e
+                logger.warning(f"Rate limit during embedding (attempt {attempt + 1}): {e}")
+                await asyncio.sleep(2 ** attempt)
+            except Exception as e:
+                last_err = e
+                logger.warning(f"Embedding attempt {attempt + 1} failed: {e}")
+                await asyncio.sleep(1 + attempt)
+
+        raise EmbeddingGenerationError(
+            f"Failed to generate embedding after {self.max_retries} attempts: {last_err}"
+        )

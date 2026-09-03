@@ -16,11 +16,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app/ ./app/
+COPY reindex_knowledge.py ./
+
+# Vector index lives here - MUST be backed by a persistent volume in production
+# (see docker-compose.prod*.yml), otherwise the knowledge base is wiped on every
+# container recreate.
+RUN mkdir -p /app/data/vector_index
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
+
+VOLUME ["/app/data"]
 
 # Expose port
 EXPOSE 8001
