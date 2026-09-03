@@ -68,3 +68,7 @@ backend/static/images/
 # backup_production_db.sh
 # restore_to_local.sh
 .kiro/settings/mcp.json
+
+ai_assistant/logs/
+backups/
+*.local
