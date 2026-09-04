@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { inventoryWorkflowService } from '../services/inventoryWorkflowService';
 import { partsService } from '../services/partsService';
 import PartSearchSelector from './PartSearchSelector';
+import { printStocktake } from '../utils/printStocktake';
 
 const num = (v) => (v === null || v === undefined || v === '' ? null : parseFloat(v));
 
@@ -323,12 +324,18 @@ const StocktakeCount = ({ stocktake, currentUser, onClose, onUpdated }) => {
 
       {/* Footer actions */}
       <div className="shrink-0 space-y-2 border-t bg-white p-3">
-        {editable && (
+        <div className="flex gap-2">
+          {editable && (
+            <button
+              onClick={openAddPart}
+              className="flex-1 rounded-md border border-dashed border-blue-400 py-2.5 text-sm font-medium text-blue-700 active:bg-blue-50"
+            >+ Add part found in stock</button>
+          )}
           <button
-            onClick={openAddPart}
-            className="w-full rounded-md border border-dashed border-blue-400 py-2.5 text-sm font-medium text-blue-700 active:bg-blue-50"
-          >+ Add a part found in stock</button>
-        )}
+            onClick={() => printStocktake(stocktake, items, { sortBy })}
+            className="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-100"
+          >Print</button>
+        </div>
 
         {readOnly ? (
           <button onClick={onClose} className="w-full rounded-md bg-gray-800 py-3 font-semibold text-white">Close</button>
