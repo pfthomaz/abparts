@@ -50,7 +50,7 @@ export function printStocktake(stocktake = {}, items = [], { sortBy = 'code' } =
 
   const html = `<!doctype html><html><head><meta charset="utf-8">
 <title>Stocktake - ${esc(stocktake.warehouse_name || '')}</title>
-<style>
+<style id="print-style">
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
   body { font: 12px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; }
@@ -83,15 +83,38 @@ export function printStocktake(stocktake = {}, items = [], { sortBy = 'code' } =
     <tbody>${bodyRows || '<tr><td colspan="6">No parts on this stocktake.</td></tr>'}</tbody>
   </table>
   <div class="sig"><div>Counted by &nbsp;/&nbsp; date</div><div>Approved by &nbsp;/&nbsp; date</div></div>
-  <script>window.onload = function () { window.focus(); window.print(); };</script>
 </body></html>`;
 
-  const w = window.open('', '_blank', 'noopener,width=900,height=1000');
-  if (!w) {
-    alert('Please allow pop-ups to print the stocktake.');
-    return;
-  }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  // Print via a hidden same-origin iframe - no pop-up, no blocker issues.
+  const prev = document.getElementById('__stocktake_print_frame');
+  if (prev) prev.remove();
+
+  const frame = document.createElement('iframe');
+  frame.id = '__stocktake_print_frame';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(frame);
+
+  let printed = false;
+  const doPrint = () => {
+    if (printed) return;
+    printed = true;
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch (e) {
+      // Fallback: open in a new tab if the iframe print is blocked for any reason
+      const w = window.open('', '_blank');
+      if (w) { w.document.write(html); w.document.close(); w.focus(); w.print(); }
+    }
+    setTimeout(() => frame.remove(), 1000);
+  };
+
+  frame.onload = doPrint;
+  const doc = frame.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+  // Fallback in case onload doesn't fire for a written document
+  setTimeout(doPrint, 400);
 }
