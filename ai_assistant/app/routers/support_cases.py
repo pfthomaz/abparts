@@ -374,10 +374,10 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
             if not result:
                 raise HTTPException(status_code=404, detail="Support case not found")
 
-        # Keep the knowledge base in sync when a resolved case's content changes
+        # Keep the knowledge base in sync when a resolved/closed case's content changes
         kb_relevant = ('title', 'description', 'symptoms', 'root_cause',
                        'resolution', 'machine_model', 'related_parts', 'tags', 'status')
-        if (result.status == 'resolved' and result.resolution
+        if (result.status in ('resolved', 'closed') and result.resolution
                 and any(getattr(request, f, None) is not None for f in kb_relevant)):
             try:
                 doc_id = await _sync_case_to_knowledge_base(result)
@@ -476,11 +476,12 @@ async def backfill_knowledge_base(
     refresh_existing: bool = Query(False, description="Also refresh cases already linked to a KB doc"),
 ):
     """
-    Publish resolved support cases into the AI knowledge base.
+    Publish resolved and closed support cases into the AI knowledge base.
 
-    By default this only touches resolved cases that have a resolution but are
-    NOT yet in the knowledge base (no knowledge_doc_id). With refresh_existing=true
-    it also re-syncs cases that are already linked, picking up later edits.
+    By default this only touches resolved/closed cases that have a resolution
+    but are NOT yet in the knowledge base (no knowledge_doc_id). With
+    refresh_existing=true it also re-syncs cases that are already linked,
+    picking up later edits.
 
     Idempotent and safe to re-run. Synchronous admin operation - runtime scales
     with the number of cases processed (a few embedding calls each).
@@ -495,10 +496,10 @@ async def backfill_knowledge_base(
         with get_db_session() as db:
             rows = db.execute(text(f"""
                 SELECT * FROM support_cases
-                WHERE status = 'resolved'
+                WHERE status IN ('resolved', 'closed')
                   AND resolution IS NOT NULL AND btrim(resolution) <> ''
                   {kb_filter}
-                ORDER BY resolved_at NULLS LAST
+                ORDER BY COALESCE(resolved_at, closed_at, updated_at)
             """)).fetchall()
 
         summary = {
