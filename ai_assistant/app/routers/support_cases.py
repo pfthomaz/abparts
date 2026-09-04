@@ -11,6 +11,7 @@ import logging
 import uuid
 import json
 
+from ..config import settings
 from ..database import get_db_session
 from ..schemas_support_cases import (
     CreateSupportCaseRequest,
@@ -737,3 +738,169 @@ async def _sync_case_to_knowledge_base(case_row, kb_service=None) -> Optional[st
     finally:
         if own_client is not None:
             await own_client.cleanup()
+
+
+async def _llm_extract_json(llm_client, prompt: str) -> dict:
+    """Call the LLM and parse a JSON object from the reply. Tries json_object mode,
+    then plain mode, on the primary then fallback model."""
+    last_err = None
+    for model in (settings.OPENAI_MODEL, settings.OPENAI_FALLBACK_MODEL):
+        for use_response_format in (True, False):
+            try:
+                kwargs = dict(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=700,
+                    temperature=0.2,
+                )
+                if use_response_format:
+                    kwargs["response_format"] = {"type": "json_object"}
+                resp = await llm_client.client.chat.completions.create(**kwargs)
+                raw = resp.choices[0].message.content or ""
+                start, end = raw.find("{"), raw.rfind("}")
+                if start != -1 and end != -1:
+                    return json.loads(raw[start:end + 1])
+            except Exception as e:
+                last_err = e
+    raise RuntimeError(f"LLM JSON extraction failed: {last_err}")
+
+
+async def _distill_case_fields(llm_client, transcript: str, language: str = "en") -> dict:
+    """Turn a chat transcript into structured support-case fields."""
+    prompt = (
+        "You extract a structured support case from a conversation between an AutoBoss "
+        "net-cleaning-machine operator and an AI assistant.\n"
+        "Return ONLY a JSON object with these keys:\n"
+        '  "title": short problem summary, max ~80 chars\n'
+        '  "description": 1-3 sentences of problem context\n'
+        '  "symptoms": what was observed / reported\n'
+        '  "root_cause": the underlying cause identified in the conversation, "" if none\n'
+        '  "resolution": the concrete fix the operator CONFIRMED worked, "" if not confirmed\n'
+        '  "machine_model": e.g. "V4", "V3.1B" if stated, else null\n'
+        '  "tags": array of 2-5 short lowercase keywords\n'
+        "Base every field strictly on the conversation. If the operator never confirmed a "
+        'fix, "resolution" MUST be an empty string.\n\n'
+        f"CONVERSATION:\n{transcript}"
+    )
+    data = await _llm_extract_json(llm_client, prompt)
+
+    def s(v):
+        return str(v).strip() if v is not None else ""
+
+    return {
+        "title": s(data.get("title")) or "Support case captured from AI chat",
+        "description": s(data.get("description")),
+        "symptoms": s(data.get("symptoms")),
+        "root_cause": s(data.get("root_cause")),
+        "resolution": s(data.get("resolution")),
+        "machine_model": s(data.get("machine_model")) or None,
+        "tags": [s(t).lower() for t in (data.get("tags") or []) if s(t)][:5],
+    }
+
+
+async def _save_conversation_as_case(*, llm_client, transcript: str,
+                                     session_id: Optional[str] = None,
+                                     machine_id: Optional[str] = None,
+                                     machine_model: Optional[str] = None,
+                                     user_id: Optional[str] = None,
+                                     organization_id: Optional[str] = None,
+                                     language: str = "en") -> dict:
+    """
+    Distil a chat transcript into a resolved support case and publish it to the
+    knowledge base. Idempotent per session_id (updates the linked case if any).
+    """
+    fields = await _distill_case_fields(llm_client, transcript, language)
+
+    if not fields["resolution"]:
+        return {
+            "saved": False,
+            "reason": "no_confirmed_resolution",
+            "message": "I couldn't identify a confirmed fix in this conversation, so no case was created.",
+        }
+
+    model = machine_model or fields["machine_model"]
+    tags = list(dict.fromkeys(fields["tags"] + ["ai_chat", "captured_from_chat"]))
+    title = fields["title"][:200]
+    description = fields["description"] or title
+
+    # support_cases.session_id is a FK to ai_sessions - only reference a session
+    # row that actually exists (it isn't persisted for anonymous chats).
+    link_session_id = None
+    if session_id:
+        with get_db_session() as db:
+            if db.execute(text("SELECT 1 FROM ai_sessions WHERE id = :s"),
+                          {"s": session_id}).fetchone():
+                link_session_id = session_id
+
+    existing = None
+    if link_session_id:
+        with get_db_session() as db:
+            existing = db.execute(text(
+                "SELECT id, case_number, knowledge_doc_id FROM support_cases "
+                "WHERE session_id = :s ORDER BY created_at DESC LIMIT 1"
+            ), {"s": link_session_id}).fetchone()
+
+    if existing:
+        case_id = str(existing.id)
+        with get_db_session() as db:
+            db.execute(text("""
+                UPDATE support_cases SET
+                    title = :title, description = :description, symptoms = :symptoms,
+                    root_cause = :root_cause, resolution = :resolution,
+                    machine_model = COALESCE(:machine_model, machine_model),
+                    status = 'resolved', resolved_at = COALESCE(resolved_at, NOW()),
+                    tags = :tags, updated_at = NOW()
+                WHERE id = :id
+            """), {
+                "title": title, "description": description,
+                "symptoms": fields["symptoms"], "root_cause": fields["root_cause"],
+                "resolution": fields["resolution"], "machine_model": model,
+                "tags": json.dumps(tags), "id": case_id,
+            })
+            row = db.execute(text("SELECT * FROM support_cases WHERE id = :id"),
+                             {"id": case_id}).fetchone()
+        created = False
+    else:
+        case_id = str(uuid.uuid4())
+        case_number = _generate_case_number()
+        with get_db_session() as db:
+            db.execute(text("""
+                INSERT INTO support_cases
+                (id, case_number, title, description, machine_model, machine_id, symptoms,
+                 root_cause, resolution, status, priority, organization_id, created_by,
+                 tags, related_parts, session_id, created_at, updated_at, resolved_at)
+                VALUES
+                (:id, :case_number, :title, :description, :machine_model, :machine_id, :symptoms,
+                 :root_cause, :resolution, 'resolved', 'medium', :organization_id, :created_by,
+                 :tags, :related_parts, :session_id, NOW(), NOW(), NOW())
+            """), {
+                "id": case_id, "case_number": case_number, "title": title,
+                "description": description, "machine_model": model,
+                "machine_id": machine_id, "symptoms": fields["symptoms"],
+                "root_cause": fields["root_cause"], "resolution": fields["resolution"],
+                "organization_id": organization_id, "created_by": user_id or "ai_chat",
+                "tags": json.dumps(tags), "related_parts": json.dumps([]),
+                "session_id": link_session_id,
+            })
+            row = db.execute(text("SELECT * FROM support_cases WHERE id = :id"),
+                             {"id": case_id}).fetchone()
+        created = True
+
+    knowledge_doc_id = None
+    try:
+        knowledge_doc_id = await _sync_case_to_knowledge_base(row)
+        if knowledge_doc_id and knowledge_doc_id != row.knowledge_doc_id:
+            with get_db_session() as db:
+                db.execute(text("UPDATE support_cases SET knowledge_doc_id = :d WHERE id = :id"),
+                           {"d": knowledge_doc_id, "id": case_id})
+    except Exception as e:
+        logger.warning(f"Failed to sync chat-captured case {case_id} to knowledge base: {e}")
+
+    return {
+        "saved": True,
+        "created": created,
+        "case_id": case_id,
+        "case_number": row.case_number,
+        "knowledge_doc_id": knowledge_doc_id,
+        "title": fields["title"],
+    }

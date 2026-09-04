@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+import json
 import logging
 import uuid
 import time
@@ -71,12 +72,175 @@ def _detect_troubleshooting_intent(message: str) -> bool:
     
     message_lower = message.lower()
     detected = any(keyword in message_lower for keyword in troubleshooting_keywords)
-    
+
     # DEBUG: Log detection result
     print(f"[DETECTION] Message: '{message}' -> Detected: {detected}")
     logger.info(f"[DETECTION] Message: '{message}' -> Detected: {detected}")
-    
+
     return detected
+
+
+# Phrases that mean "the problem is NOT fixed" - block resolution detection.
+_RESOLUTION_NEGATORS = [
+    "not fixed", "not resolved", "not solved", "still not", "still doesn't", "still does not",
+    "didn't work", "did not work", "doesn't work", "does not work", "no luck", "still broken",
+    "still not working", "not working yet", "hasn't worked", "has not worked", "no change",
+    "δεν λύθηκε", "δεν δουλεύει", "no funciona", "no se solucionó", "hâlâ çalışmıyor",
+    "çözülmedi", "لم يتم الحل", "لا يعمل", "ikke løst", "fungerer ikke",
+]
+
+# Phrases that mean "the problem IS fixed / I'm reporting a successful outcome".
+_RESOLUTION_PHRASES = [
+    # English
+    "it works now", "works now", "working now", "it's working", "its working", "it is working",
+    "that fixed it", "that solved it", "that did it", "that was it", "fixed it", "solved it",
+    "problem solved", "problem is solved", "problem fixed", "problem is fixed", "problem gone",
+    "issue solved", "issue is resolved", "issue fixed", "issue gone", "resolved the problem",
+    "solved the problem", "fixed the problem", "resolved the issue", "solved the issue",
+    "all good now", "all sorted", "sorted now", "it's sorted", "its sorted", "that worked",
+    "this worked", "worked perfectly", "no longer an issue", "no longer a problem",
+    "back to normal", "up and running", "running again", "rotating again", "spinning again",
+    # Greek
+    "λύθηκε", "διορθώθηκε", "δουλεύει τώρα", "λειτουργεί τώρα", "το έλυσα",
+    # Spanish
+    "resuelto", "solucionado", "ya funciona", "funcionó", "quedó solucionado", "lo arreglé",
+    # Turkish
+    "çözüldü", "düzeldi", "şimdi çalışıyor", "sorun çözüldü", "hallettim",
+    # Arabic
+    "تم الحل", "تم إصلاحه", "يعمل الآن", "تم حل المشكلة",
+    # Norwegian
+    "det er løst", "løste det", "fikset det", "fungerer nå", "virker nå",
+]
+
+# Short answers to "did that fix it?"
+_AFFIRMATIVE_STARTS = (
+    "yes", "yep", "yeah", "yup", "sure", "correct", "confirmed", "affirmative",
+    "that's right", "thats right", "it did", "it is", "it does", "fixed", "resolved",
+    "ναι", "σωστό", "sí", "si", "así es", "evet", "doğru", "نعم", "صحيح", "ja", "riktig",
+)
+_AFFIRMATIVE_CONTAINS = (
+    "that worked", "it worked", "fixed it", "that fixed", "that did it", "problem solved",
+    "issue resolved", "all good", "confirmed",
+)
+_NEGATIVE_STARTS = (
+    "no", "nope", "nah", "not really", "not yet", "negative", "still",
+    "όχι", "hayır", "لا", "nei",
+)
+_NEGATIVE_CONTAINS = (
+    "still not", "didn't work", "did not work", "doesn't work", "not fixed",
+    "not resolved", "still broken", "still happening", "no change",
+)
+
+
+def _detect_resolution_intent(message: str) -> bool:
+    """True when the user is reporting that the issue is fixed."""
+    m = (message or "").lower()
+    if any(neg in m for neg in _RESOLUTION_NEGATORS):
+        return False
+    return any(p in m for p in _RESOLUTION_PHRASES)
+
+
+def _detect_affirmative(message: str) -> bool:
+    m = (message or "").strip().lower().rstrip(" .!")
+    if not m:
+        return False
+    if any(neg in m for neg in _NEGATIVE_CONTAINS):
+        return False
+    return (m in ("y", "ok", "okay") or m.startswith(_AFFIRMATIVE_STARTS)
+            or any(c in m for c in _AFFIRMATIVE_CONTAINS))
+
+
+def _detect_negative(message: str) -> bool:
+    m = (message or "").strip().lower().rstrip(" .!")
+    if not m:
+        return False
+    return (m == "n" or m.startswith(_NEGATIVE_STARTS)
+            or any(c in m for c in _NEGATIVE_CONTAINS))
+
+
+def _conversation_to_transcript(history: List["ChatMessage"], extra_user: Optional[str] = None) -> str:
+    lines = []
+    for msg in history:
+        role = "Operator" if msg.role == "user" else "Assistant"
+        lines.append(f"{role}: {msg.content}")
+    if extra_user:
+        lines.append(f"Operator: {extra_user}")
+    return "\n".join(lines)
+
+
+def _get_pending_confirm(session_id: str) -> bool:
+    try:
+        with get_db_session() as db:
+            row = db.execute(
+                text("SELECT session_metadata FROM ai_sessions WHERE id = :s"),
+                {"s": session_id},
+            ).fetchone()
+        if not row or not row.session_metadata:
+            return False
+        md = row.session_metadata if isinstance(row.session_metadata, dict) \
+            else json.loads(row.session_metadata)
+        return bool(md.get("pending_resolution_confirm"))
+    except Exception as e:
+        logger.warning(f"Failed to read pending_resolution_confirm for {session_id}: {e}")
+        return False
+
+
+def _set_pending_confirm(session_id: str, value: bool) -> None:
+    try:
+        with get_db_session() as db:
+            row = db.execute(
+                text("SELECT session_metadata FROM ai_sessions WHERE id = :s"),
+                {"s": session_id},
+            ).fetchone()
+            if row is None:
+                return
+            md = {}
+            if row.session_metadata:
+                md = row.session_metadata if isinstance(row.session_metadata, dict) \
+                    else json.loads(row.session_metadata)
+            if value:
+                md["pending_resolution_confirm"] = True
+            else:
+                md.pop("pending_resolution_confirm", None)
+            db.execute(
+                text("UPDATE ai_sessions SET session_metadata = :m, updated_at = NOW() WHERE id = :s"),
+                {"m": json.dumps(md), "s": session_id},
+            )
+    except Exception as e:
+        logger.warning(f"Failed to set pending_resolution_confirm for {session_id}: {e}")
+
+
+# Asked BEFORE anything is marked resolved. "{fix}" is a one-line restatement of
+# what the operator said fixed it (or a generic fallback).
+_RESOLUTION_CONFIRM = {
+    "en": ("Just to confirm: {fix} - did that fully resolve the problem?\n\n"
+           "If yes, I'll record the fix so the next operator with this issue benefits."),
+    "el": ("Επιβεβαίωση: {fix} - λύθηκε πλήρως το πρόβλημα;\n\n"
+           "Αν ναι, θα καταγράψω τη λύση ώστε να βοηθήσει τον επόμενο χειριστή."),
+    "es": ("Para confirmar: {fix} - ¿eso resolvió por completo el problema?\n\n"
+           "Si es así, registraré la solución para el próximo operador con este problema."),
+    "tr": ("Onaylamak için: {fix} - sorun tamamen çözüldü mü?\n\n"
+           "Evet ise, çözümü kaydedeceğim, böylece sonraki operatör faydalanır."),
+    "ar": ("للتأكيد: {fix} - هل حل ذلك المشكلة تماماً؟\n\n"
+           "إذا نعم، سأسجّل الحل ليستفيد المشغل التالي."),
+    "no": ("Bare for å bekrefte: {fix} - løste det problemet helt?\n\n"
+           "Hvis ja, registrerer jeg løsningen så neste operatør får nytte av den."),
+}
+
+_RESOLUTION_FIX_FALLBACK = {
+    "en": "you found the fix", "el": "βρήκες τη λύση", "es": "encontraste la solución",
+    "tr": "çözümü buldun", "ar": "لقد وجدت الحل", "no": "du fant løsningen",
+}
+
+# Sent when the operator says the issue is NOT actually fixed.
+_RESOLUTION_NOT_CONFIRMED = {
+    "en": "OK - let's keep going. What is still happening?",
+    "el": "Εντάξει - ας συνεχίσουμε. Τι συμβαίνει ακόμα;",
+    "es": "De acuerdo, sigamos. ¿Qué sigue ocurriendo?",
+    "tr": "Tamam, devam edelim. Hâlâ ne oluyor?",
+    "ar": "حسناً - لنكمل. ما الذي لا يزال يحدث؟",
+    "no": "OK - la oss fortsette. Hva skjer fortsatt?",
+}
 
 
 # Request/Response models
@@ -134,6 +298,161 @@ class ProblemAnalysisRequest(BaseModel):
     language: Optional[str] = Field(default=None, description="Response language code (auto-detected if not provided)")
     user_id: Optional[str] = Field(default=None, description="User ID for language detection")
     machine_context: Optional[Dict[str, Any]] = Field(default=None, description="Machine-specific context")
+
+
+async def _restate_fix(llm_client: LLMClient, message: str, language: str) -> str:
+    """One short clause restating what the operator said fixed the problem.
+    Best-effort; falls back to a generic phrase."""
+    fallback = _RESOLUTION_FIX_FALLBACK.get(language, _RESOLUTION_FIX_FALLBACK["en"])
+    try:
+        if not getattr(llm_client, "client", None):
+            return fallback
+        resp = await llm_client.client.chat.completions.create(
+            model=llm_client.fallback_model,
+            messages=[{"role": "user", "content": (
+                "Restate the fix the user describes as a single short clause starting "
+                "with a verb (max 15 words, no trailing period). Reply in "
+                f"language code '{language}'.\n\nUser: {message}"
+            )}],
+            max_tokens=40,
+            temperature=0.2,
+        )
+        txt = (resp.choices[0].message.content or "").strip().strip('".')
+        return txt or fallback
+    except Exception as e:
+        logger.debug(f"_restate_fix fell back: {e}")
+        return fallback
+
+
+async def _handle_resolution(request: "ChatRequest", session_id: str, message: str,
+                             language: str, llm_client: LLMClient,
+                             start_time: float) -> "ChatResponse":
+    """
+    The operator seems to be reporting the issue is fixed. Ask them to CONFIRM
+    before anything is marked resolved or written to the knowledge base.
+    """
+    sid = request.session_id or session_id
+
+    fix = await _restate_fix(llm_client, message, language)
+    ask = _RESOLUTION_CONFIRM.get(language, _RESOLUTION_CONFIRM["en"]).format(fix=fix)
+
+    if sid:
+        _set_pending_confirm(sid, True)
+
+    if request.user_id and sid:
+        try:
+            with get_db_session() as db:
+                db.execute(text("""
+                    INSERT INTO ai_messages
+                    (id, session_id, sender, content, message_type, language, timestamp)
+                    VALUES (:id, :sid, 'assistant', :content, 'resolution_confirm', :lang, NOW())
+                """), {"id": str(uuid.uuid4()), "sid": sid, "content": ask, "lang": language})
+        except Exception as e:
+            logger.warning(f"Resolution: could not store confirm prompt: {e}")
+
+    return ChatResponse(
+        response=ask,
+        session_id=sid,
+        model_used="resolution-handler",
+        tokens_used=0,
+        response_time=time.time() - start_time,
+        success=True,
+        message_type="resolution_confirm",
+        step_data={"awaiting_confirmation": True, "session_id": sid},
+    )
+
+
+async def _finalize_resolution(request: "ChatRequest", sid: str, resolution_note: str,
+                               language: str, llm_client: LLMClient,
+                               start_time: float) -> "ChatResponse":
+    """
+    Confirmed fixed: complete any workflow, mark the session resolved, and
+    capture the conversation as a support case + knowledge base entry.
+    """
+    # Complete any active troubleshooting workflow (feeds learning/analytics)
+    if request.session_id:
+        try:
+            from ..session_manager import session_manager
+            from ..services.session_completion_service import SessionCompletionService
+            ts = TroubleshootingService(llm_client, session_manager)
+            wf = await ts.get_workflow_state(request.session_id)
+            if wf and getattr(wf, "workflow_status", None) not in ("completed", "escalated"):
+                await SessionCompletionService(llm_client).complete_session(
+                    session_id=request.session_id, outcome_type="resolved",
+                    resolution_summary=resolution_note[:1000],
+                )
+        except Exception as e:
+            logger.warning(f"Finalize: could not complete workflow for {request.session_id}: {e}")
+
+    if sid:
+        try:
+            with get_db_session() as db:
+                db.execute(text("""
+                    UPDATE ai_sessions
+                    SET status = 'resolved',
+                        resolution_summary = COALESCE(resolution_summary, :rs),
+                        updated_at = NOW()
+                    WHERE id = :sid
+                """), {"rs": resolution_note[:1000], "sid": sid})
+        except Exception as e:
+            logger.warning(f"Finalize: could not mark session {sid} resolved: {e}")
+
+    save = {"saved": False, "reason": "unknown"}
+    try:
+        from .support_cases import _save_conversation_as_case
+        transcript = _conversation_to_transcript(
+            request.conversation_history, extra_user=resolution_note
+        )
+        save = await _save_conversation_as_case(
+            llm_client=llm_client, transcript=transcript, session_id=sid,
+            machine_id=request.machine_id, user_id=request.user_id, language=language,
+        )
+    except Exception as e:
+        logger.error(f"Finalize: failed to save conversation as case: {e}")
+        save = {"saved": False, "reason": str(e)}
+
+    if save.get("saved"):
+        verb = "Recorded" if save.get("created", True) else "Updated"
+        text_out = {
+            "en": f"{verb} as support case {save.get('case_number')} and added to the AI "
+                  f"knowledge base. The next operator with this issue will get your fix.",
+            "el": f"Καταγράφηκε ως περιστατικό {save.get('case_number')} και προστέθηκε στη "
+                  f"βάση γνώσεων.",
+            "es": f"Registrado como caso {save.get('case_number')} y añadido a la base de "
+                  f"conocimientos.",
+            "tr": f"Destek kaydı {save.get('case_number')} olarak kaydedildi ve bilgi "
+                  f"tabanına eklendi.",
+            "ar": f"تم تسجيلها كحالة دعم {save.get('case_number')} وإضافتها إلى قاعدة المعرفة.",
+            "no": f"Registrert som støttesak {save.get('case_number')} og lagt til i "
+                  f"kunnskapsbasen.",
+        }.get(language, f"Recorded as support case {save.get('case_number')} and added to "
+                        f"the AI knowledge base.")
+    else:
+        text_out = save.get("message") or {
+            "en": "Marked as resolved. I couldn't extract a clear fix to save as a case.",
+            "el": "Σημειώθηκε ως επιλυμένο. Δεν μπόρεσα να εξαγάγω σαφή λύση για αποθήκευση.",
+            "es": "Marcado como resuelto. No pude extraer una solución clara para guardar.",
+            "tr": "Çözüldü olarak işaretlendi. Kaydedilecek net bir çözüm çıkaramadım.",
+            "ar": "تم وضع علامة كمحلول. لم أتمكن من استخراج حل واضح للحفظ.",
+            "no": "Markert som løst. Fant ingen tydelig løsning å lagre som sak.",
+        }.get(language, "Marked as resolved. I couldn't extract a clear fix to save as a case.")
+
+    if request.user_id and sid:
+        try:
+            with get_db_session() as db:
+                db.execute(text("""
+                    INSERT INTO ai_messages
+                    (id, session_id, sender, content, message_type, language, timestamp)
+                    VALUES (:id, :sid, 'assistant', :content, 'case_saved', :lang, NOW())
+                """), {"id": str(uuid.uuid4()), "sid": sid, "content": text_out, "lang": language})
+        except Exception as e:
+            logger.warning(f"Finalize: could not store confirmation message: {e}")
+
+    return ChatResponse(
+        response=text_out, session_id=sid, model_used="case-capture", tokens_used=0,
+        response_time=time.time() - start_time, success=True,
+        message_type="case_saved", step_data=save,
+    )
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -298,7 +617,37 @@ async def chat(
                         logger.info(f"No recent active session found for user {request.user_id}, machine {request.machine_id} - will start fresh")
             except Exception as e:
                 logger.warning(f"Failed to find active session: {e}")
-        
+
+        # If we asked "did that fix it?" last turn, act on the operator's answer
+        # before anything else.
+        if request.session_id and _get_pending_confirm(request.session_id):
+            _set_pending_confirm(request.session_id, False)  # one-shot
+            if _detect_affirmative(message_to_process):
+                return await _finalize_resolution(
+                    request=request, sid=request.session_id,
+                    resolution_note=message_to_process, language=language,
+                    llm_client=llm_client, start_time=start_time,
+                )
+            if _detect_negative(message_to_process):
+                return ChatResponse(
+                    response=_RESOLUTION_NOT_CONFIRMED.get(language, _RESOLUTION_NOT_CONFIRMED["en"]),
+                    session_id=request.session_id, model_used="resolution-handler",
+                    tokens_used=0, response_time=time.time() - start_time, success=True,
+                    message_type="text",
+                )
+            # Neither a clear yes nor no: drop the pending state and handle the
+            # message normally (they likely moved on to something else).
+
+        # If the operator seems to be reporting the issue is now fixed, ask them
+        # to confirm - do NOT (re)start a workflow or write anything yet.
+        if _detect_resolution_intent(message_to_process) and (
+            request.conversation_history or request.session_id
+        ):
+            return await _handle_resolution(
+                request=request, session_id=session_id, message=message_to_process,
+                language=language, llm_client=llm_client, start_time=start_time,
+            )
+
         # FIRST: Check if session is already in active troubleshooting mode
         # This must happen BEFORE checking if troubleshooting should start
         if request.session_id:
@@ -566,6 +915,59 @@ async def chat(
     except Exception as e:
         logger.error(f"Chat endpoint error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process chat message: {str(e)}")
+
+
+class SaveAsCaseRequest(BaseModel):
+    """Capture a chat conversation as a resolved support case + knowledge entry."""
+    session_id: Optional[str] = Field(default=None, description="AI session id (enables idempotent update)")
+    conversation_history: List[ChatMessage] = Field(default=[], description="The conversation to capture")
+    machine_id: Optional[str] = Field(default=None)
+    machine_model: Optional[str] = Field(default=None)
+    user_id: Optional[str] = Field(default=None)
+    language: Optional[str] = Field(default="en")
+
+
+@router.post("/chat/save-as-case")
+async def save_chat_as_case(
+    request: SaveAsCaseRequest,
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> Dict[str, Any]:
+    """
+    Distil a chat conversation into a resolved support case and publish it to the
+    knowledge base. Used by the 'Save as support case' button in the chat widget.
+    Idempotent per session_id (updates the case already linked to that session).
+    """
+    try:
+        from .support_cases import _save_conversation_as_case
+        transcript = _conversation_to_transcript(request.conversation_history)
+        if not transcript.strip():
+            raise HTTPException(status_code=400, detail="conversation_history is empty")
+        result = await _save_conversation_as_case(
+            llm_client=llm_client,
+            transcript=transcript,
+            session_id=request.session_id,
+            machine_id=request.machine_id,
+            machine_model=request.machine_model,
+            user_id=request.user_id,
+            language=request.language or "en",
+        )
+        if request.session_id:
+            _set_pending_confirm(request.session_id, False)
+            # This button means "yes, that fixed it" - mark the session resolved too
+            try:
+                with get_db_session() as db:
+                    db.execute(text("""
+                        UPDATE ai_sessions SET status = 'resolved', updated_at = NOW()
+                        WHERE id = :s AND status = 'active'
+                    """), {"s": request.session_id})
+            except Exception as e:
+                logger.warning(f"save-as-case: could not mark session resolved: {e}")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"save-as-case endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save conversation as case: {str(e)}")
 
 
 @router.post("/analyze-problem", response_model=ChatResponse)

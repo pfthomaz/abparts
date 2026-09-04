@@ -344,7 +344,6 @@ const ChatWidget = ({ isOpen, onToggle }) => {
     setShowEscalationModal(true);
   };
 
-  // Step feedback handler
   const handleStepFeedback = async (feedback) => {
     if (!currentStepId || !currentSessionId) {
       console.error('Missing step ID or session ID for feedback');
@@ -574,20 +573,21 @@ const ChatWidget = ({ isOpen, onToggle }) => {
     }
   }, [messages, autoSpeak]);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || isLoading) return;
+  const handleSendMessage = async (e, overrideText) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const outgoing = (overrideText ?? inputMessage).trim();
+    if (!outgoing || isLoading) return;
 
     const userMessage = {
       id: Date.now(),
       sender: 'user',
-      content: inputMessage.trim(),
+      content: outgoing,
       timestamp: new Date(),
       type: 'text'
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+    if (overrideText == null) setInputMessage('');
     
     // Check if offline
     if (!isOnline) {
@@ -701,7 +701,7 @@ const ChatWidget = ({ isOpen, onToggle }) => {
         setCurrentStepId(data.step_data.step_id);
         setCurrentStepData(data.step_data);
         setAwaitingFeedback(true);
-        
+
         const assistantMessage = {
           id: Date.now() + 1,
           sender: 'assistant',
@@ -710,8 +710,30 @@ const ChatWidget = ({ isOpen, onToggle }) => {
           type: 'diagnostic_step',
           stepData: data.step_data
         };
-        
+
         setMessages(prev => [...prev, assistantMessage]);
+      } else if (data.message_type === 'resolution_confirm') {
+        // AI is asking the operator to confirm the fix before recording anything
+        setTroubleshootingMode(false);
+        setAwaitingFeedback(false);
+        setCurrentStepId(null);
+        setCurrentStepData(null);
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          sender: 'assistant',
+          content: data.response,
+          timestamp: new Date(),
+          type: 'resolution_confirm',
+          awaitingConfirmation: true
+        }]);
+      } else if (data.message_type === 'case_saved') {
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          sender: 'system',
+          content: data.response,
+          timestamp: new Date(),
+          type: (data.step_data && data.step_data.saved) ? 'completion' : 'info'
+        }]);
       } else {
         // Regular chat message
         const assistantMessage = {
@@ -721,7 +743,7 @@ const ChatWidget = ({ isOpen, onToggle }) => {
           timestamp: new Date(),
           type: 'text'
         };
-        
+
         setMessages(prev => [...prev, assistantMessage]);
       }
       
@@ -1188,6 +1210,25 @@ const ChatWidget = ({ isOpen, onToggle }) => {
                         }`}
                       >
                         <p className="break-words whitespace-pre-wrap">{message.content}</p>
+                        {message.type === 'resolution_confirm' && message.awaitingConfirmation
+                          && message.id === messages[messages.length - 1].id && !isLoading && (
+                          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                            <button
+                              onClick={() => handleSendMessage(null, 'yes')}
+                              className="flex-1 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors touch-manipulation"
+                              style={{ minHeight: isMobile ? '44px' : '36px' }}
+                            >
+                              {t('aiAssistant.confirmFixed', { defaultValue: 'Yes, that fixed it' })}
+                            </button>
+                            <button
+                              onClick={() => handleSendMessage(null, 'no')}
+                              className="flex-1 bg-gray-200 hover:bg-gray-300 active:bg-gray-400 text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors touch-manipulation"
+                              style={{ minHeight: isMobile ? '44px' : '36px' }}
+                            >
+                              {t('aiAssistant.confirmNotFixed', { defaultValue: 'No, still an issue' })}
+                            </button>
+                          </div>
+                        )}
                         <div className={`flex items-center justify-between mt-1 gap-2 ${
                           message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                         }`}>
