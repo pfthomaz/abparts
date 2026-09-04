@@ -84,6 +84,12 @@ class StocktakeItemUpdate(BaseModel):
     actual_quantity: Decimal
     notes: Optional[str] = None
 
+class StocktakeItemAdd(BaseModel):
+    """Add a part that was found in stock but was not expected (expected_quantity = 0)."""
+    part_id: uuid.UUID
+    actual_quantity: Optional[Decimal] = None
+    notes: Optional[str] = None
+
 class StocktakeItemResponse(StocktakeItemBase):
     id: uuid.UUID
     created_at: datetime

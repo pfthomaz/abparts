@@ -526,6 +526,79 @@ def update_stocktake_item(db: Session, item_id: uuid.UUID, item_update: schemas.
         logger.error(f"Error updating stocktake item: {e}")
         raise HTTPException(status_code=500, detail=f"Error updating stocktake item: {str(e)}")
 
+def _serialize_stocktake_item(db: Session, db_item: StocktakeItem) -> Dict[str, Any]:
+    """Shape a StocktakeItem row into a StocktakeItemResponse dict."""
+    part = db.query(models.Part).filter(models.Part.id == db_item.part_id).first()
+    discrepancy = None
+    discrepancy_percentage = None
+    if db_item.actual_quantity is not None:
+        discrepancy = db_item.actual_quantity - db_item.expected_quantity
+        if db_item.expected_quantity and db_item.expected_quantity != 0:
+            discrepancy_percentage = float((discrepancy / db_item.expected_quantity) * 100)
+    counted_by_username = None
+    if db_item.counted_by_user_id:
+        u = db.query(models.User).filter(models.User.id == db_item.counted_by_user_id).first()
+        counted_by_username = u.username if u else None
+    return {
+        **{k: v for k, v in db_item.__dict__.items() if not k.startswith("_")},
+        "part_number": part.part_number if part else "",
+        "part_name": part.name if part else "",
+        "part_type": (part.part_type.value if part and hasattr(part.part_type, "value") else (part.part_type if part else "")),
+        "unit_of_measure": part.unit_of_measure if part else "",
+        "unit_price": None,
+        "discrepancy": discrepancy,
+        "discrepancy_percentage": discrepancy_percentage,
+        "discrepancy_value": None,
+        "counted_by_username": counted_by_username,
+    }
+
+def add_stocktake_item(db: Session, stocktake_id: uuid.UUID, item_add: schemas.StocktakeItemAdd, current_user_id: uuid.UUID):
+    """Add a part found in stock that was not in the generated worksheet (expected = 0)."""
+    stocktake = db.query(Stocktake).filter(Stocktake.id == stocktake_id).first()
+    if not stocktake:
+        raise HTTPException(status_code=404, detail="Stocktake not found")
+    if stocktake.status not in [StocktakeStatus.planned, StocktakeStatus.in_progress]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot add items: stocktake is in {stocktake.status.value} status",
+        )
+
+    part = db.query(models.Part).filter(models.Part.id == item_add.part_id).first()
+    if not part:
+        raise HTTPException(status_code=404, detail="Part not found")
+
+    existing = db.query(StocktakeItem).filter(
+        StocktakeItem.stocktake_id == stocktake_id,
+        StocktakeItem.part_id == item_add.part_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="This part is already in the stocktake")
+
+    if stocktake.status == StocktakeStatus.planned:
+        stocktake.status = StocktakeStatus.in_progress
+        db.add(stocktake)
+
+    db_item = StocktakeItem(
+        stocktake_id=stocktake_id,
+        part_id=item_add.part_id,
+        expected_quantity=Decimal("0"),
+        actual_quantity=item_add.actual_quantity,
+        notes=item_add.notes,
+    )
+    if item_add.actual_quantity is not None:
+        db_item.counted_at = datetime.now()
+        db_item.counted_by_user_id = current_user_id
+
+    try:
+        db.add(db_item)
+        db.commit()
+        db.refresh(db_item)
+        return _serialize_stocktake_item(db, db_item)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error adding stocktake item: {e}")
+        raise HTTPException(status_code=500, detail=f"Error adding stocktake item: {str(e)}")
+
 def batch_update_stocktake_items(db: Session, stocktake_id: uuid.UUID, batch_update: schemas.BatchStocktakeItemUpdate, current_user_id: uuid.UUID):
     """Update multiple stocktake items in a single operation."""
     # Check if stocktake exists and is in a state that allows updates
@@ -617,15 +690,25 @@ def complete_stocktake(db: Session, stocktake_id: uuid.UUID, current_user_id: uu
         # If apply_adjustments is True, create inventory adjustments
         if apply_adjustments and items_with_discrepancies:
             for item in items_with_discrepancies:
-                # Get current inventory
+                # Get current inventory (create it if the part was found but not
+                # previously stocked in this warehouse)
                 inventory = db.query(models.Inventory).filter(
                     models.Inventory.warehouse_id == stocktake.warehouse_id,
                     models.Inventory.part_id == item.part_id
                 ).first()
-                
+
                 if not inventory:
-                    continue
-                
+                    part = db.query(models.Part).filter(models.Part.id == item.part_id).first()
+                    inventory = models.Inventory(
+                        warehouse_id=stocktake.warehouse_id,
+                        part_id=item.part_id,
+                        current_stock=Decimal('0'),
+                        minimum_stock_recommendation=Decimal('0'),
+                        unit_of_measure=(part.unit_of_measure if part and part.unit_of_measure else 'pieces'),
+                    )
+                    db.add(inventory)
+                    db.flush()
+
                 # Calculate adjustment
                 quantity_change = item.actual_quantity - item.expected_quantity
                 previous_quantity = inventory.current_stock

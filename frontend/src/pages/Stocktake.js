@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext';
 import Modal from '../components/Modal';
 import StocktakeForm from '../components/StocktakeForm';
 import StocktakeDetails from '../components/StocktakeDetails';
+import StocktakeCount from '../components/StocktakeCount';
 import PermissionGuard from '../components/PermissionGuard';
 import { PERMISSIONS } from '../utils/permissions';
 
@@ -17,6 +18,7 @@ const Stocktake = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedStocktake, setSelectedStocktake] = useState(null);
+    const [countStocktake, setCountStocktake] = useState(null);
     const [filters, setFilters] = useState({
         warehouse_id: '',
         status: '',
@@ -105,8 +107,19 @@ const Stocktake = () => {
     const canCreateStocktake = user && (user.role === 'admin' || user.role === 'super_admin');
     const canDeleteStocktake = user && (user.role === 'admin' || user.role === 'super_admin');
 
+    if (countStocktake) {
+        return (
+            <StocktakeCount
+                stocktake={countStocktake}
+                currentUser={user}
+                onClose={() => setCountStocktake(null)}
+                onUpdated={fetchData}
+            />
+        );
+    }
+
     return (
-        <PermissionGuard permission={PERMISSIONS.ADJUST_INVENTORY}>
+        <PermissionGuard permission={[PERMISSIONS.ADJUST_INVENTORY, PERMISSIONS.VIEW_INVENTORY]} mode="any">
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -231,11 +244,24 @@ const Stocktake = () => {
                                                         {stocktake.discrepancy_count} discrepancies
                                                     </div>
                                                 )}
+                                                {stocktake.status === 'in_progress'
+                                                    && stocktake.total_items > 0
+                                                    && stocktake.items_counted >= stocktake.total_items && (
+                                                    <div className="text-green-700 text-xs font-semibold">Ready for approval</div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {stocktake.scheduled_by_username}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                                {(stocktake.status === 'planned' || stocktake.status === 'in_progress') && (
+                                                    <button
+                                                        onClick={() => setCountStocktake(stocktake)}
+                                                        className="font-semibold text-green-700 hover:text-green-900"
+                                                    >
+                                                        Count
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleViewStocktake(stocktake)}
                                                     className="text-blue-600 hover:text-blue-900"

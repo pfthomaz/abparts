@@ -9,7 +9,7 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
   const [error, setError] = useState('');
   const [editingItems, setEditingItems] = useState({});
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
-  const [applyAdjustments, setApplyAdjustments] = useState(false);
+  const [applyAdjustments, setApplyAdjustments] = useState(true);
 
   useEffect(() => {
     if (stocktake?.id) {
@@ -358,9 +358,9 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
         <div className="border-t pt-6">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Complete Stocktake</h3>
+              <h3 className="text-lg font-medium text-gray-900">Approve stocktake</h3>
               <p className="text-sm text-gray-500">
-                All items have been counted. You can now complete this stocktake.
+                All parts have been counted. Approving finalises this count.
               </p>
               {hasDiscrepancies && (
                 <div className="mt-2">
@@ -372,7 +372,7 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
                       className="mr-2"
                     />
                     <span className="text-sm text-gray-700">
-                      Apply inventory adjustments for discrepancies
+                      Reset warehouse inventory to the counted quantities
                     </span>
                   </label>
                 </div>
@@ -382,7 +382,7 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
               onClick={() => setShowCompleteConfirm(true)}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
             >
-              Complete Stocktake
+              Approve &amp; finalise
             </button>
           </div>
         </div>

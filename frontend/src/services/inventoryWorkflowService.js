@@ -44,6 +44,11 @@ export const inventoryWorkflowService = {
     return api.put(`/inventory-workflows/stocktake-items/${itemId}`, updateData);
   },
 
+  async addStocktakeItem(stocktakeId, data) {
+    // data: { part_id, actual_quantity?, notes? }
+    return api.post(`/inventory-workflows/stocktakes/${stocktakeId}/items`, data);
+  },
+
   async batchUpdateStocktakeItems(stocktakeId, items) {
     return api.put(`/inventory-workflows/stocktakes/${stocktakeId}/items/batch`, { items });
   },

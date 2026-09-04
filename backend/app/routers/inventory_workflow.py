@@ -186,6 +186,32 @@ def update_stocktake_item(
     
     return crud.update_stocktake_item(db=db, item_id=item_id, item_update=item_update, current_user_id=current_user.id)
 
+@router.post("/stocktakes/{stocktake_id}/items", response_model=schemas.StocktakeItemResponse)
+def add_stocktake_item(
+    stocktake_id: uuid.UUID,
+    item_add: schemas.StocktakeItemAdd,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user_object)
+):
+    """Add a part found in stock that was not on the generated worksheet."""
+    if current_user.role not in [models.UserRole.user, models.UserRole.admin, models.UserRole.super_admin]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to add stocktake items"
+        )
+    stocktake = crud.get_stocktake(db=db, stocktake_id=stocktake_id)
+    if not stocktake:
+        raise HTTPException(status_code=404, detail="Stocktake not found")
+    if current_user.role != models.UserRole.super_admin:
+        if stocktake.get("organization_id") != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot modify a stocktake from another organization"
+            )
+    return crud.add_stocktake_item(
+        db=db, stocktake_id=stocktake_id, item_add=item_add, current_user_id=current_user.id
+    )
+
 @router.put("/stocktakes/{stocktake_id}/items/batch", response_model=schemas.StocktakeResponse)
 def batch_update_stocktake_items(
     stocktake_id: uuid.UUID,

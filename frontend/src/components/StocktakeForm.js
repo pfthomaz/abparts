@@ -22,13 +22,12 @@ const StocktakeForm = ({ stocktake = null, warehouses = [], onSubmit, onClose })
         notes: stocktake.notes || ''
       });
     } else {
-      // Set default scheduled date to tomorrow at 9 AM
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
+      // Default to now so a warehouse count can start immediately
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       setFormData(prev => ({
         ...prev,
-        scheduled_date: tomorrow.toISOString().slice(0, 16)
+        scheduled_date: now.toISOString().slice(0, 16)
       }));
     }
   }, [stocktake]);
@@ -101,9 +100,9 @@ const StocktakeForm = ({ stocktake = null, warehouses = [], onSubmit, onClose })
           value={formData.scheduled_date}
           onChange={handleChange}
           required
-          min={new Date().toISOString().slice(0, 16)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
+        <p className="mt-1 text-xs text-gray-500">Defaults to now — you can start counting straight away.</p>
       </div>
 
       <div>
