@@ -25,8 +25,29 @@ export function printStocktake(stocktake = {}, items = [], { sortBy = 'code' } =
       : (a.part_number || '').localeCompare(b.part_number || '', undefined, { numeric: true, sensitivity: 'base' })
   );
 
-  const counted = rows.filter((i) => i.actual_quantity !== null && i.actual_quantity !== undefined).length;
   const printedAt = new Date().toLocaleString();
+
+  // Classify every row so the printed sheet is a full reconciliation.
+  const classify = (it) => {
+    const exp = Number(it.expected_quantity || 0);
+    const hasActual = it.actual_quantity !== null && it.actual_quantity !== undefined;
+    if (!hasActual) return { key: 'not_counted', label: 'NOT COUNTED' };
+    const act = Number(it.actual_quantity);
+    const d = act - exp;
+    if (exp === 0 && act > 0) return { key: 'not_expected', label: 'NOT EXPECTED' };
+    if (d === 0) return { key: 'ok', label: 'OK' };
+    if (act === 0) return { key: 'none_found', label: 'NONE FOUND' };
+    if (d < 0) return { key: 'short', label: `SHORT ${fmtNum(d)}` };
+    return { key: 'over', label: `OVER +${fmtNum(d)}` };
+  };
+
+  const tally = { total: rows.length, counted: 0, not_counted: 0, discrepancy: 0, not_expected: 0 };
+  rows.forEach((it) => {
+    const c = classify(it).key;
+    if (c === 'not_counted') tally.not_counted += 1; else tally.counted += 1;
+    if (['short', 'over', 'none_found'].includes(c)) tally.discrepancy += 1;
+    if (c === 'not_expected') tally.not_expected += 1;
+  });
 
   const bodyRows = rows.map((it, idx) => {
     const expected = fmtNum(it.expected_quantity);
@@ -37,14 +58,16 @@ export function printStocktake(stocktake = {}, items = [], { sortBy = 'code' } =
       const d = Number(it.actual_quantity) - Number(it.expected_quantity || 0);
       diff = (d > 0 ? '+' : '') + fmtNum(d);
     }
-    const unexpected = Number(it.expected_quantity || 0) === 0;
-    return `<tr>
+    const st = classify(it);
+    const rowCls = st.key === 'not_counted' ? ' class="uncounted"' : (st.key === 'ok' ? '' : ' class="flag"');
+    return `<tr${rowCls}>
       <td class="num">${idx + 1}</td>
-      <td>${esc(it.part_number)}${unexpected ? ' <span class="tag">NEW</span>' : ''}</td>
+      <td>${esc(it.part_number)}</td>
       <td>${esc(it.part_name)}</td>
       <td class="num">${expected}</td>
       <td class="num actual">${actual}</td>
       <td class="num">${diff}</td>
+      <td class="status">${st.label}</td>
     </tr>`;
   }).join('');
 
@@ -62,25 +85,28 @@ export function printStocktake(stocktake = {}, items = [], { sortBy = 'code' } =
   th { background: #eee; font-weight: 600; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   td.actual { min-width: 60px; }
-  .tag { font-size: 9px; border: 1px solid #999; border-radius: 3px; padding: 0 3px; color: #555; }
+  td.status { white-space: nowrap; font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+  tr.uncounted td { background: #f4f4f4; }
+  tr.uncounted td.status { color: #b45309; }
+  tr.flag td.status { color: #b91c1c; }
   tr { page-break-inside: avoid; }
   thead { display: table-header-group; }
   .sig { margin-top: 32px; display: flex; gap: 48px; }
   .sig div { flex: 1; border-top: 1px solid #333; padding-top: 4px; font-size: 11px; color: #333; }
-  @media screen { body { max-width: 800px; margin: 24px auto; padding: 0 16px; } }
+  @media screen { body { max-width: 860px; margin: 24px auto; padding: 0 16px; } }
 </style></head><body>
-  <h1>Physical inventory count</h1>
+  <h1>Physical inventory count &mdash; reconciliation</h1>
   <div class="meta">
     Warehouse: <b>${esc(stocktake.warehouse_name || '-')}</b>${stocktake.organization_name ? ` &mdash; ${esc(stocktake.organization_name)}` : ''}<br>
-    ${stocktake.scheduled_date ? `Scheduled: ${esc(new Date(stocktake.scheduled_date).toLocaleString())} &nbsp;&middot;&nbsp; ` : ''}Printed: ${esc(printedAt)}<br>
-    Status: ${esc((stocktake.status || '').replace('_', ' ') || '-')} &nbsp;&middot;&nbsp; Parts: ${rows.length} &nbsp;&middot;&nbsp; Counted: ${counted}
+    ${stocktake.scheduled_date ? `Scheduled: ${esc(new Date(stocktake.scheduled_date).toLocaleString())} &nbsp;&middot;&nbsp; ` : ''}Printed: ${esc(printedAt)} &nbsp;&middot;&nbsp; Status: ${esc((stocktake.status || '').replace('_', ' ') || '-')}<br>
+    Parts: <b>${tally.total}</b> &nbsp;&middot;&nbsp; Counted: <b>${tally.counted}</b> &nbsp;&middot;&nbsp; Not counted: <b>${tally.not_counted}</b> &nbsp;&middot;&nbsp; Discrepancies: <b>${tally.discrepancy}</b> &nbsp;&middot;&nbsp; Not expected: <b>${tally.not_expected}</b>
   </div>
   <table>
     <thead><tr>
       <th class="num">#</th><th>Code</th><th>Part name</th>
-      <th class="num">Expected</th><th class="num">Actual</th><th class="num">Difference</th>
+      <th class="num">Expected</th><th class="num">Actual</th><th class="num">Difference</th><th>Status</th>
     </tr></thead>
-    <tbody>${bodyRows || '<tr><td colspan="6">No parts on this stocktake.</td></tr>'}</tbody>
+    <tbody>${bodyRows || '<tr><td colspan="7">No parts on this stocktake.</td></tr>'}</tbody>
   </table>
   <div class="sig"><div>Counted by &nbsp;/&nbsp; date</div><div>Approved by &nbsp;/&nbsp; date</div></div>
 </body></html>`;
