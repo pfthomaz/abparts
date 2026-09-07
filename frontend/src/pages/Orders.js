@@ -415,10 +415,14 @@ const Orders = () => {
   };
 
   const canEditOrder = (order) => {
-    // Super admins can edit orders at any stage; regular admins only Pending
+    // Super admins can edit orders at any stage. Admins of the Oraseas org that
+    // owns the order can also edit at any stage (including after it ships);
+    // other admins only while the order is still Pending.
     if (!user) return false;
     if (user.role === 'super_admin') return true;
-    return user.role === 'admin' && order.status === 'Pending';
+    if (user.role !== 'admin') return false;
+    if (order.oraseas_organization_id === user.organization_id) return true;
+    return order.status === 'Pending';
   };
 
   const canDeleteOrder = (order) => {

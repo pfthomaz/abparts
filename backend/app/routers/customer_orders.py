@@ -403,10 +403,20 @@ async def update_customer_order(
     if not order:
         raise HTTPException(status_code=404, detail="Customer order not found")
     
-    # Only allow editing Pending orders (super_admins can edit at any stage)
-    if order.status != 'Pending' and not permission_checker.is_super_admin(current_user):
+    # Only Pending orders can be edited freely. Super-admins, and admins of the
+    # Oraseas organisation that owns this order, can edit it at any stage -
+    # including after it has shipped.
+    is_oraseas_admin = (
+        permission_checker.is_admin(current_user)
+        and order.oraseas_organization_id == current_user.organization_id
+    )
+    if (
+        order.status != 'Pending'
+        and not permission_checker.is_super_admin(current_user)
+        and not is_oraseas_admin
+    ):
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Cannot edit order with status '{order.status}'. Only orders in 'Pending' status can be edited."
         )
     
