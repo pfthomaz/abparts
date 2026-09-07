@@ -78,36 +78,54 @@ def get_stocktake(db: Session, stocktake_id: uuid.UUID):
 
 def create_stocktake(db: Session, stocktake: schemas.StocktakeCreate, current_user_id: uuid.UUID):
     """Create a new stocktake."""
+    from .inventory_calculator import calculate_current_stock, calculate_all_warehouse_stock
+
     # Check if warehouse exists
     warehouse = db.query(models.Warehouse).filter(models.Warehouse.id == stocktake.warehouse_id).first()
     if not warehouse:
         raise HTTPException(status_code=404, detail="Warehouse not found")
-    
+
     # Set scheduled by user if not provided
     if not stocktake.scheduled_by_user_id:
         stocktake.scheduled_by_user_id = current_user_id
-    
+
     # Create the stocktake
     db_stocktake = models.Stocktake(**stocktake.dict())
-    
+
     try:
         db.add(db_stocktake)
         db.commit()
         db.refresh(db_stocktake)
-        
-        # Automatically create stocktake items for all inventory in the warehouse
+
+        # Snapshot the expected quantity for every part in the warehouse.
+        # Use calculate_current_stock() - the same source of truth the inventory
+        # report uses - NOT the denormalised Inventory.current_stock cache column,
+        # which drifts from the transaction ledger and made counted parts show up
+        # as unexpected discrepancies.
+        expected_by_part = {}
+
+        # Every part that has an inventory row in this warehouse (matches the
+        # inventory report's row set).
         inventory_items = db.query(models.Inventory).filter(
             models.Inventory.warehouse_id == stocktake.warehouse_id
         ).all()
-        
         for inventory in inventory_items:
-            stocktake_item = models.StocktakeItem(
-                stocktake_id=db_stocktake.id,
-                part_id=inventory.part_id,
-                expected_quantity=inventory.current_stock
+            expected_by_part[inventory.part_id] = calculate_current_stock(
+                db, stocktake.warehouse_id, inventory.part_id
             )
-            db.add(stocktake_item)
-        
+
+        # Also include any part with calculated stock in this warehouse that has
+        # no inventory row yet (e.g. received through transactions only).
+        for part_id, stock in calculate_all_warehouse_stock(db, stocktake.warehouse_id).items():
+            expected_by_part.setdefault(part_id, stock)
+
+        for part_id, expected_quantity in expected_by_part.items():
+            db.add(models.StocktakeItem(
+                stocktake_id=db_stocktake.id,
+                part_id=part_id,
+                expected_quantity=expected_quantity,
+            ))
+
         db.commit()
         
         # Get the stocktake with related data
@@ -687,11 +705,28 @@ def complete_stocktake(db: Session, stocktake_id: uuid.UUID, current_user_id: uu
             StocktakeItem.actual_quantity != StocktakeItem.expected_quantity
         ).all()
         
-        # If apply_adjustments is True, create inventory adjustments
+        # If apply_adjustments is True, record a stock adjustment that resets
+        # inventory to the counted quantities. We write StockAdjustment /
+        # StockAdjustmentItem rows because calculate_current_stock() - the single
+        # source of truth for stock levels - reads from those tables.
         if apply_adjustments and items_with_discrepancies:
+            from .inventory_calculator import calculate_current_stock
+
+            adjustment = models.StockAdjustment(
+                warehouse_id=stocktake.warehouse_id,
+                adjustment_type=models.AdjustmentType.stock_take,
+                reason=models.StockAdjustmentReason.STOCKTAKE_DISCREPANCY.value,
+                notes=f"Stocktake ID: {stocktake_id}",
+                user_id=current_user_id,
+                total_items_adjusted=len(items_with_discrepancies),
+            )
+            db.add(adjustment)
+            db.flush()
+
             for item in items_with_discrepancies:
-                # Get current inventory (create it if the part was found but not
-                # previously stocked in this warehouse)
+                # Ensure an inventory row exists (create it if the part was found
+                # but not previously stocked in this warehouse), so the cached
+                # view stays in step with the ledger.
                 inventory = db.query(models.Inventory).filter(
                     models.Inventory.warehouse_id == stocktake.warehouse_id,
                     models.Inventory.part_id == item.part_id
@@ -709,52 +744,25 @@ def complete_stocktake(db: Session, stocktake_id: uuid.UUID, current_user_id: uu
                     db.add(inventory)
                     db.flush()
 
-                # Calculate adjustment
-                quantity_change = item.actual_quantity - item.expected_quantity
-                previous_quantity = inventory.current_stock
-                new_quantity = previous_quantity + quantity_change
-                
-                # Create adjustment record
-                adjustment = models.InventoryAdjustment(
-                    warehouse_id=stocktake.warehouse_id,
+                # quantity_before is the calculated stock (ledger truth); the
+                # count becomes the new absolute level.
+                quantity_before = calculate_current_stock(db, stocktake.warehouse_id, item.part_id)
+                quantity_after = item.actual_quantity
+
+                db.add(models.StockAdjustmentItem(
+                    stock_adjustment_id=adjustment.id,
                     part_id=item.part_id,
-                    quantity_change=quantity_change,
-                    previous_quantity=previous_quantity,
-                    new_quantity=new_quantity,
+                    quantity_before=quantity_before,
+                    quantity_after=quantity_after,
+                    quantity_change=quantity_after - quantity_before,
                     reason="Stocktake adjustment",
-                    notes=f"Stocktake ID: {stocktake_id}",
-                    adjusted_by_user_id=current_user_id,
-                    adjustment_date=datetime.now(),
-                    stocktake_id=stocktake_id
-                )
-                
-                db.add(adjustment)
-                
-                # Update inventory
-                inventory.current_stock = new_quantity
+                ))
+
+                # Keep the cached column aligned with the new calculated level.
+                inventory.current_stock = quantity_after
+                inventory.last_updated = datetime.now()
                 db.add(inventory)
-                
-                # Create inventory alert if significant discrepancy
-                discrepancy_percentage = abs(quantity_change / item.expected_quantity * 100) if item.expected_quantity else 0
-                
-                if discrepancy_percentage > 10:  # More than 10% discrepancy
-                    severity = InventoryAlertSeverity.MEDIUM
-                    if discrepancy_percentage > 25:  # More than 25% discrepancy
-                        severity = InventoryAlertSeverity.HIGH
-                    
-                    alert = InventoryAlert(
-                        warehouse_id=stocktake.warehouse_id,
-                        part_id=item.part_id,
-                        alert_type=InventoryAlertType.DISCREPANCY,
-                        severity=severity,
-                        threshold_value=item.expected_quantity,
-                        current_value=item.actual_quantity,
-                        message=f"Stocktake found {discrepancy_percentage:.1f}% discrepancy",
-                        is_active=True
-                    )
-                    
-                    db.add(alert)
-        
+
         # Update stocktake status
         stocktake.status = StocktakeStatus.completed
         stocktake.completed_date = datetime.now()

@@ -14,6 +14,13 @@ import { printStocktake } from '../utils/printStocktake';
 
 const num = (v) => (v === null || v === undefined || v === '' ? null : parseFloat(v));
 
+// Compact quantity for display: drop trailing zeros ("2.000" -> "2", "1.500" -> "1.5").
+const fmtQty = (v) => {
+  const n = parseFloat(v || 0);
+  if (Number.isNaN(n)) return '0';
+  return Number.isInteger(n) ? String(n) : n.toFixed(3).replace(/\.?0+$/, '');
+};
+
 const DiscrepancyChip = ({ expected, actual }) => {
   if (actual === null || actual === undefined) return null;
   const d = parseFloat(actual) - parseFloat(expected || 0);
@@ -30,10 +37,11 @@ const DiscrepancyChip = ({ expected, actual }) => {
   );
 };
 
-const CountCard = ({ item, draft, saving, disabled, onDraft, onCommit, onStep, onZero }) => {
+const CountCard = ({ item, draft, saving, disabled, onDraft, onCommit, onStep, onZero, onExpected }) => {
   const value = draft !== undefined ? draft : (item.actual_quantity != null ? String(item.actual_quantity) : '');
   const counted = item.actual_quantity != null;
-  const unexpected = parseFloat(item.expected_quantity || 0) === 0;
+  const expected = parseFloat(item.expected_quantity || 0);
+  const unexpected = expected === 0;
 
   return (
     <div className={`rounded-lg border p-3 shadow-sm ${counted ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-white'}`}>
@@ -53,7 +61,7 @@ const CountCard = ({ item, draft, saving, disabled, onDraft, onCommit, onStep, o
         <div className="shrink-0">{counted && <DiscrepancyChip expected={item.expected_quantity} actual={item.actual_quantity} />}</div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={disabled}
@@ -68,8 +76,9 @@ const CountCard = ({ item, draft, saving, disabled, onDraft, onCommit, onStep, o
           value={value}
           onChange={(e) => onDraft(item.id, e.target.value)}
           onBlur={() => onCommit(item)}
-          placeholder="count"
-          className="h-11 w-24 rounded-md border border-gray-300 text-center text-xl font-semibold focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+          onFocus={(e) => e.target.select()}
+          placeholder={fmtQty(item.expected_quantity)}
+          className="h-11 w-24 rounded-md border border-gray-300 text-center text-xl font-semibold placeholder:font-normal placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
         />
         <button
           type="button"
@@ -84,6 +93,14 @@ const CountCard = ({ item, draft, saving, disabled, onDraft, onCommit, onStep, o
           onClick={() => onZero(item)}
           className="h-11 shrink-0 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 active:bg-gray-100 disabled:opacity-40"
         >None in stock</button>
+        {!counted && expected > 0 && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onExpected(item)}
+            className="h-11 shrink-0 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 active:bg-gray-100 disabled:opacity-40"
+          >Match expected ({fmtQty(item.expected_quantity)})</button>
+        )}
         <span className="ml-auto text-xs text-gray-400">{saving ? 'Saving…' : (counted ? '✓ counted' : '')}</span>
       </div>
     </div>
@@ -188,6 +205,11 @@ const StocktakeCount = ({ stocktake, currentUser, onClose, onUpdated }) => {
     persist(item, next);
   };
   const handleZero = (item) => { handleDraft(item.id, '0'); persist(item, 0); };
+  const handleExpected = (item) => {
+    const exp = parseFloat(item.expected_quantity || 0);
+    handleDraft(item.id, String(exp));
+    persist(item, exp);
+  };
 
   const openAddPart = async () => {
     setShowAddPart(true);
@@ -317,6 +339,7 @@ const StocktakeCount = ({ stocktake, currentUser, onClose, onUpdated }) => {
               onCommit={handleCommit}
               onStep={handleStep}
               onZero={handleZero}
+              onExpected={handleExpected}
             />
           ))
         )}
