@@ -149,8 +149,10 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
         models.Part, models.StocktakeItem.part_id == models.Part.id
     ).filter(
         models.StocktakeItem.stocktake_id == stocktake_id
+    ).order_by(
+        models.Part.part_number
     ).all()
-    
+
     results = []
     for item, part_number, part_name, part_type, unit_of_measure in items:
         # Calculate discrepancy if actual quantity is set

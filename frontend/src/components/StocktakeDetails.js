@@ -182,6 +182,11 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
   const canComplete = stocktake.status === 'in_progress' && items.every(item => item.actual_quantity !== null);
   const hasDiscrepancies = items.some(item => item.discrepancy !== null && item.discrepancy !== 0);
 
+  // Always show the count list ordered by part code.
+  const sortedItems = [...items].sort((a, b) =>
+    (a.part_number || '').localeCompare(b.part_number || '', undefined, { numeric: true, sensitivity: 'base' })
+  );
+
   return (
     <div className="space-y-6">
       {error && (
@@ -279,7 +284,7 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {items.map((item) => {
+            {sortedItems.map((item) => {
               const isEditing = editingItems[item.id];
 
               return (
