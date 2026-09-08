@@ -51,6 +51,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
           : parseFloat(item.quantity);
         
         return {
+          id: item.id,
           part_id: item.part_id,
           quantity: quantity,
           unit_price: item.unit_price,
@@ -234,6 +235,7 @@ function CustomerOrderForm({ organizations = [], users = [], parts = [], initial
         notes: formData.notes || '',
         // Format items to only include necessary fields
         items: formData.items.map(item => ({
+          ...(item.id ? { id: item.id } : {}),
           part_id: item.part_id,
           quantity: item.quantity,
           unit_price: item.unit_price

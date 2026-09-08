@@ -2,6 +2,7 @@
 
 import uuid
 import logging
+from collections import defaultdict
 from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
@@ -126,24 +127,8 @@ def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schema
             logger.info(f"Items value: {full_update_data['items']}")
         
         if 'items' in full_update_data and full_update_data['items'] is not None:
-            logger.info(f"Updating order items for order {db_order.id} - {len(full_update_data['items'])} items")
-            # Delete existing items
-            deleted_count = db.query(models.CustomerOrderItem).filter(
-                models.CustomerOrderItem.customer_order_id == order_id
-            ).delete()
-            logger.info(f"Deleted {deleted_count} existing items")
-            
-            # Add new items
-            for idx, item_data in enumerate(full_update_data['items']):
-                logger.info(f"Adding item {idx}: part_id={item_data.get('part_id')}, quantity={item_data.get('quantity')}")
-                new_item = models.CustomerOrderItem(
-                    customer_order_id=order_id,
-                    part_id=item_data['part_id'],
-                    quantity=item_data['quantity'],
-                    unit_price=item_data.get('unit_price')
-                )
-                db.add(new_item)
-            logger.info(f"Added {len(full_update_data['items'])} new items")
+            logger.info(f"Reconciling order items for order {db_order.id} - {len(full_update_data['items'])} items in payload")
+            _merge_customer_order_items(db, db_order, full_update_data['items'], current_user_id)
         else:
             logger.info(f"No items to update for order {db_order.id}")
 
@@ -151,10 +136,210 @@ def update_customer_order(db: Session, order_id: uuid.UUID, order_update: schema
         db.commit()
         db.refresh(db_order)
         return db_order
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"Error updating customer order: {e}")
         raise HTTPException(status_code=400, detail="Error updating customer order")
+
+def _part_number(db: Session, part_id) -> str:
+    p = db.query(models.Part).filter(models.Part.id == part_id).first()
+    return p.part_number if p else str(part_id)
+
+
+def _clean_price(value):
+    """Form sends '' for a blank price; the column wants a number or NULL."""
+    if value is None or value == '':
+        return None
+    return value
+
+
+def _merge_customer_order_items(db: Session, order: models.CustomerOrder, payload_items: list, current_user_id: uuid.UUID = None):
+    """
+    Reconcile an order's line items against the edit payload without discarding
+    fulfilment history.
+
+      * matched lines  - update quantity / unit_price, keep quantity_shipped /
+                         quantity_received / quantity_written_off. Reject a
+                         quantity below what has already shipped.
+      * removed lines  - deleted, but only if nothing has shipped on them.
+      * added lines    - created. If every pre-existing line on the order was
+                         already fully shipped from a single warehouse, the new
+                         line is backfilled the same way: a 'transfer'
+                         Transaction takes the stock out of that warehouse (and,
+                         if the order was also fully received into a single
+                         warehouse, a 'creation' Transaction puts it there and
+                         the cached inventory is bumped), so
+                         calculate_current_stock() reflects the movement.
+
+    Ambiguous history (partial shipment, or movement spread across more than one
+    warehouse) is not guessed at - the new line is added unfulfilled and a note
+    is appended to order.notes so an operator ships it explicitly.
+    """
+    existing = db.query(models.CustomerOrderItem).filter(
+        models.CustomerOrderItem.customer_order_id == order.id
+    ).all()
+
+    # --- snapshot the pre-edit fulfilment state (drives backfill for new lines)
+    order_fully_shipped = bool(existing) and all(
+        it.quantity_shipped >= it.quantity and it.quantity_shipped > 0 for it in existing
+    )
+    order_fully_received = order_fully_shipped and all(
+        it.quantity_received >= it.quantity for it in existing
+    )
+
+    ship_txns = db.query(models.Transaction).filter(
+        models.Transaction.customer_order_id == order.id,
+        models.Transaction.transaction_type == 'transfer',
+        models.Transaction.from_warehouse_id.isnot(None),
+    ).all()
+    recv_txns = db.query(models.Transaction).filter(
+        models.Transaction.customer_order_id == order.id,
+        models.Transaction.transaction_type == 'creation',
+        models.Transaction.to_warehouse_id.isnot(None),
+    ).all()
+    src_wh_ids = {t.from_warehouse_id for t in ship_txns}
+    dst_wh_ids = {t.to_warehouse_id for t in recv_txns}
+
+    can_backfill_ship = order_fully_shipped and len(src_wh_ids) == 1
+    source_wh_id = next(iter(src_wh_ids)) if can_backfill_ship else None
+    ship_date = order.shipped_date or (max(t.transaction_date for t in ship_txns) if ship_txns else None)
+
+    can_backfill_recv = can_backfill_ship and order_fully_received and len(dst_wh_ids) == 1
+    dest_wh_id = next(iter(dst_wh_ids)) if can_backfill_recv else None
+    recv_date = order.actual_delivery_date or (max(t.transaction_date for t in recv_txns) if recv_txns else None)
+
+    # --- match payload lines to existing rows (by id first, then by part)
+    existing_by_id = {str(it.id): it for it in existing}
+    existing_by_part = defaultdict(list)
+    for it in existing:
+        existing_by_part[str(it.part_id)].append(it)
+
+    matched = set()
+    to_add = []
+    for pi in payload_items:
+        row = None
+        pid = pi.get('id')
+        if pid and str(pid) in existing_by_id and str(pid) not in matched:
+            row = existing_by_id[str(pid)]
+        else:
+            for cand in existing_by_part.get(str(pi['part_id']), []):
+                if str(cand.id) not in matched:
+                    row = cand
+                    break
+        if row is None:
+            to_add.append(pi)
+            continue
+
+        matched.add(str(row.id))
+        new_q = Decimal(str(pi['quantity']))
+        if new_q < row.quantity_shipped:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot reduce '{_part_number(db, row.part_id)}' to {new_q}: {row.quantity_shipped} already shipped",
+            )
+        row.quantity = new_q
+        row.unit_price = _clean_price(pi.get('unit_price'))
+        db.add(row)
+
+    # --- removed lines
+    for it in existing:
+        if str(it.id) not in matched:
+            if it.quantity_shipped and it.quantity_shipped > 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot remove '{_part_number(db, it.part_id)}': {it.quantity_shipped} already shipped",
+                )
+            db.delete(it)
+
+    # --- added lines
+    unshipped_notes = []
+    for pi in to_add:
+        part = db.query(models.Part).filter(models.Part.id == pi['part_id']).first()
+        uom = (part.unit_of_measure if part and part.unit_of_measure else 'units')
+        qty = Decimal(str(pi['quantity']))
+        new_item = models.CustomerOrderItem(
+            customer_order_id=order.id,
+            part_id=pi['part_id'],
+            quantity=qty,
+            unit_price=_clean_price(pi.get('unit_price')),
+        )
+        db.add(new_item)
+        db.flush()  # need new_item.id for the transaction rows
+
+        if not order_fully_shipped:
+            continue  # siblings aren't shipped either - nothing to mirror
+
+        if not can_backfill_ship:
+            unshipped_notes.append(_part_number(db, pi['part_id']))
+            continue
+
+        db.add(models.Transaction(
+            transaction_type='transfer',
+            part_id=new_item.part_id,
+            from_warehouse_id=source_wh_id,
+            to_warehouse_id=None,
+            customer_order_id=order.id,
+            customer_order_item_id=new_item.id,
+            quantity=qty,
+            unit_of_measure=uom,
+            performed_by_user_id=current_user_id,
+            transaction_date=ship_date or datetime.utcnow(),
+            notes=f"Order shipped (backfilled when line added) - Order ID: {order.id}",
+            reference_number=f"SHIP-{str(order.id)[:8]}-{str(new_item.id)[:8]}",
+        ))
+        new_item.quantity_shipped = qty
+
+        if can_backfill_recv:
+            db.add(models.Transaction(
+                transaction_type='creation',
+                part_id=new_item.part_id,
+                from_warehouse_id=None,
+                to_warehouse_id=dest_wh_id,
+                customer_order_id=order.id,
+                customer_order_item_id=new_item.id,
+                quantity=qty,
+                unit_of_measure=uom,
+                performed_by_user_id=current_user_id,
+                transaction_date=recv_date or datetime.utcnow(),
+                notes=f"Received from customer order #{str(order.id)[:8]} (backfilled when line added)",
+                reference_number=str(order.id),
+            ))
+            new_item.quantity_received = qty
+
+            inv = db.query(models.Inventory).filter(
+                models.Inventory.part_id == new_item.part_id,
+                models.Inventory.warehouse_id == dest_wh_id,
+            ).first()
+            if inv:
+                inv.current_stock = (inv.current_stock or Decimal('0')) + qty
+                inv.last_updated = datetime.now()
+            else:
+                db.add(models.Inventory(
+                    part_id=new_item.part_id,
+                    warehouse_id=dest_wh_id,
+                    current_stock=qty,
+                    minimum_stock_recommendation=Decimal('0'),
+                    unit_of_measure=uom,
+                ))
+        db.add(new_item)
+
+    if unshipped_notes:
+        stamp = datetime.utcnow().date().isoformat()
+        msg = (
+            f"[{stamp}] Added and left unshipped (shipment history spans multiple warehouses "
+            f"or is incomplete - ship manually): {', '.join(unshipped_notes)}"
+        )
+        order.notes = f"{order.notes}\n\n{msg}" if order.notes else msg
+
+    # keep status truthful after the reconciliation (no-op if nothing shipped)
+    db.flush()
+    db.expire(order, ['items'])
+    order.status = recompute_customer_order_status(order)
+    db.add(order)
+
 
 def _update_inventory_on_fulfillment(db: Session, order: models.CustomerOrder, receiving_warehouse_id: uuid.UUID, current_user_id: uuid.UUID = None):
     """Update customer warehouse inventory when order is fulfilled."""
