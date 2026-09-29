@@ -146,6 +146,10 @@ services:
       FROM_EMAIL: ${FROM_EMAIL}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
       SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+      # Support case emails between Oraseas and BossServ (link target + optional recipient overrides)
+      BASE_URL: ${BASE_URL}
+      SUPPORT_CASE_NOTIFY_ORASEAS: ${SUPPORT_CASE_NOTIFY_ORASEAS:-}
+      SUPPORT_CASE_NOTIFY_BOSSSERV: ${SUPPORT_CASE_NOTIFY_BOSSSERV:-}
     volumes:
       # Persists the FAISS vector index across container recreates / redeploys.
       # Without this the AI assistant silently loses all knowledge on every deploy.

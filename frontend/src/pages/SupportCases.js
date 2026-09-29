@@ -28,6 +28,23 @@ const PRIORITY_OPTIONS = [
 
 const MACHINE_MODELS = ['V4.0', 'V3.1B', 'V3.0', 'V2.0'];
 
+const CONTACT_CHANNELS = [
+  { value: 'phone', label: 'Phone' },
+  { value: 'email', label: 'Email' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'on_site', label: 'On site' },
+  { value: 'other', label: 'Other' },
+];
+
+// Value for a <input type="datetime-local">, in the browser's local time
+const toLocalInputValue = (date) => {
+  const d = new Date(date);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : '-');
+
 const StatusBadge = ({ status }) => {
   const opt = STATUS_OPTIONS.find(o => o.value === status) || STATUS_OPTIONS[0];
   return (
@@ -51,6 +68,7 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
   const [formData, setFormData] = useState({
     title: '', description: '', machine_model: '', symptoms: '',
     priority: 'medium', tags: '', assigned_to: '', customer: '',
+    contacted_at: '', contact_channel: '',
   });
   const [organizations, setOrganizations] = useState([]);
 
@@ -79,9 +97,11 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
         customer: editCase.organization_id || '',
         tags: (editCase.tags || []).join(', '),
         assigned_to: editCase.assigned_to || '',
+        contacted_at: toLocalInputValue(editCase.contacted_at || editCase.created_at),
+        contact_channel: editCase.contact_channel || '',
       });
     } else {
-      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', customer: '', tags: '', assigned_to: '' });
+      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', customer: '', tags: '', assigned_to: '', contacted_at: toLocalInputValue(new Date()), contact_channel: '' });
     }
   }, [editCase, isOpen]);
 
@@ -91,6 +111,7 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
       ...formData,
       organization_id: formData.customer || undefined,
       tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      contacted_at: formData.contacted_at ? new Date(formData.contacted_at).toISOString() : undefined,
     };
     delete payload.customer;
     if (!payload.machine_model) delete payload.machine_model;
@@ -98,6 +119,8 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
     if (!payload.root_cause) delete payload.root_cause;
     if (!payload.resolution) delete payload.resolution;
     if (!payload.organization_id) delete payload.organization_id;
+    if (!payload.contacted_at) delete payload.contacted_at;
+    if (!payload.contact_channel) delete payload.contact_channel;
     onSave(payload);
   };
 
@@ -130,6 +153,23 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
                 <option key={org.id} value={org.name}>{org.name}</option>
               ))}
             </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Customer Contacted At *</label>
+              <input type="datetime-local" required value={formData.contacted_at}
+                onChange={e => setFormData(f => ({ ...f, contacted_at: e.target.value }))}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contacted Via</label>
+              <select value={formData.contact_channel}
+                onChange={e => setFormData(f => ({ ...f, contact_channel: e.target.value }))}
+                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                <option value="">-- Select --</option>
+                {CONTACT_CHANNELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -314,8 +354,25 @@ const CaseDetail = ({ caseData, onBack, onStatusChange, onResolve, onAddComment,
                 </div>
               </div>
             )}
-            <div><span className="text-sm font-medium text-gray-500">Created:</span>
-              <span className="ml-2 text-sm">{new Date(caseData.created_at).toLocaleString()}</span></div>
+            {caseData.contacted_at && (
+              <div><span className="text-sm font-medium text-gray-500">Customer Contacted:</span>
+                <span className="ml-2 text-sm">
+                  {formatDateTime(caseData.contacted_at)}
+                  {caseData.contact_channel && ` (${(CONTACT_CHANNELS.find(c => c.value === caseData.contact_channel) || {}).label || caseData.contact_channel})`}
+                </span></div>
+            )}
+            <div><span className="text-sm font-medium text-gray-500">Recorded:</span>
+              <span className="ml-2 text-sm">
+                {formatDateTime(caseData.created_at)}
+                {caseData.created_by_name && ` by ${caseData.created_by_name}`}
+              </span></div>
+            {caseData.resolved_at && (
+              <div><span className="text-sm font-medium text-gray-500">Resolved:</span>
+                <span className="ml-2 text-sm">
+                  {formatDateTime(caseData.resolved_at)}
+                  {caseData.resolved_by_name && ` by ${caseData.resolved_by_name}`}
+                </span></div>
+            )}
           </div>
         </div>
 
@@ -348,7 +405,7 @@ const CaseDetail = ({ caseData, onBack, onStatusChange, onResolve, onAddComment,
                   <span className="font-medium text-gray-700">{c.author_id}</span>
                   <div className="flex items-center space-x-2">
                     {c.is_internal && <span className="text-xs text-yellow-600 font-medium">Internal</span>}
-                    <span className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString()}</span>
+                    <span className="text-xs text-gray-500">{formatDateTime(c.created_at)}</span>
                   </div>
                 </div>
                 <p className="text-gray-800 whitespace-pre-wrap">{c.content}</p>
@@ -624,7 +681,7 @@ const SupportCases = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacted</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
@@ -639,7 +696,7 @@ const SupportCases = () => {
                   <td className="px-4 py-3"><PriorityBadge priority={c.priority} /></td>
                   <td className="px-4 py-3 text-sm text-gray-600">{c.machine_model || '-'}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{c.organization_id || '-'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(c.contacted_at || c.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <button onClick={(e) => { e.stopPropagation(); setEditCase(c); }}
                       className="text-xs text-blue-600 hover:text-blue-800 mr-2">Edit</button>

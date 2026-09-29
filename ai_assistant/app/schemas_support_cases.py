@@ -34,6 +34,10 @@ class CreateSupportCaseRequest(BaseModel):
     machine_model: Optional[str] = Field(None, description="AutoBoss model (V4.0, V3.1B, V3.0, V2.0)")
     machine_id: Optional[str] = Field(None, description="Specific machine ID if known")
     symptoms: Optional[str] = Field(None, description="Observed symptoms")
+    root_cause: Optional[str] = Field(None, description="Identified root cause, if already known")
+    resolution: Optional[str] = Field(None, description="Resolution, if the issue was already fixed (marks the case resolved)")
+    contacted_at: Optional[datetime] = Field(None, description="When the customer got in touch (defaults to now)")
+    contact_channel: Optional[str] = Field(None, description="How the customer got in touch (phone, email, whatsapp, on_site, other)")
     priority: SupportCasePriorityEnum = Field(SupportCasePriorityEnum.medium, description="Case priority")
     organization_id: Optional[str] = Field(None, description="Customer organization ID")
     assigned_to: Optional[str] = Field(None, description="Expert user ID to assign")
@@ -49,6 +53,8 @@ class UpdateSupportCaseRequest(BaseModel):
     machine_model: Optional[str] = Field(None, description="AutoBoss model")
     machine_id: Optional[str] = Field(None, description="Specific machine ID")
     symptoms: Optional[str] = Field(None, description="Observed symptoms")
+    contacted_at: Optional[datetime] = Field(None, description="When the customer got in touch")
+    contact_channel: Optional[str] = Field(None, description="How the customer got in touch")
     root_cause: Optional[str] = Field(None, description="Identified root cause")
     resolution: Optional[str] = Field(None, description="How the issue was resolved")
     status: Optional[SupportCaseStatusEnum] = Field(None, description="New status")
@@ -115,7 +121,12 @@ class SupportCaseResponse(BaseModel):
     status: SupportCaseStatusEnum
     priority: SupportCasePriorityEnum
     organization_id: Optional[str] = None
+    contacted_at: Optional[datetime] = None
+    contact_channel: Optional[str] = None
     created_by: str
+    created_by_name: Optional[str] = None
+    resolved_by: Optional[str] = None
+    resolved_by_name: Optional[str] = None
     assigned_to: Optional[str] = None
     tags: Optional[List[str]] = None
     related_parts: Optional[List[str]] = None

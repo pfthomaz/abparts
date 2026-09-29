@@ -2,11 +2,12 @@
 Support Cases API endpoints for recording and managing customer issues.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Query
 from typing import Optional
 from sqlalchemy import text
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
+import httpx
 import logging
 import uuid
 import json
@@ -25,6 +26,7 @@ from ..schemas_support_cases import (
     SupportCaseStatusEnum,
     SupportCasePriorityEnum,
 )
+from ..services.support_case_notifications import notify_case_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -55,6 +57,48 @@ def _parse_jsonb_list(value) -> list:
     return []
 
 
+async def _current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
+    """Resolve the ABParts user behind the request's bearer token, or None."""
+    if not authorization:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{settings.ABPARTS_API_URL}/users/me/",
+                                    headers={"Authorization": authorization})
+        if resp.status_code == 200:
+            return str(resp.json().get("id"))
+        logger.warning(f"Could not identify support case user: /users/me/ returned {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Could not identify support case user: {e}")
+    return None
+
+
+def _to_utc_naive(value: Optional[datetime]) -> Optional[datetime]:
+    """Store datetimes as naive UTC, matching the TIMESTAMP columns."""
+    if value is not None and value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _utc(value: Optional[datetime]) -> Optional[datetime]:
+    """Mark naive UTC timestamps from the database as UTC so browsers show local time."""
+    if value is not None and value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+# Case columns plus the display names of the users who recorded / resolved it
+_CASE_WITH_NAMES_SQL = """
+    SELECT sc.*,
+           COALESCE(cu.name, cu.username) AS created_by_name,
+           COALESCE(ru.name, ru.username) AS resolved_by_name
+    FROM support_cases sc
+    LEFT JOIN users cu ON cu.id::text = sc.created_by
+    LEFT JOIN users ru ON ru.id::text = sc.resolved_by
+    WHERE sc.id = :id
+"""
+
+
 def _row_to_case_response(row, comments=None) -> SupportCaseResponse:
     """Convert a database row to a SupportCaseResponse."""
     return SupportCaseResponse(
@@ -70,39 +114,55 @@ def _row_to_case_response(row, comments=None) -> SupportCaseResponse:
         status=row.status,
         priority=row.priority,
         organization_id=row.organization_id,
+        contacted_at=_utc(getattr(row, 'contacted_at', None)),
+        contact_channel=getattr(row, 'contact_channel', None),
         created_by=row.created_by,
+        created_by_name=getattr(row, 'created_by_name', None),
+        resolved_by=getattr(row, 'resolved_by', None),
+        resolved_by_name=getattr(row, 'resolved_by_name', None),
         assigned_to=row.assigned_to,
         tags=_parse_jsonb_list(row.tags),
         related_parts=_parse_jsonb_list(row.related_parts),
         internal_notes=row.internal_notes,
         knowledge_doc_id=row.knowledge_doc_id,
         session_id=row.session_id,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        resolved_at=row.resolved_at,
-        closed_at=row.closed_at,
+        created_at=_utc(row.created_at),
+        updated_at=_utc(row.updated_at),
+        resolved_at=_utc(row.resolved_at),
+        closed_at=_utc(row.closed_at),
         comments=comments or [],
     )
 
 
 @router.post("/support-cases", response_model=SupportCaseResponse)
-async def create_support_case(request: CreateSupportCaseRequest):
+async def create_support_case(
+    request: CreateSupportCaseRequest,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None),
+):
     """
-    Create a new support case.
+    Create a new support case. If a resolution is supplied the case is recorded
+    as already resolved. The other side (Oraseas <-> BossServ) is emailed.
     """
     case_id = str(uuid.uuid4())
     case_number = _generate_case_number()
+    user_id = await _current_user_id(authorization)
+    resolved = bool(request.resolution and request.resolution.strip())
 
     try:
         with get_db_session() as db:
             db.execute(text("""
                 INSERT INTO support_cases 
                 (id, case_number, title, description, machine_model, machine_id,
-                 symptoms, status, priority, organization_id, created_by, assigned_to,
-                 tags, related_parts, session_id, created_at, updated_at)
+                 symptoms, root_cause, resolution, status, priority, organization_id,
+                 contacted_at, contact_channel, created_by, assigned_to,
+                 tags, related_parts, session_id, created_at, updated_at,
+                 resolved_at, resolved_by)
                 VALUES (:id, :case_number, :title, :description, :machine_model, :machine_id,
-                        :symptoms, :status, :priority, :organization_id, :created_by, :assigned_to,
-                        :tags, :related_parts, :session_id, NOW(), NOW())
+                        :symptoms, :root_cause, :resolution, :status, :priority, :organization_id,
+                        COALESCE(:contacted_at, NOW()), :contact_channel, :created_by, :assigned_to,
+                        :tags, :related_parts, :session_id, NOW(), NOW(),
+                        CASE WHEN :resolved THEN NOW() END, :resolved_by)
             """), {
                 'id': case_id,
                 'case_number': case_number,
@@ -111,14 +171,20 @@ async def create_support_case(request: CreateSupportCaseRequest):
                 'machine_model': request.machine_model,
                 'machine_id': request.machine_id,
                 'symptoms': request.symptoms,
-                'status': 'open',
+                'root_cause': request.root_cause or None,
+                'resolution': request.resolution if resolved else None,
+                'status': 'resolved' if resolved else 'open',
                 'priority': request.priority.value,
                 'organization_id': request.organization_id,
-                'created_by': request.assigned_to or 'system',  # Will be overridden by auth
+                'contacted_at': _to_utc_naive(request.contacted_at),
+                'contact_channel': request.contact_channel or None,
+                'created_by': user_id or request.assigned_to or 'system',
                 'assigned_to': request.assigned_to,
                 'tags': json.dumps(request.tags if request.tags else []),
                 'related_parts': json.dumps(request.related_parts if request.related_parts else []),
                 'session_id': request.session_id,
+                'resolved': resolved,
+                'resolved_by': user_id if resolved else None,
             })
 
             # Fetch the created case
@@ -126,6 +192,23 @@ async def create_support_case(request: CreateSupportCaseRequest):
                 text("SELECT * FROM support_cases WHERE id = :id"),
                 {'id': case_id}
             ).fetchone()
+
+        if resolved:
+            try:
+                doc_id = await _sync_case_to_knowledge_base(result)
+                if doc_id:
+                    with get_db_session() as db:
+                        db.execute(
+                            text("UPDATE support_cases SET knowledge_doc_id = :d WHERE id = :id"),
+                            {'d': doc_id, 'id': case_id}
+                        )
+            except Exception as e:
+                logger.warning(f"Failed to publish new resolved case {case_id} to knowledge base: {e}")
+
+        with get_db_session() as db:
+            result = db.execute(text(_CASE_WITH_NAMES_SQL), {'id': case_id}).fetchone()
+
+        background_tasks.add_task(notify_case_event, case_id, 'created', user_id)
 
         logger.info(f"Created support case {case_number} (id: {case_id})")
         return _row_to_case_response(result)
@@ -275,10 +358,7 @@ async def get_support_case(case_id: str):
     """
     try:
         with get_db_session() as db:
-            result = db.execute(
-                text("SELECT * FROM support_cases WHERE id = :id"),
-                {'id': case_id}
-            ).fetchone()
+            result = db.execute(text(_CASE_WITH_NAMES_SQL), {'id': case_id}).fetchone()
 
             if not result:
                 raise HTTPException(status_code=404, detail="Support case not found")
@@ -299,7 +379,7 @@ async def get_support_case(case_id: str):
                 author_id=c.author_id,
                 content=c.content,
                 is_internal=c.is_internal,
-                created_at=c.created_at,
+                created_at=_utc(c.created_at),
             )
             for c in comments_rows
         ]
@@ -314,13 +394,19 @@ async def get_support_case(case_id: str):
 
 
 @router.put("/support-cases/{case_id}", response_model=SupportCaseResponse)
-async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
+async def update_support_case(
+    case_id: str,
+    request: UpdateSupportCaseRequest,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None),
+):
     """
-    Update a support case.
+    Update a support case. Moving it to resolved emails the other side.
     """
     try:
         set_clauses = ["updated_at = NOW()"]
         params = {'case_id': case_id}
+        user_id = None
 
         if request.title is not None:
             set_clauses.append("title = :title")
@@ -337,6 +423,12 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
         if request.symptoms is not None:
             set_clauses.append("symptoms = :symptoms")
             params['symptoms'] = request.symptoms
+        if request.contacted_at is not None:
+            set_clauses.append("contacted_at = :contacted_at")
+            params['contacted_at'] = _to_utc_naive(request.contacted_at)
+        if request.contact_channel is not None:
+            set_clauses.append("contact_channel = :contact_channel")
+            params['contact_channel'] = request.contact_channel or None
         if request.root_cause is not None:
             set_clauses.append("root_cause = :root_cause")
             params['root_cause'] = request.root_cause
@@ -348,6 +440,9 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
             params['status'] = request.status.value
             if request.status == SupportCaseStatusEnum.resolved:
                 set_clauses.append("resolved_at = NOW()")
+                user_id = await _current_user_id(authorization)
+                set_clauses.append("resolved_by = :resolved_by")
+                params['resolved_by'] = user_id
             elif request.status == SupportCaseStatusEnum.closed:
                 set_clauses.append("closed_at = NOW()")
         if request.priority is not None:
@@ -367,6 +462,10 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
             params['internal_notes'] = request.internal_notes
 
         with get_db_session() as db:
+            previous_status = db.execute(
+                text("SELECT status FROM support_cases WHERE id = :case_id"), {'case_id': case_id}
+            ).scalar()
+
             result = db.execute(
                 text(f"UPDATE support_cases SET {', '.join(set_clauses)} WHERE id = :case_id RETURNING *"),
                 params
@@ -374,6 +473,9 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
 
             if not result:
                 raise HTTPException(status_code=404, detail="Support case not found")
+
+        if result.status == 'resolved' and previous_status != 'resolved':
+            background_tasks.add_task(notify_case_event, case_id, 'resolved', user_id)
 
         # Keep the knowledge base in sync when a resolved/closed case's content changes
         kb_relevant = ('title', 'description', 'symptoms', 'root_cause',
@@ -405,12 +507,22 @@ async def update_support_case(case_id: str, request: UpdateSupportCaseRequest):
 
 
 @router.post("/support-cases/{case_id}/resolve", response_model=SupportCaseResponse)
-async def resolve_support_case(case_id: str, request: ResolveSupportCaseRequest):
+async def resolve_support_case(
+    case_id: str,
+    request: ResolveSupportCaseRequest,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None),
+):
     """
-    Resolve a support case and optionally publish to knowledge base.
+    Resolve a support case, optionally publish to knowledge base, and email the other side.
     """
+    user_id = await _current_user_id(authorization)
     try:
         with get_db_session() as db:
+            previous_status = db.execute(
+                text("SELECT status FROM support_cases WHERE id = :case_id"), {'case_id': case_id}
+            ).scalar()
+
             # Update the case
             result = db.execute(
                 text("""
@@ -420,12 +532,14 @@ async def resolve_support_case(case_id: str, request: ResolveSupportCaseRequest)
                         internal_notes = COALESCE(:internal_notes, internal_notes),
                         status = 'resolved',
                         resolved_at = NOW(),
+                        resolved_by = :resolved_by,
                         updated_at = NOW()
                     WHERE id = :case_id
                     RETURNING *
                 """),
                 {
                     'case_id': case_id,
+                    'resolved_by': user_id,
                     'root_cause': request.root_cause,
                     'resolution': request.resolution,
                     'internal_notes': request.internal_notes,
@@ -452,10 +566,10 @@ async def resolve_support_case(case_id: str, request: ResolveSupportCaseRequest)
 
         # Re-fetch with updated knowledge_doc_id
         with get_db_session() as db:
-            result = db.execute(
-                text("SELECT * FROM support_cases WHERE id = :id"),
-                {'id': case_id}
-            ).fetchone()
+            result = db.execute(text(_CASE_WITH_NAMES_SQL), {'id': case_id}).fetchone()
+
+        if previous_status != 'resolved':
+            background_tasks.add_task(notify_case_event, case_id, 'resolved', user_id)
 
         logger.info(f"Resolved support case {case_id}")
         return _row_to_case_response(result)
@@ -601,7 +715,7 @@ async def add_comment(case_id: str, request: AddCommentRequest):
             author_id=result.author_id,
             content=result.content,
             is_internal=result.is_internal,
-            created_at=result.created_at,
+            created_at=_utc(result.created_at),
         )
 
     except HTTPException:
@@ -636,7 +750,7 @@ async def list_comments(case_id: str, include_internal: bool = Query(True)):
                 author_id=c.author_id,
                 content=c.content,
                 is_internal=c.is_internal,
-                created_at=c.created_at,
+                created_at=_utc(c.created_at),
             )
             for c in results
         ]

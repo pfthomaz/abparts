@@ -69,6 +69,24 @@ async def init_database():
         logger.error(f"Failed to connect to database: {e}")
         raise
 
+    _ensure_support_case_columns()
+
+
+def _ensure_support_case_columns():
+    """
+    Add support_cases columns introduced after create_support_cases_tables.sql
+    was first run, so existing databases pick them up on deploy.
+    """
+    try:
+        with get_db_session() as db:
+            if not db.execute(text("SELECT to_regclass('support_cases')")).scalar():
+                return
+            db.execute(text("ALTER TABLE support_cases ADD COLUMN IF NOT EXISTS contacted_at TIMESTAMP"))
+            db.execute(text("ALTER TABLE support_cases ADD COLUMN IF NOT EXISTS contact_channel VARCHAR(30)"))
+            db.execute(text("ALTER TABLE support_cases ADD COLUMN IF NOT EXISTS resolved_by VARCHAR(36)"))
+    except Exception as e:
+        logger.error(f"Failed to add support_cases columns: {e}")
+
 
 async def close_database():
     """

@@ -156,6 +156,10 @@ services:
       FROM_EMAIL: ${FROM_EMAIL}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
       SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+      # Support case emails between Oraseas and BossServ (link target + optional recipient overrides)
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      SUPPORT_CASE_NOTIFY_ORASEAS: ${SUPPORT_CASE_NOTIFY_ORASEAS:-}
+      SUPPORT_CASE_NOTIFY_BOSSSERV: ${SUPPORT_CASE_NOTIFY_BOSSSERV:-}
     volumes:
       - ./ai_assistant:/app # Mount AI Assistant code for live reloading
     depends_on:
