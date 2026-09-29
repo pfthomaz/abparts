@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from '../hooks/useTranslation';
 import {
@@ -467,6 +468,16 @@ const SupportCases = () => {
   const [resolveTarget, setResolveTarget] = useState(null);
   const [filters, setFilters] = useState({ status: '', priority: '', machine_model: '', search: '' });
   const [total, setTotal] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Quick action (+ button) links here with ?new=1 to open the create form
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setSelectedCase(null);
+      setShowCreateModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const fetchCases = useCallback(async () => {
     try {

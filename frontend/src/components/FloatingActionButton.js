@@ -3,11 +3,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
+import { useAuth } from '../AuthContext';
+import { canAccessSupportCases } from '../utils/permissions';
 
 const FloatingActionButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   const actions = [
     {
@@ -33,7 +36,15 @@ const FloatingActionButton = () => {
       color: 'bg-blue-500 hover:bg-blue-600',
       path: '/orders',
       onClick: () => navigate('/orders')
-    }
+    },
+    ...(canAccessSupportCases(user) ? [{
+      id: 'new-support-case',
+      label: t('fab.newSupportCase'),
+      icon: '🛟',
+      color: 'bg-indigo-500 hover:bg-indigo-600',
+      path: '/support-cases?new=1',
+      onClick: () => navigate('/support-cases?new=1')
+    }] : [])
   ];
 
   const handleActionClick = (action) => {

@@ -187,6 +187,16 @@ export const isAdmin = (user) => {
  * @param {Object} user - User object
  * @returns {boolean} - Whether user can access cross-organization data
  */
+/**
+ * Support Cases are the Oraseas/BossServ support log: their admins only.
+ * The AI assistant API enforces the same rule.
+ */
+export const canAccessSupportCases = (user) => {
+  if (!user || (user.role !== USER_ROLES.ADMIN && user.role !== USER_ROLES.SUPER_ADMIN)) return false;
+  return user.organization?.organization_type === 'oraseas_ee' ||
+    (user.organization?.name || '').toLowerCase().startsWith('bossserv');
+};
+
 export const canAccessCrossOrganization = (user) => {
   return isSuperAdmin(user);
 };
@@ -489,10 +499,8 @@ export const getNavigationItems = (user) => {
     });
   }
 
-  // Support Cases - Oraseas and BossServ admins (the API enforces the same rule)
-  const isSupportOrg = user.organization?.organization_type === 'oraseas_ee' ||
-    (user.organization?.name || '').toLowerCase().startsWith('bossserv');
-  if (isSupportOrg && (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN)) {
+  // Support Cases - Oraseas and BossServ admins
+  if (canAccessSupportCases(user)) {
     items.push({
       name: 'supportCases',
       path: '/support-cases',
