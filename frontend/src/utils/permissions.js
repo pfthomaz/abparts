@@ -489,8 +489,10 @@ export const getNavigationItems = (user) => {
     });
   }
 
-  // Support Cases - admin and above (for recording customer issues)
-  if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN) {
+  // Support Cases - Oraseas and BossServ admins (the API enforces the same rule)
+  const isSupportOrg = user.organization?.organization_type === 'oraseas_ee' ||
+    (user.organization?.name || '').toLowerCase().startsWith('bossserv');
+  if (isSupportOrg && (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN)) {
     items.push({
       name: 'supportCases',
       path: '/support-cases',

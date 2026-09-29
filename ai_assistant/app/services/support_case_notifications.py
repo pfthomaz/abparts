@@ -53,7 +53,8 @@ def get_user_context(user_id: Optional[str]) -> Optional[Dict[str, Any]]:
         return None
     with get_db_session() as db:
         row = db.execute(text("""
-            SELECT u.id::text AS id, u.name, u.username, u.email,
+            SELECT u.id::text AS id, u.name, u.username, u.email, u.role::text AS role,
+                   u.is_active, u.user_status::text AS user_status,
                    o.name AS org_name, o.organization_type::text AS org_type
             FROM users u JOIN organizations o ON o.id = u.organization_id
             WHERE u.id::text = :id
@@ -64,6 +65,8 @@ def get_user_context(user_id: Optional[str]) -> Optional[Dict[str, Any]]:
         "id": row.id,
         "name": row.name or row.username,
         "email": row.email,
+        "role": row.role,
+        "is_active": bool(row.is_active) and row.user_status == "active",
         "org_name": row.org_name,
         "side": _side_of(row.org_type, row.org_name),
     }

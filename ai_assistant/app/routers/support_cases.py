@@ -2,7 +2,7 @@
 Support Cases API endpoints for recording and managing customer issues.
 """
 
-from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 from typing import Optional
 from sqlalchemy import text
 from datetime import datetime, timezone
@@ -26,10 +26,9 @@ from ..schemas_support_cases import (
     SupportCaseStatusEnum,
     SupportCasePriorityEnum,
 )
-from ..services.support_case_notifications import notify_case_event
+from ..services.support_case_notifications import get_user_context, notify_case_event
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
 
 
 def _generate_case_number() -> str:
@@ -71,6 +70,24 @@ async def _current_user_id(authorization: Optional[str] = Header(None)) -> Optio
     except Exception as e:
         logger.warning(f"Could not identify support case user: {e}")
     return None
+
+
+async def require_support_user(authorization: Optional[str] = Header(None)) -> dict:
+    """
+    Support cases are the Oraseas/BossServ support log: only their active
+    admins may read or change them.
+    """
+    user_id = await _current_user_id(authorization)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = get_user_context(user_id)
+    if (not user or not user["is_active"] or not user["side"]
+            or user["role"] not in ("admin", "super_admin")):
+        raise HTTPException(status_code=403, detail="Support cases are limited to Oraseas and BossServ admins")
+    return user
+
+
+router = APIRouter(dependencies=[Depends(require_support_user)])
 
 
 def _to_utc_naive(value: Optional[datetime]) -> Optional[datetime]:
@@ -138,7 +155,7 @@ def _row_to_case_response(row, comments=None) -> SupportCaseResponse:
 async def create_support_case(
     request: CreateSupportCaseRequest,
     background_tasks: BackgroundTasks,
-    authorization: Optional[str] = Header(None),
+    user: dict = Depends(require_support_user),
 ):
     """
     Create a new support case. If a resolution is supplied the case is recorded
@@ -146,7 +163,7 @@ async def create_support_case(
     """
     case_id = str(uuid.uuid4())
     case_number = _generate_case_number()
-    user_id = await _current_user_id(authorization)
+    user_id = user["id"]
     resolved = bool(request.resolution and request.resolution.strip())
 
     try:
@@ -178,7 +195,7 @@ async def create_support_case(
                 'organization_id': request.organization_id,
                 'contacted_at': _to_utc_naive(request.contacted_at),
                 'contact_channel': request.contact_channel or None,
-                'created_by': user_id or request.assigned_to or 'system',
+                'created_by': user_id,
                 'assigned_to': request.assigned_to,
                 'tags': json.dumps(request.tags if request.tags else []),
                 'related_parts': json.dumps(request.related_parts if request.related_parts else []),
@@ -398,7 +415,7 @@ async def update_support_case(
     case_id: str,
     request: UpdateSupportCaseRequest,
     background_tasks: BackgroundTasks,
-    authorization: Optional[str] = Header(None),
+    user: dict = Depends(require_support_user),
 ):
     """
     Update a support case. Moving it to resolved emails the other side.
@@ -440,7 +457,7 @@ async def update_support_case(
             params['status'] = request.status.value
             if request.status == SupportCaseStatusEnum.resolved:
                 set_clauses.append("resolved_at = NOW()")
-                user_id = await _current_user_id(authorization)
+                user_id = user["id"]
                 set_clauses.append("resolved_by = :resolved_by")
                 params['resolved_by'] = user_id
             elif request.status == SupportCaseStatusEnum.closed:
@@ -511,12 +528,12 @@ async def resolve_support_case(
     case_id: str,
     request: ResolveSupportCaseRequest,
     background_tasks: BackgroundTasks,
-    authorization: Optional[str] = Header(None),
+    user: dict = Depends(require_support_user),
 ):
     """
     Resolve a support case, optionally publish to knowledge base, and email the other side.
     """
-    user_id = await _current_user_id(authorization)
+    user_id = user["id"]
     try:
         with get_db_session() as db:
             previous_status = db.execute(
