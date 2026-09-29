@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
+sqlalchemy>=2.0,<2.1  # 2.1 defaults postgresql:// to psycopg 3, which is not installed
 psycopg2-binary
 python-dotenv # For loading .env files in your app
 alembic
