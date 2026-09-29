@@ -24,6 +24,7 @@ from ..schemas_support_cases import (
     SupportCaseListResponse,
     SupportCaseStatsResponse,
     SupportCaseStatusEnum,
+    CustomerMachineResponse,
     SupportCasePriorityEnum,
 )
 from ..services.support_case_notifications import get_user_context, notify_case_event
@@ -104,12 +105,15 @@ def _utc(value: Optional[datetime]) -> Optional[datetime]:
     return value
 
 
-# Case columns plus the display names of the users who recorded / resolved it
+# Case columns plus the machine and the display names of the users who recorded / resolved it
 _CASE_WITH_NAMES_SQL = """
     SELECT sc.*,
+           m.name AS machine_name,
+           m.serial_number AS machine_serial,
            COALESCE(cu.name, cu.username) AS created_by_name,
            COALESCE(ru.name, ru.username) AS resolved_by_name
     FROM support_cases sc
+    LEFT JOIN machines m ON m.id::text = sc.machine_id
     LEFT JOIN users cu ON cu.id::text = sc.created_by
     LEFT JOIN users ru ON ru.id::text = sc.resolved_by
     WHERE sc.id = :id
@@ -125,6 +129,8 @@ def _row_to_case_response(row, comments=None) -> SupportCaseResponse:
         description=row.description,
         machine_model=row.machine_model,
         machine_id=row.machine_id,
+        machine_name=getattr(row, 'machine_name', None),
+        machine_serial=getattr(row, 'machine_serial', None),
         symptoms=row.symptoms,
         root_cause=row.root_cause,
         resolution=row.resolution,
@@ -186,7 +192,7 @@ async def create_support_case(
                 'title': request.title,
                 'description': request.description,
                 'machine_model': request.machine_model,
-                'machine_id': request.machine_id,
+                'machine_id': request.machine_id or None,
                 'symptoms': request.symptoms,
                 'root_cause': request.root_cause or None,
                 'resolution': request.resolution if resolved else None,
@@ -288,19 +294,25 @@ async def list_support_cases(
             ).scalar()
 
             # Get paginated results
+            priority_order = """
+                CASE priority
+                    WHEN 'critical' THEN 1
+                    WHEN 'high' THEN 2
+                    WHEN 'medium' THEN 3
+                    WHEN 'low' THEN 4
+                END, created_at DESC
+            """
             results = db.execute(
                 text(f"""
-                    SELECT * FROM support_cases 
-                    WHERE {where_clause}
-                    ORDER BY 
-                        CASE priority
-                            WHEN 'critical' THEN 1
-                            WHEN 'high' THEN 2
-                            WHEN 'medium' THEN 3
-                            WHEN 'low' THEN 4
-                        END,
-                        created_at DESC
-                    LIMIT :limit OFFSET :offset
+                    SELECT sc.*, m.name AS machine_name, m.serial_number AS machine_serial
+                    FROM (
+                        SELECT * FROM support_cases
+                        WHERE {where_clause}
+                        ORDER BY {priority_order}
+                        LIMIT :limit OFFSET :offset
+                    ) sc
+                    LEFT JOIN machines m ON m.id::text = sc.machine_id
+                    ORDER BY {priority_order}
                 """),
                 params
             ).fetchall()
@@ -366,6 +378,28 @@ async def get_support_case_stats():
     except Exception as e:
         logger.error(f"Failed to get support case stats: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+
+@router.get("/support-cases/machines", response_model=list[CustomerMachineResponse])
+async def list_customer_machines(organization: str = Query(..., description="Customer organization name or ID")):
+    """
+    Machines owned by a customer, for picking the machine on a support case.
+    Read straight from ABParts so Oraseas/BossServ admins see every customer's
+    machines, not just their own organization's.
+    """
+    try:
+        with get_db_session() as db:
+            rows = db.execute(text("""
+                SELECT m.id::text AS id, m.name, m.serial_number, m.model_type,
+                       m.status::text AS status
+                FROM machines m JOIN organizations o ON o.id = m.customer_organization_id
+                WHERE o.name = :org OR o.id::text = :org
+                ORDER BY m.status::text = 'decommissioned', m.name
+            """), {'org': organization}).fetchall()
+        return [CustomerMachineResponse(**row._mapping) for row in rows]
+    except Exception as e:
+        logger.error(f"Failed to list machines for {organization}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list machines: {str(e)}")
 
 
 @router.get("/support-cases/{case_id}", response_model=SupportCaseResponse)
@@ -436,7 +470,7 @@ async def update_support_case(
             params['machine_model'] = request.machine_model
         if request.machine_id is not None:
             set_clauses.append("machine_id = :machine_id")
-            params['machine_id'] = request.machine_id
+            params['machine_id'] = request.machine_id or None
         if request.symptoms is not None:
             set_clauses.append("symptoms = :symptoms")
             params['symptoms'] = request.symptoms

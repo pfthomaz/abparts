@@ -103,6 +103,7 @@ def _case_fields(case, actor: Dict[str, Any], resolver: Optional[Dict[str, Any]]
     fields = [
         ("Case", case.case_number),
         ("Customer", case.organization_id or "-"),
+        ("Machine", f"{case.machine_name} (S/N {case.machine_serial})" if case.machine_name else "-"),
         ("Machine model", f"AutoBoss {case.machine_model}" if case.machine_model else "-"),
         ("Priority", (case.priority or "").capitalize()),
         ("Customer contacted", _fmt_time(getattr(case, "contacted_at", None))),
@@ -175,8 +176,11 @@ def notify_case_event(case_id: str, event: str, actor_user_id: Optional[str]) ->
             return
 
         with get_db_session() as db:
-            case = db.execute(text("SELECT * FROM support_cases WHERE id = :id"),
-                              {"id": case_id}).fetchone()
+            case = db.execute(text("""
+                SELECT sc.*, m.name AS machine_name, m.serial_number AS machine_serial
+                FROM support_cases sc LEFT JOIN machines m ON m.id::text = sc.machine_id
+                WHERE sc.id = :id
+            """), {"id": case_id}).fetchone()
         if not case:
             return
 

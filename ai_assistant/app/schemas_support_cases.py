@@ -115,6 +115,8 @@ class SupportCaseResponse(BaseModel):
     description: str
     machine_model: Optional[str] = None
     machine_id: Optional[str] = None
+    machine_name: Optional[str] = None
+    machine_serial: Optional[str] = None
     symptoms: Optional[str] = None
     root_cause: Optional[str] = None
     resolution: Optional[str] = None
@@ -141,6 +143,15 @@ class SupportCaseResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CustomerMachineResponse(BaseModel):
+    """A machine belonging to a support case's customer."""
+    id: str
+    name: str
+    serial_number: Optional[str] = None
+    model_type: Optional[str] = None
+    status: Optional[str] = None
 
 
 class SupportCaseListResponse(BaseModel):

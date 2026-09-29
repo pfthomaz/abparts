@@ -121,6 +121,18 @@ export const listComments = async (caseId, includeInternal = true) => {
 };
 
 /**
+ * List the machines owned by a customer (by organization name or ID).
+ */
+export const listCustomerMachines = async (organization) => {
+  const params = new URLSearchParams({ organization });
+  const response = await fetch(`${getBaseUrl()}/api/ai/support-cases/machines?${params}`, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  return handleResponse(response);
+};
+
+/**
  * Get support case statistics.
  */
 export const getSupportCaseStats = async () => {

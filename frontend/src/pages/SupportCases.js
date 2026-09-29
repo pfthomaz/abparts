@@ -10,6 +10,7 @@ import {
   getSupportCase,
   addComment,
   getSupportCaseStats,
+  listCustomerMachines,
 } from '../services/supportCasesService';
 
 const STATUS_OPTIONS = [
@@ -69,9 +70,10 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
   const [formData, setFormData] = useState({
     title: '', description: '', machine_model: '', symptoms: '',
     priority: 'medium', tags: '', assigned_to: '', customer: '',
-    contacted_at: '', contact_channel: '',
+    contacted_at: '', contact_channel: '', machine_id: '',
   });
   const [organizations, setOrganizations] = useState([]);
+  const [machines, setMachines] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -100,11 +102,34 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
         assigned_to: editCase.assigned_to || '',
         contacted_at: toLocalInputValue(editCase.contacted_at || editCase.created_at),
         contact_channel: editCase.contact_channel || '',
+        machine_id: editCase.machine_id || '',
       });
     } else {
-      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', customer: '', tags: '', assigned_to: '', contacted_at: toLocalInputValue(new Date()), contact_channel: '' });
+      setFormData({ title: '', description: '', machine_model: '', symptoms: '', root_cause: '', resolution: '', priority: 'medium', customer: '', tags: '', assigned_to: '', contacted_at: toLocalInputValue(new Date()), contact_channel: '', machine_id: '' });
     }
   }, [editCase, isOpen]);
+
+  // Machines of the chosen customer
+  useEffect(() => {
+    if (!isOpen || !formData.customer) {
+      setMachines([]);
+      return;
+    }
+    let cancelled = false;
+    listCustomerMachines(formData.customer)
+      .then(data => { if (!cancelled) setMachines(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setMachines([]); });
+    return () => { cancelled = true; };
+  }, [isOpen, formData.customer]);
+
+  const handleMachineChange = (machineId) => {
+    const machine = machines.find(m => m.id === machineId);
+    setFormData(f => ({
+      ...f,
+      machine_id: machineId,
+      machine_model: machine?.model_type || f.machine_model,
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -122,6 +147,7 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
     if (!payload.organization_id) delete payload.organization_id;
     if (!payload.contacted_at) delete payload.contacted_at;
     if (!payload.contact_channel) delete payload.contact_channel;
+    if (!payload.machine_id && !editCase) delete payload.machine_id;
     onSave(payload);
   };
 
@@ -147,11 +173,29 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
           <div>
             <label className="block text-sm font-medium text-gray-700">Customer / Company</label>
             <select value={formData.customer}
-              onChange={e => setFormData(f => ({ ...f, customer: e.target.value }))}
+              onChange={e => setFormData(f => ({ ...f, customer: e.target.value, machine_id: '' }))}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
               <option value="">-- Select customer --</option>
               {organizations.map(org => (
                 <option key={org.id} value={org.name}>{org.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Machine</label>
+            <select value={formData.machine_id}
+              onChange={e => handleMachineChange(e.target.value)}
+              disabled={!formData.customer}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400">
+              <option value="">
+                {!formData.customer ? '-- Select a customer first --'
+                  : machines.length === 0 ? '-- No machines for this customer --'
+                  : '-- Select machine --'}
+              </option>
+              {machines.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.name}{m.serial_number ? ` (S/N ${m.serial_number})` : ''}{m.status === 'decommissioned' ? ' - decommissioned' : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -338,6 +382,12 @@ const CaseDetail = ({ caseData, onBack, onStatusChange, onResolve, onAddComment,
             <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{caseData.description}</p>
           </div>
           <div className="space-y-3">
+            {caseData.machine_name && (
+              <div><span className="text-sm font-medium text-gray-500">Machine:</span>
+                <span className="ml-2 text-sm">
+                  {caseData.machine_name}{caseData.machine_serial && ` (S/N ${caseData.machine_serial})`}
+                </span></div>
+            )}
             {caseData.machine_model && (
               <div><span className="text-sm font-medium text-gray-500">Machine Model:</span>
                 <span className="ml-2 text-sm">AutoBoss {caseData.machine_model}</span></div>
@@ -690,7 +740,7 @@ const SupportCases = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Case</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Machine</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacted</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -705,7 +755,10 @@ const SupportCases = () => {
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
                   <td className="px-4 py-3"><PriorityBadge priority={c.priority} /></td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{c.machine_model || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {c.machine_name || '-'}
+                    {c.machine_model && <p className="text-xs text-gray-400">{c.machine_model}</p>}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{c.organization_id || '-'}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{new Date(c.contacted_at || c.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
