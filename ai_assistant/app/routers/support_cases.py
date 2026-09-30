@@ -91,6 +91,16 @@ async def require_support_user(authorization: Optional[str] = Header(None)) -> d
 router = APIRouter(dependencies=[Depends(require_support_user)])
 
 
+def _machine_model_of(machine_id: Optional[str]) -> Optional[str]:
+    """The model of an ABParts machine, which wins over any model sent by the client."""
+    if not machine_id:
+        return None
+    with get_db_session() as db:
+        return db.execute(
+            text("SELECT model_type FROM machines WHERE id::text = :id"), {'id': machine_id}
+        ).scalar()
+
+
 def _to_utc_naive(value: Optional[datetime]) -> Optional[datetime]:
     """Store datetimes as naive UTC, matching the TIMESTAMP columns."""
     if value is not None and value.tzinfo is not None:
@@ -191,7 +201,7 @@ async def create_support_case(
                 'case_number': case_number,
                 'title': request.title,
                 'description': request.description,
-                'machine_model': request.machine_model,
+                'machine_model': _machine_model_of(request.machine_id) or request.machine_model,
                 'machine_id': request.machine_id or None,
                 'symptoms': request.symptoms,
                 'root_cause': request.root_cause or None,
@@ -465,9 +475,10 @@ async def update_support_case(
         if request.description is not None:
             set_clauses.append("description = :description")
             params['description'] = request.description
-        if request.machine_model is not None:
+        machine_model = _machine_model_of(request.machine_id) or request.machine_model
+        if machine_model is not None:
             set_clauses.append("machine_model = :machine_model")
-            params['machine_model'] = request.machine_model
+            params['machine_model'] = machine_model
         if request.machine_id is not None:
             set_clauses.append("machine_id = :machine_id")
             params['machine_id'] = request.machine_id or None
@@ -546,6 +557,9 @@ async def update_support_case(
                         ).fetchone()
             except Exception as e:
                 logger.warning(f"Failed to re-sync case {case_id} to knowledge base: {e}")
+
+        with get_db_session() as db:
+            result = db.execute(text(_CASE_WITH_NAMES_SQL), {'id': case_id}).fetchone()
 
         logger.info(f"Updated support case {case_id}")
         return _row_to_case_response(result)

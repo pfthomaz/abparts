@@ -219,12 +219,19 @@ const CaseFormModal = ({ isOpen, onClose, onSave, editCase }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Machine Model</label>
-              <select value={formData.machine_model}
-                onChange={e => setFormData(f => ({ ...f, machine_model: e.target.value }))}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                <option value="">-- Select --</option>
-                {MACHINE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+              {formData.machine_id ? (
+                // Set by the chosen machine
+                <p className="mt-1 px-3 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md">
+                  {formData.machine_model ? `AutoBoss ${formData.machine_model}` : '-'}
+                </p>
+              ) : (
+                <select value={formData.machine_model}
+                  onChange={e => setFormData(f => ({ ...f, machine_model: e.target.value }))}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                  <option value="">-- Select --</option>
+                  {MACHINE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Priority</label>
