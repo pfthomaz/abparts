@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { inventoryWorkflowService } from '../services/inventoryWorkflowService';
 import { partsService } from '../services/partsService';
 import PartSearchSelector from './PartSearchSelector';
+import PartThumbnail from './PartThumbnail';
 import { printStocktake } from '../utils/printStocktake';
 
 const num = (v) => (v === null || v === undefined || v === '' ? null : parseFloat(v));
@@ -46,7 +47,13 @@ const CountCard = ({ item, draft, saving, disabled, onDraft, onCommit, onStep, o
   return (
     <div className={`rounded-lg border p-3 shadow-sm ${counted ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-white'}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <PartThumbnail
+          partId={item.part_id}
+          imageCount={item.image_count}
+          title={item.part_number}
+          subtitle={item.part_name}
+        />
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-gray-900 break-words">{item.part_number}</span>
             {unexpected && (

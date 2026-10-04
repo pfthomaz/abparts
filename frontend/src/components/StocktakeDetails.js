@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryWorkflowService } from '../services/inventoryWorkflowService';
 import { printStocktake } from '../utils/printStocktake';
+import PartThumbnail from './PartThumbnail';
 
 const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
   const [items, setItems] = useState([]);
@@ -290,6 +291,14 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
               return (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <PartThumbnail
+                        partId={item.part_id}
+                        imageCount={item.image_count}
+                        title={item.part_number}
+                        subtitle={item.part_name}
+                        size="h-10 w-10"
+                      />
                     <div>
                       <div className="text-sm font-medium text-gray-900">
                         {item.part_number}
@@ -297,6 +306,7 @@ const StocktakeDetails = ({ stocktake, onClose, onUpdate }) => {
                       <div className="text-sm text-gray-500">
                         {item.part_name}
                       </div>
+                    </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

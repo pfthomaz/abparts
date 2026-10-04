@@ -1,8 +1,10 @@
 # backend/app/routers/images.py
 
+import base64
+import binascii
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from .. import models
@@ -102,17 +104,33 @@ async def get_part_image(
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
     
-    if not part.image_data or index >= len(part.image_data):
+    headers = {"Cache-Control": "public, max-age=86400"}  # Cache for 24 hours
+
+    if part.image_data:
+        if index >= len(part.image_data):
+            raise HTTPException(status_code=404, detail="Image not found")
+        return Response(
+            content=part.image_data[index],
+            media_type="image/webp",
+            headers={
+                **headers,
+                "Content-Disposition": f'inline; filename="part_{part_id}_{index}.webp"'
+            }
+        )
+
+    # Parts uploaded via /parts/upload-image keep their images as data URLs
+    # (or, for older parts, plain URLs) in image_urls.
+    if not part.image_urls or index >= len(part.image_urls):
         raise HTTPException(status_code=404, detail="Image not found")
-    
-    return Response(
-        content=part.image_data[index],
-        media_type="image/webp",
-        headers={
-            "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
-            "Content-Disposition": f'inline; filename="part_{part_id}_{index}.webp"'
-        }
-    )
+    url = part.image_urls[index]
+    if url.startswith("data:"):
+        try:
+            meta, encoded = url.split(",", 1)
+            media_type = meta[5:].split(";", 1)[0] or "image/webp"
+            return Response(content=base64.b64decode(encoded), media_type=media_type, headers=headers)
+        except (ValueError, binascii.Error):
+            raise HTTPException(status_code=404, detail="Image not found")
+    return RedirectResponse(url)
 
 
 @router.get("/images/parts/{part_id}/count", tags=["Images"])
@@ -130,6 +148,6 @@ async def get_part_image_count(
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
     
-    count = len(part.image_data) if part.image_data else 0
+    count = len(part.image_data or []) or len(part.image_urls or [])
     
     return {"part_id": part_id, "image_count": count}

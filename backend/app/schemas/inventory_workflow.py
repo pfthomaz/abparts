@@ -104,6 +104,7 @@ class StocktakeItemResponse(StocktakeItemBase):
     part_name: str
     part_type: str
     unit_of_measure: str
+    image_count: int = 0
     unit_price: Optional[Decimal] = None
     discrepancy_value: Optional[Decimal] = None
     counted_by_username: Optional[str] = None

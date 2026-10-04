@@ -137,6 +137,19 @@ def create_stocktake(db: Session, stocktake: schemas.StocktakeCreate, current_us
         raise HTTPException(status_code=500, detail=f"Error creating stocktake: {str(e)}")
 
 # Stocktake Item CRUD
+def _part_image_count(part) -> int:
+    """Number of images a part has, whichever column holds them (served by /images/parts)."""
+    if part is None:
+        return 0
+    return len(part.image_data or []) or len(part.image_urls or [])
+
+# Same rule as _part_image_count, computed in SQL so listing items doesn't load image blobs.
+_part_image_count_sql = func.coalesce(
+    func.array_length(models.Part.image_data, 1),
+    func.array_length(models.Part.image_urls, 1),
+    0,
+)
+
 def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
     """Get all items for a specific stocktake."""
     items = db.query(
@@ -144,7 +157,8 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
         models.Part.part_number.label("part_number"),
         models.Part.name.label("part_name"),
         models.Part.part_type.label("part_type"),
-        models.Part.unit_of_measure.label("unit_of_measure")
+        models.Part.unit_of_measure.label("unit_of_measure"),
+        _part_image_count_sql.label("image_count")
     ).join(
         models.Part, models.StocktakeItem.part_id == models.Part.id
     ).filter(
@@ -154,7 +168,7 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
     ).all()
 
     results = []
-    for item, part_number, part_name, part_type, unit_of_measure in items:
+    for item, part_number, part_name, part_type, unit_of_measure, image_count in items:
         # Calculate discrepancy if actual quantity is set
         discrepancy = None
         discrepancy_percentage = None
@@ -179,6 +193,7 @@ def get_stocktake_items(db: Session, stocktake_id: uuid.UUID):
             "part_name": part_name,
             "part_type": part_type.value if hasattr(part_type, 'value') else part_type,
             "unit_of_measure": unit_of_measure,
+            "image_count": image_count,
             "discrepancy": discrepancy,
             "discrepancy_percentage": discrepancy_percentage,
             "discrepancy_value": discrepancy_value,
@@ -533,6 +548,7 @@ def update_stocktake_item(db: Session, item_id: uuid.UUID, item_update: schemas.
             "part_name": part.name,
             "part_type": part.part_type.value if hasattr(part.part_type, 'value') else part.part_type,
             "unit_of_measure": part.unit_of_measure,
+            "image_count": _part_image_count(part),
             "unit_price": None,
             "discrepancy": discrepancy,
             "discrepancy_percentage": discrepancy_percentage,
@@ -565,6 +581,7 @@ def _serialize_stocktake_item(db: Session, db_item: StocktakeItem) -> Dict[str, 
         "part_name": part.name if part else "",
         "part_type": (part.part_type.value if part and hasattr(part.part_type, "value") else (part.part_type if part else "")),
         "unit_of_measure": part.unit_of_measure if part else "",
+        "image_count": _part_image_count(part),
         "unit_price": None,
         "discrepancy": discrepancy,
         "discrepancy_percentage": discrepancy_percentage,
