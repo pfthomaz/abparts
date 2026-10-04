@@ -215,8 +215,7 @@ const StocktakeCount = ({ stocktake, currentUser, onClose, onUpdated }) => {
     setShowAddPart(true);
     if (parts.length === 0) {
       try {
-        const data = await partsService.getParts();
-        setParts(Array.isArray(data) ? data : []);
+        setParts(await partsService.getAllParts());
       } catch (err) {
         setError(err.message || 'Failed to load parts list');
       }

@@ -76,6 +76,24 @@ const getParts = async (forceRefresh = false) => {
 };
 
 /**
+ * Fetches the full parts catalogue as a plain array, paging past the
+ * backend's 1000-per-request cap. Use when the user must be able to pick
+ * any part (e.g. adding a part found in stock during a stocktake).
+ * @returns {Promise<Array>} All parts
+ */
+const getAllParts = async () => {
+  const pageSize = 1000;
+  const all = [];
+  for (let skip = 0; ; skip += pageSize) {
+    const response = await api.get(`/parts/?skip=${skip}&limit=${pageSize}`);
+    const items = Array.isArray(response) ? response : (response?.items || []);
+    all.push(...items);
+    if (Array.isArray(response) || !response?.has_more || items.length === 0) break;
+  }
+  return all;
+};
+
+/**
  * Creates a new part.
  * @param {object} partData The data for the new part.
  * @returns {Promise<Object>} Created part object
@@ -414,6 +432,7 @@ const getPartsForOrders = async (organizationId, orderType = 'customer', options
 
 export const partsService = {
   getParts,
+  getAllParts,
   createPart,
   updatePart,
   deletePart,

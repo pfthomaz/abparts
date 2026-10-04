@@ -204,7 +204,7 @@ def get_filtered_parts_with_count(db: Session, part_type: Optional[str] = None, 
         total_count = query.count()
     
     # Get paginated results
-    items = query.offset(skip).limit(limit + 1).all()  # Get one extra to check if there are more
+    items = query.order_by(models.Part.part_number, models.Part.id).offset(skip).limit(limit + 1).all()  # Get one extra to check if there are more
     
     # Check if there are more items
     has_more = len(items) > limit
