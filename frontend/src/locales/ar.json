@@ -1458,6 +1458,7 @@
     "types": {
       "daily": "يومي",
       "weekly": "أسبوعي",
+      "monthly": "شهري",
       "scheduled": "مجدول",
       "custom": "مخصص"
     },
@@ -1767,6 +1768,7 @@
     "typeOptions": {
       "daily": "يومي",
       "weekly": "أسبوعي",
+      "monthly": "شهري",
       "scheduled": "مجدول (على أساس الساعات)",
       "custom": "مخصص"
     },

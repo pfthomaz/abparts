@@ -1484,6 +1484,7 @@
     "types": {
       "daily": "Daily",
       "weekly": "Weekly",
+      "monthly": "Monthly",
       "scheduled": "Scheduled",
       "custom": "Custom"
     },
@@ -1791,6 +1792,7 @@
     "typeOptions": {
       "daily": "Daily",
       "weekly": "Weekly",
+      "monthly": "Monthly",
       "scheduled": "Scheduled (Hours-based)",
       "custom": "Custom"
     },

@@ -1249,6 +1249,7 @@ class ProtocolType(enum.Enum):
     """Types of maintenance protocols"""
     DAILY = "daily"
     WEEKLY = "weekly"
+    MONTHLY = "monthly"
     SCHEDULED = "scheduled"
     CUSTOM = "custom"
 
@@ -1287,7 +1288,7 @@ class MaintenanceProtocol(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     protocol_type = Column(Enum(ProtocolType, values_callable=lambda x: [e.value for e in x]), nullable=False)
-    service_interval_hours = Column(DECIMAL(precision=10, scale=2), nullable=True)  # NULL for daily/weekly
+    service_interval_hours = Column(DECIMAL(precision=10, scale=2), nullable=True)  # NULL for daily/weekly/monthly
     is_recurring = Column(Boolean, default=False)  # True for recurring services, False for one-time
     machine_model = Column(String(50), nullable=True)  # NULL means all models
     description = Column(Text, nullable=True)

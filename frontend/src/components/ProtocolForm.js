@@ -99,6 +99,7 @@ const ProtocolForm = ({ protocol, onSave, onCancel }) => {
           >
             <option value="daily">{t('protocolForm.typeOptions.daily')}</option>
             <option value="weekly">{t('protocolForm.typeOptions.weekly')}</option>
+            <option value="monthly">{t('protocolForm.typeOptions.monthly')}</option>
             <option value="scheduled">{t('protocolForm.typeOptions.scheduled')}</option>
             <option value="custom">{t('protocolForm.typeOptions.custom')}</option>
           </select>

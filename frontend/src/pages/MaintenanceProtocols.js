@@ -79,6 +79,7 @@ const MaintenanceProtocols = () => {
     const colors = {
       daily: 'bg-blue-100 text-blue-800',
       weekly: 'bg-green-100 text-green-800',
+      monthly: 'bg-teal-100 text-teal-800',
       scheduled: 'bg-purple-100 text-purple-800',
       custom: 'bg-gray-100 text-gray-800'
     };
@@ -136,6 +137,7 @@ const MaintenanceProtocols = () => {
               <option value="">{t('maintenanceProtocols.filters.allTypes')}</option>
               <option value="daily">{t('maintenanceProtocols.types.daily')}</option>
               <option value="weekly">{t('maintenanceProtocols.types.weekly')}</option>
+              <option value="monthly">{t('maintenanceProtocols.types.monthly')}</option>
               <option value="scheduled">{t('maintenanceProtocols.types.scheduled')}</option>
               <option value="custom">{t('maintenanceProtocols.types.custom')}</option>
             </select>

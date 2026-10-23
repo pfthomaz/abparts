@@ -1462,6 +1462,7 @@
     "types": {
       "daily": "Daglig",
       "weekly": "Ukentlig",
+      "monthly": "Månedlig",
       "scheduled": "Planlagt",
       "custom": "Tilpasset"
     },
@@ -1771,6 +1772,7 @@
     "typeOptions": {
       "daily": "Daglig",
       "weekly": "Ukentlig",
+      "monthly": "Månedlig",
       "scheduled": "Planlagt (Timebasert)",
       "custom": "Tilpasset"
     },

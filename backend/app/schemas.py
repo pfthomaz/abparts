@@ -855,6 +855,7 @@ class CustomerOrderItemResponse(CustomerOrderItemBase, BaseSchema):
 class ProtocolTypeEnum(str, Enum):
     DAILY = "daily"
     WEEKLY = "weekly"
+    MONTHLY = "monthly"
     SCHEDULED = "scheduled"
     CUSTOM = "custom"
 

@@ -1462,6 +1462,7 @@
     "types": {
       "daily": "Günlük",
       "weekly": "Haftalık",
+      "monthly": "Aylık",
       "scheduled": "Planlanmış",
       "custom": "Özel"
     },
@@ -1771,6 +1772,7 @@
     "typeOptions": {
       "daily": "Günlük",
       "weekly": "Haftalık",
+      "monthly": "Aylık",
       "scheduled": "Planlanmış (Saat Bazlı)",
       "custom": "Özel"
     },

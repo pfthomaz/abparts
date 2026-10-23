@@ -52,8 +52,8 @@ const DailyOperations = () => {
 
       // Find start and end of day protocols
       // Use specific protocol IDs for reliable detection (language-independent)
-      const START_PROTOCOL_ID = 'f459363d-1dbf-443f-b988-ab43bab0f520';
-      const END_PROTOCOL_ID = '674da9b0-6d6b-4f40-a5c2-20ecc4d25aac';
+      const START_PROTOCOL_ID = 'd339f134-80f4-4f09-a872-be35b9d2e10a';
+      const END_PROTOCOL_ID = '5fe2a19a-61a2-4bf4-b749-f2a2fb2b2a29';
       
       const start = protocolsData.find(p => p.id === START_PROTOCOL_ID);
       const end = protocolsData.find(p => p.id === END_PROTOCOL_ID);

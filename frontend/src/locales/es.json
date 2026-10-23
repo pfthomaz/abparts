@@ -1462,6 +1462,7 @@
     "types": {
       "daily": "Diario",
       "weekly": "Semanal",
+      "monthly": "Mensual",
       "scheduled": "Programado",
       "custom": "Personalizado"
     },
@@ -1771,6 +1772,7 @@
     "typeOptions": {
       "daily": "Diario",
       "weekly": "Semanal",
+      "monthly": "Mensual",
       "scheduled": "Programado (Basado en Horas)",
       "custom": "Personalizado"
     },
