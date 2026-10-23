@@ -82,7 +82,7 @@ const FloatingActionButton = () => {
             {/* Action Button */}
             <button
               onClick={() => handleActionClick(action)}
-              className={`${action.color} text-white w-14 h-14 rounded-full shadow-lg 
+              className={`${action.color} text-white w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg 
                 flex items-center justify-center text-2xl
                 transform transition-all duration-200 hover:scale-110 active:scale-95
                 focus:outline-none focus:ring-4 focus:ring-opacity-50`}
@@ -98,7 +98,7 @@ const FloatingActionButton = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed right-4 md:right-8 z-50
-          w-16 h-16 rounded-full shadow-2xl
+          w-12 h-12 md:w-16 md:h-16 rounded-full shadow-2xl
           flex items-center justify-center text-white text-2xl
           transform transition-all duration-300
           focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50

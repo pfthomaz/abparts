@@ -208,12 +208,12 @@ const Organizations = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{t('organizations.title')}</h1>
           <p className="text-gray-600 mt-1">{t('organizations.subtitle')}</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="page-header-actions">
           {/* View Mode Toggle */}
           <div className="flex rounded-md shadow-sm">
             <button

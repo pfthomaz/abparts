@@ -121,7 +121,7 @@ const StockAdjustments = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header mb-6">
         <h1 className="text-3xl font-bold">{t('stockAdjustments.title')}</h1>
         <button
           onClick={() => setShowCreateModal(true)}

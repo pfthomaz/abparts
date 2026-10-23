@@ -668,7 +668,7 @@ const SupportCases = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Support Cases</h1>
           <p className="text-sm text-gray-500 mt-1">Record and track customer issues for AI knowledge building</p>
@@ -740,8 +740,8 @@ const SupportCases = () => {
           <p className="text-gray-400 text-sm mt-1">Create your first case to start building the AI knowledge base</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 table-sticky-actions">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Case</th>

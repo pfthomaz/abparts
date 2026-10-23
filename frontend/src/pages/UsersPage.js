@@ -396,7 +396,7 @@ function UsersPage() {
           )}
 
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded shadow">
+            <table className="min-w-full bg-white rounded shadow table-sticky-actions">
               <thead>
                 <tr>
                   <th className="px-4 py-2 text-left">

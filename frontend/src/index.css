@@ -242,6 +242,15 @@ input[type="password"] {
 }
 
 /* You can add any custom global CSS here */
+html,
+body {
+  /* Never let a too-wide element make the whole page pan sideways on phones.
+     clip (unlike hidden) keeps position: sticky working. */
+  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 html {
   overflow-y: scroll; /* Always show scrollbar to prevent layout shift */
   -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
@@ -260,15 +269,6 @@ body {
 }
 
 
-
-/* PWA specific styles */
-@media (display-mode: standalone) {
-  body {
-    /* Add safe area padding for notched devices */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
 
 /* Fixed bottom bars - safe area support for notched phones (iPhone X+) */
 .fixed-bottom-bar {
@@ -378,4 +378,58 @@ button, a, .clickable {
 
 .animate-pulse-subtle {
   animation: pulse-subtle 2s infinite;
+}
+
+/* iOS Safari zooms the page when a field with a font size under 16px gets focus */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important; /* beats text-sm / text-xs utilities */
+  }
+}
+
+@layer components {
+  /* Page title with its action buttons: stacked on phones, side by side from sm */
+  .page-header {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .page-header-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  /* In a sideways-scrolling table, keep the last (actions) column pinned to the
+     right edge on phones so its buttons are always reachable */
+  @media (max-width: 767px) {
+    .table-sticky-actions th:last-child:not([colspan]),
+    .table-sticky-actions td:last-child:not([colspan]) {
+      position: sticky;
+      right: 0;
+      z-index: 1;
+      background-color: #fff;
+      box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.25);
+    }
+
+    .table-sticky-actions thead th:last-child:not([colspan]) {
+      background-color: #f9fafb;
+    }
+  }
+
+  /* Underlined tab bars wrap onto a second line instead of running off-screen */
+  .tab-nav {
+    @apply flex flex-wrap gap-x-4 sm:gap-x-8;
+  }
+
+  @media (max-width: 639px) {
+    .page-header h1 {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+
+    .page-header-actions > * {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+  }
 }

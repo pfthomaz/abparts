@@ -447,12 +447,12 @@ const Orders = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{t('orders.title')}</h1>
           <p className="text-gray-600 mt-1">{t('orders.subtitle')}</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="page-header-actions">
           <button
             onClick={() => setShowAnalytics(!showAnalytics)}
             className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 font-semibold"
@@ -488,7 +488,7 @@ const Orders = () => {
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-md mb-6">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
+          <nav className="-mb-px tab-nav px-6">
             <button
               onClick={() => setActiveView('list')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -617,7 +617,7 @@ const Orders = () => {
             <div className="flex flex-col space-y-4 mb-12">
               {filteredSupplierOrders.map((order) => (
                 <div key={order.id} className="bg-white p-4 rounded-lg shadow-md border border-gray-200 transition-shadow duration-200 hover:shadow-lg">
-                  <div className="flex justify-between items-start">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-semibold text-red-700">{t('orders.orderFrom')} {order.supplier_name}</h3>
@@ -637,7 +637,7 @@ const Orders = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex space-x-2 ml-4">
+                    <div className="flex flex-wrap gap-2 mt-3 sm:mt-0 sm:ml-4 sm:flex-nowrap">
                       {canReceiveSupplierOrder(order) && (
                         <button
                           onClick={() => handleReceiveSupplierOrder(order)}

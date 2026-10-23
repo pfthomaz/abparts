@@ -172,9 +172,9 @@ const Machines = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header mb-6">
         <h1 className="text-3xl font-bold text-gray-800">{t('machines.title')}</h1>
-        <div className="flex space-x-2">
+        <div className="page-header-actions">
           {permissions.canRegister && (
             <button
               onClick={() => openModal()}

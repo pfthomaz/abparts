@@ -262,7 +262,7 @@ const StockResetTab = ({ warehouse, onSuccess }) => {
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-3">{t('warehouses.stockReset.stockAdjustments')} ({adjustments.length} {t('warehouses.stockReset.parts')})</h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border">
+          <table className="min-w-full divide-y divide-gray-200 border table-sticky-actions">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -191,9 +191,9 @@ const Transactions = () => {
               ))}
             </nav>
 
-            {/* Mobile Tab Navigation - Horizontal Scroll */}
+            {/* Mobile Tab Navigation - wraps onto extra lines */}
             <div className="md:hidden">
-              <nav className="-mb-px flex overflow-x-auto scrollbar-hide px-4 mobile-tab-nav" aria-label="Tabs">
+              <nav className="-mb-px tab-nav px-4" aria-label="Tabs">
                 {availableTabs.map((tab, index) => (
                   <button
                     key={tab.id}

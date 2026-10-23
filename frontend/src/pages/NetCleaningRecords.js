@@ -189,7 +189,7 @@ const NetCleaningRecords = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="page-header mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{t('netCleaning.records.title')}</h1>
           {offlineRecords.length > 0 && (
@@ -242,7 +242,7 @@ const NetCleaningRecords = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 table-sticky-actions">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('netCleaning.records.date')}</th>

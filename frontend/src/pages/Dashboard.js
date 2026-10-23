@@ -423,13 +423,13 @@ const Dashboard = () => {
         {/* Header Section */}
         <div className="mb-8">
           {/* Combined greeting + role card */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-white/20">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">
                   {t(`dashboard.${new Date().getHours() < 12 ? 'goodMorning' : new Date().getHours() < 18 ? 'goodAfternoon' : 'goodEvening'}`)}!
                 </h1>
-                <p className="text-lg text-gray-600">{t('dashboard.welcomeBack', { name: user.name || user.username })}</p>
+                <p className="text-base sm:text-lg text-gray-600">{t('dashboard.welcomeBack', { name: user.name || user.username })}</p>
                 {metrics && (
                   <p className="text-sm text-gray-500 mt-1">
                     {isSuperAdmin(user)
@@ -439,8 +439,8 @@ const Dashboard = () => {
                   </p>
                 )}
               </div>
-              <div className="text-right space-y-1">
-                <div className="flex items-center justify-end space-x-2">
+              <div className="sm:text-right space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center sm:justify-end gap-2">
                   <span className="text-sm font-semibold text-gray-900">
                     {user.role === 'super_admin' ? t('dashboard.superAdministrator') :
                       user.role === 'admin' ? t('dashboard.administrator') : t('dashboard.user')}

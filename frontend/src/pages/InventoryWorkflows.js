@@ -119,9 +119,9 @@ const InventoryWorkflows = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="page-header">
         <h1 className="text-3xl font-bold text-gray-800">Inventory Workflows</h1>
-        <div className="flex space-x-2">
+        <div className="page-header-actions">
           {activeTab === 'stocktakes' && canCreateStocktake && (
             <button
               onClick={() => setShowStocktakeModal(true)}

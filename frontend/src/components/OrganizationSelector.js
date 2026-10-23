@@ -35,15 +35,15 @@ const OrganizationSelector = ({ selectedOrganization, onOrganizationChange }) =>
   }
 
   return (
-    <div className="flex items-center space-x-3">
-      <label htmlFor="organization-selector" className="text-sm font-medium text-gray-700">
+    <div className="flex items-center gap-3 min-w-0">
+      <label htmlFor="organization-selector" className="text-sm font-medium text-gray-700 shrink-0">
         Organization:
       </label>
       <select
         id="organization-selector"
         value={selectedOrganization || ''}
         onChange={(e) => onOrganizationChange(e.target.value || null)}
-        className="block w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+        className="block w-full min-w-0 sm:w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
         disabled={loading}
       >
         <option value="">All Organizations</option>

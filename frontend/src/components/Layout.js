@@ -80,17 +80,16 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-md">
-        <nav className="max-w-7xl mx-auto px-4 py-4">
+        <nav className="max-w-7xl mx-auto px-4 py-2 sm:py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-8">
               <Link to="/" className="flex flex-col items-center">
                 <img
                   src="/logo.png"
                   alt="ABParts - Intelligent Parts Management"
-                  style={{ height: '6rem' }}
-                  className="w-auto"
+                  className="w-auto h-14 sm:h-24"
                 />
-                <span className="text-xs text-gray-400 mt-0.5">{APP_VERSION} &middot; {APP_VERSION_DATE}</span>
+                <span className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{APP_VERSION} &middot; {APP_VERSION_DATE}</span>
               </Link>
 
               {/* Desktop Navigation */}
@@ -376,7 +375,7 @@ const Layout = () => {
       {/* Offline Status Indicator - New offline mode implementation */}
       <OfflineIndicator showWhenOnline={false} pendingCount={pendingCount} />
 
-      <main className="max-w-7xl mx-auto px-4 py-4 pb-20 lg:pb-4">
+      <main className="max-w-7xl mx-auto px-4 py-4 pb-40 lg:pb-24">
         <Outlet />
       </main>
 

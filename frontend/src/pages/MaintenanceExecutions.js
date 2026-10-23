@@ -213,7 +213,7 @@ const MaintenanceExecutions = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="page-header">
         <h1 className="text-3xl font-bold text-gray-900">{t('maintenance.title')}</h1>
       </div>
 

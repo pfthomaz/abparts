@@ -8,6 +8,12 @@ import { AuthProvider } from './AuthContext'; // Import AuthProvider
 import { PWAProvider } from './contexts/PWAContext'; // Import PWAProvider
 import * as serviceWorkerRegistration from './utils/serviceWorkerRegistration';
 
+// iOS Safari ignores user-scalable=no in the viewport meta, so block pinch zoom
+// here; it distorts the app layout. Double-tap zoom is off via touch-action.
+['gesturestart', 'gesturechange'].forEach((type) => {
+    document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+});
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
     <React.StrictMode>
