@@ -516,7 +516,7 @@ def _insert_protocol(conn, protocol, order_offset):
                 (id, name, protocol_type, service_interval_hours, is_recurring, machine_model,
                  description, is_active, display_order, base_language, created_at, updated_at)
             VALUES
-                (:id, :name, CAST(:protocol_type AS protocoltype), NULL, true, :machine_model,
+                (:id, :name, :protocol_type, NULL, true, :machine_model,
                  :description, true, :display_order, 'en', now(), now())
         """),
         {
@@ -553,7 +553,7 @@ def _insert_protocol(conn, protocol, order_offset):
                     (id, protocol_id, item_order, item_description, item_type, item_category,
                      is_critical, notes, base_language, created_at)
                 VALUES
-                    (:id, :protocol_id, :item_order, :description, CAST(:item_type AS checklistitemtype),
+                    (:id, :protocol_id, :item_order, :description, :item_type,
                      :category, :critical, :notes, 'en', now())
             """),
             {
@@ -587,11 +587,17 @@ def _insert_protocol(conn, protocol, order_offset):
 
 
 def upgrade():
-    # A new enum value cannot be used in the transaction that adds it
-    with op.get_context().autocommit_block():
-        op.execute("ALTER TYPE protocoltype ADD VALUE IF NOT EXISTS 'monthly'")
-
     conn = op.get_bind()
+
+    # Production stores protocol_type as varchar; databases built from the
+    # models use the protocoltype enum. A new enum value cannot be used in the
+    # transaction that adds it.
+    has_enum = conn.execute(
+        sa.text("SELECT 1 FROM pg_type WHERE typname = 'protocoltype'")
+    ).first()
+    if has_enum:
+        with op.get_context().autocommit_block():
+            op.execute("ALTER TYPE protocoltype ADD VALUE IF NOT EXISTS 'monthly'")
 
     old_weekly_ids = [
         str(row.id) for row in conn.execute(
@@ -640,4 +646,5 @@ def downgrade():
         sa.text("DELETE FROM maintenance_protocols WHERE CAST(id AS text) = ANY(:ids)"),
         {'ids': list(NEW_PROTOCOL_IDS)},
     )
-    # PostgreSQL cannot drop an enum value; 'monthly' stays in protocoltype.
+    # PostgreSQL cannot drop an enum value; 'monthly' stays in protocoltype
+    # where that enum exists.
