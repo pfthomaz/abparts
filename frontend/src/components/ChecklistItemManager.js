@@ -1,7 +1,6 @@
 // frontend/src/components/ChecklistItemManager.js
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
 import {
   getLocalizedChecklistItems,
   createChecklistItem,
@@ -13,8 +12,7 @@ import ChecklistItemForm from './ChecklistItemForm';
 import { useTranslation } from '../hooks/useTranslation';
 
 const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
-  const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,12 +22,12 @@ const ChecklistItemManager = ({ protocol, onBack, onUpdate }) => {
 
   useEffect(() => {
     loadItems();
-  }, [protocol.id]);
+  }, [protocol.id, currentLanguage]);
 
   const loadItems = async () => {
     try {
       setLoading(true);
-      const data = await getLocalizedChecklistItems(protocol.id, user?.preferred_language);
+      const data = await getLocalizedChecklistItems(protocol.id, currentLanguage);
       setItems(data);
       setError(null);
     } catch (err) {

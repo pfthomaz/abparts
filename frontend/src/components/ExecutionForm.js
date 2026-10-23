@@ -16,7 +16,7 @@ import { queueMaintenanceExecution } from '../services/syncQueueManager';
 
 const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete, onCancel }) => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { isOnline } = useOffline();
   const [checklistItems, setChecklistItems] = useState([]);
   const [executionId, setExecutionId] = useState(existingExecution?.id || null);
@@ -48,7 +48,7 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       // console.log('Loading existing execution:', existingExecution);
       
       // Load localized checklist items
-      const items = await getLocalizedChecklistItems(protocol.id, user.preferred_language);
+      const items = await getLocalizedChecklistItems(protocol.id, currentLanguage);
       // console.log('Loaded localized checklist items:', items);
       setChecklistItems(items);
 
@@ -86,7 +86,7 @@ const ExecutionForm = ({ machine, protocol, existingExecution = null, onComplete
       // console.log('Starting execution with hours:', hours);
       
       // Load localized checklist items
-      const items = await getLocalizedChecklistItems(protocol.id, user.preferred_language);
+      const items = await getLocalizedChecklistItems(protocol.id, currentLanguage);
       // console.log('Loaded localized checklist items:', items);
       setChecklistItems(items);
 

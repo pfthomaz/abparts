@@ -12,7 +12,7 @@ import ExecutionHistory from '../components/ExecutionHistory';
 
 const MaintenanceExecutions = () => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { isOnline, pendingCount } = useOffline();
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ const MaintenanceExecutions = () => {
       
       try {
         // Pass userContext for secure offline caching
-        protocolsData = await getLocalizedProtocols({}, user.preferred_language, false, userContext);
+        protocolsData = await getLocalizedProtocols({}, currentLanguage, false, userContext);
         // console.log('[MaintenanceExecutions] Loaded protocols:', protocolsData.length);
       } catch (err) {
         console.error('[MaintenanceExecutions] Failed to load protocols:', err);
@@ -98,7 +98,7 @@ const MaintenanceExecutions = () => {
     } finally {
       setLoading(false);
     }
-  }, [user.preferred_language, selectedMachine]);
+  }, [currentLanguage, selectedMachine]);
 
   // Initial load
   useEffect(() => {

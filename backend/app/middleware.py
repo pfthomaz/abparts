@@ -247,6 +247,11 @@ class PermissionEnforcementMiddleware(BaseHTTPMiddleware):
         # Skip custom permission endpoints (they handle permissions internally)
         if path in self.custom_permission_endpoints:
             return False
+
+        # Self-service endpoints (own profile, language, password, sessions) only
+        # act on the authenticated caller, so every role may use them
+        if path.startswith("/users/me/"):
+            return False
         
         # Skip machine hours endpoints (all authenticated users can record hours)
         if "/machines/" in path and path.endswith("/hours"):

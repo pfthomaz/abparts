@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
 
 // Supported countries and their configurations
 const SUPPORTED_COUNTRIES = {
@@ -149,7 +150,7 @@ const LANGUAGE_FALLBACK_ORDER = ['en', 'el', 'ar', 'es', 'tr', 'no'];
 const LocalizationContext = createContext(null);
 
 export const LocalizationProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [currentCountry, setCurrentCountry] = useState('GR');
   const [userPreferences, setUserPreferences] = useState({
@@ -223,25 +224,15 @@ export const LocalizationProvider = ({ children }) => {
         detail: { language: languageCode } 
       }));
 
-      // Save to backend if user is logged in
+      // Save to backend if user is logged in. Use the self-service profile
+      // endpoint: PUT /users/{id} needs user-write permission, which regular
+      // users lack, so their choice was never saved and reverted on reload.
       if (user?.id) {
         try {
-          const token = localStorage.getItem('authToken');
-          const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-          const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              preferred_language: languageCode
-            })
-          });
-
-          if (!response.ok) {
-            console.error('Failed to save language preference to backend');
-          }
+          await api.put('/users/me/profile', { preferred_language: languageCode });
+          // Keep the session user in step so code reading preferred_language
+          // (and the effect above) agrees with the language now on screen
+          await refreshUser();
         } catch (error) {
           console.error('Error saving language preference:', error);
         }

@@ -9,6 +9,7 @@ import { organizationsService } from '../services/organizationsService';
 import { PERMISSIONS } from '../utils/permissions';
 import { sortUsersByName } from '../utils/sortUsers';
 import { useTranslation } from '../hooks/useTranslation';
+import { useAuth } from '../AuthContext';
 
 // New role system aligned with business model
 const USER_ROLES = {
@@ -26,6 +27,7 @@ const USER_STATUS = {
 
 function UsersPage() {
   const { t } = useTranslation();
+  const { user: currentUser, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
@@ -112,6 +114,10 @@ function UsersPage() {
     try {
       if (editingUser) {
         await userService.updateUser(editingUser.id, formData);
+        // Editing your own account (e.g. its language) should apply right away
+        if (editingUser.id === currentUser?.id) {
+          await refreshUser();
+        }
       } else {
         await userService.createUser(formData);
       }

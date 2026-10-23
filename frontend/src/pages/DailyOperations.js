@@ -7,7 +7,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 const DailyOperations = () => {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [machines, setMachines] = useState([]);
@@ -20,7 +20,7 @@ const DailyOperations = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentLanguage]);
 
   // Handle returning from maintenance execution with preselected machine
   useEffect(() => {
@@ -39,7 +39,7 @@ const DailyOperations = () => {
       setLoading(true);
       const [machinesData, protocolsData, executionsData] = await Promise.all([
         machinesService.getMachines(),
-        getLocalizedProtocols({}, user?.preferred_language),
+        getLocalizedProtocols({}, currentLanguage),
         getExecutions()
       ]);
 

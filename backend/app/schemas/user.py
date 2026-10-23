@@ -92,6 +92,7 @@ class UserInvitationResend(BaseModel):
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
+    preferred_language: Optional[str] = Field(None, max_length=5)
 
 class UserProfileResponse(BaseModel):
     id: uuid.UUID
