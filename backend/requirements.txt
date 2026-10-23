@@ -1,4 +1,4 @@
-fastapi
+fastapi==0.144.0  # 0.145+ rejects unknown FastAPI() kwargs that main.py passes
 uvicorn[standard]
 sqlalchemy>=2.0,<2.1  # 2.1 defaults postgresql:// to psycopg 3, which is not installed
 psycopg2-binary
