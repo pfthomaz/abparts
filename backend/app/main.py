@@ -81,7 +81,6 @@ app = FastAPI(
     title="ABParts API",
     description="API for managing AutoBoss parts inventory and customer stock.",
     version="0.1.0",
-    openapi_version="3.1.0",
     redirect_slashes=False,  # Disable automatic slash redirects to prevent 307 responses
     swagger_ui_parameters={
         "persistAuthorization": True,
